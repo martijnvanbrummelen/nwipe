@@ -287,9 +287,7 @@ int main( int argc, char** argv )
                 }
                 */
 
-                /* Attempt to get serial number of device. */
-
-                ioctl(c2[i]->device_fd, HDIO_GET_IDENTITY, &c2[i]->identity);
+                /* Print serial number of device if it exists. */
                 if ( c2[i]->identity.serial_no ) {
                         nwipe_log( NWIPE_LOG_INFO, "Device %s has serial number %s", c2[i]->device_name, c2[i]->identity.serial_no);
                 }

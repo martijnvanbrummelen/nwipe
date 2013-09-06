@@ -124,6 +124,8 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
         next_device->label = dev->model;
         next_device->device_name = dev->path;
         next_device->device_size = dev->length * dev->sector_size;
+        /* Attempt to get serial number of device. */
+        ioctl(next_device->device_fd, HDIO_GET_IDENTITY, &next_device->identity);
 
         (*c)[dcount] = next_device;
         

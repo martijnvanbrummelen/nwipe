@@ -442,35 +442,39 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
 			{
 				case NWIPE_SELECT_TRUE:
 
-					wprintw( main_window, " [wipe] %i. %s - %s (%lld bytes)", (i + offset + 1),
+					wprintw( main_window, " [wipe] %i. %s - %s %s (%lld bytes)", (i + offset + 1),
 										c[i+offset]->device_name,
 										c[i+offset]->label,
+										c[i+offset]->identity.serial_no,
 										c[i+offset]->device_size );
 					break;
 
 				case NWIPE_SELECT_FALSE:
 					/* Print an element that is not selected. */
-					wprintw( main_window, " [    ] %i. %s - %s (%lld bytes)", (i + offset +1),
+					wprintw( main_window, " [    ] %i. %s - %s %s (%lld bytes)", (i + offset +1),
 										c[i+offset]->device_name,
 										c[i+offset]->label,
+										c[i+offset]->identity.serial_no,
 										c[i+offset]->device_size );
 					break;
 
 				case NWIPE_SELECT_TRUE_PARENT:
 
 					/* This element will be wiped when its parent is wiped. */
-					wprintw( main_window, " [****] %i. %s - %s (%lld bytes)", (i + offset +1),
+					wprintw( main_window, " [****] %i. %s - %s %s (%lld bytes)", (i + offset +1),
 										c[i+offset]->device_name,
 										c[i+offset]->label,
+										c[i+offset]->identity.serial_no,
 										c[i+offset]->device_size );
 					break;
 
 				case NWIPE_SELECT_FALSE_CHILD:
 
 					/* We can't wipe this element because it has a child that is being wiped. */
-					wprintw( main_window, " [----] %i. %s - %s (%lld bytes)", (i + offset +1),
+					wprintw( main_window, " [----] %i. %s - %s %s (%lld bytes)", (i + offset +1),
 										c[i+offset]->device_name,
 										c[i+offset]->label,
+										c[i+offset]->identity.serial_no,
 										c[i+offset]->device_size );
 					break;
 
@@ -1849,7 +1853,16 @@ void *nwipe_gui_status( void *ptr )
 			for( i = offset ; i < offset + slots && i < count ; i++ )
 			{
 				/* Print the context label. */
-				mvwprintw( main_window, yy++, 2, "%s", c[i]->label );
+				if ( strlen(c[i]->identity.serial_no) )
+				{
+					mvwprintw( main_window, yy++, 2, "%s - %s (%s)", c[i]->device_name,
+												c[i]->label,
+												c[i]->identity.serial_no);
+				}
+				else {
+					mvwprintw( main_window, yy++, 2, "%s - %s", c[i]->device_name,
+											c[i]->label );
+				}
 
 				/* Check whether the child process is still running the wipe. */
 				if( c[i]->thread > 0 )
