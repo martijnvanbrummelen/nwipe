@@ -1,0 +1,92 @@
+Installation
+============
+Installation should work with the standard:
+./configure
+make
+make install
+
+The ncurses, pthreads and parted libraries are required for compiling.
+For any problems, please use the Sourceforge Help/Bugs forum.
+
+Andy Beverley
+
+
+RELEASE NOTES
+=============
+
+v0.14
+=====
+- Added explicit check for ncurses (required for Fedora). See bug 3604008.
+
+v0.13
+=====
+- Added nowait option (patch 3601259 - thanks David Shaw).        
+- Added nogui option.
+- Updated man page and help command for above options and autonuke.
+- Added pkg-config check for ncurses (patch 3603140 - thanks Alon Bar-Lev).
+
+v0.12
+=====
+- Added ability to specify device on command line (patch 3587144).
+- Fixed segfault for -p option (patch 3587132).
+
+v0.11
+=====
+- Fixed bug 3568750. Not closing devices after initial scan.
+
+v0.10
+=====
+- Fixed bug 3553851. Not exiting on terminal kill. Fixed for all areas of
+  program including wiping.
+
+v0.09
+=====
+- Added feature #3545971. Display device name.
+- Added feature #3496858. Option to not perform a final blanking pass.
+
+v0.08
+=====
+- Fixed bug #3501746 whereby "wipe finished" was displayed too early
+
+v0.07
+=====
+- Added threading synchronisation for logging 
+- Fixed bug #3486927 (incorrect Sourceforge URL)
+
+v0.06
+=====
+- Added man page (thanks Michal Ambroz <rebus@seznam.cz>)
+- Updated GPL licence and FSF address (thanks Michal Ambroz <rebus@seznam.cz>)
+
+v0.05
+=====
+- Added sequence number to disk selection
+- Added check for ncurses header files in subdir
+- Fixed screen corruption bug introduced in 0.04
+- Fixed occasional seg fault on start
+- Introduced dynamic array allocation for devices, with no hard limit
+- Minor updates to configure.ac
+
+v0.04
+=====
+- Removed references to DBAN in options.c
+- Added log file name option (-l|--logfile)
+- If no log file specified all messages go to STDOUT
+- Incorrect success message after an interruption fixed
+- Improved labelling of disks with no partition table
+- Added help command
+- Added version command
+- Added command 'b' to blank screen during wipe
+- Compilation needs to include panel library
+
+KNOWN BUG - display sometimes becomes corrupted after starting wipe
+
+v0.03
+=====
+- Added quit option label (ctrl-c)
+- Removed further references to DWIPE
+- Added GPL V2 licence file (COPYING)
+
+v0.02
+=====
+- Fixed segfault that happened during multiple disk wipes

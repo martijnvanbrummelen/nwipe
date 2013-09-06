@@ -1,0 +1,86 @@
+.TH NWIPE "1" "January 2012" "nwipe version 0.14" "User Commands"
+.SH NAME
+nwipe \- securely erase disks
+.SH SYNOPSIS
+.B nwipe
+[\fIoptions\fR] [\fIdevice1\fR] [\fIdevice2\fR] ...
+.SH DESCRIPTION
+nwipe is a command that will securely erase disks using a variety of
+recognised methods.  It is a fork of the dwipe command used by Darik's Boot
+and Nuke (dban).  nwipe is included with partedmagic if want a quick and
+easy bootable CD version.  nwipe was created out of a need to run the DBAN
+dwipe command outside of DBAN, in order to allow its use with any host
+distribution, thus giving better hardware support.  It is essentially the
+same as dwipe, with a few changes:
+.TP
+- pthreads is used instead of fork
+.TP
+- The parted library is used to detect drives
+.TP
+- The code is designed to be compiled with gcc
+
+.SH OPTIONS
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Prints the version number
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Prints a help summary
+.TP
+\fB\-\-autonuke\fR
+If no devices have been specified on the command line, starts wiping all
+devices immediately. If devices have been specified, starts wiping only
+those specified devices immediately.
+.TP
+\fB\-\-sync\fR
+Open devices in sync mode
+.TP
+\fB\-\-nowait\fR
+Do not wait for a key before exiting (default is to wait).
+.TP
+\fB\-\-nogui\fR
+Do not show the GUI interface. Can only be used with the autonuke option.
+Nowait option is automatically invoked with the nogui option.
+.TP
+\fB\-\-verify\fR=\fITYPE\fR
+Whether to perform verification of erasure (default: last)
+off   \- Do not verify
+last  \- Verify after the last pass
+all   \- Verify every pass
+.TP
+\fB\-m\fR, \fB\-\-method\fR=\fIMETHOD\fR
+The wiping method (default: dodshort).
+.IP
+dod522022m / dod       \- 7 pass DOD 5220.22\-M method
+.IP
+dodshort / dod3pass    \- 3 pass DOD method
+.IP
+gutmann                \- Peter Gutmann's Algorithm
+.IP
+ops2                   \- RCMP TSSIT OPS\-II
+.IP
+random / prng / stream \- PRNG Stream
+.IP
+zero / quick           \- Overwrite with zeros
+.TP
+\fB\-l\fR, \fB\-\-logfile\fR=\fIFILE\fR
+Filename to log to. Default is STDOUT
+.TP
+\fB\-p\fR, \fB\-\-prng\fR=\fIMETHOD\fR
+PRNG option (mersenne|twister|isaac)
+.TP
+\fB\-r\fR, \fB\-\-rounds\fR=\fINUM\fR
+Number of times to wipe the device using the selected method (default: 1)
+.SH BUGS
+Please see the sourceforge site for the latest list
+(http://nwipe.sourceforge.net)
+.SH AUTHOR
+Nwipe was released  by Andy Beverley <andy@andybev.com>
+as modified version of dwipe from DBAN by Darik Horn <dajhorn-dban@vanadac.com>.
+.SH "SEE ALSO"
+.BR shred (1),
+.BR dwipe (1),
+.BR dd (1),
+.BR dcfldd (1),
+.BR dc3dd (1)
+
