@@ -4,5 +4,5 @@
 
 aclocal
 autoheader
-automake --missing
+automake --add-missing
 autoconf
