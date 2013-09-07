@@ -520,6 +520,8 @@ void *signal_hand(void *ptr)
                         // Log current status. All values are automatically updated by the GUI
                         case SIGUSR1 :
                         {
+                                compute_stats(ptr);
+
                                 for( i = 0; i < nwipe_misc_thread_data->nwipe_selected; i++ )
                                 {
 
@@ -568,7 +570,7 @@ void *signal_hand(void *ptr)
                         case SIGTERM :
                         {
 
-                                for( i = 0; i < nwipe_misc_thread_data->nwipe_enumerated; i++ )
+                                for( i = 0; i < nwipe_misc_thread_data->nwipe_selected; i++ )
                                 {
 
                                         if ( c[i]->thread )
@@ -595,7 +597,6 @@ void *signal_hand(void *ptr)
                                 {
                                         printf("%s\n", log_lines[i]);
                                 }
-
 
                                 printf("Program interrupted (caught signal %d)\n", sig); 
 

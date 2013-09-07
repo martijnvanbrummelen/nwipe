@@ -35,6 +35,7 @@ void nwipe_gui_rounds( void );                           /* Change the rounds op
 void nwipe_gui_verify( void );                           /* Change the verify option.  */
 void nwipe_gui_noblank( void );                          /* Change the noblank option. */
 
+int compute_stats(void *ptr);
 void nwipe_update_speedring( nwipe_speedring_t* speedring, u64 speedring_done, time_t speedring_now );
 
 
