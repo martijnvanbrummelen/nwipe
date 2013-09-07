@@ -78,6 +78,9 @@ int main( int argc, char** argv )
         /* Initialised and populated in device scan.     */
         nwipe_context_t **c1 = 0;
 
+        /* The array of pointers to contexts that will actually be wiped. */
+        nwipe_context_t **c2 = (nwipe_context_t **)malloc(nwipe_enumerated * sizeof(nwipe_context_t *));
+
         /* Parse command line options. */
         nwipe_optind = nwipe_options_parse( argc, argv );
 
@@ -130,6 +133,7 @@ int main( int argc, char** argv )
         sigaddset(&sigset, SIGTERM);
         sigaddset(&sigset, SIGQUIT);
         sigaddset(&sigset, SIGINT);
+        sigaddset(&sigset, SIGUSR1);
         pthread_sigmask(SIG_SETMASK, &sigset, NULL);
   
         /* Create a signal handler thread.  This thread will catch all           */
@@ -141,7 +145,7 @@ int main( int argc, char** argv )
         nwipe_misc_thread_data_t nwipe_misc_thread_data;
         nwipe_thread_data_ptr_t nwipe_thread_data_ptr;
         
-        nwipe_thread_data_ptr.c = c1;
+        nwipe_thread_data_ptr.c = c2;
         nwipe_misc_thread_data.nwipe_enumerated = nwipe_enumerated;
         if( !nwipe_options.nogui )
                 nwipe_misc_thread_data.gui_thread = &nwipe_gui_thread;
@@ -224,9 +228,6 @@ int main( int argc, char** argv )
 
         /* Pass the number selected to the struct for other threads */
         nwipe_misc_thread_data.nwipe_selected = nwipe_selected;
-
-        /* The array of pointers to contexts that will actually be wiped. */
-        nwipe_context_t **c2 = (nwipe_context_t **)malloc(nwipe_enumerated * sizeof(nwipe_context_t *));
 
         /* Populate the array of selected contexts. */
         for( i = 0, j = 0 ; i < nwipe_enumerated ; i++ )
@@ -494,6 +495,7 @@ void *signal_hand(void *ptr)
         sigaddset(&sigset, SIGTERM);
         sigaddset(&sigset, SIGQUIT);
         sigaddset(&sigset, SIGINT);
+        sigaddset(&sigset, SIGUSR1);
 
         int i;        
 
@@ -515,6 +517,51 @@ void *signal_hand(void *ptr)
 
                 switch ( sig ) {
 
+                        // Log current status. All values are automatically updated by the GUI
+                        case SIGUSR1 :
+                        {
+                                for( i = 0; i < nwipe_misc_thread_data->nwipe_selected; i++ )
+                                {
+
+                                        if ( c[i]->thread )
+                                        {
+                                                char *status;
+                                                switch( c[i]->pass_type )
+                                                {
+                                                        case NWIPE_PASS_FINAL_BLANK:
+                                                                status = "[blanking]";
+                                                                break;
+
+                                                        case NWIPE_PASS_FINAL_OPS2:
+                                                                status = "[OPS-II final]";
+                                                                break;
+
+                                                        case NWIPE_PASS_WRITE:
+                                                                status = "[writing]";
+                                                                break;
+
+                                                        case NWIPE_PASS_VERIFY:
+                                                                status = "[verifying]";
+                                                                break;
+
+                                                        case NWIPE_PASS_NONE:
+                                                                break;
+                                                }
+                                                if( c[i]->sync_status ) { status = "[syncing]"; }
+                                                nwipe_log( NWIPE_LOG_INFO, "%s: %05.2f%%, round %i of %i, pass %i of %i %s", \
+                                                     c[i]->device_name, c[i]->round_percent, c[i]->round_working, c[i]->round_count, c[i]->pass_working, c[i]->pass_count, status );
+                                        }
+                                        else
+                                        {
+                                                if( c[i]->result == 0 ) { nwipe_log( NWIPE_LOG_INFO, "%s: Success", c[i]->device_name ); }
+                                                else if( c[i]->signal ) { nwipe_log( NWIPE_LOG_INFO, "%s: Failure: signal %i", c[i]->device_name, c[i]->signal ); }
+                                                else                    { nwipe_log( NWIPE_LOG_INFO, "%s: Failure: code %i", c[i]->device_name, c[i]->result ); }
+                                        }
+                                }
+
+                                break;
+                        }
+                        
                         case SIGHUP  :
                         case SIGINT  :
                         case SIGQUIT :
