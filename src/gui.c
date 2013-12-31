@@ -123,7 +123,7 @@ const char* options_title = " Options ";
 const char* stats_title = " Statistics ";
 
 /* Footer labels. */
-const char* nwipe_buttons1 = " P=PRNG M=Method V=Verify R=Rounds B=Blanking-pass, J=Up K=Down Space=Select, F10=Start, ctrl-c=Quit ";
+const char* nwipe_buttons1 = "Ctrl-C=Quit F10=Start M=Method P=PRNG V=Verify R=Rounds B=Blanking-pass Space=Select";
 const char* nwipe_buttons2 = " J=Up K=Down Space=Select";
 const char* nwipe_buttons3 = " B=Blank screen, ctrl-c=Quit";
 
@@ -144,9 +144,13 @@ void nwipe_gui_title( WINDOW* w, const char* s )
 
 	/* Get the window dimensions. */
 	getmaxyx( w, wy, wx );
-	
+
+	/*Calculate available total margin */
+	int margin = (wx - strlen( s ));
+	if (margin < 0) margin = 0;
+
 	/* Print the title. */
-	mvwprintw( w, 0, ( wx - strlen( s ) ) / 2, "%s", s );
+	mvwprintw( w, 0, margin / 2, "%s", s );
 
 } /* nwipe_gui_title */
 
