@@ -1,12 +1,16 @@
 Installation
 ============
-Installation should work with the standard:
+First bootstrap the source tree:
+./init.sh
+
+The install using the standard:
 ./configure
 make
 make install
 
 The ncurses, pthreads and parted libraries are required for compiling.
-For any problems, please use the Sourceforge Help/Bugs forum.
+For any problems, please use the Github page:
+https://github.com/abeverley/nwipe
 
 Andy Beverley
 
