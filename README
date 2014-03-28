@@ -18,6 +18,7 @@ v0.15
 =====
 - Add more detailed information to status page when wiping
 - Add ability to send SIGUSR1 to print wiping current status to log
+- Fixed problem with status bar disappearing on narrow windows (Github issue #1)
 
 v0.14
 =====

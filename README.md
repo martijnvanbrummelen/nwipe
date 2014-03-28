@@ -10,3 +10,6 @@ To use from the git repository, first create all the autoconf files with
 ./init.sh
 
 Then do the standard ./configure --prefix=/usr && make && make install
+
+For release notes please see the [README file](README)
+
