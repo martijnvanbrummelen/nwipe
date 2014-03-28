@@ -18,6 +18,8 @@ same as dwipe, with a few changes:
 - The parted library is used to detect drives
 .TP
 - The code is designed to be compiled with gcc
+.TP
+- SIGUSR1 can be used to log the stats of the current wipe
 
 .SH OPTIONS
 .TP
@@ -41,6 +43,7 @@ Do not wait for a key before exiting (default is to wait).
 \fB\-\-nogui\fR
 Do not show the GUI interface. Can only be used with the autonuke option.
 Nowait option is automatically invoked with the nogui option.
+SIGUSR1 can be used to retrieve the current wiping statistics.
 .TP
 \fB\-\-verify\fR=\fITYPE\fR
 Whether to perform verification of erasure (default: last)

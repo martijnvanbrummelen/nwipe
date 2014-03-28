@@ -446,35 +446,39 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
 			{
 				case NWIPE_SELECT_TRUE:
 
-					wprintw( main_window, " [wipe] %i. %s - %s (%lld bytes)", (i + offset + 1),
+					wprintw( main_window, " [wipe] %i. %s - %s %s (%lld bytes)", (i + offset + 1),
 										c[i+offset]->device_name,
 										c[i+offset]->label,
+										c[i+offset]->identity.serial_no,
 										c[i+offset]->device_size );
 					break;
 
 				case NWIPE_SELECT_FALSE:
 					/* Print an element that is not selected. */
-					wprintw( main_window, " [    ] %i. %s - %s (%lld bytes)", (i + offset +1),
+					wprintw( main_window, " [    ] %i. %s - %s %s (%lld bytes)", (i + offset +1),
 										c[i+offset]->device_name,
 										c[i+offset]->label,
+										c[i+offset]->identity.serial_no,
 										c[i+offset]->device_size );
 					break;
 
 				case NWIPE_SELECT_TRUE_PARENT:
 
 					/* This element will be wiped when its parent is wiped. */
-					wprintw( main_window, " [****] %i. %s - %s (%lld bytes)", (i + offset +1),
+					wprintw( main_window, " [****] %i. %s - %s %s (%lld bytes)", (i + offset +1),
 										c[i+offset]->device_name,
 										c[i+offset]->label,
+										c[i+offset]->identity.serial_no,
 										c[i+offset]->device_size );
 					break;
 
 				case NWIPE_SELECT_FALSE_CHILD:
 
 					/* We can't wipe this element because it has a child that is being wiped. */
-					wprintw( main_window, " [----] %i. %s - %s (%lld bytes)", (i + offset +1),
+					wprintw( main_window, " [----] %i. %s - %s %s (%lld bytes)", (i + offset +1),
 										c[i+offset]->device_name,
 										c[i+offset]->label,
+										c[i+offset]->identity.serial_no,
 										c[i+offset]->device_size );
 					break;
 
@@ -1659,13 +1663,13 @@ void *nwipe_gui_status( void *ptr )
 	int keystroke;
 
 	/* The combined througput of all processes. */
-	u64 nwipe_throughput = 0;
+	nwipe_misc_thread_data->throughput = 0;
 
 	/* The estimated runtime of the slowest device. */
-	time_t nwipe_maxeta = 0;
+	nwipe_misc_thread_data->maxeta = 0;
 
 	/* The combined number of errors of all processes. */
-	u64 nwipe_errors = 0;
+	nwipe_misc_thread_data->errors = 0;
 
 	/* Time values. */
 	int nwipe_hh;
@@ -1801,59 +1805,22 @@ void *nwipe_gui_status( void *ptr )
 		if ( nwipe_gui_blank == 0 )
 		{
 
-			nwipe_active = 0; // Number of active wipe threads
-			/* Enumerate all contexts to compute statistics. */
-			for( i = 0 ; i < count ; i++ )
-			{
-				/* Check whether the child process is still running the wipe. */
-				if( c[i]->thread > 0 )
-				{
-					/* Increment the child counter. */
-					nwipe_active += 1;
-
-					/* Maintain a rolling average of throughput. */
-					nwipe_update_speedring( &c[i]->speedring, c[i]->round_done, nwipe_time_now );
-
-					if( c[i]->speedring.timestotal > 0 )
-					{
-						/* Update the current average throughput in bytes-per-second. */
-						c[i]->throughput = c[i]->speedring.bytestotal / c[i]->speedring.timestotal;
-
-						/* Update the estimated remaining runtime. */
-						/* Check that throughput is not zero (sometimes caused during a sync) */
-						if (c[i]->throughput == 0)
-						{
-							c[i]->throughput = 1;
-						}
-						
-						c[i]->eta = ( c[i]->round_size - c[i]->round_done ) / c[i]->throughput;
-
-						if( c[i]->eta > nwipe_maxeta )
-						{
-							nwipe_maxeta = c[i]->eta;
-						}
-					}
-
-					/* Update the percentage value. */
-					c[i]->round_percent = (double) c[i]->round_done / (double) c[i]->round_size * 100;
-
-					/* Accumulate combined throughput. */
-					nwipe_throughput += c[i]->throughput;
-
-				} /* child running */
-
-				/* Accumulate the error count. */
-				nwipe_errors += c[i]->pass_errors;
-				nwipe_errors += c[i]->verify_errors;
-			
-			} /* for statistics */
-
+			nwipe_active = compute_stats(ptr); // Returns number of active wipe threads
 
 			/* Print information for the user. */
 			for( i = offset ; i < offset + slots && i < count ; i++ )
 			{
 				/* Print the context label. */
-				mvwprintw( main_window, yy++, 2, "%s", c[i]->label );
+				if ( strlen(c[i]->identity.serial_no) )
+				{
+					mvwprintw( main_window, yy++, 2, "%s - %s (%s)", c[i]->device_name,
+												c[i]->label,
+												c[i]->identity.serial_no);
+				}
+				else {
+					mvwprintw( main_window, yy++, 2, "%s - %s", c[i]->device_name,
+											c[i]->label );
+				}
 
 				/* Check whether the child process is still running the wipe. */
 				if( c[i]->thread > 0 )
@@ -1940,6 +1907,7 @@ void *nwipe_gui_status( void *ptr )
 			nwipe_gui_load();
 
 
+			u64 nwipe_throughput = nwipe_misc_thread_data->throughput;
 			     if( nwipe_throughput >= INT64_C( 1000000000000000 ) )
 				    { nwipe_throughput /= INT64_C( 1000000000000    ); nwipe_format = nwipe_tera; }
 			else if( nwipe_throughput >= INT64_C( 1000000000000    ) )
@@ -1975,6 +1943,7 @@ void *nwipe_gui_status( void *ptr )
 
 			mvwprintw( stats_window, NWIPE_GUI_STATS_ETA_Y, 1, "Remaining:" );
 
+			time_t nwipe_maxeta = nwipe_misc_thread_data->maxeta;
 			if( nwipe_maxeta > 0 )
 			{
 				/* Do it again for the estimated runtime remaining. */
@@ -1990,7 +1959,7 @@ void *nwipe_gui_status( void *ptr )
 
 			/* Print the error count. */
 			mvwprintw( stats_window, NWIPE_GUI_STATS_ERRORS_Y, NWIPE_GUI_STATS_ERRORS_X, "Errors:" );
-			mvwprintw( stats_window, NWIPE_GUI_STATS_ERRORS_Y, NWIPE_GUI_STATS_TAB, "%llu", nwipe_errors );
+			mvwprintw( stats_window, NWIPE_GUI_STATS_ERRORS_Y, NWIPE_GUI_STATS_TAB, "%llu", nwipe_misc_thread_data->errors );
 
 			/* Add a border. */
 			box( stats_window, 0, 0 );
@@ -2050,6 +2019,70 @@ void *nwipe_gui_status( void *ptr )
 	
 } /* nwipe_gui_status */
 
+int compute_stats(void *ptr)
+{
+        nwipe_thread_data_ptr_t *nwipe_thread_data_ptr;
+        nwipe_thread_data_ptr = (nwipe_thread_data_ptr_t *) ptr;
+
+        nwipe_context_t **c;   
+        nwipe_misc_thread_data_t *nwipe_misc_thread_data;
+                
+        c = nwipe_thread_data_ptr->c;
+        nwipe_misc_thread_data = nwipe_thread_data_ptr->nwipe_misc_thread_data;
+        int count = nwipe_misc_thread_data->nwipe_selected;
+
+	int nwipe_active = 0;
+	int i;
+	
+	time_t nwipe_time_now = time( NULL );
+	
+	/* Enumerate all contexts to compute statistics. */
+	for( i = 0 ; i < count ; i++ )
+	{
+		/* Check whether the child process is still running the wipe. */
+		if( c[i]->thread > 0 )
+		{
+			/* Increment the child counter. */
+			nwipe_active += 1;
+
+			/* Maintain a rolling average of throughput. */
+			nwipe_update_speedring( &c[i]->speedring, c[i]->round_done, nwipe_time_now );
+
+			if( c[i]->speedring.timestotal > 0 )
+			{
+				/* Update the current average throughput in bytes-per-second. */
+				c[i]->throughput = c[i]->speedring.bytestotal / c[i]->speedring.timestotal;
+
+				/* Update the estimated remaining runtime. */
+				/* Check that throughput is not zero (sometimes caused during a sync) */
+				if (c[i]->throughput == 0)
+				{
+					c[i]->throughput = 1;
+				}
+				
+				c[i]->eta = ( c[i]->round_size - c[i]->round_done ) / c[i]->throughput;
+
+				if( c[i]->eta > nwipe_misc_thread_data->maxeta )
+				{
+					nwipe_misc_thread_data->maxeta = c[i]->eta;
+				}
+			}
+
+			/* Update the percentage value. */
+			c[i]->round_percent = (double) c[i]->round_done / (double) c[i]->round_size * 100;
+
+			/* Accumulate combined throughput. */
+			nwipe_misc_thread_data->throughput += c[i]->throughput;
+		} /* child running */
+
+		/* Accumulate the error count. */
+		nwipe_misc_thread_data->errors += c[i]->pass_errors;
+		nwipe_misc_thread_data->errors += c[i]->verify_errors;
+	
+	} /* for statistics */
+	
+	return nwipe_active;
+}
 
 void nwipe_update_speedring( nwipe_speedring_t* speedring, u64 speedring_bytes, time_t speedring_now )
 {

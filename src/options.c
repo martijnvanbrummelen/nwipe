@@ -395,7 +395,7 @@ display_help()
   puts("      --noblank           Do not blank disk after wipe (default is to complete a final blank pass)" );
   puts("      --nowait            Do not wait for a key before exiting (default is to wait)" );
   puts("      --nogui             Do not show the GUI interface. Automatically invokes the nowait option" );
-  puts("                          Must be used with --autonuke option");
+  puts("                          Must be used with --autonuke option. Send SIGUSR1 to log current stats");
   puts("");
   exit( EXIT_SUCCESS );
 }

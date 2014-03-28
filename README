@@ -14,6 +14,11 @@ Andy Beverley
 RELEASE NOTES
 =============
 
+v0.15
+=====
+- Add more detailed information to status page when wiping
+- Add ability to send SIGUSR1 to print wiping current status to log
+
 v0.14
 =====
 - Added explicit check for ncurses (required for Fedora). See bug 3604008.

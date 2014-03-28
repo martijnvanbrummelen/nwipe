@@ -123,9 +123,12 @@ typedef struct nwipe_context_t_
 /* Values cannot form part of the second array below, hence the need for this.  */
 typedef struct
 {
-        int   nwipe_enumerated;     /* The number of devices available.         */
-        int   nwipe_selected;	    /* The number of devices being wiped.       */
-        pthread_t *gui_thread;       /* The ID of GUI thread.                    */
+        int       nwipe_enumerated;  /* The number of devices available.                */
+        int       nwipe_selected;    /* The number of devices being wiped.              */
+        time_t    maxeta;            /* The estimated runtime of the slowest device.    */
+        u64       throughput;        /* Total throughput                                */
+        u64       errors;            /* The combined number of errors of all processes. */
+        pthread_t *gui_thread;       /* The ID of GUI thread.                           */
 } nwipe_misc_thread_data_t;
 
 /* The second points to the first structure, as well as the structure of all the devices   */
