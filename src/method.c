@@ -156,8 +156,8 @@ void *nwipe_dod522022m( void *ptr )
 		nwipe_log( NWIPE_LOG_FATAL, "Unable to seed the %s method.", nwipe_dod522022m_label );
 
 		/* Ensure a negative return. */
-		if( r < 0 ) { c->result = r; return; }
-		else        { c->result = -1; return; }
+		if( r < 0 ) { c->result = r; return NULL; }
+		else        { c->result = -1; return NULL; }
 
 	}
 
@@ -215,8 +215,8 @@ void *nwipe_dodshort( void *ptr )
 		nwipe_log( NWIPE_LOG_FATAL, "Unable to seed the %s method.", nwipe_dodshort_label );
 
 		/* Ensure a negative return. */
-		if( r < 0 ) { c->result = r; return; }
-		else        { c->result = -1; return; }
+		if( r < 0 ) { c->result = r; return NULL; }
+		else        { c->result = -1; return NULL; }
 
 	}
 
@@ -312,8 +312,8 @@ void *nwipe_gutmann( void *ptr )
 		nwipe_log( NWIPE_LOG_FATAL, "Unable to seed the %s method.", nwipe_gutmann_label );
 		
 		/* Ensure a negative return. */
-		if( r < 0 ) { c->result = r; return; }
-		else        { c->result = -1; return; }
+		if( r < 0 ) { c->result = r; return NULL; }
+		else        { c->result = -1; return NULL; }
 	}
 
 
@@ -406,7 +406,7 @@ void *nwipe_ops2( void *ptr )
 		nwipe_perror( errno, __FUNCTION__, "malloc" );
 		nwipe_log( NWIPE_LOG_FATAL, "Unable to allocate the random character array." );
 		c->result = -1;
-		return;
+		return NULL;
 	}
 
 	/* Allocate the array of complement characters. */
@@ -417,7 +417,7 @@ void *nwipe_ops2( void *ptr )
 		nwipe_perror( errno, __FUNCTION__, "malloc" );
 		nwipe_log( NWIPE_LOG_FATAL, "Unable to allocate the complement character array." );
 		c->result = -1;
-		return;
+		return NULL;
 	}
 
 
@@ -432,7 +432,7 @@ void *nwipe_ops2( void *ptr )
 		nwipe_perror( errno, __FUNCTION__, "malloc" );
 		nwipe_log( NWIPE_LOG_FATAL, "Unable to allocate the pattern array." );
 		c->result = -1;
-		return;
+		return NULL;
 	}
 
 
@@ -446,8 +446,8 @@ void *nwipe_ops2( void *ptr )
 		nwipe_log( NWIPE_LOG_FATAL, "Unable to seed the %s method.", nwipe_ops2_label );
 		
 		/* Ensure a negative return. */
-		if( r < 0 ) { c->result = r; return; }
-		else        { c->result = -1; return; }
+		if( r < 0 ) { c->result = r; return NULL; }
+		else        { c->result = -1; return NULL; }
 	}
 
 
