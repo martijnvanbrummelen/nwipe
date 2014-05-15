@@ -18,6 +18,10 @@ Andy Beverley
 RELEASE NOTES
 =============
 
+v0.16
+=====
+- Fix problems building with clang compiler (thanks Martijn van Brummelen)
+
 v0.15
 =====
 - Add more detailed information to status page when wiping
