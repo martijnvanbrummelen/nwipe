@@ -69,9 +69,6 @@ int main( int argc, char** argv )
         /* Initialised and populated in device scan.     */
         nwipe_context_t **c1 = 0;
 
-        /* The array of pointers to contexts that will actually be wiped. */
-        nwipe_context_t **c2 = (nwipe_context_t **)malloc(nwipe_enumerated * sizeof(nwipe_context_t *));
-
         /* Parse command line options. */
         nwipe_optind = nwipe_options_parse( argc, argv );
 
@@ -102,6 +99,9 @@ int main( int argc, char** argv )
                 nwipe_enumerated = nwipe_device_get( &c1, argv, argc );
         }
 
+
+        /* The array of pointers to contexts that will actually be wiped. */
+        nwipe_context_t **c2 = (nwipe_context_t **)malloc(nwipe_enumerated * sizeof(nwipe_context_t *));
 
         /* Open the entropy source. */
         nwipe_entropy = open( NWIPE_KNOB_ENTROPY, O_RDONLY );
