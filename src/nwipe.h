@@ -65,12 +65,15 @@ extern int log_current_element;
 extern int log_elements_allocated;
 extern pthread_mutex_t mutex1;
 
-/* Ncurses headers. Assume panel.h is in same place.*/
+/* Ncurses headers. */
 #ifdef NCURSES_IN_SUBDIR
     #include <ncurses/ncurses.h>
-    #include <ncurses/panel.h>
 #else
     #include <ncurses.h>
+#endif
+#ifdef PANEL_IN_SUBDIR
+    #include <ncurses/panel.h>
+#else
     #include <panel.h>
 #endif
 

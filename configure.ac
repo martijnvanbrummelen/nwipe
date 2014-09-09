@@ -21,7 +21,14 @@ PKG_CHECK_MODULES(
 		CFLAGS="${CFLAGS} ${PANEL_CFLAGS}"
 		LIBS="${LIBS} ${PANEL_LIBS}"
 	],
-	[AC_CHECK_LIB([panel], [main], ,[AC_MSG_ERROR([ncurses panel library not found])])]
+	[AC_CHECK_LIB([panel], [main], [
+		LIBS="-lpanel $LIBS"
+		AC_CHECK_HEADERS(panel.h,, [
+		    AC_CHECK_HEADERS(ncurses/panel.h, [
+			AC_DEFINE([PANEL_IN_SUBDIR], [ncurses/], [Look for ncurses headers in subdir])
+			], [AC_MSG_ERROR([ncurses panel headers not found])])
+		])
+	    ], [AC_MSG_ERROR([ncurses panel library not found])])]
 )
 
 PKG_CHECK_MODULES(
