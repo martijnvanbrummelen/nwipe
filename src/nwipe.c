@@ -518,7 +518,7 @@ void *signal_hand(void *ptr)
 
                                         if ( c[i]->thread )
                                         {
-                                                char *status;
+                                                char *status = "";
                                                 switch( c[i]->pass_type )
                                                 {
                                                         case NWIPE_PASS_FINAL_BLANK:
