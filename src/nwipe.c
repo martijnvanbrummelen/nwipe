@@ -100,6 +100,7 @@ int main( int argc, char** argv )
                 argc -= nwipe_optind;
 
                 nwipe_enumerated = nwipe_device_get( &c1, argv, argc );
+                if ( nwipe_enumerated == 0 )
                 {
                     exit(1);
                 }
