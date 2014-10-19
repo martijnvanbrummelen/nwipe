@@ -96,10 +96,14 @@ int main( int argc, char** argv )
         else
         {
 
-                 argv += nwipe_optind;
+                argv += nwipe_optind;
                 argc -= nwipe_optind;
 
                 nwipe_enumerated = nwipe_device_get( &c1, argv, argc );
+                {
+                    exit(1);
+                }
+
         }
 
 
