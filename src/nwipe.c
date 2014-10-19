@@ -48,17 +48,8 @@ int main( int argc, char** argv )
         int nwipe_enumerated;          /* The number of contexts that have been enumerated. */
         int nwipe_error = 0;           /* An error counter.                                 */
         int nwipe_selected = 0;        /* The number of contexts that have been selected.   */
-        int nwipe_shmid;               /* A shared memory handle for the context array.     */
-        int nwipe_wait  = 0;           /* The number of child processes that have returned. */
         pthread_t nwipe_gui_thread;    /* The thread ID of the GUI thread.                  */
         pthread_t nwipe_sigint_thread; /* The thread ID of the sigint handler.              */
-
-        /* The list of device filenames. */
-        char** nwipe_names = NULL;
-        
-        /* Used to write-out the result file. */
-        char nwipe_result_file [FILENAME_MAX];
-        FILE* nwipe_result_fp;
 
         /* The entropy source file handle. */
         int nwipe_entropy; 
