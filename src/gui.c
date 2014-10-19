@@ -2017,6 +2017,7 @@ void *nwipe_gui_status( void *ptr )
 	wrefresh( footer_window );
 	nwipe_misc_thread_data->gui_thread = 0;
 	
+    return NULL;
 } /* nwipe_gui_status */
 
 int compute_stats(void *ptr)

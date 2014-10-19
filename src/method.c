@@ -111,6 +111,7 @@ void *nwipe_zero( void *ptr )
 	/* Finished. Set the thread ID to 0 so that the GUI knows */
 	c->thread = 0;
 
+    return NULL;
 } /* nwipe_zero */
 
 
@@ -173,6 +174,7 @@ void *nwipe_dod522022m( void *ptr )
 	/* Finished. Set the thread ID to 0 so that the GUI knows */
 	c->thread = 0;
 
+    return NULL;
 } /* nwipe_dod522022m */
 
 
@@ -229,6 +231,7 @@ void *nwipe_dodshort( void *ptr )
 	/* Finished. Set the thread ID to 0 so that the GUI knows */
 	c->thread = 0;
 
+    return NULL;
 } /* nwipe_dodshort */
 
 
@@ -355,6 +358,7 @@ void *nwipe_gutmann( void *ptr )
 	/* Finished. Set the thread ID to 0 so that the GUI knows */
 	c->thread = 0;
 
+    return NULL;
 } /* nwipe_gutmann */
 
 
@@ -506,6 +510,7 @@ void *nwipe_ops2( void *ptr )
 	/* Finished. Set the thread ID to 0 so that the GUI knows */
 	c->thread = 0;
 
+    return NULL;
 } /* nwipe_ops2 */
 
 
@@ -534,6 +539,7 @@ void *nwipe_random( void *ptr )
 	/* Finished. Set the thread ID to 0 so that the GUI knows */
 	c->thread = 0;
 
+    return NULL;
 } /* nwipe_random */
 
 
