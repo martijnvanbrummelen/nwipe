@@ -18,6 +18,15 @@ Andy Beverley
 RELEASE NOTES
 =============
 
+
+v0.17
+=====
+- Remove control reaches end of non-void function" warnings(Thanks Vincent
+  Untz).
+- Remove unused variables (thanks Vincent Untz).
+- Change start key to 'S' instead of F10 (closes debian bug #755474).
+- Fix problem with unusable device (Closes debian bug #755473).
+
 v0.16
 =====
 - Fix problems building with clang compiler (thanks Martijn van Brummelen)
