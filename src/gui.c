@@ -123,7 +123,7 @@ const char* options_title = " Options ";
 const char* stats_title = " Statistics ";
 
 /* Footer labels. */
-const char* nwipe_buttons1 = "Ctrl-C=Quit F10=Start M=Method P=PRNG V=Verify R=Rounds B=Blanking-pass Space=Select";
+const char* nwipe_buttons1 = "Ctrl-C=Quit S=Start M=Method P=PRNG V=Verify R=Rounds B=Blanking-pass Space=Select";
 const char* nwipe_buttons2 = " J=Up K=Down Space=Select";
 const char* nwipe_buttons3 = " B=Blank screen, ctrl-c=Quit";
 
@@ -750,7 +750,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
 
 		} /* keystroke switch */
 
-	} while( keystroke != KEY_F(10) && keystroke != ERR );
+	} while( keystroke != 'S' && keystroke != ERR );
 
 	/* Clear the main window. */
 	werase( main_window );
