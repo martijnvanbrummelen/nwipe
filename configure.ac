@@ -42,7 +42,9 @@ PKG_CHECK_MODULES(
 	)]
 )
 
-AC_CHECK_LIB([parted], [ped_device_probe_all], ,[AC_MSG_ERROR([parted development library not found])])
+AC_CHECK_LIB([intl], [libintl_dgettext]) # needed to statically link libparted, but not given in its pkgconfig file
+AC_CHECK_LIB([uuid], [uuid_generate])    # needed to statically link libparted, but not given in its pkgconfig file
+PKG_CHECK_MODULES([PARTED], [libparted])
 AC_CHECK_LIB([pthread], [main], ,[AC_MSG_ERROR([pthread development library not found])])
 
 # Checks for header files.
