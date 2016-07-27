@@ -10,14 +10,22 @@ make install
 
 The ncurses, pthreads and parted libraries are required for compiling.
 For any problems, please use the Github page:
-https://github.com/abeverley/nwipe
+https://github.com/martijnvanbrummelen/nwipe
 
-Andy Beverley
+Martijn van Brummelen
 
 
 RELEASE NOTES
 =============
 
+v0.18
+=====
+- Fixed grammar.
+- Move from loff_t to off64_t for musl libc support.
+- Add "--nosignals" option.
+- Automake needs the dist_ prefix to include man pages in 'make dist'.
+- Remove more compiler warnings.
+- Add libintl, libuuid dependencies to allow parted static link
 
 v0.17
 =====
