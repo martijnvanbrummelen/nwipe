@@ -147,12 +147,14 @@ int main( int argc, char** argv )
                 nwipe_misc_thread_data.gui_thread = &nwipe_gui_thread;
         nwipe_thread_data_ptr.nwipe_misc_thread_data = &nwipe_misc_thread_data;
 
-        pthread_attr_t pthread_attr;
-        pthread_attr_init(&pthread_attr);
-        pthread_attr_setdetachstate(&pthread_attr, PTHREAD_CREATE_DETACHED);
+	if( !nwipe_options.nosignals )
+	{
+	  pthread_attr_t pthread_attr;
+	  pthread_attr_init(&pthread_attr);
+	  pthread_attr_setdetachstate(&pthread_attr, PTHREAD_CREATE_DETACHED);
 
-        pthread_create( &nwipe_sigint_thread, &pthread_attr, signal_hand, &nwipe_thread_data_ptr);
-
+	  pthread_create( &nwipe_sigint_thread, &pthread_attr, signal_hand, &nwipe_thread_data_ptr);
+	}
 
         /* A context struct for each device has already been created. */
         /* Now set specific nwipe options */

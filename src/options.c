@@ -81,6 +81,9 @@ int nwipe_options_parse( int argc, char** argv )
 		/* Whether to exit after wiping or wait for a keypress. */
 		{ "nowait", no_argument, 0, 0 },
 
+		/* Whether to allow signals to interrupt a wipe. */
+		{ "nosignals", no_argument, 0, 0 },
+
 		/* Whether to exit after wiping or wait for a keypress. */
 		{ "nogui", no_argument, 0, 0 },
 
@@ -114,6 +117,7 @@ int nwipe_options_parse( int argc, char** argv )
 	nwipe_options.rounds   = 1;
 	nwipe_options.noblank  = 0;
 	nwipe_options.nowait   = 0;
+	nwipe_options.nosignals= 0;
 	nwipe_options.nogui    = 0;
 	nwipe_options.sync     = 0;
 	nwipe_options.verify   = NWIPE_VERIFY_LAST;
@@ -148,6 +152,12 @@ int nwipe_options_parse( int argc, char** argv )
 				if( strcmp( nwipe_options_long[i].name, "nowait" ) == 0 )
 				{
 					nwipe_options.nowait = 1;
+					break;
+				}
+
+				if( strcmp( nwipe_options_long[i].name, "nosignals" ) == 0 )
+				{
+					nwipe_options.nosignals = 1;
 					break;
 				}
 
@@ -332,6 +342,11 @@ void nwipe_options_log( void )
 		nwipe_log( NWIPE_LOG_NOTICE, "  do not wait for a key before exiting" );
 	}
 
+	if( nwipe_options.nosignals )
+	{
+		nwipe_log( NWIPE_LOG_NOTICE, "  do not allow signals to interrupt a wipe" );
+	}
+
 	if( nwipe_options.nogui )
 	{
 		nwipe_log( NWIPE_LOG_NOTICE, "  do not show GUI interface" );
@@ -394,6 +409,7 @@ display_help()
   puts("  -r, --rounds=NUM        Number of times to wipe the device using the selected method (default: 1)" );
   puts("      --noblank           Do not blank disk after wipe (default is to complete a final blank pass)" );
   puts("      --nowait            Do not wait for a key before exiting (default is to wait)" );
+  puts("      --nosignals         Do not allow signals to interrupt a wipe (default is to allow)" );
   puts("      --nogui             Do not show the GUI interface. Automatically invokes the nowait option" );
   puts("                          Must be used with --autonuke option. Send SIGUSR1 to log current stats");
   puts("");
