@@ -25,6 +25,7 @@
 #include "mt19937ar-cok.h"
 #include "isaac_rand.h"
 
+
 nwipe_prng_t nwipe_twister =
 {
 	"Mersenne Twister (mt19937ar-cok)",
@@ -40,6 +41,25 @@ nwipe_prng_t nwipe_isaac =
 };
 
 
+/* Print given number of bytes from unsigned integer number to a byte stream buffer starting with low-endian*/
+int nwipe_u32tobuffer(u8 *buffer, u32 rand, int len)
+{
+   int i;
+   u8 c;   //single char
+   if (len > sizeof(u32))
+   {
+       nwipe_log( NWIPE_LOG_FATAL, "Tried to print longer number than the value passed." );
+       len = sizeof(u32);
+   }
+
+   for (i=0 ; i < len; i++)
+   {
+       c=rand & 0xFFUL;
+       rand = rand >> 8;
+       buffer[i]=c;
+   }
+   return 0;
+}
 
 int nwipe_twister_init( NWIPE_PRNG_INIT_SIGNATURE )
 {
@@ -54,21 +74,23 @@ int nwipe_twister_init( NWIPE_PRNG_INIT_SIGNATURE )
 
 int nwipe_twister_read( NWIPE_PRNG_READ_SIGNATURE )
 {
+    u32 i=0;
 	u32 ii;
-	u32 words = count / sizeof( u32 );
-	u32 remain = count % sizeof( u32 );
+    u32 words = count / SIZE_OF_TWISTER ;  // the values of twister_genrand_int32 is strictly 4 bytes
+    u32 remain = count % SIZE_OF_TWISTER ; // the values of twister_genrand_int32 is strictly 4 bytes
 
-	/* Twister returns 4-bytes per call, so cast the buffer into words. */
+    /* Twister returns 4-bytes per call, so progress by 4 bytes. */
 	for( ii = 0; ii < words; ++ii )
 	{
-		((u32*)buffer)[ii] = twister_genrand_int32( (twister_state_t*)*state );
+        nwipe_u32tobuffer((u8*)(buffer+i), twister_genrand_int32( (twister_state_t*)*state ), SIZE_OF_TWISTER) ;
+        i = i + SIZE_OF_TWISTER;
 	}
 
-	/* Fill the buffer tail if the count is not evenly divided by the size of u32. */
-	for( ii = 1; ii <= remain; ++ii )
+    /* If there is some remainder copy only relevant number of bytes to not
+     * overflow the buffer. */
+    if ( remain > 0 )
 	{
-		/* Notice how three bytes are discarded by doing this. */
-		((u8*)buffer)[count-ii] = twister_genrand_int32( (twister_state_t*)*state );
+        nwipe_u32tobuffer((u8*)(buffer+i), twister_genrand_int32( (twister_state_t*)*state ), remain) ;
 	}
 	 
 	return 0;

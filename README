@@ -18,6 +18,10 @@ Martijn van Brummelen
 RELEASE NOTES
 =============
 
+v0.19
+- Fix building on Fedora(Unknown off64_t) bug #19.
+- Use PRNG instead of zero's bug #7. Thanks xambroz.
+
 v0.18
 =====
 - Fixed grammar.
