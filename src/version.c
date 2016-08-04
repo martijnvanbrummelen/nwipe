@@ -4,7 +4,11 @@
  * used by configure to dynamically assign those values 
  * to documentation files.
  */
+<<<<<<< HEAD
 const char *version_string = "0.20";
+=======
+const char *version_string = "0.18";
+>>>>>>> parent of 263d5d1... bump version to 0.19
 const char *program_name   = "nwipe";
 const char *author_name    = "Martijn van Brummelen";
 const char *email_address  = "git@brumit.nl";
