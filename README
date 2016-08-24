@@ -18,6 +18,8 @@ Martijn van Brummelen
 RELEASE NOTES
 =============
 
+v0.21
+- Fix ETA not updating properly and bad total throughput display. Thanks (Niels Bassler).
 
 v0.20
 - Fix build when panel header is not in /usr/include (Thanks Vincent Untz).
