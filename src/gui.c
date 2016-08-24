@@ -2036,6 +2036,9 @@ int compute_stats(void *ptr)
 	int i;
 	
 	time_t nwipe_time_now = time( NULL );
+
+	nwipe_misc_thread_data->throughput = 0;
+	nwipe_misc_thread_data->maxeta = 0;
 	
 	/* Enumerate all contexts to compute statistics. */
 	for( i = 0 ; i < count ; i++ )
