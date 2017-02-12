@@ -91,7 +91,7 @@ int main( int argc, char** argv )
 
         else
         {
-
+                printf("Debug\n");
                 argv += nwipe_optind;
                 argc -= nwipe_optind;
 
@@ -577,6 +577,7 @@ void *signal_hand(void *ptr)
                                 }
 
                                 // Kill the GUI thread
+                                /* Needs to be FIXED(MVB)
                                 if( !nwipe_options.nogui )
                                 {
                                         if ( nwipe_misc_thread_data->gui_thread )
@@ -585,6 +586,7 @@ void *signal_hand(void *ptr)
                                                 *nwipe_misc_thread_data->gui_thread = 0;
                                         }
                                 }
+                                */
 
                                 if( !nwipe_options.nogui )
                                         nwipe_gui_free();

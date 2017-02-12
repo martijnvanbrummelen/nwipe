@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 const char *version_string = "0.20";
 =======
 const char *version_string = "0.18";
@@ -17,6 +18,9 @@ const char *version_string = "0.22";
 =======
 const char *version_string = "0.20";
 >>>>>>> parent of b808b84... Revert "bump version to 0.19"
+=======
+const char *version_string = "0.22";
+>>>>>>> 464bf788c534bf67a1d7290f2175dcf925f5f9ed
 const char *program_name   = "nwipe";
 const char *author_name    = "Martijn van Brummelen";
 const char *email_address  = "git@brumit.nl";
