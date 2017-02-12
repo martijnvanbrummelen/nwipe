@@ -19,6 +19,13 @@ RELEASE NOTES
 =============
 
 
+v0.22
+- Use const *banner instead of nwipe_options.banner(Cleanup of code)
+- Update manpage
+
+v0.21
+- Fix ETA not updating properly and bad total throughput display. Thanks (Niels Bassler).
+
 v0.20
 - Fix build when panel header is not in /usr/include (Thanks Vincent Untz).
 

@@ -21,7 +21,6 @@
  *
  */
 
-#include <netinet/in.h>
 #include <time.h>
 #include <signal.h>
 

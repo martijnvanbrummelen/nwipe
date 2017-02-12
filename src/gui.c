@@ -30,9 +30,6 @@
  *
  */
 
-/* Why is this needed? Segfaults without it */
-#include <netinet/in.h>
-
 #include "nwipe.h"
 #include "context.h"
 #include "method.h"
@@ -41,6 +38,7 @@
 #include "gui.h"
 #include "pass.h"
 #include "logging.h"
+#include "version.h"
 
 #define NWIPE_GUI_PANE        8
 
@@ -229,7 +227,7 @@ void nwipe_gui_init( void )
 	wclear( header_window );
 
 	/* Print the product banner. */
-	nwipe_gui_title( header_window, nwipe_options.banner );
+	nwipe_gui_title( header_window, banner );
 
 	/* Create the footer window. */
 	footer_window = newwin( NWIPE_GUI_FOOTER_H, NWIPE_GUI_FOOTER_W, NWIPE_GUI_FOOTER_Y, NWIPE_GUI_FOOTER_X );
@@ -2036,6 +2034,9 @@ int compute_stats(void *ptr)
 	int i;
 	
 	time_t nwipe_time_now = time( NULL );
+
+	nwipe_misc_thread_data->throughput = 0;
+	nwipe_misc_thread_data->maxeta = 0;
 	
 	/* Enumerate all contexts to compute statistics. */
 	for( i = 0 ; i < count ; i++ )

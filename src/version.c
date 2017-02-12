@@ -5,10 +5,14 @@
  * to documentation files.
  */
 <<<<<<< HEAD
+<<<<<<< HEAD
 const char *version_string = "0.20";
 =======
 const char *version_string = "0.18";
 >>>>>>> parent of 263d5d1... bump version to 0.19
+=======
+const char *version_string = "0.22";
+>>>>>>> e7d9ff73fe76e9fcc04847eba2806bd0904f0499
 const char *program_name   = "nwipe";
 const char *author_name    = "Martijn van Brummelen";
 const char *email_address  = "git@brumit.nl";
@@ -18,3 +22,4 @@ Modifications to original dwipe Copyright Andy Beverley <andy@andybev.com>\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty; not even for MERCHANTABILITY or FITNESS\n\
 FOR A PARTICULAR PURPOSE.\n";
+const char *banner         = "nwipe 0.22 (based on DBAN's dwipe - Darik's Wipe)";

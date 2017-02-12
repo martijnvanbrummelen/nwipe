@@ -29,8 +29,10 @@ void     isaac(ctx)
 randctx *ctx;
 {
    register ub4 a,b,x,y,*m,*mm,*m2,*r,*mend;
-   mm=ctx->randmem; r=ctx->randrsl;
-   a = ctx->randa; b = ctx->randb + (++ctx->randc);
+   mm=ctx->randmem; 
+   r=ctx->randrsl;
+   a = ctx->randa; 
+   b = ctx->randb + (++ctx->randc);
    for (m = mm, mend = m2 = m+(RANDSIZ/2); m<mend; )
    {
       rngstep( a<<13, a, b, mm, m, m2, r, x);
@@ -84,20 +86,44 @@ word     flag;
      /* initialize using the contents of r[] as the seed */
      for (i=0; i<RANDSIZ; i+=8)
      {
-       a+=r[i  ]; b+=r[i+1]; c+=r[i+2]; d+=r[i+3];
-       e+=r[i+4]; f+=r[i+5]; g+=r[i+6]; h+=r[i+7];
+       a+=r[i  ]; 
+       b+=r[i+1];
+       c+=r[i+2]; 
+       d+=r[i+3];
+       e+=r[i+4]; 
+       f+=r[i+5]; 
+       g+=r[i+6]; 
+       h+=r[i+7];
        mix(a,b,c,d,e,f,g,h);
-       m[i  ]=a; m[i+1]=b; m[i+2]=c; m[i+3]=d;
-       m[i+4]=e; m[i+5]=f; m[i+6]=g; m[i+7]=h;
+       m[i  ]=a; 
+       m[i+1]=b; 
+       m[i+2]=c; 
+       m[i+3]=d;
+       m[i+4]=e; 
+       m[i+5]=f; 
+       m[i+6]=g; 
+       m[i+7]=h;
      }
      /* do a second pass to make all of the seed affect all of m */
      for (i=0; i<RANDSIZ; i+=8)
      {
-       a+=m[i  ]; b+=m[i+1]; c+=m[i+2]; d+=m[i+3];
-       e+=m[i+4]; f+=m[i+5]; g+=m[i+6]; h+=m[i+7];
+       a+=m[i  ]; 
+       b+=m[i+1]; 
+       c+=m[i+2]; 
+       d+=m[i+3];
+       e+=m[i+4]; 
+       f+=m[i+5]; 
+       g+=m[i+6]; 
+       h+=m[i+7];
        mix(a,b,c,d,e,f,g,h);
-       m[i  ]=a; m[i+1]=b; m[i+2]=c; m[i+3]=d;
-       m[i+4]=e; m[i+5]=f; m[i+6]=g; m[i+7]=h;
+       m[i  ]=a; 
+       m[i+1]=b; 
+       m[i+2]=c; 
+       m[i+3]=d;
+       m[i+4]=e; 
+       m[i+5]=f; 
+       m[i+6]=g; 
+       m[i+7]=h;
      }
    }
    else
@@ -106,8 +132,14 @@ word     flag;
      for (i=0; i<RANDSIZ; i+=8)
      {
        mix(a,b,c,d,e,f,g,h);
-       m[i  ]=a; m[i+1]=b; m[i+2]=c; m[i+3]=d;
-       m[i+4]=e; m[i+5]=f; m[i+6]=g; m[i+7]=h;
+       m[i  ]=a; 
+       m[i+1]=b; 
+       m[i+2]=c; 
+       m[i+3]=d;
+       m[i+4]=e; 
+       m[i+5]=f; 
+       m[i+6]=g; 
+       m[i+7]=h;
      }
    }
 

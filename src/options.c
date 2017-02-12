@@ -100,15 +100,6 @@ int nwipe_options_parse( int argc, char** argv )
 		{ 0, 0, 0, 0 }
 	};
 
-	/* Note that COLS isn't available until ncurses is initialized. */
-	nwipe_options.banner = malloc( nwipe_banner_size );
-
-	/* Set the default product banner. */
-	/* TODO: Add version constant.     */
-	strncpy ( nwipe_options.banner, program_name, nwipe_banner_size);
-	strncat ( nwipe_options.banner, " ", nwipe_banner_size - strlen (nwipe_options.banner) - 1);
-	strncat ( nwipe_options.banner, version_string, nwipe_banner_size - strlen (nwipe_options.banner) - 1);
-	strncat ( nwipe_options.banner, " (based on DBAN's dwipe - Darik's Wipe)", nwipe_banner_size - strlen (nwipe_options.banner) - 1);
 
 	/* Set default options. */
 	nwipe_options.autonuke = 0;
@@ -352,7 +343,7 @@ void nwipe_options_log( void )
 		nwipe_log( NWIPE_LOG_NOTICE, "  do not show GUI interface" );
 	}
 
-	nwipe_log( NWIPE_LOG_NOTICE, "  banner   = %s", nwipe_options.banner );
+	nwipe_log( NWIPE_LOG_NOTICE, "  banner   = %s", banner );
 	nwipe_log( NWIPE_LOG_NOTICE, "  method   = %s", nwipe_method_label( nwipe_options.method ) );
 	nwipe_log( NWIPE_LOG_NOTICE, "  rounds   = %i", nwipe_options.rounds );
 	nwipe_log( NWIPE_LOG_NOTICE, "  sync     = %i", nwipe_options.sync );
