@@ -22,6 +22,7 @@ RELEASE NOTES
 v0.22
 - Use const *banner instead of nwipe_options.banner(Cleanup of code)
 - Update manpage
+- Disable the "Kill the GUI thread" since it segfaults
 
 v0.21
 - Fix ETA not updating properly and bad total throughput display. Thanks (Niels Bassler).

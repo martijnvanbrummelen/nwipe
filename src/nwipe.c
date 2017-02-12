@@ -577,6 +577,7 @@ void *signal_hand(void *ptr)
                                 }
 
                                 // Kill the GUI thread
+                                /* DISABLE since it creates a segfault
                                 if( !nwipe_options.nogui )
                                 {
                                         if ( nwipe_misc_thread_data->gui_thread )
@@ -585,6 +586,7 @@ void *signal_hand(void *ptr)
                                                 *nwipe_misc_thread_data->gui_thread = 0;
                                         }
                                 }
+                                */
 
                                 if( !nwipe_options.nogui )
                                         nwipe_gui_free();
