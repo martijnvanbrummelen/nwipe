@@ -41,6 +41,7 @@
 #include "gui.h"
 #include "pass.h"
 #include "logging.h"
+#include "version.h"
 
 #define NWIPE_GUI_PANE        8
 
