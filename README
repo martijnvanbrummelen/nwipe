@@ -18,6 +18,11 @@ Martijn van Brummelen
 RELEASE NOTES
 =============
 
+
+v0.22
+- Use const *banner instead of nwipe_options.banner(Cleanup of code)
+- Update manpage
+
 v0.21
 - Fix ETA not updating properly and bad total throughput display. Thanks (Niels Bassler).
 

@@ -229,7 +229,7 @@ void nwipe_gui_init( void )
 	wclear( header_window );
 
 	/* Print the product banner. */
-	nwipe_gui_title( header_window, nwipe_options.banner );
+	nwipe_gui_title( header_window, banner );
 
 	/* Create the footer window. */
 	footer_window = newwin( NWIPE_GUI_FOOTER_H, NWIPE_GUI_FOOTER_W, NWIPE_GUI_FOOTER_Y, NWIPE_GUI_FOOTER_X );
