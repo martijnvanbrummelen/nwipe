@@ -27,7 +27,6 @@
 #include "logging.h"
 
 #include <parted/parted.h>
-#include <parted/debug.h> 
 
 int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount );
 

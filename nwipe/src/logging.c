@@ -50,7 +50,7 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 
 	/* Get the current time. */
 	t = time( NULL );
-	p = gmtime( &t );
+	p = localtime( &t );
 
 	pthread_mutex_lock( &mutex1 );
 

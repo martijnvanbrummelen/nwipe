@@ -23,6 +23,9 @@
 
 #include <time.h>
 #include <signal.h>
+#include <sys/shm.h>
+#include <wait.h>
+#include <parted/parted.h>
 
 #include "nwipe.h"
 #include "context.h"
@@ -33,13 +36,6 @@
 #include "logging.h"
 #include "gui.h"
 
-
-#include <sys/ioctl.h>  /* FIXME: Twice Included */
-#include <sys/shm.h>
-#include <wait.h>
-
-#include <parted/parted.h>
-#include <parted/debug.h>
 
 int main( int argc, char** argv )
 {
