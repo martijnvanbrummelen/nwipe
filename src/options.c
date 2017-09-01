@@ -277,7 +277,7 @@ int nwipe_options_parse( int argc, char** argv )
 				    || nwipe_options.rounds < 1
 				  )
 				{
-					fprintf( stderr, "Error: The rounds argument must be a postive integer.\n" );
+					fprintf( stderr, "Error: The rounds argument must be a positive integer.\n" );
 					exit( EINVAL );
 				}
 
