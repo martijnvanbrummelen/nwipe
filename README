@@ -23,6 +23,7 @@ v0.22
 - Use const *banner instead of nwipe_options.banner(Cleanup of code)
 - Update manpage
 - Disable "Kill the GUI thread" 
+- Use ped_unit_format_byte function to display size of device
 
 v0.21
 - Fix ETA not updating properly and bad total throughput display. Thanks (Niels Bassler).

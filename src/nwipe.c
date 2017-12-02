@@ -87,7 +87,6 @@ int main( int argc, char** argv )
 
         else
         {
-                printf("Debug\n");
                 argv += nwipe_optind;
                 argc -= nwipe_optind;
 
