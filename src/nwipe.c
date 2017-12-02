@@ -350,7 +350,7 @@ int main( int argc, char** argv )
                 }
 
 
-                if( c2[i]->device_size == (off64_t)-1 )
+                if( c2[i]->device_size == (long long)-1 )
                 {
                         /* We cannot determine the size of this device. */
                         nwipe_perror( errno, __FUNCTION__, "lseek" );
