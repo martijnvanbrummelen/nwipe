@@ -8,7 +8,7 @@ const char *version_string = "0.22";
 const char *program_name   = "nwipe";
 const char *author_name    = "Martijn van Brummelen";
 const char *email_address  = "git@brumit.nl";
-const char *years          = "2016";
+const char *years          = "2017";
 const char *copyright      = "Copyright Darik Horn <dajhorn-dban@vanadac.com>\n\
 Modifications to original dwipe Copyright Andy Beverley <andy@andybev.com>\n\
 This is free software; see the source for copying conditions.\n\
