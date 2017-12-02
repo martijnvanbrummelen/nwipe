@@ -82,7 +82,7 @@ typedef struct nwipe_context_t_
 	int               device_minor;         /* The minor device number.                                       */
 	int               device_part;          /* The device partition or slice number.                          */
 	char*             device_name;          /* The device file name.                                          */
-	off64_t           device_size;          /* The device size in bytes.                                      */
+	long long         device_size;          /* The device size in bytes.                                      */
 	char*             device_size_text ;    /* The device size in a friendly format.                          */
 	struct stat       device_stat;          /* The device file state from fstat().                            */
 	nwipe_device_t    device_type;          /* Indicates an IDE, SCSI, or Compaq SMART device.                */
