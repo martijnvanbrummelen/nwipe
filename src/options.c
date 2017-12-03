@@ -42,9 +42,6 @@ int nwipe_options_parse( int argc, char** argv )
 	extern nwipe_prng_t nwipe_twister;
 	extern nwipe_prng_t nwipe_isaac;
 
-	/* The maximum banner size, including the null. */
-	const int nwipe_banner_size = 81;
-
 	/* The getopt() result holder. */
 	int nwipe_opt;
 
