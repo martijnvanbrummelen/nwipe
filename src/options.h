@@ -48,9 +48,9 @@ typedef struct /* nwipe_options_t */
 {
 	int            autonuke;  /* Do not prompt the user for confirmation when set.          */
 	int            noblank;   /* Do not perform a final blanking pass.                      */
-        int            nowait;    /* Do not wait for a final key before exiting.                */
-        int            nosignals; /* Do not allow signals to interrupt a wipe.                  */
-        int            nogui ;    /* Do not show the GUI.                                       */
+    int            nowait;    /* Do not wait for a final key before exiting.                */
+    int            nosignals; /* Do not allow signals to interrupt a wipe.                  */
+    int            nogui ;    /* Do not show the GUI.                                       */
 	char*          banner;    /* The product banner shown on the top line of the screen.    */
 //	nwipe_method_t method;    /* A function pointer to the wipe method that will be used.   */
 	void*          method;    /* A function pointer to the wipe method that will be used.   */
