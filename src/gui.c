@@ -29,6 +29,8 @@
  *   and things like ncurses libmenu are not worth the storage overhead.
  *
  */
+/* Why is this needed? Segfaults without it */
+#include <netinet/in.h>
 
 #include "nwipe.h"
 #include "context.h"
@@ -38,7 +40,6 @@
 #include "gui.h"
 #include "pass.h"
 #include "logging.h"
-#include "version.h"
 
 #define NWIPE_GUI_PANE        8
 
@@ -227,7 +228,7 @@ void nwipe_gui_init( void )
 	wclear( header_window );
 
 	/* Print the product banner. */
-	nwipe_gui_title( header_window, banner );
+    nwipe_gui_title( header_window, banner );
 
 	/* Create the footer window. */
 	footer_window = newwin( NWIPE_GUI_FOOTER_H, NWIPE_GUI_FOOTER_W, NWIPE_GUI_FOOTER_Y, NWIPE_GUI_FOOTER_X );

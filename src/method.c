@@ -38,6 +38,8 @@
  *
  */
 
+/* Why is this needed? Segfaults without it */
+#include <netinet/in.h>
 
 #include "nwipe.h"
 #include "context.h"

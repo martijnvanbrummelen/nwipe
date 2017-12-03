@@ -21,11 +21,9 @@
  *
  */
 
+#include <netinet/in.h>
 #include <time.h>
 #include <signal.h>
-#include <sys/shm.h>
-#include <wait.h>
-#include <parted/parted.h>
 
 #include "nwipe.h"
 #include "context.h"
@@ -36,6 +34,13 @@
 #include "logging.h"
 #include "gui.h"
 
+
+#include <sys/ioctl.h>  /* FIXME: Twice Included */
+#include <sys/shm.h>
+#include <wait.h>
+
+#include <parted/parted.h>
+#include <parted/debug.h>
 
 int main( int argc, char** argv )
 {
@@ -350,7 +355,7 @@ int main( int argc, char** argv )
                 }
 
 
-                if( c2[i]->device_size == (off64_t)-1 )
+                if( c2[i]->device_size == (long long)-1 )
                 {
                         /* We cannot determine the size of this device. */
                         nwipe_perror( errno, __FUNCTION__, "lseek" );
@@ -572,7 +577,6 @@ void *signal_hand(void *ptr)
                                 }
 
                                 // Kill the GUI thread
-                                /* Needs to be FIXED(MVB)
                                 if( !nwipe_options.nogui )
                                 {
                                         if ( nwipe_misc_thread_data->gui_thread )
@@ -581,7 +585,6 @@ void *signal_hand(void *ptr)
                                                 *nwipe_misc_thread_data->gui_thread = 0;
                                         }
                                 }
-                                */
 
                                 if( !nwipe_options.nogui )
                                         nwipe_gui_free();

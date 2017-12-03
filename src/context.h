@@ -72,49 +72,49 @@ typedef struct nwipe_speedring_t_
 
 typedef struct nwipe_context_t_
 {
-	int               block_size;           /* The soft block size reported the device.                       */
-	int               device_bus;           /* The device bus number.                                         */
-	int               device_fd;            /* The file descriptor of the device file being wiped.            */
-	int               device_host;          /* The host number.                                               */
-	struct hd_driveid device_id;            /* The WIN_IDENTIFY data for IDE drives.                          */
-	int               device_lun;           /* The device logical unit number.                                */
-	int               device_major;         /* The major device number.                                       */
-	int               device_minor;         /* The minor device number.                                       */
-	int               device_part;          /* The device partition or slice number.                          */
-	char*             device_name;          /* The device file name.                                          */
-	off64_t           device_size;          /* The device size in bytes.                                      */
-	char*             device_size_text ;    /* The device size in a friendly format.                          */
-	struct stat       device_stat;          /* The device file state from fstat().                            */
-	nwipe_device_t    device_type;          /* Indicates an IDE, SCSI, or Compaq SMART device.                */
-	int               device_target;        /* The device target.                                             */
-	u64               eta;                  /* The estimated number of seconds until method completion.       */
-	int               entropy_fd;           /* The entropy source. Usually /dev/urandom.                      */
-	char*             label;                /* The string that we will show the user.                         */
-	int               pass_count;           /* The number of passes performed by the working wipe method.     */
-	u64               pass_done;            /* The number of bytes that have already been i/o'd in this pass. */
-	u64               pass_errors;          /* The number of errors across all passes.                        */
-	u64               pass_size;            /* The total number of i/o bytes across all passes.               */
-	nwipe_pass_t      pass_type;            /* The type of the current working pass.                          */
-	int               pass_working;         /* The current working pass.                                      */
-	nwipe_prng_t*     prng;                 /* The PRNG implementation.                                       */
-	nwipe_entropy_t   prng_seed;            /* The random data that is used to seed the PRNG.                 */
-	void*             prng_state;           /* The private internal state of the PRNG.                        */
-	int               result;               /* The process return value.                                      */
-	int               round_count;          /* The number of rounds performed by the working wipe method.     */
-	u64               round_done;           /* The number of bytes that have already been i/o'd.              */
-	u64               round_errors;         /* The number of errors across all rounds.                        */
-	u64               round_size;           /* The total number of i/o bytes across all rounds.               */
-	double            round_percent;        /* The percentage complete across all rounds.                     */
-	int               round_working;        /* The current working round.                                     */
-	int               sector_size;          /* The hard sector size reported by the device.                   */
-	nwipe_select_t    select;               /* Indicates whether this device should be wiped.                 */
-	int               signal;               /* Set when the child is killed by a signal.                      */
-	nwipe_speedring_t speedring;            /* Ring buffer for computing the rolling throughput average.      */
-	short             sync_status;          /* A flag to indicate when the method is syncing.                 */
-	pthread_t         thread;               /* The ID of the thread.                                          */
-	u64               throughput;           /* Average throughput in bytes per second.                        */
-	u64               verify_errors;        /* The number of verification errors across all passes.           */
-	struct hd_driveid  identity;	        /* The serial number of the drive (where applicable)              */
+	int               block_size;       /* The soft block size reported the device.                       */
+	int               device_bus;       /* The device bus number.                                         */
+	int               device_fd;        /* The file descriptor of the device file being wiped.            */
+	int               device_host;      /* The host number.                                               */
+	struct hd_driveid device_id;        /* The WIN_IDENTIFY data for IDE drives.                          */
+	int               device_lun;       /* The device logical unit number.                                */
+	int               device_major;     /* The major device number.                                       */
+	int               device_minor;     /* The minor device number.                                       */
+	int               device_part;      /* The device partition or slice number.                          */
+	char*             device_name;      /* The device file name.                                          */
+	long long         device_size;      /* The device size in bytes.                                      */
+	char*             device_size_text; /* The device size in a more (human)readable format.              */
+	struct stat       device_stat;      /* The device file state from fstat().                            */
+	nwipe_device_t    device_type;      /* Indicates an IDE, SCSI, or Compaq SMART device.                */
+	int               device_target;    /* The device target.                                             */
+	u64               eta;              /* The estimated number of seconds until method completion.       */
+	int               entropy_fd;       /* The entropy source. Usually /dev/urandom.                      */
+	char*             label;            /* The string that we will show the user.                         */
+	int               pass_count;       /* The number of passes performed by the working wipe method.     */
+	u64               pass_done;        /* The number of bytes that have already been i/o'd in this pass. */
+	u64               pass_errors;      /* The number of errors across all passes.                        */
+	u64               pass_size;        /* The total number of i/o bytes across all passes.               */
+	nwipe_pass_t      pass_type;        /* The type of the current working pass.                          */
+	int               pass_working;     /* The current working pass.                                      */
+	nwipe_prng_t*     prng;             /* The PRNG implementation.                                       */
+	nwipe_entropy_t   prng_seed;        /* The random data that is used to seed the PRNG.                 */
+	void*             prng_state;       /* The private internal state of the PRNG.                        */
+	int               result;           /* The process return value.                                      */
+	int               round_count;      /* The number of rounds performed by the working wipe method.     */
+	u64               round_done;       /* The number of bytes that have already been i/o'd.              */
+	u64               round_errors;     /* The number of errors across all rounds.                        */
+	u64               round_size;       /* The total number of i/o bytes across all rounds.               */
+	double            round_percent;    /* The percentage complete across all rounds.                     */
+	int               round_working;    /* The current working round.                                     */
+	int               sector_size;      /* The hard sector size reported by the device.                   */
+	nwipe_select_t    select;           /* Indicates whether this device should be wiped.                 */
+	int               signal;           /* Set when the child is killed by a signal.                      */
+	nwipe_speedring_t speedring;        /* Ring buffer for computing the rolling throughput average.      */
+	short             sync_status;      /* A flag to indicate when the method is syncing.                 */
+	pthread_t         thread;           /* The ID of the thread.                                          */
+	u64               throughput;       /* Average throughput in bytes per second.                        */
+	u64               verify_errors;    /* The number of verification errors across all passes.           */
+	struct hd_driveid  identity;	    /* The serial number of the drive (where applicable)              */
 } nwipe_context_t;
 
 
