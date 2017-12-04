@@ -19,6 +19,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA. 
  *
  */
+#include <sys/ioctl.h>
 
 #include "nwipe.h"
 #include "context.h"
