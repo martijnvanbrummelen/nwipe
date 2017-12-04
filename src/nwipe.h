@@ -58,6 +58,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#include <locale.h>
 
 #include "config.h"
 
