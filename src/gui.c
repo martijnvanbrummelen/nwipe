@@ -1626,11 +1626,11 @@ void *nwipe_gui_status( void *ptr )
 	count = nwipe_misc_thread_data->nwipe_selected;
 
 	/* Throughput print formats. */
-	char* nwipe_tera = "%llu TB/s";
-	char* nwipe_giga = "%llu GB/s";
-	char* nwipe_mega = "%llu MB/s";
-	char* nwipe_kilo = "%llu KB/s";
-	char* nwipe_unit = "%llu B/s";
+	char* nwipe_tera = "%'llu TB/s";
+	char* nwipe_giga = "%'llu GB/s";
+	char* nwipe_mega = "%'llu MB/s";
+	char* nwipe_kilo = "%'llu KB/s";
+	char* nwipe_unit = "%'llu B/s";
 
 	/* The throughput format pointer. */
 	char* nwipe_format;
@@ -1869,15 +1869,15 @@ void *nwipe_gui_status( void *ptr )
 				if( c[i]->sync_status   ) { wprintw( main_window, "[syncing] "   ); }
 
 				     if( c[i]->throughput >= INT64_C( 1000000000000000 ) )
-					    { wprintw( main_window, "[%llu TB/s] ", c[i]->throughput / INT64_C( 1000000000000 ) ); }
+					    { wprintw( main_window, "[%'llu TB/s] ", c[i]->throughput / INT64_C( 1000000000000 ) ); }
 				else if( c[i]->throughput >= INT64_C( 1000000000000    ) )
-				       { wprintw( main_window, "[%llu GB/s] ", c[i]->throughput / INT64_C( 1000000000    ) ); }
+				       { wprintw( main_window, "[%'llu GB/s] ", c[i]->throughput / INT64_C( 1000000000    ) ); }
 				else if( c[i]->throughput >= INT64_C( 1000000000       ) )
-				       { wprintw( main_window, "[%llu MB/s] ", c[i]->throughput / INT64_C( 1000000       ) ); }
+				       { wprintw( main_window, "[%'llu MB/s] ", c[i]->throughput / INT64_C( 1000000       ) ); }
 				else if( c[i]->throughput >= INT64_C( 1000000          ) )
-				       { wprintw( main_window, "[%llu KB/s] ", c[i]->throughput / INT64_C( 1000          ) ); }
+				       { wprintw( main_window, "[%'llu KB/s] ", c[i]->throughput / INT64_C( 1000          ) ); }
 				else
-				       { wprintw( main_window, "[%llu B/s] ",  c[i]->throughput / INT64_C( 1             ) ); }
+				       { wprintw( main_window, "[%'llu B/s] ",  c[i]->throughput / INT64_C( 1             ) ); }
 
 				/* Insert whitespace. */
 				yy += 1;
