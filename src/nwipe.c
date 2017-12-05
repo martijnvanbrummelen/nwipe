@@ -61,6 +61,9 @@ int main( int argc, char** argv )
         /* The generic result buffer. */
         int r;
 
+	/* Set the locale to the default system locale. */
+	setlocale(LC_NUMERIC, "");
+	
         /* Two arrays are used, containing pointers to the the typedef for each disk */
         /* The first array (c1) points to all devices, the second points to only     */
         /* the disks selected for wiping.                                            */
