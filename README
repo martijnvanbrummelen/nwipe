@@ -18,6 +18,9 @@ Martijn van Brummelen
 RELEASE NOTES
 =============
 
+v0.23
+- make serial visible again on 32Bit machines
+
 v0.22
 - Update manpage
 - use long long for device size

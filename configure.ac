@@ -2,8 +2,8 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.64])
-AC_INIT(nwipe, 0.22, git@brumit.nl)
-AM_INIT_AUTOMAKE(nwipe, 0.22)
+AC_INIT(nwipe, 0.23, git@brumit.nl)
+AM_INIT_AUTOMAKE(nwipe, 0.23)
 AC_OUTPUT(Makefile src/Makefile man/Makefile)
 AC_CONFIG_SRCDIR([src/nwipe.c])
 AC_CONFIG_HEADERS([config.h])
