@@ -19,7 +19,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA. 
  *
  */
-#include <sys/ioctl.h>
+
+/* Why is this needed? Segfaults without it */
+#include <netinet/in.h>
 
 #include "nwipe.h"
 #include "context.h"
@@ -28,6 +30,7 @@
 #include "logging.h"
 
 #include <parted/parted.h>
+#include <parted/debug.h>
 
 int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount );
 
