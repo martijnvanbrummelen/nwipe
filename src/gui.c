@@ -125,7 +125,7 @@ const char* stats_title = " Statistics ";
 
 /* Footer labels. */
 const char* nwipe_buttons1 = "Ctrl-C=Quit S=Start M=Method P=PRNG V=Verify R=Rounds B=Blanking-pass Space=Select";
-const char* nwipe_buttons2 = " J=Up K=Down Space=Select";
+const char* nwipe_buttons2 = " J=Down K=Up Space=Select";
 const char* nwipe_buttons3 = " B=Blank screen, ctrl-c=Quit";
 
 
