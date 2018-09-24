@@ -28,11 +28,19 @@
 #include "method.h"
 #include "options.h"
 #include "logging.h"
+#include <sys/ioctl.h>
+#include <linux/hdreg.h> //Drive specific defs
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <ctype.h>
 
 #include <parted/parted.h>
 #include <parted/debug.h>
 
 int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount );
+char *trim(char *str);
 
 int nwipe_device_scan( nwipe_context_t*** c )
 {
@@ -98,10 +106,14 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
 {
 	/* Populate this struct, then assign it to overall array of structs. */
 	nwipe_context_t* next_device;
+    int fd;
 
         /* Try opening the device to see if it's valid. Close on completion. */
         if (!ped_device_open(dev))
+        {
+                nwipe_log( NWIPE_LOG_FATAL, "Unable to open device" );
                 return 0;
+        }
         ped_device_close(dev);
         
         /* New device, reallocate memory for additional struct pointer */
@@ -126,11 +138,62 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
         next_device->device_size = dev->length * dev->sector_size;
         next_device->device_size_text = ped_unit_format_byte(dev, dev->length * dev->sector_size);
         /* Attempt to get serial number of device. */
-        ioctl(next_device->device_fd, HDIO_GET_IDENTITY, &next_device->identity);
+        if ( (fd = open ( next_device->device_name = dev->path, O_RDONLY)) == ERR )
+        {
+            nwipe_log( NWIPE_LOG_WARNING, "Unable to open device %s to obtain serial number", next_device->device_name );
+        }
+        /* We don't check the ioctl return status because there are plenty of situations where a serial number may not be
+         * returned by ioctl such as USB drives, logical volumes, encryted volumes, so the log file would have multiple
+         * benign ioctl errors reported which isn't necessarily a problem.
+        */
+        ioctl(fd, HDIO_GET_IDENTITY, &next_device->identity);
+        close( fd );
+        trim ( (char*) next_device->identity.serial_no ); /* Remove leading/training whitespace from serial number and left justify */
+        nwipe_log( NWIPE_LOG_INFO,"Found drive model=\"%s\", device path=\"%s\", size=\"%s\", serial number=\"%s\"", next_device->label, next_device->device_name, next_device->device_size_text, next_device->identity.serial_no);
 
         (*c)[dcount] = next_device;
         
         return 1;
 }
+
+char *trim(char *str)
+{
+    size_t len = 0;
+    char *frontp = str;
+    char *endp = NULL;
+
+    if( str == NULL ) { return NULL; }
+    if( str[0] == '\0' ) { return str; }
+
+    len = strlen(str);
+    endp = str + len;
+
+    /* Move the front and back pointers to address the first non-whitespace
+     * characters from each end.
+     */
+    while( isspace((unsigned char) *frontp) ) { ++frontp; }
+    if( endp != frontp )
+    {
+        while( isspace((unsigned char) *(--endp)) && endp != frontp ) {}
+    }
+
+    if( str + len - 1 != endp )
+            *(endp + 1) = '\0';
+    else if( frontp != str &&  endp == frontp )
+            *str = '\0';
+
+    /* Shift the string so that it starts at str so that if it's dynamically
+     * allocated, we can still free it on the returned pointer.  Note the reuse
+     * of endp to mean the front of the string buffer now.
+     */
+    endp = str;
+    if( frontp != str )
+    {
+            while( *frontp ) { *endp++ = *frontp++; }
+            *endp = '\0';
+    }
+    return str;
+}
+
 
 /* eof */
