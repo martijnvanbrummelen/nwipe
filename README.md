@@ -11,7 +11,7 @@ To use from the git repository, first create all the autoconf files with
 
 Then do the standard ./configure --prefix=/usr && make && make install
 
-If you wish to work & make changes to this code you may prefer to use
+If your a developer and want to work on this code, you may prefer to use
 ./configure --prefix=/usr CFLAGS='-O0 -g -Wall -Wextra' && make && make install
 
 The '-O0 -g' flags disable optimisations, this is required if your debugging with
@@ -23,7 +23,7 @@ The -Wall & -Wextra flags enable all compiler warnings. Unfortunately as of 25/S
 there are quite a few warnings still present. We're hoping to clear these warnings
 (the proper way with a code review), but it would be nice to not have any more code
 added that generates warnings. Most of these warnings are benign, however some do
-highlight bugs, e.g don't ignore variable is used before initialised.
+highlight bugs, such as the "variable used before being initialised".
 
 Once done with your coding then the released/patch/fixed code can be compiled with
 ./configure --prefix=/usr && make && make install
