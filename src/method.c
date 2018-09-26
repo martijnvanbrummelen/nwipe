@@ -416,7 +416,7 @@ void *nwipe_ops2( void *ptr )
 	/* Allocate the array of complement characters. */
 	t = malloc( sizeof( char ) * u );
 
-	if( s == NULL )
+	if( t == NULL )
 	{
 		nwipe_perror( errno, __FUNCTION__, "malloc" );
 		nwipe_log( NWIPE_LOG_FATAL, "Unable to allocate the complement character array." );
