@@ -89,6 +89,7 @@ int nwipe_random_verify( nwipe_context_t* c )
 	{
 		nwipe_perror( errno, __FUNCTION__, "malloc" );
 		nwipe_log( NWIPE_LOG_FATAL, "Unable to allocate memory for the pattern buffer." );
+      free(b);
 		return -1;
 	}
 
@@ -102,6 +103,7 @@ int nwipe_random_verify( nwipe_context_t* c )
 	{
 		nwipe_perror( errno, __FUNCTION__, "lseek" );
 		nwipe_log( NWIPE_LOG_FATAL, "Unable to reset the '%s' file offset.", c->device_name );
+		free(b);free(d);
 		return -1;
 	}
 
@@ -109,6 +111,7 @@ int nwipe_random_verify( nwipe_context_t* c )
 	{
 		/* This is system insanity. */
 		nwipe_log( NWIPE_LOG_SANITY, "lseek() returned a bogus offset on '%s'.", c->device_name );
+		free(b);free(d);
 		return -1;
 	}
 
@@ -271,6 +274,7 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
 	{
 		nwipe_perror( errno, __FUNCTION__, "lseek" );
 		nwipe_log( NWIPE_LOG_FATAL, "Unable to reset the '%s' file offset.", c->device_name );
+		free(b);
 		return -1;
 	}
 
@@ -278,6 +282,7 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
 	{
 		/* This is system insanity. */
 		nwipe_log( NWIPE_LOG_SANITY, "__FUNCTION__: lseek() returned a bogus offset on '%s'.", c->device_name );
+		free(b);
 		return -1;
 	}
 
@@ -438,6 +443,7 @@ int nwipe_static_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
 	{
 		nwipe_perror( errno, __FUNCTION__, "malloc" );
 		nwipe_log( NWIPE_LOG_FATAL, "Unable to allocate memory for the pattern buffer." );
+		free(b);
 		return -1;
 	}
 
@@ -474,6 +480,7 @@ int nwipe_static_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
 	{
 		nwipe_perror( errno, __FUNCTION__, "lseek" );
 		nwipe_log( NWIPE_LOG_FATAL, "Unable to reset the '%s' file offset.", c->device_name );
+		free(b);
 		return -1;
 	}
 
@@ -481,6 +488,7 @@ int nwipe_static_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
 	{
 		/* This is system insanity. */
 		nwipe_log( NWIPE_LOG_SANITY, "nwipe_static_verify: lseek() returned a bogus offset on '%s'.", c->device_name );
+		free(b);
 		return -1;
 	}
 
