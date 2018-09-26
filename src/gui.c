@@ -1813,7 +1813,7 @@ void *nwipe_gui_status( void *ptr )
 			for( i = offset ; i < offset + slots && i < count ; i++ )
 			{
 				/* Print the context label. */
-				if ( strlen(c[i]->identity.serial_no) )
+				if ( strlen((const char*)c[i]->identity.serial_no) )
 				{
 					mvwprintw( main_window, yy++, 2, "%s - %s (%s)", c[i]->device_name,
 												c[i]->label,
