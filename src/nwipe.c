@@ -293,7 +293,7 @@ int main( int argc, char** argv )
                 */
 
                 /* Print serial number of device if it exists. */
-                if ( strlen(c2[i]->identity.serial_no) ) {
+                if ( strlen((const char*)c2[i]->identity.serial_no) ) {
                         nwipe_log( NWIPE_LOG_INFO, "Device %s has serial number %s", c2[i]->device_name, c2[i]->identity.serial_no);
                 }
                 
