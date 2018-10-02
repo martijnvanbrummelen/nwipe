@@ -34,7 +34,11 @@ added that generates warnings. Most of these warnings are benign, however some d
 highlight bugs, such as the "variable used before being initialised".
 
 Once done with your coding then the released/patch/fixed code can be compiled with
-./configure --prefix=/usr && make && make install
+```
+./configure --prefix=/usr
+make
+sudo make install
+```
 complete with all it's optimisations.
 
 For release notes please see the [README file](README)
