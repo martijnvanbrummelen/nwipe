@@ -7,13 +7,21 @@ allow its use with any host distribution, thus giving better hardware
 support.
 
 To use from the git repository, first create all the autoconf files with
+```
 ./init.sh
-
-Then do the standard ./configure --prefix=/usr && make && make install
-
-If your a developer and want to work on this code, you may prefer to use
-./configure --prefix=/usr CFLAGS='-O0 -g -Wall -Wextra' && make && make install
-
+```
+Then do the standard ..
+```
+./configure --prefix=/usr
+make
+sudo make install
+```
+However, if you're a developer and want to work on this code, you may prefer to use
+```
+./configure --prefix=/usr CFLAGS='-O0 -g -Wall -Wextra'
+make
+sudo make install
+```
 The '-O0 -g' flags disable optimisations, this is required if your debugging with
 gdb in an IDE such as Kdevelop. Without these optimisations disabled you won't be
 able to see the values of many variables in nwipe, not to mention the IDE won't step
