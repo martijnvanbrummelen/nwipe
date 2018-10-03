@@ -6,7 +6,18 @@ a need to run the DBAN dwipe command outside of DBAN, in order to
 allow its use with any host distribution, thus giving better hardware
 support.
 
-To use from the git repository, first create all the autoconf files with
+To use from the git repository, first install all the required packages
+```
+su
+ [password]
+apt install build-essential
+apt install automake
+apt install pkg-config
+apt install ncurses-dev
+apt install libparted-dev
+exit (exit superuser)
+```
+Then as normal user create all the autoconf files with
 ```
 ./init.sh
 ```
