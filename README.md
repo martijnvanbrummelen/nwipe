@@ -8,14 +8,11 @@ support.
 
 To use from the git repository, first install all the required packages
 ```
-su
- [password]
-apt install build-essential
-apt install automake
-apt install pkg-config
-apt install ncurses-dev
-apt install libparted-dev
-exit (exit superuser)
+sudo apt install build-essential
+sudo apt install automake
+sudo apt install pkg-config
+sudo apt install ncurses-dev
+sudo apt install libparted-dev
 ```
 Then as normal user create all the autoconf files with
 ```
