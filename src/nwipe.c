@@ -26,7 +26,6 @@
 #include <time.h>
 #include <signal.h>
 #include <pthread.h>
-#include <bits/sigset.h>
 #include <bits/pthreadtypes.h>
 #include <bits/sigthread.h>
 
