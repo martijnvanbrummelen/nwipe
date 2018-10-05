@@ -1257,7 +1257,7 @@ void nwipe_gui_noblank( void )
 	nwipe_gui_title( footer_window, nwipe_buttons2 );
 	wrefresh( footer_window );
 
-	while( keystroke != ERR )
+	do	
 	{
 		/* Clear the main window. */
 		werase( main_window );
@@ -1339,8 +1339,9 @@ void nwipe_gui_noblank( void )
 
 		} /* switch */
 		
-	} /* while */
+	}
 
+	while( keystroke != ERR );
 } /* nwipe_gui_noblank */
 
 

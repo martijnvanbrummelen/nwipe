@@ -25,6 +25,7 @@ v0.25
 - Check right pointer (Thanks PartialVolume)
 - Fix casting problem (Thanks PartialVolume)
 - Fix serial number
+- Fixes uninitialized variable warning ( Thanks PartialVolume)
 
 v0.24
 - use include values for version 0.17
