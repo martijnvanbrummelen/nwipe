@@ -20,6 +20,7 @@ RELEASE NOTES
 
 v0.25
 - Correct J=Up K=Down in footer(Thanks PartialVolume)
+- Fix segfault initialize nwipe_gui_thread (Thanks PartialVolume)
 
 v0.24
 - use include values for version 0.17

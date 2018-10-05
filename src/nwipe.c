@@ -48,7 +48,7 @@ int main( int argc, char** argv )
         int nwipe_enumerated;          /* The number of contexts that have been enumerated. */
         int nwipe_error = 0;           /* An error counter.                                 */
         int nwipe_selected = 0;        /* The number of contexts that have been selected.   */
-        pthread_t nwipe_gui_thread;    /* The thread ID of the GUI thread.                  */
+        pthread_t nwipe_gui_thread = 0;    /* The thread ID of the GUI thread.                  */
         pthread_t nwipe_sigint_thread; /* The thread ID of the sigint handler.              */
 
         /* The entropy source file handle. */
