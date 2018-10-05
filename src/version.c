@@ -4,14 +4,14 @@
  * used by configure to dynamically assign those values 
  * to documentation files.
  */
-const char *version_string = "0.24";
+const char *version_string = "0.25";
 const char *program_name   = "nwipe";
 const char *author_name    = "Martijn van Brummelen";
 const char *email_address  = "git@brumit.nl";
-const char *years          = "2017";
+const char *years          = "2018";
 const char *copyright      = "Copyright Darik Horn <dajhorn-dban@vanadac.com>\n\
 Modifications to original dwipe Copyright Andy Beverley <andy@andybev.com>\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty; not even for MERCHANTABILITY or FITNESS\n\
 FOR A PARTICULAR PURPOSE.\n";
-const char *banner         = "nwipe 0.24 (based on DBAN's dwipe - Darik's Wipe)";
+const char *banner         = "nwipe 0.25 (based on DBAN's dwipe - Darik's Wipe)";
