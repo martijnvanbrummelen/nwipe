@@ -148,8 +148,11 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
         */
         ioctl(fd, HDIO_GET_IDENTITY, &next_device->identity);
         close( fd );
-        trim ( (char*) next_device->identity.serial_no ); /* Remove leading/training whitespace from serial number and left justify */
-        nwipe_log( NWIPE_LOG_INFO,"Found drive model=\"%s\", device path=\"%s\", size=\"%s\", serial number=\"%s\"", next_device->label, next_device->device_name, next_device->device_size_text, next_device->identity.serial_no);
+		  int idx;
+		  for (idx=0; idx<20; idx++) next_device->serial_no[idx]=next_device->identity.serial_no[idx];
+		  next_device->serial_no[20]=0; /* terminate the string */
+        trim ( (char*) next_device->serial_no ); /* Remove leading/training whitespace from serial number and left justify */
+        nwipe_log( NWIPE_LOG_INFO,"Found drive model=\"%s\", device path=\"%s\", size=\"%s\", serial number=\"%s\"", next_device->label, next_device->device_name, next_device->device_size_text, next_device->serial_no);
 
         (*c)[dcount] = next_device;
         

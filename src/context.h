@@ -114,7 +114,11 @@ typedef struct nwipe_context_t_
 	pthread_t         thread;           /* The ID of the thread.                                          */
 	u64               throughput;       /* Average throughput in bytes per second.                        */
 	u64               verify_errors;    /* The number of verification errors across all passes.           */
-	struct hd_driveid  identity;	    /* The serial number of the drive (where applicable)              */
+	char              serial_no[21];    /* Serial number(processed), 20 characters, plus null termination */
+	struct hd_driveid  identity;	      /* Identity contains the raw serial number of the drive           */
+                                       /* (where applicable), however, for use within nwipe use the      */
+                                       /* processed serial_no[21] string above. To access serial no. use */
+                                       /* c[i]->serial_no) and not c[i]->identity.serial_no);                                              */
 } nwipe_context_t;
 
 

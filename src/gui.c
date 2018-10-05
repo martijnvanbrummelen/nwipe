@@ -450,7 +450,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
 					wprintw( main_window, " [wipe] %i. %s - %s %s (%s)", (i + offset + 1),
 										c[i+offset]->device_name,
 										c[i+offset]->label,
-										c[i+offset]->identity.serial_no,
+										c[i+offset]->serial_no,
 										c[i+offset]->device_size_text );
 					break;
 
@@ -459,7 +459,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
 					wprintw( main_window, " [    ] %i. %s - %s %s (%s)", (i + offset +1),
 										c[i+offset]->device_name,
 										c[i+offset]->label,
-										c[i+offset]->identity.serial_no,
+										c[i+offset]->serial_no,
 										c[i+offset]->device_size_text );
 					break;
 
@@ -469,7 +469,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
 					wprintw( main_window, " [****] %i. %s - %s %s (%s)", (i + offset +1),
 										c[i+offset]->device_name,
 										c[i+offset]->label,
-										c[i+offset]->identity.serial_no,
+										c[i+offset]->serial_no,
 										c[i+offset]->device_size_text );
 					break;
 
@@ -479,7 +479,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
 					wprintw( main_window, " [----] %i. %s - %s %s (%s)", (i + offset +1),
 										c[i+offset]->device_name,
 										c[i+offset]->label,
-										c[i+offset]->identity.serial_no,
+										c[i+offset]->serial_no,
 										c[i+offset]->device_size_text );
 					break;
 
@@ -1815,11 +1815,11 @@ void *nwipe_gui_status( void *ptr )
 			for( i = offset ; i < offset + slots && i < count ; i++ )
 			{
 				/* Print the context label. */
-				if ( strlen((const char*)c[i]->identity.serial_no) )
+				if ( strlen((const char*)c[i]->serial_no) )
 				{
 					mvwprintw( main_window, yy++, 2, "%s - %s (%s)", c[i]->device_name,
 												c[i]->label,
-												c[i]->identity.serial_no);
+												c[i]->serial_no);
 				}
 				else {
 					mvwprintw( main_window, yy++, 2, "%s - %s", c[i]->device_name,
