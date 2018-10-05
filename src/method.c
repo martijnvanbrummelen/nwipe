@@ -421,6 +421,7 @@ void *nwipe_ops2( void *ptr )
 		nwipe_perror( errno, __FUNCTION__, "malloc" );
 		nwipe_log( NWIPE_LOG_FATAL, "Unable to allocate the complement character array." );
 		c->result = -1;
+		free(s);
 		return NULL;
 	}
 
@@ -436,6 +437,8 @@ void *nwipe_ops2( void *ptr )
 		nwipe_perror( errno, __FUNCTION__, "malloc" );
 		nwipe_log( NWIPE_LOG_FATAL, "Unable to allocate the pattern array." );
 		c->result = -1;
+		free(s);
+		free(t);
 		return NULL;
 	}
 
@@ -448,10 +451,24 @@ void *nwipe_ops2( void *ptr )
 		r = errno;
 		nwipe_perror( r, __FUNCTION__, "read" );
 		nwipe_log( NWIPE_LOG_FATAL, "Unable to seed the %s method.", nwipe_ops2_label );
-		
-		/* Ensure a negative return. */
-		if( r < 0 ) { c->result = r; return NULL; }
-		else        { c->result = -1; return NULL; }
+
+		if( r < 0 )
+        	{
+            		c->result = r;
+            		free(s);
+			free(t);
+			free(patterns);
+            		return NULL;
+        	}
+		else
+        	{
+            		c->result = -1;
+            		free(s);
+			free(t);
+			free(patterns);
+            		return NULL;
+        	}
+
 	}
 
 
