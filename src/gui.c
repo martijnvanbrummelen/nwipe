@@ -1342,8 +1342,8 @@ void nwipe_gui_noblank( void )
 		} /* switch */
 		
 	}
-	while( keystroke != ERR );
 
+	while( keystroke != ERR );
 } /* nwipe_gui_noblank */
 
 
