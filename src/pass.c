@@ -285,7 +285,6 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
 		/* This is system insanity. */
 		nwipe_log( NWIPE_LOG_SANITY, "__FUNCTION__: lseek() returned a bogus offset on '%s'.", c->device_name );
 		free(b);
-		free(d);
 		return -1;
 	}
 
