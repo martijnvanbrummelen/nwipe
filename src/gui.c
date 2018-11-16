@@ -995,7 +995,7 @@ void nwipe_gui_prng( void )
 	if( nwipe_options.prng == &nwipe_isaac   ) { focus = 1; }
 
 
-	while( keystroke != ERR )
+    do
 	{
 		/* Clear the main window. */
 		werase( main_window );
@@ -1086,6 +1086,7 @@ void nwipe_gui_prng( void )
 		} /* switch */
 		
 	} /* while */
+	while( keystroke != ERR )
 
 } /* nwipe_gui_prng */
 
