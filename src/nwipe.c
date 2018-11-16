@@ -20,10 +20,14 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA. 
  *
  */
+#define _POSIX_SOURCE
 
 #include <netinet/in.h>
 #include <time.h>
 #include <signal.h>
+#include <pthread.h>
+#include <bits/pthreadtypes.h>
+#include <bits/sigthread.h>
 
 #include "nwipe.h"
 #include "context.h"
@@ -142,6 +146,7 @@ int main( int argc, char** argv )
         
         nwipe_thread_data_ptr.c = c2;
         nwipe_misc_thread_data.nwipe_enumerated = nwipe_enumerated;
+        nwipe_misc_thread_data.nwipe_selected = 0;
         if( !nwipe_options.nogui )
                 nwipe_misc_thread_data.gui_thread = &nwipe_gui_thread;
         nwipe_thread_data_ptr.nwipe_misc_thread_data = &nwipe_misc_thread_data;
@@ -566,12 +571,14 @@ void *signal_hand(void *ptr)
                         case SIGQUIT :
                         case SIGTERM :
                         {
+                                nwipe_log( NWIPE_LOG_INFO, "nwipe_selected = %lu", nwipe_misc_thread_data->nwipe_selected );
 
                                 for( i = 0; i < nwipe_misc_thread_data->nwipe_selected; i++ )
                                 {
 
                                         if ( c[i]->thread )
                                         {
+                                                nwipe_log( NWIPE_LOG_INFO, "Cancelling thread for %s", c[i]->device_name );
                                                 pthread_cancel( c[i]->thread );
                                         }
                                 }
