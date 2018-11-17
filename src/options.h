@@ -36,6 +36,8 @@
 #define NWIPE_KNOB_SCSI                   "/proc/scsi/scsi"
 #define NWIPE_KNOB_SLEEP                  1
 #define NWIPE_KNOB_STAT                   "/proc/stat"
+#define MAX_NUMBER_EXCLUDED_DRIVES        10
+#define MAX_DRIVE_PATH_LENGTH             200 /* e.g. /dev/sda is only 8 characters long, so 200 should be plenty*/
 
 /* Function prototypes for loading options from the environment and command line. */
 int nwipe_options_parse( int argc, char** argv );
@@ -55,6 +57,7 @@ typedef struct /* nwipe_options_t */
 //	nwipe_method_t method;    /* A function pointer to the wipe method that will be used.   */
 	void*          method;    /* A function pointer to the wipe method that will be used.   */
 	char           logfile[FILENAME_MAX];   /* The filename to log the output to            */
+	char           exclude[MAX_NUMBER_EXCLUDED_DRIVES][MAX_DRIVE_PATH_LENGTH]; /* Drives excluded from the search */
 	nwipe_prng_t*  prng;      /* The pseudo random number generator implementation.         */
 	int            rounds;    /* The number of times that the wipe method should be called. */
 	int            sync;      /* A flag to indicate whether writes should be sync'd.        */
