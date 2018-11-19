@@ -18,6 +18,7 @@
  *
  */
 
+#define _POSIX_SOURCE
 
 #include "nwipe.h"
 #include "context.h"
