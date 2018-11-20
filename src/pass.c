@@ -445,6 +445,7 @@ int nwipe_static_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
 	{
 		nwipe_perror( errno, __FUNCTION__, "malloc" );
 		nwipe_log( NWIPE_LOG_FATAL, "Unable to allocate memory for the pattern buffer." );
+		free(b);
 		return -1;
 	}
 
