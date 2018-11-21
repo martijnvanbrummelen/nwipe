@@ -42,6 +42,7 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
  *
  */
 
+	char **result;
 
 	/* A time buffer. */
 	time_t t;
@@ -58,7 +59,13 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 	/* Increase the current log element pointer - we will write here */
 	if (log_current_element == log_elements_allocated) {
 		log_elements_allocated++;
-		log_lines = (char **) realloc (log_lines, (log_elements_allocated) * sizeof(char *));
+		result = realloc (log_lines, (log_elements_allocated) * sizeof(char *));
+		if ( result == NULL )
+		{
+			fprintf( stderr, "nwipe_log: realloc failed when adding a line.\n" );
+			return;
+		}
+		log_lines = result;
 		log_lines[log_current_element] = malloc(MAX_LOG_LINE_CHARS * sizeof(char));
 	}
 
