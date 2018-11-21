@@ -43,6 +43,7 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
  */
 
 	char **result;
+	char *malloc_result;
 
 	/* A time buffer. */
 	time_t t;
@@ -66,7 +67,14 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 			return;
 		}
 		log_lines = result;
-		log_lines[log_current_element] = malloc(MAX_LOG_LINE_CHARS * sizeof(char));
+
+		malloc_result = malloc(MAX_LOG_LINE_CHARS * sizeof(char));
+		if (malloc_result == NULL)
+		{
+			fprintf( stderr, "nwipe_log: malloc failed when adding a log line.\n" );
+			return;
+		}
+		log_lines[log_current_element] = malloc_result;
 	}
 
 	/* Position of writing to current log string */
