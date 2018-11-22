@@ -22,6 +22,9 @@
 #ifndef LOGGING_H_
 #define LOGGING_H_
 
+/* Maximum size a log message can be */
+#define MAX_LOG_LINE_CHARS 512
+
 typedef enum nwipe_log_t_
 {
 	NWIPE_LOG_NONE = 0,
