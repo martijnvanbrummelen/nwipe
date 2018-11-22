@@ -27,8 +27,6 @@
 #include "options.h"
 #include "logging.h"
 
-int const MAX_LOG_LINE_CHARS = 512;
-
 /* Global array to hold log values to print when logging to STDOUT */
 char **log_lines;
 int log_current_element = 0;
@@ -44,6 +42,10 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 
 	char **result;
 	char *malloc_result;
+	char message_buffer[MAX_LOG_LINE_CHARS * sizeof(char)];
+	int chars_written;
+	
+	int message_buffer_length;
 
 	/* A time buffer. */
 	time_t t;
@@ -57,6 +59,135 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 
 	pthread_mutex_lock( &mutex1 );
 
+	/* Position of writing to current log string */
+	int line_current_pos = 0;
+	
+	/* Print the date. The rc script uses the same format. */
+	  chars_written = snprintf( message_buffer, MAX_LOG_LINE_CHARS, "[%i/%02i/%02i %02i:%02i:%02i] nwipe: ", \
+	  1900 + p->tm_year, 1 + p->tm_mon, p->tm_mday, p->tm_hour, p->tm_min, p->tm_sec );
+	  
+	/* Has the end of the buffer been reached ?, snprintf returns the number of characters that would have been 
+	 * written if MAX_LOG_LINE_CHARS had not been reached, it does not return the actual characters written in
+	 * all circumstances, hence why we need to check whether it's greater than MAX_LOG_LINE_CHARS and if so set
+	 * it to MAX_LOG_LINE_CHARS, preventing a buffer overrun further down this function.
+	 */
+
+	/* check if there was a complete failure to write this part of the message, in which case return */
+	if ( chars_written < 0 )
+	{
+		fprintf( stderr, "nwipe_log: snprintf error when writing log line to memory.\n" );
+		pthread_mutex_unlock( &mutex1 );
+		return;
+	}
+	else
+	{
+		if ( (line_current_pos + chars_written) > MAX_LOG_LINE_CHARS )
+		{
+			fprintf( stderr, "nwipe_log: Warning! The log line has been truncated as it exceeded %i characters\n", MAX_LOG_LINE_CHARS );
+			line_current_pos = MAX_LOG_LINE_CHARS;
+		}
+		else
+		{
+			line_current_pos += chars_written;
+		}
+	}
+
+	if ( line_current_pos < MAX_LOG_LINE_CHARS )
+	{
+		switch( level )
+		{
+
+			case NWIPE_LOG_NONE:
+				/* Do nothing. */
+				break;
+
+			case NWIPE_LOG_DEBUG:
+				chars_written = snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, "debug: " );
+				break;
+
+			case NWIPE_LOG_INFO:
+				chars_written = snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, "info: " );
+				break;
+
+			case NWIPE_LOG_NOTICE:
+				chars_written = snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, "notice: " );
+				break;
+
+			case NWIPE_LOG_WARNING:
+				chars_written = snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, "warning: " );
+				break;
+
+			case NWIPE_LOG_ERROR:
+				chars_written = snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, "error: " );
+				break;
+
+			case NWIPE_LOG_FATAL:
+				chars_written = snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, "fatal: " );
+				break;
+
+			case NWIPE_LOG_SANITY:
+				/* TODO: Request that the user report the log. */
+				chars_written = snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, "sanity: " );
+				break;
+
+			default:
+				chars_written = snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, "level %i: ", level );
+		}
+	
+		/* Has the end of the buffer been reached ?
+		*/
+		if ( chars_written < 0 )
+		{
+			fprintf( stderr, "nwipe_log: snprintf error when writing log line to memory.\n" );
+			pthread_mutex_unlock( &mutex1 );
+			return;
+		}
+		else
+		{
+			if ( (line_current_pos + chars_written) > MAX_LOG_LINE_CHARS )
+			{
+				fprintf( stderr, "nwipe_log: Warning! The log line has been truncated as it exceeded %i characters\n", MAX_LOG_LINE_CHARS );
+				line_current_pos = MAX_LOG_LINE_CHARS;
+			}
+			else
+			{
+				line_current_pos += chars_written;
+			}
+		}
+	}
+
+	/* The variable argument pointer. */
+	va_list ap;
+
+	/* Fetch the argument list. */
+	va_start( ap, format );
+	
+	
+	/* Print the event. */
+	if ( line_current_pos < MAX_LOG_LINE_CHARS )
+	{
+		chars_written = vsnprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos -1, format, ap );
+	
+		if ( chars_written < 0 )
+		{
+			fprintf( stderr, "nwipe_log: snprintf error when writing log line to memory.\n" );
+			pthread_mutex_unlock( &mutex1 );
+			return;
+		}
+		else
+		{
+			if ( (line_current_pos + chars_written) > MAX_LOG_LINE_CHARS )
+			{
+				fprintf( stderr, "nwipe_log: Warning! The log line has been truncated as it exceeded %i characters\n", MAX_LOG_LINE_CHARS );
+				line_current_pos = MAX_LOG_LINE_CHARS;
+			}
+			else
+			{
+				line_current_pos += chars_written;
+			}
+		}
+	}
+
 	/* Increase the current log element pointer - we will write here */
 	if (log_current_element == log_elements_allocated) {
 		log_elements_allocated++;
@@ -69,7 +200,8 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 		}
 		log_lines = result;
 
-		malloc_result = malloc(MAX_LOG_LINE_CHARS * sizeof(char));
+		message_buffer_length = strlen( message_buffer ) * sizeof(char);
+		malloc_result = malloc((message_buffer_length + 1) * sizeof(char));
 		if (malloc_result == NULL)
 		{
 			fprintf( stderr, "nwipe_log: malloc failed when adding a log line.\n" );
@@ -79,62 +211,7 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 		log_lines[log_current_element] = malloc_result;
 	}
 
-	/* Position of writing to current log string */
-	int line_current_pos = 0;
-	
-	/* Print the date. The rc script uses the same format. */
-	line_current_pos = snprintf( log_lines[log_current_element], MAX_LOG_LINE_CHARS, "[%i/%02i/%02i %02i:%02i:%02i] nwipe: ", \
-	  1900 + p->tm_year, 1 + p->tm_mon, p->tm_mday, p->tm_hour, p->tm_min, p->tm_sec );
-
-	switch( level )
-	{
-
-		case NWIPE_LOG_NONE:
-			/* Do nothing. */
-			break;
-
-		case NWIPE_LOG_DEBUG:
-			line_current_pos += snprintf( log_lines[log_current_element] + line_current_pos, MAX_LOG_LINE_CHARS, "debug: " );
-			break;
-
-		case NWIPE_LOG_INFO:
-			line_current_pos += snprintf( log_lines[log_current_element] + line_current_pos, MAX_LOG_LINE_CHARS, "info: " );
-			break;
-
-		case NWIPE_LOG_NOTICE:
-			line_current_pos += snprintf( log_lines[log_current_element] + line_current_pos, MAX_LOG_LINE_CHARS, "notice: " );
-			break;
-
-		case NWIPE_LOG_WARNING:
-			line_current_pos += snprintf( log_lines[log_current_element] + line_current_pos, MAX_LOG_LINE_CHARS, "warning: " );
-			break;
-
-		case NWIPE_LOG_ERROR:
-			line_current_pos += snprintf( log_lines[log_current_element] + line_current_pos, MAX_LOG_LINE_CHARS, "error: " );
-			break;
-
-		case NWIPE_LOG_FATAL:
-			line_current_pos += snprintf( log_lines[log_current_element] + line_current_pos, MAX_LOG_LINE_CHARS, "fatal: " );
-			break;
-
-		case NWIPE_LOG_SANITY:
-			/* TODO: Request that the user report the log. */
-			line_current_pos += snprintf( log_lines[log_current_element] + line_current_pos, MAX_LOG_LINE_CHARS, "sanity: " );
-			break;
-
-		default:
-			line_current_pos += snprintf( log_lines[log_current_element] + line_current_pos, MAX_LOG_LINE_CHARS, "level %i: ", level );
-
-	}
-
-	/* The variable argument pointer. */
-	va_list ap;
-
-	/* Fetch the argument list. */
-	va_start( ap, format );
-
-	/* Print the event. */
-	line_current_pos += vsnprintf( log_lines[log_current_element] + line_current_pos, MAX_LOG_LINE_CHARS, format, ap );
+	strcpy ( log_lines[log_current_element], message_buffer );
 
 /*
 	if( level >= NWIPE_LOG_WARNING )
