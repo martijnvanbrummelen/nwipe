@@ -102,6 +102,7 @@ int main( int argc, char** argv )
                 nwipe_enumerated = nwipe_device_get( &c1, argv, argc );
                 if ( nwipe_enumerated == 0 )
                 {
+                    cleanup();
                     exit(1);
                 }
 
@@ -210,6 +211,7 @@ int main( int argc, char** argv )
                 if( nwipe_options.nogui )
                 {
                         printf("--nogui option must be used with autonuke option\n"); 
+                        cleanup();
                         exit(1);
                 }
                 else
@@ -481,6 +483,8 @@ int main( int argc, char** argv )
                 printf("%s\n", log_lines[i]);
         }
 
+        cleanup();
+
         /* Success. */
         return 0;
 
@@ -604,8 +608,7 @@ void *signal_hand(void *ptr)
 
                                 printf("Program interrupted (caught signal %d)\n", sig); 
 
-                                // Cleanup
-                                // TODO: All other cleanup required
+                                cleanup();
 
                                 exit(0);
 
@@ -619,5 +622,20 @@ void *signal_hand(void *ptr)
 
 } /* end of signal_hand */
 
+int cleanup()
+{
+	/* Deallocate memory used by logging */
+	int idx;
+	for ( idx=0; idx < log_elements_allocated; idx++ )
+	{
+		free ( log_lines[idx] );
+	}
+	log_elements_allocated=0; /* zeroed just in case cleanup is called twice */
+	free ( log_lines );
+	
+	/* TODO: All other cleanup required */
+	
+	return 0;
+}
  
 /* eof */

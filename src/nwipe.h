@@ -20,6 +20,9 @@
  *
  */
 
+/* Function prototypes */
+int cleanup();
+
 #ifndef NWIPE_H_
 #define NWIPE_H_
 

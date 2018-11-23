@@ -188,7 +188,7 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 		}
 	}
 
-	/* Increase the current log element pointer - we will write here */
+	/* Increase the current log element pointer - we will write here, deallocation is done in cleanup() in nwipe.c */
 	if (log_current_element == log_elements_allocated) {
 		log_elements_allocated++;
 		result = realloc (log_lines, (log_elements_allocated) * sizeof(char *));
@@ -200,6 +200,7 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 		}
 		log_lines = result;
 
+		/* Allocate memory for storing a single log message, deallocation is done in cleanup() in nwipe.c */
 		message_buffer_length = strlen( message_buffer ) * sizeof(char);
 		malloc_result = malloc((message_buffer_length + 1) * sizeof(char));
 		if (malloc_result == NULL)
