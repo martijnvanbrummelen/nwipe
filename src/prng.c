@@ -149,6 +149,19 @@ int nwipe_isaac_init( NWIPE_PRNG_INIT_SIGNATURE )
 
 int nwipe_isaac_read( NWIPE_PRNG_READ_SIGNATURE )
 {
+	/* The purpose of this function is unclear, as it does not do anything except immediately return !
+	 * Because the variables in the macro NWIPE_PRNG_READ_SIGNATURE were then unused this throws
+	 * up a handful of compiler warnings, related to variables being unused. To stop the compiler warnings
+	 * I've simply put in a (void) var so that compiler sees the variable are supposed to be unused.
+	 * 
+	 * As this code works, I thought it best not to remove this function, just in case it servers
+	 * some purpose or is there for future use.
+	 */
+
+	(void) state;
+	(void) buffer;
+	(void) count;
+
 	return 0;
 }
 
