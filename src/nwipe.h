@@ -20,11 +20,12 @@
  *
  */
 
-/* Function prototypes */
-int cleanup();
 
 #ifndef NWIPE_H_
 #define NWIPE_H_
+
+/* Function prototypes */
+int cleanup();
 
 #ifndef _LARGEFILE64_SOURCE
 #define _LARGEFILE64_SOURCE
