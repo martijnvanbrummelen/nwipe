@@ -29,8 +29,9 @@
  *   and things like ncurses libmenu are not worth the storage overhead.
  *
  */
-/* Why is this needed? Segfaults without it */
-#include <netinet/in.h>
+#include <ncurses.h>
+#include <panel.h>
+#include <stdint.h>
 
 #include "nwipe.h"
 #include "context.h"
