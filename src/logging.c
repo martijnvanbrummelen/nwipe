@@ -172,6 +172,7 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 		{
 			fprintf( stderr, "nwipe_log: snprintf error when writing log line to memory.\n" );
 			pthread_mutex_unlock( &mutex1 );
+			va_end( ap );
 			return;
 		}
 		else
@@ -196,6 +197,7 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 		{
 			fprintf( stderr, "nwipe_log: realloc failed when adding a log line.\n" );
 			pthread_mutex_unlock( &mutex1 );
+			va_end( ap );
 			return;
 		}
 		log_lines = result;
@@ -207,6 +209,7 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 		{
 			fprintf( stderr, "nwipe_log: malloc failed when adding a log line.\n" );
 			pthread_mutex_unlock( &mutex1 );
+			va_end( ap );
 			return;
 		}
 		log_lines[log_current_element] = malloc_result;
