@@ -139,6 +139,7 @@ void nwipe_gui_title( WINDOW* w, const char* s )
 
 	/* The number of lines in the window. (Not used.) */
 	int wy;
+	(void) wy; /* flag wy not used to the compiler, to silence warning */
 
 	/* The number of columns in the window. */
 	int wx;
