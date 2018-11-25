@@ -22,7 +22,7 @@
  */
 #define _POSIX_SOURCE
 
-#include <netinet/in.h>
+#include <stdint.h>
 #include <time.h>
 #include <signal.h>
 #include <pthread.h>
