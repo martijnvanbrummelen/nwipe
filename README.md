@@ -11,5 +11,5 @@ To use from the git repository, first create all the autoconf files with
 
 Then do the standard ./configure --prefix=/usr && make && make install
 
-For release notes please see the [README file](README)
+For developer & release notes please see the [README file](README)
 
