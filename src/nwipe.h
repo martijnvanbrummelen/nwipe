@@ -37,7 +37,11 @@ int cleanup();
 
 /* workaround for Fedora */
 #ifndef off64_t
-# define off64_t off_t
+#ifndef off_t
+#define off64_t int64_t
+#else
+#define off64_t off_t
+#endif
 #endif
 
 /* Busybox headers. */
