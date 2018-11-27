@@ -590,7 +590,7 @@ void *signal_hand(void *ptr)
                                 // Kill the GUI thread
                                 if( !nwipe_options.nogui )
                                 {
-                                        if ( nwipe_misc_thread_data->gui_thread )
+                                        if ( *nwipe_misc_thread_data->gui_thread )
                                         {
                                                 pthread_cancel( *nwipe_misc_thread_data->gui_thread );
                                                 *nwipe_misc_thread_data->gui_thread = 0;
