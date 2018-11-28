@@ -7,7 +7,7 @@ ncurses
 pthreads
 parted
 
-Debian & Ubuntu prerequisite
+Debian & Ubuntu prerequisites
 ============================
 
 If you compiling nwipe from source the following will need to be installed first
@@ -18,6 +18,16 @@ sudo apt install automake
 sudo apt install libncurses5-dev
 sudo apt install autotools-dev
 sudo apt install libparted-dev
+
+Fedora prerequisites
+====================
+
+sudo bash
+dnf update
+dnf groupinstall "Development Tools"
+dnf groupinstall "C Development Tools and Libraries"
+yum install ncurses-devel
+yum install parted-devel
 
 Compilation
 ===========
@@ -55,7 +65,6 @@ Once done with your coding then the released/patch/fixed code can be compiled wi
 
 complete with all it's optimisations.
 
-The ncurses, pthreads and parted libraries are required for compiling.
 For any problems, please use the Github page:
 https://github.com/martijnvanbrummelen/nwipe
 
