@@ -19,7 +19,10 @@
  */
 
 #define _POSIX_SOURCE
+#define _DEFAULT_SOURCE
 
+#include "stdio.h"
+#include "stdlib.h"
 #include "nwipe.h"
 #include "context.h"
 #include "method.h"
@@ -317,5 +320,70 @@ void nwipe_perror( int nwipe_errno, const char* f, const char* s )
 	nwipe_log( NWIPE_LOG_ERROR, "%s: %s: %s", f, s, strerror( nwipe_errno ) );
 
 } /* nwipe_perror */
+
+int nwipe_log_sysinfo()
+{
+   FILE *fp;
+   char path[256];
+   char cmd[50];
+   int len;
+
+   /* Remove or add keywords to be searched, depending on what information is to
+      be logged, making sure the last entry in the array is a NULL string. To remove
+      an entry simply comment out the keyword with // */
+   char dmidecode_keywords[][24] = {
+   "bios-version",
+   "bios-release-date",
+   "system-manufacturer",
+   "system-product-name",
+   "system-version",
+   "system-serial-number",
+   "system-uuid",
+   "baseboard-manufacturer",
+   "baseboard-product-name",
+   "baseboard-version",
+   "baseboard-serial-number",
+   "baseboard-asset-tag",
+   "chassis-manufacturer",
+   "chassis-type",
+   "chassis-version",
+   "chassis-serial-number",
+   "chassis-asset-tag",
+   "processor-family",
+   "processor-manufacturer",
+   "processor-version",
+   "processor-frequency",
+   "" //terminates the keyword array. DO NOT REMOVE
+   };
+   unsigned int keywords_idx;
+
+   keywords_idx = 0;
+
+   /* Run the dmidecode command to retrieve system serial number */
+   while ( dmidecode_keywords[keywords_idx][0] != 0 )
+   {
+      sprintf(cmd,"dmidecode -s %s", &dmidecode_keywords[keywords_idx][0] );
+      fp = popen(cmd, "r");
+      if (fp == NULL ) {
+         nwipe_log( NWIPE_LOG_INFO, "Failed to run command dmidecode -s %s", &dmidecode_keywords[keywords_idx][0], path );
+         return 1;
+      }
+      /* Read the output a line at a time - output it. */
+      while (fgets(path, sizeof(path)-1, fp) != NULL) 
+      {
+         /* Remove any trailing return from the string, as nwipe_log automatically adds a return */
+         len = strlen(path);
+         if( path[len-1] == '\n' ) {
+            path[len-1] = 0;
+         }
+         nwipe_log( NWIPE_LOG_INFO, "%s = %s", &dmidecode_keywords[keywords_idx][0], path );
+      }
+      /* close */
+      pclose(fp);
+      keywords_idx++;
+   }
+   return 0;
+}
+
 
 /* eof */

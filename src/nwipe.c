@@ -107,6 +107,9 @@ int main( int argc, char** argv )
                 }
 
         }
+        
+        /* Log the System information */
+        nwipe_log_sysinfo();
 
 
         /* The array of pointers to contexts that will actually be wiped. */
