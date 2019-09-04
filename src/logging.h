@@ -39,6 +39,7 @@ typedef enum nwipe_log_t_
 
 void nwipe_log( nwipe_log_t level, const char* format, ... );
 void nwipe_perror( int nwipe_errno, const char* f, const char* s );
+int nwipe_log_sysinfo();
 
 /* Global array to hold log values to print when logging to STDOUT */
 //extern char **log_lines;
