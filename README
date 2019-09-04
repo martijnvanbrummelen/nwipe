@@ -74,6 +74,11 @@ Martijn van Brummelen
 RELEASE NOTES
 =============
 
+v0.26
+- New release
+- Add exclude drive option(Thanks PartialVolume)
+- Log hardware (Thanks PartialVolume)
+
 v0.25
 - Correct J=Up K=Down in footer(Thanks PartialVolume)
 - Fix segfault initialize nwipe_gui_thread (Thanks PartialVolume)
