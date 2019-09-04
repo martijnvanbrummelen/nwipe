@@ -106,6 +106,18 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
 	/* Populate this struct, then assign it to overall array of structs. */
 	nwipe_context_t* next_device;
 	int fd;
+	int idx;
+
+	/* Check whether this drive is on the excluded drive list ? */
+	idx=0;
+	while ( idx < 10 )
+	{
+		if ( !strcmp( dev->path, nwipe_options.exclude[idx++] ))
+		{
+			nwipe_log( NWIPE_LOG_NOTICE, "Device %s excluded as per command line option -e", dev->path );
+			return 0;
+		}
+	}
 
 	/* Try opening the device to see if it's valid. Close on completion. */
 	if (!ped_device_open(dev))
@@ -148,7 +160,6 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
 	ioctl(fd, HDIO_GET_IDENTITY, &next_device->identity);
 	close( fd );
 
-    int idx;
     for (idx=0; idx<20; idx++) next_device->serial_no[idx]=next_device->identity.serial_no[idx];
     
     next_device->serial_no[20]=0;               /* terminate the string */
