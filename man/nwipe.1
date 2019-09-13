@@ -77,6 +77,11 @@ PRNG option (mersenne|twister|isaac)
 .TP
 \fB\-r\fR, \fB\-\-rounds\fR=\fINUM\fR
 Number of times to wipe the device using the selected method (default: 1)
+.TP
+\fB\-e\fR, \fB\-\-exclude\fR=\fIDEVICES\fR
+Up to ten comma separated devices to be excluded, examples:
+ --exclude=/dev/sdc
+ --exclude=/dev/sdc,/dev/sdd
 .SH BUGS
 Please see the GitHub site for the latest list
 (https://github.com/martijnvanbrummelen/nwipe/issues)
