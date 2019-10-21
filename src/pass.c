@@ -236,7 +236,12 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
 
 	/* The number of bytes remaining in the pass. */
 	u64 z = c->device_size;
-
+	
+	/* Number of writes to do before a fdatasync. */
+	int syncRate = nwipe_options.sync;
+	
+	/* Counter to track when to do a fdatasync. */
+	int i = 0;
 
 	if( c->prng_seed.s == NULL )
 	{
@@ -349,6 +354,36 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
 		/* Increment the total progress counters. */
 		c->pass_done += r;
 		c->round_done += r;
+		
+		/* Perodic Sync */
+		if( syncRate > 0 )
+		{
+			i++;
+			
+			if( i >= syncRate )
+			{
+				/* Tell our parent that we are syncing the device. */
+				c->sync_status = 1;
+
+				/* Sync the device. */
+				r = fdatasync( c->device_fd );
+
+				/* Tell our parent that we have finished syncing the device. */
+				c->sync_status = 0;
+				
+				if( r != 0 )
+				{
+					nwipe_perror( errno, __FUNCTION__, "fdatasync" );
+					nwipe_log( NWIPE_LOG_WARNING, "Buffer flush failure on '%s'.", c->device_name );
+					nwipe_log( NWIPE_LOG_WARNING, "Wrote %llu bytes on '%s'.", c->pass_done, c->device_name);
+					free(b);
+					return -1;
+				}
+				
+				i = 0;
+			}
+		
+		}
 
 		pthread_testcancel();
 
@@ -610,6 +645,12 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
 
 	/* The number of bytes remaining in the pass. */
 	u64 z = c->device_size;
+	
+	/* Number of writes to do before a fdatasync. */
+	int syncRate = nwipe_options.sync;
+	
+	/* Counter to track when to do a fdatasync. */
+	int i = 0;
 
 	if( pattern == NULL )
 	{
@@ -732,6 +773,36 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
 		/* Increment the total progress counterr. */
 		c->pass_done += r;
 		c->round_done += r;
+		
+		/* Perodic Sync */
+		if( syncRate > 0 )
+		{
+			i++;
+			
+			if( i >= syncRate )
+			{
+				/* Tell our parent that we are syncing the device. */
+				c->sync_status = 1;
+
+				/* Sync the device. */
+				r = fdatasync( c->device_fd );
+
+				/* Tell our parent that we have finished syncing the device. */
+				c->sync_status = 0;
+				
+				if( r != 0 )
+				{
+					nwipe_perror( errno, __FUNCTION__, "fdatasync" );
+					nwipe_log( NWIPE_LOG_WARNING, "Buffer flush failure on '%s'.", c->device_name );
+					nwipe_log( NWIPE_LOG_WARNING, "Wrote %llu bytes on '%s'.", c->pass_done, c->device_name);
+					free(b);
+					return -1;
+				}
+				
+				i = 0;
+			}
+		
+		}
 
 		pthread_testcancel();
 

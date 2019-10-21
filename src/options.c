@@ -93,7 +93,7 @@ int nwipe_options_parse( int argc, char** argv )
 		{ "nogui", no_argument, 0, 0 },
 
 		/* A flag to indicate whether the devices whould be opened in sync mode. */
-		{ "sync", no_argument, 0, 0 },
+		{ "sync", required_argument, 0, 0 },
 
 		/* Verify that wipe patterns are being written to the device. */
 		{ "verify", required_argument, 0, 0 },
@@ -171,7 +171,13 @@ int nwipe_options_parse( int argc, char** argv )
 
 				if( strcmp( nwipe_options_long[i].name, "sync" ) == 0 )
 				{
-					nwipe_options.sync = 1;
+					if( sscanf( optarg, " %i", &nwipe_options.sync ) != 1 \
+				      || nwipe_options.sync < 1
+				    )
+					{
+				  	fprintf( stderr, "Error: The sync argument must be a positive integer.\n" );
+				  	exit( EINVAL );
+					}
 					break;
 				}
 
@@ -433,7 +439,10 @@ display_help()
   puts("      --autonuke          If no devices have been specified on the command line, starts wiping all");
   puts("                          devices immediately. If devices have been specified, starts wiping only");
   puts("                          those specified devices immediately.");
-  puts("      --sync              Open devices in sync mode");
+  puts("      --sync=NUM          Will preform a sync after NUM writes (default: 0)");
+  puts("                          0 - fdatasync after the disk is completely written");
+  puts("                          1 - fdatasync after every write");
+  puts("                          1000000 - fdatasync after 1000000 writes ect.");
   puts("      --verify=TYPE       Whether to perform verification of erasure (default: last)");
   puts("                          off   - Do not verify");
   puts("                          last  - Verify after the last pass");
