@@ -111,7 +111,6 @@ typedef struct nwipe_context_t_
 	int               signal;           /* Set when the child is killed by a signal.                      */
 	nwipe_speedring_t speedring;        /* Ring buffer for computing the rolling throughput average.      */
 	short             sync_status;      /* A flag to indicate when the method is syncing.                 */
-	int               sync_rate;        
 	pthread_t         thread;           /* The ID of the thread.                                          */
 	u64               throughput;       /* Average throughput in bytes per second.                        */
 	u64               verify_errors;    /* The number of verification errors across all passes.           */
