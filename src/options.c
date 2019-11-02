@@ -333,7 +333,7 @@ int nwipe_options_parse( int argc, char** argv )
 
 				break;
 
-			case 'V':  /* Rounds option. */
+			case 'V':  /* Version option. */
 
 				printf ( "%s version %s\n", program_name, version_string );
 				exit( EXIT_SUCCESS );
