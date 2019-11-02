@@ -7,9 +7,8 @@ allow its use with any host distribution, thus giving better hardware
 support.
 
 To use from the git repository, first create all the autoconf files with
-./init.sh
+`./init.sh`
 
-Then do the standard ./configure --prefix=/usr && make && make install
+Then do the standard `./configure --prefix=/usr && make && make install`
 
-For developer & release notes please see the [README file](README)
-
+For developers & release notes please see the [README file](README)

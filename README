@@ -10,7 +10,7 @@ parted
 Debian & Ubuntu prerequisites
 ============================
 
-If you compiling nwipe from source the following will need to be installed first
+If you are compiling nwipe from source the following will need to be installed first
 
 sudo apt install build-essential
 sudo apt install pkg-config
@@ -52,7 +52,7 @@ this can be done using the alternate compile commands
 make
 make install
 
-The '-O0 -g' flags disable optimisations, this is required if your debugging with
+The '-O0 -g' flags disable optimisations, this is required if you're debugging with
 gdb in an IDE such as Kdevelop. Without these optimisations disabled you won't be
 able to see the values of many variables in nwipe, not to mention the IDE won't step
 through the code properly.
