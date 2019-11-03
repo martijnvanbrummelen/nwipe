@@ -1,10 +1,10 @@
 /*
- *  options.c:  Command line processing routines for nwipe. 
+ *  options.c:  Command line processing routines for nwipe.
  *
  *  Copyright Darik Horn <dajhorn-dban@vanadac.com>.
- *  
+ *
  *  Modifications to original dwipe Copyright Andy Beverley <andy@andybev.com>
- *  
+ *
  *  This program is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free Software
  *  Foundation, version 2.
@@ -16,17 +16,16 @@
  *
  *  You should have received a copy of the GNU General Public License along with
  *  this program; if not, write to the Free Software Foundation, Inc.,
- *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA. 
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  */
 
-
-#include "nwipe.h"
-#include "context.h"
-#include "method.h"
-#include "prng.h"
 #include "options.h"
+#include "context.h"
 #include "logging.h"
+#include "method.h"
+#include "nwipe.h"
+#include "prng.h"
 #include "version.h"
 
 /* The global options struct. */
@@ -34,10 +33,10 @@ nwipe_options_t nwipe_options;
 
 int nwipe_options_parse( int argc, char** argv )
 {
-	extern char* optarg;  /* The working getopt option argument. */
-	extern int   optind;  /* The working getopt index into argv. */
-	extern int   optopt;  /* The last unhandled getopt option.   */
-	extern int   opterr;  /* The last getopt error number.       */
+	extern char* optarg; /* The working getopt option argument. */
+	extern int   optind; /* The working getopt index into argv. */
+	extern int   optopt; /* The last unhandled getopt option.   */
+	extern int   opterr; /* The last getopt error number.       */
 
 	extern nwipe_prng_t nwipe_twister;
 	extern nwipe_prng_t nwipe_isaac;
@@ -54,75 +53,72 @@ int nwipe_options_parse( int argc, char** argv )
 	int i;
 
 	/* The list of acceptable short options. */
-	char nwipe_options_short [] = "Vhl:hm:p:r:e:";
+	char nwipe_options_short[] = "Vhl:hm:p:r:e:";
 
 	/* The list of acceptable long options. */
-	static struct option nwipe_options_long [] =
-	{
-		/* Set when the user wants to wipe without a confirmation prompt. */
-		{ "autonuke", no_argument, 0, 0 },
+	static struct option nwipe_options_long[] = {
+	    /* Set when the user wants to wipe without a confirmation prompt. */
+	    {"autonuke", no_argument, 0, 0},
 
-		/* A GNU standard option. Corresponds to the 'h' short option. */
-		{ "help", no_argument, 0, 'h' },
+	    /* A GNU standard option. Corresponds to the 'h' short option. */
+	    {"help", no_argument, 0, 'h'},
 
-		/* The wipe method. Corresponds to the 'm' short option. */
-		{ "method", required_argument, 0, 'm' },
+	    /* The wipe method. Corresponds to the 'm' short option. */
+	    {"method", required_argument, 0, 'm'},
 
-		/* Log file. Corresponds to the 'l' short option. */
-		{ "logfile", required_argument, 0, 'l' },
-	
-		/* Exclude devices, comma separated list */
-		{ "exclude", required_argument, 0, 'e' },
+	    /* Log file. Corresponds to the 'l' short option. */
+	    {"logfile", required_argument, 0, 'l'},
 
-		/* The Pseudo Random Number Generator. */
-		{ "prng", required_argument, 0, 'p' },
+	    /* Exclude devices, comma separated list */
+	    {"exclude", required_argument, 0, 'e'},
 
-		/* The number of times to run the method. */
-		{ "rounds", required_argument, 0, 'r' },
+	    /* The Pseudo Random Number Generator. */
+	    {"prng", required_argument, 0, 'p'},
 
-		/* Whether to blank the disk after wiping. */
-		{ "noblank", no_argument, 0, 0 },
+	    /* The number of times to run the method. */
+	    {"rounds", required_argument, 0, 'r'},
 
-		/* Whether to exit after wiping or wait for a keypress. */
-		{ "nowait", no_argument, 0, 0 },
+	    /* Whether to blank the disk after wiping. */
+	    {"noblank", no_argument, 0, 0},
 
-		/* Whether to allow signals to interrupt a wipe. */
-		{ "nosignals", no_argument, 0, 0 },
+	    /* Whether to exit after wiping or wait for a keypress. */
+	    {"nowait", no_argument, 0, 0},
 
-		/* Whether to exit after wiping or wait for a keypress. */
-		{ "nogui", no_argument, 0, 0 },
+	    /* Whether to allow signals to interrupt a wipe. */
+	    {"nosignals", no_argument, 0, 0},
 
-		/* A flag to indicate whether the devices whould be opened in sync mode. */
-		{ "sync", no_argument, 0, 0 },
+	    /* Whether to exit after wiping or wait for a keypress. */
+	    {"nogui", no_argument, 0, 0},
 
-		/* Verify that wipe patterns are being written to the device. */
-		{ "verify", required_argument, 0, 0 },
+	    /* A flag to indicate whether the devices whould be opened in sync mode. */
+	    {"sync", no_argument, 0, 0},
 
-		/* Display program version. */
-		{ "version", no_argument, 0, 'V' },
+	    /* Verify that wipe patterns are being written to the device. */
+	    {"verify", required_argument, 0, 0},
 
-		/* Requisite padding for getopt(). */
-		{ 0, 0, 0, 0 }
-	};
+	    /* Display program version. */
+	    {"version", no_argument, 0, 'V'},
 
+	    /* Requisite padding for getopt(). */
+	    {0, 0, 0, 0}};
 
 	/* Set default options. */
-	nwipe_options.autonuke = 0;
-	nwipe_options.method   = &nwipe_dodshort;
-	nwipe_options.prng     = &nwipe_twister;
-	nwipe_options.rounds   = 1;
-	nwipe_options.noblank  = 0;
-	nwipe_options.nowait   = 0;
-	nwipe_options.nosignals= 0;
-	nwipe_options.nogui    = 0;
-	nwipe_options.sync     = 0;
-	nwipe_options.verify   = NWIPE_VERIFY_LAST;
-	memset( nwipe_options.logfile, '\0', sizeof(nwipe_options.logfile) );
+	nwipe_options.autonuke  = 0;
+	nwipe_options.method    = &nwipe_dodshort;
+	nwipe_options.prng      = &nwipe_twister;
+	nwipe_options.rounds    = 1;
+	nwipe_options.noblank   = 0;
+	nwipe_options.nowait    = 0;
+	nwipe_options.nosignals = 0;
+	nwipe_options.nogui     = 0;
+	nwipe_options.sync      = 0;
+	nwipe_options.verify    = NWIPE_VERIFY_LAST;
+	memset( nwipe_options.logfile, '\0', sizeof( nwipe_options.logfile ) );
 
 	/* Initialise each of the strings in the excluded drives array */
-	for ( i=0; i < MAX_NUMBER_EXCLUDED_DRIVES; i++ )
+	for( i = 0; i < MAX_NUMBER_EXCLUDED_DRIVES; i++ )
 	{
-		nwipe_options.exclude[i][0]=0;
+		nwipe_options.exclude[i][0] = 0;
 	}
 
 	/* Parse command line options. */
@@ -132,7 +128,10 @@ int nwipe_options_parse( int argc, char** argv )
 		nwipe_opt = getopt_long( argc, argv, nwipe_options_short, nwipe_options_long, &i );
 
 		/* Break when we have processed all of the given options. */
-		if( nwipe_opt < 0 ) { break; }
+		if( nwipe_opt < 0 )
+		{
+			break;
+		}
 
 		switch( nwipe_opt )
 		{
@@ -164,7 +163,7 @@ int nwipe_options_parse( int argc, char** argv )
 
 				if( strcmp( nwipe_options_long[i].name, "nogui" ) == 0 )
 				{
-					nwipe_options.nogui = 1;
+					nwipe_options.nogui  = 1;
 					nwipe_options.nowait = 1;
 					break;
 				}
@@ -199,11 +198,9 @@ int nwipe_options_parse( int argc, char** argv )
 					/* Else we do not know this verification level. */
 					fprintf( stderr, "Error: Unknown verification level '%s'.\n", optarg );
 					exit( EINVAL );
-
 				}
 
-
-			case 'm':  /* Method option. */
+			case 'm': /* Method option. */
 
 				if( strcmp( optarg, "dod522022m" ) == 0 || strcmp( optarg, "dod" ) == 0 )
 				{
@@ -229,12 +226,10 @@ int nwipe_options_parse( int argc, char** argv )
 					break;
 				}
 
-				if(  strcmp( optarg, "random" ) == 0
-				  || strcmp( optarg, "prng"   ) == 0
-				  || strcmp( optarg, "stream" ) == 0
-				  )
+				if( strcmp( optarg, "random" ) == 0 || strcmp( optarg, "prng" ) == 0
+				    || strcmp( optarg, "stream" ) == 0 )
 				{
-					nwipe_options.method= &nwipe_random;
+					nwipe_options.method = &nwipe_random;
 					break;
 				}
 
@@ -248,45 +243,45 @@ int nwipe_options_parse( int argc, char** argv )
 				fprintf( stderr, "Error: Unknown wipe method '%s'.\n", optarg );
 				exit( EINVAL );
 
+			case 'l': /* Log file option. */
 
-			case 'l':  /* Log file option. */
-				
-				nwipe_options.logfile[strlen(optarg)] = '\0';
-				strncpy(nwipe_options.logfile, optarg, sizeof(nwipe_options.logfile));
+				nwipe_options.logfile[strlen( optarg )] = '\0';
+				strncpy( nwipe_options.logfile, optarg, sizeof( nwipe_options.logfile ) );
 				break;
 
-			case 'e':  /* exclude drives option */
-				
-				idx_drive_chr=0;
-				idx_optarg=0;
-				idx_drive=0;
-				
+			case 'e': /* exclude drives option */
+
+				idx_drive_chr = 0;
+				idx_optarg    = 0;
+				idx_drive     = 0;
+
 				/* Create an array of excluded drives from the comma separated string */
-				while ( optarg[idx_optarg] != 0 && idx_drive<MAX_NUMBER_EXCLUDED_DRIVES )
+				while( optarg[idx_optarg] != 0 && idx_drive < MAX_NUMBER_EXCLUDED_DRIVES )
 				{
 					/* drop the leading '=' character if used */
-					if ( optarg[idx_optarg] == '=' && idx_optarg == 0 )
-					{	idx_optarg++;
+					if( optarg[idx_optarg] == '=' && idx_optarg == 0 )
+					{
+						idx_optarg++;
 						continue;
 					}
-						
-					if ( optarg[idx_optarg] == ',' )
-					{	
-						/* terminate string and move onto next drive */
-						nwipe_options.exclude[idx_drive++][idx_drive_chr]=0;
-						idx_drive_chr=0;
-						idx_optarg++;
-					}
-					else
+
+					if( optarg[idx_optarg] == ',' )
 					{
-						if ( idx_drive_chr < MAX_DRIVE_PATH_LENGTH )
+						/* terminate string and move onto next drive */
+						nwipe_options.exclude[idx_drive++][idx_drive_chr] = 0;
+						idx_drive_chr					  = 0;
+						idx_optarg++;
+					} else
+					{
+						if( idx_drive_chr < MAX_DRIVE_PATH_LENGTH )
 						{
-							nwipe_options.exclude[idx_drive][idx_drive_chr++]=optarg[idx_optarg++];
-						}
-						else
-						{	/* This section deals with file names that exceed MAX_DRIVE_PATH_LENGTH */
-							nwipe_options.exclude[idx_drive][idx_drive_chr]=0;
-							while ( optarg[idx_optarg] != 0 || optarg[idx_optarg] != ',' )
+							nwipe_options.exclude[idx_drive][idx_drive_chr++] =
+							    optarg[idx_optarg++];
+						} else
+						{ /* This section deals with file names that exceed
+						     MAX_DRIVE_PATH_LENGTH */
+							nwipe_options.exclude[idx_drive][idx_drive_chr] = 0;
+							while( optarg[idx_optarg] != 0 || optarg[idx_optarg] != ',' )
 							{
 								idx_optarg++;
 							}
@@ -295,16 +290,14 @@ int nwipe_options_parse( int argc, char** argv )
 				}
 				break;
 
-			case 'h':  /* Display help. */
+			case 'h': /* Display help. */
 
 				display_help();
 				break;
 
-			case 'p':  /* PRNG option. */
+			case 'p': /* PRNG option. */
 
-				if(  strcmp( optarg, "mersenne" ) == 0
-				  || strcmp( optarg, "twister"  ) == 0
-				  )
+				if( strcmp( optarg, "mersenne" ) == 0 || strcmp( optarg, "twister" ) == 0 )
 				{
 					nwipe_options.prng = &nwipe_twister;
 					break;
@@ -320,12 +313,9 @@ int nwipe_options_parse( int argc, char** argv )
 				fprintf( stderr, "Error: Unknown prng '%s'.\n", optarg );
 				exit( EINVAL );
 
+			case 'r': /* Rounds option. */
 
-			case 'r':  /* Rounds option. */
-
-				if( sscanf( optarg, " %i", &nwipe_options.rounds ) != 1 \
-				    || nwipe_options.rounds < 1
-				  )
+				if( sscanf( optarg, " %i", &nwipe_options.rounds ) != 1 || nwipe_options.rounds < 1 )
 				{
 					fprintf( stderr, "Error: The rounds argument must be a positive integer.\n" );
 					exit( EINVAL );
@@ -333,9 +323,9 @@ int nwipe_options_parse( int argc, char** argv )
 
 				break;
 
-			case 'V':  /* Version option. */
+			case 'V': /* Version option. */
 
-				printf ( "%s version %s\n", program_name, version_string );
+				printf( "%s version %s\n", program_name, version_string );
 				exit( EXIT_SUCCESS );
 
 			default:
@@ -343,7 +333,7 @@ int nwipe_options_parse( int argc, char** argv )
 				/* Bogus command line argument. */
 				display_help();
 				exit( EINVAL );
-			
+
 		} /* method */
 
 	} /* command line options */
@@ -353,13 +343,12 @@ int nwipe_options_parse( int argc, char** argv )
 
 } /* nwipe_options_parse */
 
-
 void nwipe_options_log( void )
 {
-/**
- *  Prints a manifest of options to the log.
- *
- */
+	/**
+	 *  Prints a manifest of options to the log.
+	 *
+	 */
 
 	nwipe_log( NWIPE_LOG_NOTICE, "Program options are set as follows..." );
 
@@ -420,45 +409,44 @@ void nwipe_options_log( void )
 } /* nwipe_options_log */
 
 /**
- * display_help 
+ * display_help
  * displays the help section to STDOUT and exits
- */  
-void 
-display_help()
+ */
+void display_help()
 {
-  printf("Usage: %s [options] [device1] [device2] ...\n", program_name);
-  printf("Options:\n"                    );
-  puts("  -V, --version           Prints the version number");
-  puts("  -h, --help              Prints this help");
-  puts("      --autonuke          If no devices have been specified on the command line, starts wiping all");
-  puts("                          devices immediately. If devices have been specified, starts wiping only");
-  puts("                          those specified devices immediately.");
-  puts("      --sync              Open devices in sync mode");
-  puts("      --verify=TYPE       Whether to perform verification of erasure (default: last)");
-  puts("                          off   - Do not verify");
-  puts("                          last  - Verify after the last pass");
-  puts("                          all   - Verify every pass");  
-  puts("  -m, --method=METHOD     The wiping method (default: dodshort). See man page for more details.");
-  puts("                          dod522022m / dod       - 7 pass DOD 5220.22-M method");
-  puts("                          dodshort / dod3pass    - 3 pass DOD method");
-  puts("                          gutmann                - Peter Gutmann's Algorithm");
-  puts("                          ops2                   - RCMP TSSIT OPS-II");
-  puts("                          random / prng / stream - PRNG Stream");
-  puts("                          zero / quick           - Overwrite with zeros");
-  puts("  -l, --logfile=FILE      Filename to log to. Default is STDOUT");
-  puts("  -p, --prng=METHOD       PRNG option (mersenne|twister|isaac)" );
-  puts("  -r, --rounds=NUM        Number of times to wipe the device using the selected method (default: 1)" );
-  puts("      --noblank           Do not blank disk after wipe (default is to complete a final blank pass)" );
-  puts("      --nowait            Do not wait for a key before exiting (default is to wait)" );
-  puts("      --nosignals         Do not allow signals to interrupt a wipe (default is to allow)" );
-  puts("      --nogui             Do not show the GUI interface. Automatically invokes the nowait option" );
-  puts("                          Must be used with --autonuke option. Send SIGUSR1 to log current stats");
-  puts("  -e, --exclude=DEVICES   Up to ten comma separted devices to be excluded, examples:");
-  puts("                          --exclude=/dev/sdc");
-  puts("                          --exclude=/dev/sdc,/dev/sdd");
-  puts("                          --exclude=/dev/sdc,/dev/sdd,/dev/mapper/cryptswap1");
-  puts("");
-  exit( EXIT_SUCCESS );
+	printf( "Usage: %s [options] [device1] [device2] ...\n", program_name );
+	printf( "Options:\n" );
+	puts( "  -V, --version           Prints the version number" );
+	puts( "  -h, --help              Prints this help" );
+	puts( "      --autonuke          If no devices have been specified on the command line, starts wiping all" );
+	puts( "                          devices immediately. If devices have been specified, starts wiping only" );
+	puts( "                          those specified devices immediately." );
+	puts( "      --sync              Open devices in sync mode" );
+	puts( "      --verify=TYPE       Whether to perform verification of erasure (default: last)" );
+	puts( "                          off   - Do not verify" );
+	puts( "                          last  - Verify after the last pass" );
+	puts( "                          all   - Verify every pass" );
+	puts( "  -m, --method=METHOD     The wiping method (default: dodshort). See man page for more details." );
+	puts( "                          dod522022m / dod       - 7 pass DOD 5220.22-M method" );
+	puts( "                          dodshort / dod3pass    - 3 pass DOD method" );
+	puts( "                          gutmann                - Peter Gutmann's Algorithm" );
+	puts( "                          ops2                   - RCMP TSSIT OPS-II" );
+	puts( "                          random / prng / stream - PRNG Stream" );
+	puts( "                          zero / quick           - Overwrite with zeros" );
+	puts( "  -l, --logfile=FILE      Filename to log to. Default is STDOUT" );
+	puts( "  -p, --prng=METHOD       PRNG option (mersenne|twister|isaac)" );
+	puts( "  -r, --rounds=NUM        Number of times to wipe the device using the selected method (default: 1)" );
+	puts( "      --noblank           Do not blank disk after wipe (default is to complete a final blank pass)" );
+	puts( "      --nowait            Do not wait for a key before exiting (default is to wait)" );
+	puts( "      --nosignals         Do not allow signals to interrupt a wipe (default is to allow)" );
+	puts( "      --nogui             Do not show the GUI interface. Automatically invokes the nowait option" );
+	puts( "                          Must be used with --autonuke option. Send SIGUSR1 to log current stats" );
+	puts( "  -e, --exclude=DEVICES   Up to ten comma separted devices to be excluded, examples:" );
+	puts( "                          --exclude=/dev/sdc" );
+	puts( "                          --exclude=/dev/sdc,/dev/sdd" );
+	puts( "                          --exclude=/dev/sdc,/dev/sdd,/dev/mapper/cryptswap1" );
+	puts( "" );
+	exit( EXIT_SUCCESS );
 }
 
 /* eof */
