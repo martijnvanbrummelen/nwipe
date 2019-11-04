@@ -327,6 +327,7 @@ int nwipe_log_sysinfo()
    char path[256];
    char cmd[50];
    int len;
+   int r;         /* A result buffer. */
 
    /* Remove or add keywords to be searched, depending on what information is to
       be logged, making sure the last entry in the array is a NULL string. To remove
@@ -359,13 +360,13 @@ int nwipe_log_sysinfo()
 
    keywords_idx = 0;
 
-   /* Run the dmidecode command to retrieve system serial number */
+   /* Run the dmidecode command to retrieve each dmidecode keyword, one at a time */
    while ( dmidecode_keywords[keywords_idx][0] != 0 )
    {
       sprintf(cmd,"dmidecode -s %s", &dmidecode_keywords[keywords_idx][0] );
       fp = popen(cmd, "r");
       if (fp == NULL ) {
-         nwipe_log( NWIPE_LOG_INFO, "Failed to run command dmidecode -s %s", &dmidecode_keywords[keywords_idx][0], path );
+         nwipe_log( NWIPE_LOG_INFO, "nwipe_log_sysinfo: Failed to create stream to %s", cmd );
          return 1;
       }
       /* Read the output a line at a time - output it. */
@@ -379,7 +380,12 @@ int nwipe_log_sysinfo()
          nwipe_log( NWIPE_LOG_INFO, "%s = %s", &dmidecode_keywords[keywords_idx][0], path );
       }
       /* close */
-      pclose(fp);
+      r = pclose(fp);
+      if( r > 0 )
+      {
+         nwipe_log( NWIPE_LOG_INFO, "nwipe_log_sysinfo(): dmidecode failed, \"%s\" exit status = %u", cmd, WEXITSTATUS( r ));
+         return 1;
+      }
       keywords_idx++;
    }
    return 0;
