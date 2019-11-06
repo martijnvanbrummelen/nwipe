@@ -151,6 +151,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
 	next_device->device_name = dev->path;
 	next_device->device_size = dev->length * dev->sector_size;
 	next_device->device_size_text = ped_unit_format_byte(dev, dev->length * dev->sector_size);
+   next_device->result = -2;
 	/* Attempt to get serial number of device. */
 	if ( (fd = open ( next_device->device_name = dev->path, O_RDONLY)) == ERR )
 	{
