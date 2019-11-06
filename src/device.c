@@ -90,7 +90,10 @@ int nwipe_device_get( nwipe_context_t*** c, char **devnamelist, int ndevnames )
 
 		dev = ped_device_get(devnamelist[i]);
 		if (!dev)
-			break;
+      {
+         nwipe_log( NWIPE_LOG_WARNING, "Device %s not found", devnamelist[i] );
+			continue;
+      }
 
 		if (check_device(c, dev, dcount))
 			dcount++;
