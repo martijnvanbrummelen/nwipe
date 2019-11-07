@@ -554,8 +554,8 @@ void *signal_hand(void *ptr)
                                         else
                                         {
                                                 if( c[i]->result == 0 ) { nwipe_log( NWIPE_LOG_INFO, "%s: Success", c[i]->device_name ); }
-                                                else if( c[i]->signal ) { nwipe_log( NWIPE_LOG_INFO, "%s: Failure: signal %i", c[i]->device_name, c[i]->signal ); }
-                                                else                    { nwipe_log( NWIPE_LOG_INFO, "%s: Failure: code %i", c[i]->device_name, c[i]->result ); }
+                                                else if( c[i]->signal ) { nwipe_log( NWIPE_LOG_INFO, "%s: >>> FAILURE! <<<: signal %i", c[i]->device_name, c[i]->signal ); }
+                                                else                    { nwipe_log( NWIPE_LOG_INFO, "%s: >>> FAILURE! <<<: code %i", c[i]->device_name, c[i]->result ); }
                                         }
                                 }
 

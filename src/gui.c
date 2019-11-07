@@ -1839,9 +1839,9 @@ void *nwipe_gui_status( void *ptr )
 
 				else
 				{
-					if( c[i]->result == 0 ) { mvwprintw( main_window, yy++, 4, "(success) " );                         }
-					else if( c[i]->signal ) { mvwprintw( main_window, yy++, 4, "(failure, signal %i) ", c[i]->signal ); }
-					else                   { mvwprintw( main_window, yy++, 4, "(failure, code %i) ", c[i]->result );   }
+					if( c[i]->result == 0 ) { mvwprintw( main_window, yy++, 4, "(SUCCESS!) " );                         }
+					else if( c[i]->signal ) { mvwprintw( main_window, yy++, 4, "(>>> FAILURE! <<<, signal %i) ", c[i]->signal ); }
+					else                   { mvwprintw( main_window, yy++, 4, "(>>>FAILURE!<<<, code %i) ", c[i]->result );   }
 
 				} /* child returned */
 
