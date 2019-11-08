@@ -20,12 +20,12 @@
  *
  */
 
-#include "options.h"
-#include "context.h"
-#include "logging.h"
-#include "method.h"
 #include "nwipe.h"
+#include "context.h"
+#include "method.h"
 #include "prng.h"
+#include "options.h"
+#include "logging.h"
 #include "version.h"
 
 /* The global options struct. */
