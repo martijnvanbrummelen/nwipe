@@ -111,7 +111,7 @@ int nwipe_options_parse( int argc, char** argv )
 	nwipe_options.nowait    = 0;
 	nwipe_options.nosignals = 0;
 	nwipe_options.nogui     = 0;
-	nwipe_options.sync      = 0;
+	nwipe_options.sync      = 100000;
 	nwipe_options.verify    = NWIPE_VERIFY_LAST;
 	memset( nwipe_options.logfile, '\0', sizeof( nwipe_options.logfile ) );
 
