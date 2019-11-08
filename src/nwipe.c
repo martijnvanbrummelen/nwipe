@@ -309,19 +309,8 @@ int main( int argc, char** argv )
 
                         if( ioctl( c2[i]->device_fd, BLKBSZGET, &c2[i]->block_size ) == 0 )
                         {
-                                if( c2[i]->block_size != c2[i]->sector_size )
-                                {
-                                        nwipe_log( NWIPE_LOG_WARNING, "Changing '%s' block size from %i to %i.", c2[i]->device_name, c2[i]->block_size, c2[i]->sector_size );
-                                        if( ioctl( c2[i]->device_fd, BLKBSZSET, &c2[i]->sector_size ) == 0 )
-                                        {
-                                                c2[i]->block_size = c2[i]->sector_size;
-                                        }
-
-                                        else
-                                        {
-                                                nwipe_log( NWIPE_LOG_WARNING, "Device '%s' failed BLKBSZSET ioctl.", c2[i]->device_name );
-                                        }
-                                }
+                                nwipe_log( NWIPE_LOG_INFO, "Device '%s' has block size %i.", c2[i]->device_name,  c2[i]->block_size );
+                                
                         }
                         else
                         {

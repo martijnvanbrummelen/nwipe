@@ -91,7 +91,7 @@ int nwipe_options_parse( int argc, char** argv )
 	    {"nogui", no_argument, 0, 0},
 
 	    /* A flag to indicate whether the devices whould be opened in sync mode. */
-	    {"sync", no_argument, 0, 0},
+	    {"sync", required_argument, 0, 0},
 
 	    /* Verify that wipe patterns are being written to the device. */
 	    {"verify", required_argument, 0, 0},
@@ -111,7 +111,7 @@ int nwipe_options_parse( int argc, char** argv )
 	nwipe_options.nowait    = 0;
 	nwipe_options.nosignals = 0;
 	nwipe_options.nogui     = 0;
-	nwipe_options.sync      = 0;
+	nwipe_options.sync      = 100000;
 	nwipe_options.verify    = NWIPE_VERIFY_LAST;
 	memset( nwipe_options.logfile, '\0', sizeof( nwipe_options.logfile ) );
 
@@ -170,7 +170,13 @@ int nwipe_options_parse( int argc, char** argv )
 
 				if( strcmp( nwipe_options_long[i].name, "sync" ) == 0 )
 				{
-					nwipe_options.sync = 1;
+					if( sscanf( optarg, " %i", &nwipe_options.sync ) != 1 \
+				      || nwipe_options.sync < 1
+				    )
+					{
+				  	fprintf( stderr, "Error: The sync argument must be a positive integer.\n" );
+				  	exit( EINVAL );
+					}
 					break;
 				}
 
@@ -424,7 +430,10 @@ void display_help()
   puts("                          starts wiping all devices immediately. If devices have");
   puts("                          been specified, starts wiping only those specified");
   puts("                          devices immediately.\n");
-  puts("      --sync              Open devices in sync mode\n");
+  puts("      --sync=NUM          Will preform a sync after NUM writes (default: 0)");
+  puts("                          0 - fdatasync after the disk is completely written");
+  puts("                          1 - fdatasync after every write");
+  puts("                          1000000 - fdatasync after 1000000 writes ect.");
   puts("      --verify=TYPE       Whether to perform verification of erasure");
   puts("                          (default: last)");
   puts("                          off   - Do not verify");
