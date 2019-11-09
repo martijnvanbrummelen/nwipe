@@ -27,7 +27,8 @@ sudo apt install \
   automake \
   libncurses5-dev \
   autotools-dev \
-  libparted-dev
+  libparted-dev \
+  dmidecode
 ```
 
 ### Fedora prerequisites
@@ -39,7 +40,9 @@ dnf groupinstall "Development Tools"
 dnf groupinstall "C Development Tools and Libraries"
 yum install ncurses-devel
 yum install parted-devel
+yum install dmidecode
 ```
+Note. dmidecode is optional, it provides SMBIOS/DMI host data to stdout or the log file.
 
 ### Compilation
 
