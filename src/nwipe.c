@@ -575,6 +575,7 @@ void *signal_hand(void *ptr)
                                         if ( c[i]->thread )
                                         {
                                                 nwipe_log( NWIPE_LOG_INFO, "Cancelling thread for %s", c[i]->device_name );
+                                                nwipe_log( NWIPE_LOG_INFO, "Please be patient.. disk cache is being flushed" );
                                                 pthread_cancel( c[i]->thread );
                                         }
                                 }
