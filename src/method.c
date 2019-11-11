@@ -97,6 +97,9 @@ void *nwipe_zero( void *ptr )
 
  	nwipe_context_t *c;
  	c = (nwipe_context_t *) ptr;
+   
+	/* set wipe in progress flag for GUI */
+	c->wipe_status = 1;
 
 	/* Do nothing because nwipe_runmethod appends a zero-fill. */
 	nwipe_pattern_t patterns [] =
@@ -107,8 +110,8 @@ void *nwipe_zero( void *ptr )
 	/* Run the method. */
 	c->result = nwipe_runmethod( c, patterns );
 
-	/* Finished. Set the thread ID to 0 so that the GUI knows */
-	c->thread = 0;
+	/* Finished. Set the wipe_status flag so that the GUI knows */
+	c->wipe_status = 0;
 
     return NULL;
 } /* nwipe_zero */
@@ -124,6 +127,9 @@ void *nwipe_dod522022m( void *ptr )
 
         nwipe_context_t *c;
         c = (nwipe_context_t *) ptr;
+        
+	/* set wipe in progress flag for GUI */
+	c->wipe_status = 1;
 
 	/* A result holder. */
 	int r;
@@ -170,8 +176,8 @@ void *nwipe_dod522022m( void *ptr )
 	/* Run the DoD 5220.22-M method. */
 	c->result = nwipe_runmethod( c, patterns );
 
-	/* Finished. Set the thread ID to 0 so that the GUI knows */
-	c->thread = 0;
+	/* Finished. Set the wipe_status flag so that the GUI knows */
+	c->wipe_status = 0;
 
     return NULL;
 } /* nwipe_dod522022m */
@@ -188,6 +194,9 @@ void *nwipe_dodshort( void *ptr )
 
         nwipe_context_t *c;
 	c = (nwipe_context_t *) ptr;
+   
+	/* set wipe in progress flag for GUI */
+	c->wipe_status = 1;
                 
 	/* A result holder. */
 	int r;
@@ -227,8 +236,8 @@ void *nwipe_dodshort( void *ptr )
 	/* Run the DoD 5220.022-M short method. */
 	c->result = nwipe_runmethod( c, patterns );
 
-	/* Finished. Set the thread ID to 0 so that the GUI knows */
-	c->thread = 0;
+	/* Finished. Set the wipe_status flag so that the GUI knows */
+	c->wipe_status = 0;
 
     return NULL;
 } /* nwipe_dodshort */
@@ -244,6 +253,9 @@ void *nwipe_gutmann( void *ptr )
 
         nwipe_context_t *c;
 	c = (nwipe_context_t *) ptr;
+
+	/* set wipe in progress flag for GUI */
+	c->wipe_status = 1;
                 
 	/* A result buffer. */
 	int r;
@@ -353,9 +365,8 @@ void *nwipe_gutmann( void *ptr )
 	/* Run the Gutmann method. */
 	c->result = nwipe_runmethod( c, patterns );
 
-
-	/* Finished. Set the thread ID to 0 so that the GUI knows */
-	c->thread = 0;
+	/* Finished. Set the wipe_status flag so that the GUI knows */
+	c->wipe_status = 0;
 
     return NULL;
 } /* nwipe_gutmann */
@@ -375,6 +386,9 @@ void *nwipe_ops2( void *ptr )
 
         nwipe_context_t *c;
         c = (nwipe_context_t *) ptr;
+        
+	/* set wipe in progress flag for GUI */
+	c->wipe_status = 1;
 
 	/* A generic array index. */
 	int i;
@@ -522,9 +536,8 @@ void *nwipe_ops2( void *ptr )
 	/* We're done. */
 	c->result = nwipe_runmethod( c, patterns );
 
-
-	/* Finished. Set the thread ID to 0 so that the GUI knows */
-	c->thread = 0;
+	/* Finished. Set the wipe_status flag so that the GUI knows */
+	c->wipe_status = 0;
 
     return NULL;
 } /* nwipe_ops2 */
@@ -540,6 +553,9 @@ void *nwipe_random( void *ptr )
 
         nwipe_context_t *c;
 	c = (nwipe_context_t *) ptr;
+
+	/* set wipe in progress flag for GUI */
+	c->wipe_status = 1;
 	
 	/* Define the random method. */
 	nwipe_pattern_t patterns [] =
@@ -551,9 +567,8 @@ void *nwipe_random( void *ptr )
 	/* Run the method. */
 	c->result = nwipe_runmethod( c, patterns );
 
-
-	/* Finished. Set the thread ID to 0 so that the GUI knows */
-	c->thread = 0;
+	/* Finished. Set the wipe_status flag so that the GUI knows */
+	c->wipe_status = 0;
 
     return NULL;
 } /* nwipe_random */
