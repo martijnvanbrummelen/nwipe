@@ -703,7 +703,6 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
 		return -1;
 	}
 
-
 	while( z > 0 )
 	{
 		if( c->device_stat.st_blksize <= z )
