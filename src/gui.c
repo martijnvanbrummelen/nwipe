@@ -1829,7 +1829,8 @@ void *nwipe_gui_status( void *ptr )
 				}
 
 				/* Check whether the child process is still running the wipe. */
-				if( c[i]->thread > 0 )
+				//if( c[i]->thread > 0 )
+				if( c[i]->wipe_status == 1 )
 				{
 					/* Print percentage and pass information. */
 					mvwprintw( main_window, yy++, 4, "[%05.2f%%, round %i of %i, pass %i of %i] ", \
@@ -1839,9 +1840,9 @@ void *nwipe_gui_status( void *ptr )
 
 				else
 				{
-					if( c[i]->result == 0 ) { mvwprintw( main_window, yy++, 4, "(success) " );                         }
-					else if( c[i]->signal ) { mvwprintw( main_window, yy++, 4, "(failure, signal %i) ", c[i]->signal ); }
-					else                   { mvwprintw( main_window, yy++, 4, "(failure, code %i) ", c[i]->result );   }
+					if( c[i]->result == 0 ) { mvwprintw( main_window, yy++, 4, "(SUCCESS!) " );                         }
+					else if( c[i]->signal ) { mvwprintw( main_window, yy++, 4, "(>>> FAILURE! <<<, signal %i) ", c[i]->signal ); }
+					else                   { mvwprintw( main_window, yy++, 4, "(>>>FAILURE!<<<, code %i) ", c[i]->result );   }
 
 				} /* child returned */
 
@@ -2050,7 +2051,8 @@ int compute_stats(void *ptr)
 	for( i = 0 ; i < count ; i++ )
 	{
 		/* Check whether the child process is still running the wipe. */
-		if( c[i]->thread > 0 )
+//		if( c[i]->thread > 0 )
+		if( c[i]->wipe_status == 1 )
 		{
 			/* Increment the child counter. */
 			nwipe_active += 1;

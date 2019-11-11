@@ -1,0 +1,148 @@
+RELEASE NOTES
+=============
+
+v0.26
+-----
+- Add exclude drive option (Thanks PartialVolume)
+- Log hardware (Thanks PartialVolume)
+
+v0.25
+-----
+- Correct J=Up K=Down in footer (Thanks PartialVolume)
+- Fix segfault initialize `nwipe_gui_thread` (Thanks PartialVolume)
+- Fix memory leaks (Thanks PartialVolume)
+- Check right pointer (Thanks PartialVolume)
+- Fix casting problem (Thanks PartialVolume)
+- Fix serial number
+- Fixes uninitialized variable warning (Thanks PartialVolume)
+
+v0.24
+-----
+- use include values for version 0.17
+- display throughput value more friendly (Thanks Kelderek)
+
+v0.23
+-----
+- make serial visible again on 32Bit machines
+
+v0.22
+-----
+- Update manpage
+- use long long for device size
+- Use `ped_unit_format_byte` function to display(friendly) size of device
+
+v0.21
+-----
+- Fix ETA not updating properly and bad total throughput display. (Thanks Niels Bassler).
+
+v0.20
+-----
+- Fix build when panel header is not in `/usr/include` (Thanks Vincent Untz).
+
+v0.19
+-----
+- Fix building on Fedora(Unknown `off64_t`) bug #19.
+- Use PRNG instead of zero's bug #7. (Thanks xambroz).
+
+v0.18
+-----
+- Fixed grammar.
+- Move from `loff_t` to `off64_t` for musl libc support.
+- Add `--nosignals` option.
+- Automake needs the `dist_` prefix to include man pages in `make dist`.
+- Remove more compiler warnings.
+- Add libintl, libuuid dependencies to allow parted static link
+
+v0.17
+-----
+- Remove control reaches end of non-void function" warnings (Thanks Vincent Untz).
+- Remove unused variables (Thanks Vincent Untz).
+- Change start key to 'S' instead of F10 (closes debian bug #755474).
+- Fix problem with unusable device (Closes debian bug #755473).
+
+v0.16
+-----
+- Fix problems building with clang compiler (Thanks Martijn van Brummelen)
+
+v0.15
+-----
+- Add more detailed information to status page when wiping
+- Add ability to send SIGUSR1 to print wiping current status to log
+- Fixed problem with status bar disappearing on narrow windows (Github issue #1)
+
+v0.14
+-----
+- Added explicit check for ncurses (required for Fedora). See bug 3604008.
+
+v0.13
+-----
+- Added nowait option (patch 3601259 - thanks David Shaw).
+- Added nogui option.
+- Updated man page and help command for above options and autonuke.
+- Added pkg-config check for ncurses (patch 3603140 - thanks Alon Bar-Lev).
+
+v0.12
+-----
+- Added ability to specify device on command line (patch 3587144).
+- Fixed segfault for -p option (patch 3587132).
+
+v0.11
+-----
+- Fixed bug 3568750. Not closing devices after initial scan.
+
+v0.10
+-----
+- Fixed bug 3553851. Not exiting on terminal kill. Fixed for all areas of
+  program including wiping.
+
+v0.09
+-----
+- Added feature #3545971. Display device name.
+- Added feature #3496858. Option to not perform a final blanking pass.
+
+v0.08
+-----
+- Fixed bug #3501746 whereby "wipe finished" was displayed too early
+
+v0.07
+-----
+- Added threading synchronisation for logging
+- Fixed bug #3486927 (incorrect Sourceforge URL)
+
+v0.06
+-----
+- Added man page (thanks Michal Ambroz <rebus@seznam.cz>)
+- Updated GPL licence and FSF address (thanks Michal Ambroz <rebus@seznam.cz>)
+
+v0.05
+-----
+- Added sequence number to disk selection
+- Added check for ncurses header files in subdir
+- Fixed screen corruption bug introduced in 0.04
+- Fixed occasional seg fault on start
+- Introduced dynamic array allocation for devices, with no hard limit
+- Minor updates to configure.ac
+
+v0.04
+-----
+- Removed references to DBAN in options.c
+- Added log file name option (-l|--logfile)
+- If no log file specified all messages go to STDOUT
+- Incorrect success message after an interruption fixed
+- Improved labelling of disks with no partition table
+- Added help command
+- Added version command
+- Added command 'b' to blank screen during wipe
+- Compilation needs to include panel library
+
+KNOWN BUG - display sometimes becomes corrupted after starting wipe
+
+v0.03
+-----
+- Added quit option label (ctrl-c)
+- Removed further references to DWIPE
+- Added GPL V2 licence file (COPYING)
+
+v0.02
+-----
+- Fixed segfault that happened during multiple disk wipes

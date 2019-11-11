@@ -44,7 +44,7 @@ char *trim(char *str);
 int nwipe_device_scan( nwipe_context_t*** c )
 {
 	/**
-	 * Scans the the filesystem for storage device names.
+	 * Scans the filesystem for storage device names.
 	 *
 	 * @parameter device_names  A reference to a null array pointer.
 	 * @modifies  device_names  Populates device_names with an array of nwipe_contect_t
@@ -90,7 +90,10 @@ int nwipe_device_get( nwipe_context_t*** c, char **devnamelist, int ndevnames )
 
 		dev = ped_device_get(devnamelist[i]);
 		if (!dev)
-			break;
+      {
+         nwipe_log( NWIPE_LOG_WARNING, "Device %s not found", devnamelist[i] );
+			continue;
+      }
 
 		if (check_device(c, dev, dcount))
 			dcount++;
@@ -148,6 +151,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
 	next_device->device_name = dev->path;
 	next_device->device_size = dev->length * dev->sector_size;
 	next_device->device_size_text = ped_unit_format_byte(dev, dev->length * dev->sector_size);
+   next_device->result = -2;
 	/* Attempt to get serial number of device. */
 	if ( (fd = open ( next_device->device_name = dev->path, O_RDONLY)) == ERR )
 	{

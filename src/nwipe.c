@@ -254,6 +254,9 @@ int main( int argc, char** argv )
 
                 /* A result buffer for the BLKGETSIZE64 ioctl. */
                 u64 size64;
+                
+                /* Initialise the wipe_status flag, -1 = wipe not yet started */
+                c2[i]->wipe_status = -1;
 
                 /* Open the file for reads and writes. */
                 c2[i]->device_fd = open( c2[i]->device_name, O_RDWR );
@@ -309,19 +312,8 @@ int main( int argc, char** argv )
 
                         if( ioctl( c2[i]->device_fd, BLKBSZGET, &c2[i]->block_size ) == 0 )
                         {
-                                if( c2[i]->block_size != c2[i]->sector_size )
-                                {
-                                        nwipe_log( NWIPE_LOG_WARNING, "Changing '%s' block size from %i to %i.", c2[i]->device_name, c2[i]->block_size, c2[i]->sector_size );
-                                        if( ioctl( c2[i]->device_fd, BLKBSZSET, &c2[i]->sector_size ) == 0 )
-                                        {
-                                                c2[i]->block_size = c2[i]->sector_size;
-                                        }
-
-                                        else
-                                        {
-                                                nwipe_log( NWIPE_LOG_WARNING, "Device '%s' failed BLKBSZSET ioctl.", c2[i]->device_name );
-                                        }
-                                }
+                                nwipe_log( NWIPE_LOG_INFO, "Device '%s' has block size %i.", c2[i]->device_name,  c2[i]->block_size );
+                                
                         }
                         else
                         {
@@ -428,14 +420,44 @@ int main( int argc, char** argv )
                 errno = pthread_create( &nwipe_gui_thread, NULL, nwipe_gui_status, &nwipe_gui_data);
         }
 
+        /* Wait for all the wiping threads to finish. */
+        i = 0;
+        while( i < nwipe_selected )
+        {
+            if( i == nwipe_selected )
+            {
+               break;
+            }
 
-        /* Wait for all the wiping threads to finish. */        
+            if ( c2[i]->wipe_status != 0 )
+            {
+               i = 0;
+            }
+            else
+            {
+               i++;
+               continue;
+            }
+            sleep( 2 ); /* DO NOT REMOVE ! Stops the routine hogging CPU cycles */
+        }
+           
+        /* Now cancel the wipe threads */
         for( i = 0 ; i < nwipe_selected ; i++ )
         {
 
                 if ( c2[i]->thread )
                 {
-                        pthread_join( c2[i]->thread, NULL);
+                        nwipe_log( NWIPE_LOG_INFO, "main():Cancelling wipe thread for %s", c2[i]->device_name );
+                        nwipe_log( NWIPE_LOG_INFO, "main():Please wait.. disk cache is being flushed" );
+                        pthread_cancel( c2[i]->thread );
+
+                        /* Joins the thread and waits for completion before continuing */
+                        r = pthread_join( c2[i]->thread, NULL);
+                        if( r != 0 )
+                        {
+                           nwipe_log( NWIPE_LOG_WARNING, "main()>pthread_join():Error when waiting for wipe thread to cancel." );
+                        }
+                        c2[i]->thread = 0; /* Zero the thread so we know it's been cancelled */
 
                         /* Close the device file descriptor. */
                         close( c2[i]->device_fd );
@@ -461,7 +483,7 @@ int main( int argc, char** argv )
                 nwipe_gui_free();
                 
         }
-        
+
         nwipe_log( NWIPE_LOG_NOTICE, "Nwipe exited." );
 
         for( i = 0 ; i < nwipe_selected ; i++ )
@@ -506,7 +528,8 @@ void *signal_hand(void *ptr)
         sigaddset(&sigset, SIGINT);
         sigaddset(&sigset, SIGUSR1);
 
-        int i;        
+        int i;
+        int r; /* Generic result buffer */
 
         /* Set up the structs we will use for the data required. */
         nwipe_thread_data_ptr_t *nwipe_thread_data_ptr;
@@ -565,8 +588,8 @@ void *signal_hand(void *ptr)
                                         else
                                         {
                                                 if( c[i]->result == 0 ) { nwipe_log( NWIPE_LOG_INFO, "%s: Success", c[i]->device_name ); }
-                                                else if( c[i]->signal ) { nwipe_log( NWIPE_LOG_INFO, "%s: Failure: signal %i", c[i]->device_name, c[i]->signal ); }
-                                                else                    { nwipe_log( NWIPE_LOG_INFO, "%s: Failure: code %i", c[i]->device_name, c[i]->result ); }
+                                                else if( c[i]->signal ) { nwipe_log( NWIPE_LOG_INFO, "%s: >>> FAILURE! <<<: signal %i", c[i]->device_name, c[i]->signal ); }
+                                                else                    { nwipe_log( NWIPE_LOG_INFO, "%s: >>> FAILURE! <<<: code %i", c[i]->device_name, c[i]->result ); }
                                         }
                                 }
 
@@ -582,11 +605,17 @@ void *signal_hand(void *ptr)
 
                                 for( i = 0; i < nwipe_misc_thread_data->nwipe_selected; i++ )
                                 {
-
                                         if ( c[i]->thread )
                                         {
                                                 nwipe_log( NWIPE_LOG_INFO, "Cancelling thread for %s", c[i]->device_name );
+                                                nwipe_log( NWIPE_LOG_INFO, "Please be patient.. disk cache is being flushed" );
                                                 pthread_cancel( c[i]->thread );
+                                                
+                                                r = pthread_join( c[i]->thread, NULL);
+                                                if( r != 0 )
+                                                {
+                                                   nwipe_log( NWIPE_LOG_WARNING, "signal_hand()>pthread_join():Error when waiting for wipe thread to cancel." );
+                                                }
                                         }
                                 }
 
@@ -596,6 +625,13 @@ void *signal_hand(void *ptr)
                                         if ( *nwipe_misc_thread_data->gui_thread )
                                         {
                                                 pthread_cancel( *nwipe_misc_thread_data->gui_thread );
+                                                
+                                                r = pthread_join( *nwipe_misc_thread_data->gui_thread, NULL);
+                                                if( r != 0 )
+                                                {
+                                                   nwipe_log( NWIPE_LOG_WARNING, "signal_hand()>pthread_join():Error when waiting for GUI thread to cancel." );
+                                                }
+                                                
                                                 *nwipe_misc_thread_data->gui_thread = 0;
                                         }
                                 }
