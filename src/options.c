@@ -244,6 +244,12 @@ int nwipe_options_parse( int argc, char** argv )
 					nwipe_options.method = &nwipe_zero;
 					break;
 				}
+				
+				if( strcmp( optarg, "verify" ) == 0 )
+				{
+					nwipe_options.method = &nwipe_verify;
+					break;
+				}
 
 				/* Else we do not know this wipe method. */
 				fprintf( stderr, "Error: Unknown wipe method '%s'.\n", optarg );
@@ -447,6 +453,7 @@ void display_help()
   puts("                          ops2                   - RCMP TSSIT OPS-II");
   puts("                          random / prng / stream - PRNG Stream");
   puts("                          zero / quick           - Overwrite with zeros\n");
+  puts("                          verify                 - Verifies disk is zero filled");
   puts("  -l, --logfile=FILE      Filename to log to. Default is STDOUT\n");
   puts("  -p, --prng=METHOD       PRNG option (mersenne|twister|isaac)\n");
   puts("  -r, --rounds=NUM        Number of times to wipe the device using the selected");
