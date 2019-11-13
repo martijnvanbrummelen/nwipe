@@ -702,7 +702,7 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
 		nwipe_log( NWIPE_LOG_SANITY, "__FUNCTION__: lseek() returned a bogus offset on '%s'.", c->device_name );
 		return -1;
 	}
-
+//z = 512000000; //FIXME NOTICE This is temporary for debugging - REMOVE
 	while( z > 0 )
 	{
 		if( c->device_stat.st_blksize <= z )
