@@ -2062,6 +2062,7 @@ int compute_stats(void *ptr)
 
 	nwipe_misc_thread_data->throughput = 0;
 	nwipe_misc_thread_data->maxeta = 0;
+	nwipe_misc_thread_data->errors = 0;
 	
 	/* Enumerate all contexts to compute statistics. */
 	for( i = 0 ; i < count ; i++ )
