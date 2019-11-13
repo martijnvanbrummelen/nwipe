@@ -52,6 +52,7 @@ void *nwipe_gutmann( void *ptr );
 void *nwipe_ops2( void *ptr );
 void *nwipe_random( void *ptr );
 void *nwipe_zero( void *ptr );
+void *nwipe_verify( void *ptr );
 
 #endif /* METHOD_H_ */
 
