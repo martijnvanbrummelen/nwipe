@@ -1,8 +1,8 @@
 RELEASE NOTES
 =============
 
-v0.27
------
+v0.27 (pending release)
+-----------------------
 - Add `verify` method to verify a disk is zero filled [#128](https://github.com/martijnvanbrummelen/nwipe/pull/128)
 
 v0.26
