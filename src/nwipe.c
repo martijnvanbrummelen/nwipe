@@ -46,6 +46,8 @@
 #include <parted/parted.h>
 #include <parted/debug.h>
 
+int terminate_signal;
+
 int main( int argc, char** argv )
 {
         int nwipe_optind;              /* The result of nwipe_options().                    */
@@ -64,6 +66,9 @@ int main( int argc, char** argv )
 
         /* The generic result buffer. */
         int r;
+        
+        /* Initialise the termintaion signal, 1=terminate nwipe */
+        terminate_signal = 0;
 
         /* Two arrays are used, containing pointers to the the typedef for each disk */
         /* The first array (c1) points to all devices, the second points to only     */
@@ -420,9 +425,10 @@ int main( int argc, char** argv )
                 errno = pthread_create( &nwipe_gui_thread, NULL, nwipe_gui_status, &nwipe_gui_data);
         }
 
-        /* Wait for all the wiping threads to finish. */
+ 
+        /* Wait for all the wiping threads to finish, but don't wait if we receive the terminate signal */
         i = 0;
-        while( i < nwipe_selected )
+        while( i < nwipe_selected && terminate_signal == 0 )
         {
             if( i == nwipe_selected )
             {
@@ -440,8 +446,24 @@ int main( int argc, char** argv )
             }
             sleep( 2 ); /* DO NOT REMOVE ! Stops the routine hogging CPU cycles */
         }
-           
-        /* Now cancel the wipe threads */
+
+        
+        if ( terminate_signal == 1 )
+        {
+           nwipe_log( NWIPE_LOG_INFO, "Program interrupted" );
+        }
+        else
+        {
+           if( !nwipe_options.nowait )
+           {
+               /* Wait for the user to press enter to exit */
+               nocbreak();
+               getch();
+           }
+        }
+        nwipe_log( NWIPE_LOG_INFO, "Exit in progress" );
+        
+        /* Send a REQUEST for the wipe threads to be cancelled */
         for( i = 0 ; i < nwipe_selected ; i++ )
         {
 
@@ -450,7 +472,36 @@ int main( int argc, char** argv )
                         nwipe_log( NWIPE_LOG_INFO, "main():Cancelling wipe thread for %s", c2[i]->device_name );
                         nwipe_log( NWIPE_LOG_INFO, "main():Please wait.. disk cache is being flushed" );
                         pthread_cancel( c2[i]->thread );
+                }
+        }
 
+        /* Kill the GUI thread */
+        if ( nwipe_gui_thread )
+        {
+                nwipe_log( NWIPE_LOG_INFO, "Cancelling the GUI thread." );
+                
+                /* We don't want to use pthread_cancel as our GUI thread is aware of the control-c
+                 *  signal and will exit itself we just join the GUI thread and wait for confirmation
+                 */
+                r = pthread_join( nwipe_gui_thread, NULL );
+                if( r != 0 )
+                {
+                     nwipe_log( NWIPE_LOG_WARNING, "main()>pthread_join():Error when waiting for GUI thread to cancel." );
+                }
+        }
+        
+        /* Release the gui. */
+        if( !nwipe_options.nogui )
+        {
+            nwipe_gui_free();
+        }
+           
+        /* Now join the wipe threads and wait until they have terminated */
+        for( i = 0 ; i < nwipe_selected ; i++ )
+        {
+
+                if ( c2[i]->thread )
+                {
                         /* Joins the thread and waits for completion before continuing */
                         r = pthread_join( c2[i]->thread, NULL);
                         if( r != 0 )
@@ -464,27 +515,6 @@ int main( int argc, char** argv )
                 }
                 
         }
-
-
-        /* Kill the GUI thread */
-        /* It may not be running if the program was interrupted */
-        if ( nwipe_gui_thread )
-        {
-                pthread_join( nwipe_gui_thread, NULL );
-
-                nocbreak();
-        //        timeout(-1);
-                /* Wait for enter key to be pressed unless --nowait
-                   was specified. */
-                if( !nwipe_options.nowait )
-                  getch();
-        
-                /* Release the gui. */
-                nwipe_gui_free();
-                
-        }
-
-        nwipe_log( NWIPE_LOG_NOTICE, "Nwipe exited." );
 
         for( i = 0 ; i < nwipe_selected ; i++ )
         {
@@ -501,6 +531,8 @@ int main( int argc, char** argv )
                 if( c2[i]->result > 0 ){ return 1; }
                 
         }
+        
+        nwipe_log( NWIPE_LOG_NOTICE, "Nwipe Successfully Exited." );
 
         /* Flush any remaining logs. */
         for (i=0; i < log_current_element; i++)
@@ -529,7 +561,6 @@ void *signal_hand(void *ptr)
         sigaddset(&sigset, SIGUSR1);
 
         int i;
-        int r; /* Generic result buffer */
 
         /* Set up the structs we will use for the data required. */
         nwipe_thread_data_ptr_t *nwipe_thread_data_ptr;
@@ -601,55 +632,14 @@ void *signal_hand(void *ptr)
                         case SIGQUIT :
                         case SIGTERM :
                         {
-                                nwipe_log( NWIPE_LOG_INFO, "nwipe_selected = %lu", nwipe_misc_thread_data->nwipe_selected );
+                                /* Set termination flag for main() which will do housekeeping prior to exit */
+                                terminate_signal = 1;
 
-                                for( i = 0; i < nwipe_misc_thread_data->nwipe_selected; i++ )
-                                {
-                                        if ( c[i]->thread )
-                                        {
-                                                nwipe_log( NWIPE_LOG_INFO, "Cancelling thread for %s", c[i]->device_name );
-                                                nwipe_log( NWIPE_LOG_INFO, "Please be patient.. disk cache is being flushed" );
-                                                pthread_cancel( c[i]->thread );
-                                                
-                                                r = pthread_join( c[i]->thread, NULL);
-                                                if( r != 0 )
-                                                {
-                                                   nwipe_log( NWIPE_LOG_WARNING, "signal_hand()>pthread_join():Error when waiting for wipe thread to cancel." );
-                                                }
-                                        }
-                                }
 
-                                // Kill the GUI thread
-                                if( !nwipe_options.nogui )
-                                {
-                                        if ( *nwipe_misc_thread_data->gui_thread )
-                                        {
-                                                pthread_cancel( *nwipe_misc_thread_data->gui_thread );
-                                                
-                                                r = pthread_join( *nwipe_misc_thread_data->gui_thread, NULL);
-                                                if( r != 0 )
-                                                {
-                                                   nwipe_log( NWIPE_LOG_WARNING, "signal_hand()>pthread_join():Error when waiting for GUI thread to cancel." );
-                                                }
-                                                
-                                                *nwipe_misc_thread_data->gui_thread = 0;
-                                        }
-                                }
+                                /* Return control to the main thread, returning the signal received */
+                                return((void *)0);
 
-                                if( !nwipe_options.nogui )
-                                        nwipe_gui_free();
-
-                                /* Flush any remaining logs. */
-                                for (i=0; i < log_current_element; i++)
-                                {
-                                        printf("%s\n", log_lines[i]);
-                                }
-
-                                printf("Program interrupted (caught signal %d)\n", sig); 
-
-                                cleanup();
-
-                                exit(0);
+                                break;
 
                         } /* end case */
 
@@ -657,7 +647,7 @@ void *signal_hand(void *ptr)
                                                 
         } /* end of while */
 
-        return((void *)0);
+        return(0);
 
 } /* end of signal_hand */
 
