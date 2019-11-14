@@ -65,6 +65,7 @@ const char* nwipe_gutmann_label    = "Gutmann Wipe";
 const char* nwipe_ops2_label       = "RCMP TSSIT OPS-II";
 const char* nwipe_random_label     = "PRNG Stream";
 const char* nwipe_zero_label       = "Quick Erase";
+const char* nwipe_verify_label     = "Verify Blank";
 
 const char* nwipe_unknown_label    = "Unknown Method (FIXME)";
 
@@ -81,6 +82,7 @@ const char* nwipe_method_label( void* method )
 	if( method == &nwipe_ops2       ) { return nwipe_ops2_label;       }
 	if( method == &nwipe_random     ) { return nwipe_random_label;     }
 	if( method == &nwipe_zero       ) { return nwipe_zero_label;       }
+	if( method == &nwipe_verify     ) { return nwipe_verify_label;     }
 
 	/* else */
 	return nwipe_unknown_label;
@@ -115,6 +117,36 @@ void *nwipe_zero( void *ptr )
 
     return NULL;
 } /* nwipe_zero */
+
+
+
+void *nwipe_verify( void *ptr )
+{
+/**
+ * Fill the device with zeroes.
+ *
+ */
+
+ 	nwipe_context_t *c;
+ 	c = (nwipe_context_t *) ptr;
+   
+	/* set wipe in progress flag for GUI */
+	c->wipe_status = 1;
+
+	/* Do nothing because nwipe_runmethod appends a zero-fill. */
+	nwipe_pattern_t patterns [] =
+	{
+		{ 0, NULL }
+	};
+
+	/* Run the method. */
+	c->result = nwipe_runmethod( c, patterns );
+
+	/* Finished. Set the wipe_status flag so that the GUI knows */
+	c->wipe_status = 0;
+
+    return NULL;
+} /* nwipe_verify */
 
 
 
@@ -587,6 +619,9 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 
 	/* An index variable. */
 	int i = 0;
+	
+	/* Variable to track if it is the last pass */
+	int lastpass = 0;
 
 	/* The zero-fill pattern for the final pass of most methods. */
 	nwipe_pattern_t pattern_zero = { 1, "\x00" };
@@ -628,7 +663,7 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 	
 	/* The final pass is always a zero fill, except ops2 which is random. */
 	/* Do not add if there is no blanking pass.                           */
-	if ( nwipe_options.noblank == 0 )
+	if ( nwipe_options.method == &nwipe_zero || nwipe_options.noblank == 0 )
 	{
 		c->round_size += c->device_size;
 	}
@@ -637,10 +672,16 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 	c->result = c->round_size;
 
 	if((nwipe_options.verify == NWIPE_VERIFY_LAST || nwipe_options.verify == NWIPE_VERIFY_ALL)
-		&& nwipe_options.noblank == 0 )
+		&& (nwipe_options.method == &nwipe_zero || nwipe_options.noblank == 0) )
 	{
 		/* We must read back the last pass to verify it. */
 		c->round_size += c->device_size;
+	}
+	
+	/* If only verifing then the round size is the device size */
+	if(nwipe_options.method == &nwipe_verify)
+	{
+		c->round_size = c->device_size;
 	}
 
 
@@ -665,6 +706,15 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 		{
 			/* Increment the working pass. */
 			c->pass_working += 1;
+			
+			/* Check if this is the last pass. */
+			if( nwipe_options.verify == NWIPE_VERIFY_LAST && nwipe_options.method != &nwipe_ops2 )
+			{
+				if( nwipe_options.noblank == 1 && c->round_working == c->round_count && c->pass_working == c->pass_count )
+				{
+					lastpass = 1;
+				}
+			}
 
 			nwipe_log( NWIPE_LOG_NOTICE, "Starting pass %i of %i, round %i of %i, on device '%s'.", \
 			  c->pass_working, c->pass_count, c->round_working, c->round_count, c->device_name );
@@ -691,7 +741,7 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 				/* Check for a fatal error. */
 				if( r < 0 ) { return r; }
 	
-				if( nwipe_options.verify == NWIPE_VERIFY_ALL )
+				if( nwipe_options.verify == NWIPE_VERIFY_ALL || lastpass == 1)
 				{
 
 					nwipe_log( NWIPE_LOG_NOTICE, "Verifying pass %i of %i, round %i of %i, on device '%s'.", \
@@ -746,7 +796,7 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 				/* Check for a fatal error. */
 				if( r < 0 ) { return r; }
 	
-				if( nwipe_options.verify == NWIPE_VERIFY_ALL )
+				if( nwipe_options.verify == NWIPE_VERIFY_ALL || lastpass == 1 )
 				{
 					nwipe_log( NWIPE_LOG_NOTICE, "Verifying pass %i of %i, round %i of %i, on device '%s'.", \
 			  		  c->pass_working, c->pass_count, c->round_working, c->round_count, c->device_name );
@@ -760,7 +810,7 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 					if( r < 0 ) { return r; }
 
 					nwipe_log( NWIPE_LOG_NOTICE, "Verified pass %i of %i, round %i of %i, on device '%s'.", \
-			  		  c->pass_working, c->pass_count, c->round_working, c->round_count, nwipe_method_label( nwipe_options.method ) );
+			  		  c->pass_working, c->pass_count, c->round_working, c->round_count, c->device_name );
 				}
 	
 			} /* random pass */
@@ -826,9 +876,24 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 		nwipe_log( NWIPE_LOG_NOTICE, "Wrote final random pattern to '%s'.", c->device_name );
 
 	} /* final ops2 */
+	
+	else if ( nwipe_options.method == &nwipe_verify )
+	{
+		nwipe_log( NWIPE_LOG_NOTICE, "Verifying that '%s' is empty.", c->device_name );
+		
+		/* Verify the final zero pass. */
+		c->pass_type = NWIPE_PASS_VERIFY;
+		r = nwipe_static_verify( c, &pattern_zero );
+		c->pass_type = NWIPE_PASS_NONE;
+		
+		/* Check for a fatal error. */
+		if( r < 0 ) { return r; }
+	
+		nwipe_log( NWIPE_LOG_NOTICE, "Verified that '%s' is empty.", c->device_name );
+		
+	} /* verify */
 
-
-	else if (nwipe_options.noblank == 0)
+	else if ( nwipe_options.method == &nwipe_zero || nwipe_options.noblank == 0 )
 	{
 		/* Tell the user that we are on the final pass. */
 		c->pass_type = NWIPE_PASS_FINAL_BLANK;

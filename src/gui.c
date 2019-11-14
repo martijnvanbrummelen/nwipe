@@ -1372,7 +1372,7 @@ void nwipe_gui_noblank( void )
 
 				/*                                 0         1         2         3         4         5         6         7        8  */
 				mvwprintw( main_window, yy++, tab1, "Do not perform a final blanking pass. Leave data as per final wiping pass.  " );
-				mvwprintw( main_window, yy++, tab1, "Any verification options will be ignored. Not compatible with Quick Erase.  " );
+				mvwprintw( main_window, yy++, tab1, "                                                                            " );
 				break;
 
 		} /* switch */
@@ -1447,7 +1447,7 @@ void nwipe_gui_method( void )
    extern int terminate_signal;
 
 	/* The number of implemented methods. */
-	const int count = 6;
+	const int count = 7;
 
 	/* The first tabstop. */
 	const int tab1 = 2;
@@ -1475,6 +1475,7 @@ void nwipe_gui_method( void )
         if( nwipe_options.method == &nwipe_dod522022m ) { focus = 3; }
         if( nwipe_options.method == &nwipe_gutmann    ) { focus = 4; }
         if( nwipe_options.method == &nwipe_random     ) { focus = 5; }
+        if( nwipe_options.method == &nwipe_verify     ) { focus = 6; }
 
 
 	do
@@ -1492,6 +1493,7 @@ void nwipe_gui_method( void )
                 mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_dod522022m ) );
                 mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_gutmann    ) );
                 mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_random     ) );
+                mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_verify     ) );
                 mvwprintw( main_window, yy++, tab1, "                                             " );
 
 		/* Print the cursor. */
@@ -1568,6 +1570,16 @@ void nwipe_gui_method( void )
 				mvwprintw( main_window, yy++, tab1, "This method has a medium security level with 4 rounds, and a high security   " );
 				mvwprintw( main_window, yy++, tab1, "level with 8 rounds.                                                         " );
 				break;
+			
+			case 6:
+
+				mvwprintw( main_window, 2, tab2, "syslinux.cfg: nuke=\"nwipe --method verify\"" );
+				mvwprintw( main_window, 3, tab2, "Security Level: None" );
+
+				/*                                 0         1         2         3         4         5         6         7         8  */
+				mvwprintw( main_window, yy++, tab1, "This method only reads the device and checks that it is all zero.            " );
+
+				break;
 
 		} /* switch */
 
@@ -1641,6 +1653,10 @@ void nwipe_gui_method( void )
 
                 case 5:
                         nwipe_options.method = &nwipe_random;
+                        break;
+                
+                case 6:
+                        nwipe_options.method = &nwipe_verify;
                         break;
         }
 
@@ -2143,6 +2159,7 @@ int compute_stats(void *ptr)
 
 	nwipe_misc_thread_data->throughput = 0;
 	nwipe_misc_thread_data->maxeta = 0;
+	nwipe_misc_thread_data->errors = 0;
 	
 	/* Enumerate all contexts to compute statistics. */
 	for( i = 0 ; i < count ; i++ )

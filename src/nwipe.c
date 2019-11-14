@@ -425,6 +425,7 @@ int main( int argc, char** argv )
                 errno = pthread_create( &nwipe_gui_thread, NULL, nwipe_gui_status, &nwipe_gui_data);
         }
 
+ 
         /* Wait for all the wiping threads to finish, but don't wait if we receive the terminate signal */
         i = 0;
         while( i < nwipe_selected && terminate_signal == 0 )
@@ -445,6 +446,7 @@ int main( int argc, char** argv )
             }
             sleep( 2 ); /* DO NOT REMOVE ! Stops the routine hogging CPU cycles */
         }
+
         
         if ( terminate_signal == 1 )
         {
@@ -632,6 +634,7 @@ void *signal_hand(void *ptr)
                         {
                                 /* Set termination flag for main() which will do housekeeping prior to exit */
                                 terminate_signal = 1;
+
 
                                 /* Return control to the main thread, returning the signal received */
                                 return((void *)0);

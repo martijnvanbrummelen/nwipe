@@ -1,6 +1,10 @@
 RELEASE NOTES
 =============
 
+v0.27
+-----
+- Add `verify` method to verify a disk is zero filled [#128](https://github.com/martijnvanbrummelen/nwipe/pull/128)
+
 v0.26
 -----
 - Add exclude drive option (Thanks PartialVolume)
