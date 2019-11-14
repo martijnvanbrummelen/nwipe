@@ -452,8 +452,8 @@ void display_help()
   puts("                          gutmann                - Peter Gutmann's Algorithm");
   puts("                          ops2                   - RCMP TSSIT OPS-II");
   puts("                          random / prng / stream - PRNG Stream");
-  puts("                          zero / quick           - Overwrite with zeros\n");
-  puts("                          verify                 - Verifies disk is zero filled");
+  puts("                          zero / quick           - Overwrite with zeros");
+  puts("                          verify                 - Verifies disk is zero filled\n");
   puts("  -l, --logfile=FILE      Filename to log to. Default is STDOUT\n");
   puts("  -p, --prng=METHOD       PRNG option (mersenne|twister|isaac)\n");
   puts("  -r, --rounds=NUM        Number of times to wipe the device using the selected");
