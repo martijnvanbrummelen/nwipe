@@ -20,7 +20,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA. 
  *
  */
+#ifndef _POSIX_SOURCE
 #define _POSIX_SOURCE
+#endif
 
 #include <stdint.h>
 #include <time.h>
