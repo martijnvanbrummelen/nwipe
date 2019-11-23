@@ -185,23 +185,23 @@ void nwipe_gui_init( void )
             init_color( COLOR_CYAN, 128, 128, 128 );
         }
 
-        /* Set white on blue as the emphasis color. */
-        init_pair( 1, COLOR_WHITE, COLOR_BLUE );
+        /* Set white as the emphasis color. */
+        init_pair( 1, COLOR_WHITE, COLOR_BLACK );
 
-        /* Set gray (or cyan) on blue as the normal color. */
-        init_pair( 2, COLOR_CYAN, COLOR_BLUE );
+        /* Set gray (or cyan) as the normal color. */
+        init_pair( 2, COLOR_CYAN, COLOR_BLACK );
 
-        /* Set red on blue as the hilite color. */
-        init_pair( 3, COLOR_RED, COLOR_BLUE );
+        /* Set red as the hilite color. */
+        init_pair( 3, COLOR_RED, COLOR_BLACK );
 
-        /* Set blue on white as the color for the header and footer windows. */
-        init_pair( 4, COLOR_BLUE, COLOR_WHITE );
+        /* Set white as the color for the header and footer windows. */
+        init_pair( 4, COLOR_WHITE, COLOR_BLACK );
 
-        /* Set white on green for success messages. */
-        init_pair( 5, COLOR_WHITE, COLOR_GREEN );
+        /* Set green for success messages. */
+        init_pair( 5, COLOR_GREEN, COLOR_BLACK );
 
-        /* Set white on green for failure messages. */
-        init_pair( 6, COLOR_WHITE, COLOR_RED );
+        /* Set red for failure messages. */
+        init_pair( 6, COLOR_RED, COLOR_BLACK );
 
         /* Set black on black for when hiding the display. */
         init_pair( 7, COLOR_BLACK, COLOR_BLACK );
