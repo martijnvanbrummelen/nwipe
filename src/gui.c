@@ -127,10 +127,10 @@ const char* options_title = " Options ";
 const char* stats_title = " Statistics ";
 
 /* Footer labels. */
-const char* nwipe_buttons1 = "Ctrl-C=Quit S=Start M=Method P=PRNG V=Verify R=Rounds B=Blanking-pass Space=Select";
-const char* nwipe_buttons2 = " J=Down K=Up Space=Select";
-const char* nwipe_buttons3 = " B=Blank screen, ctrl-c=Quit";
-
+const char* main_window_footer = "S=Start M=Method P=PRNG V=Verify R=Rounds B=Blanking Space=Select Ctrl-C=Quit";
+const char* selection_footer = "J=Down K=Up Space=Select Backspace=Cancel Ctrl-C=Quit";
+const char* end_wipe_footer = "B=Blank screen Ctrl-C=Quit";
+const char* rounds_footer = "Left=Erase Esc=Cancel Ctrl-C=Quit";
 
 
 void nwipe_gui_title( WINDOW* w, const char* s )
@@ -446,7 +446,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
 
 		/* Update the footer window. */
 		werase( footer_window );
-		nwipe_gui_title( footer_window, nwipe_buttons1 );
+		nwipe_gui_title( footer_window, main_window_footer );
 		wrefresh( footer_window );
 
 		/* Update the options window. */
@@ -859,7 +859,6 @@ void nwipe_gui_options( void )
 			
 	} /* switch verify */
 
-
 	mvwprintw( options_window, NWIPE_GUI_OPTIONS_ROUNDS_Y,  NWIPE_GUI_OPTIONS_ROUNDS_X,  "Rounds:  " );
 	if ( nwipe_options.noblank )
 	{
@@ -903,13 +902,13 @@ void nwipe_gui_rounds( void )
 
 	/* Input buffer. */
 	int keystroke;
-   
-   extern int terminate_signal;
 
-	/* Erase the footer window. */
+	extern int terminate_signal;
+
+	/* Update the footer window. */
 	werase( footer_window );
+	nwipe_gui_title( footer_window, rounds_footer );
 	wrefresh( footer_window );
-
 
 	do
 	{
@@ -987,6 +986,10 @@ void nwipe_gui_rounds( void )
 
 				break;
 
+			/* Escape key. */
+			case 27:
+				return;
+
 			case KEY_BACKSPACE:
 			case KEY_LEFT:
 			case 127:
@@ -1025,7 +1028,7 @@ void nwipe_gui_prng( void )
 
 	extern nwipe_prng_t nwipe_twister;
 	extern nwipe_prng_t nwipe_isaac;
-   extern int terminate_signal;
+	extern int terminate_signal;
 
 	/* The number of implemented PRNGs. */
 	const int count = 2;
@@ -1047,7 +1050,7 @@ void nwipe_gui_prng( void )
 
 	/* Update the footer window. */
 	werase( footer_window );
-	nwipe_gui_title( footer_window, nwipe_buttons2 );
+	nwipe_gui_title( footer_window, selection_footer );
 	wrefresh( footer_window );
 
 	if( nwipe_options.prng == &nwipe_twister ) { focus = 0; }
@@ -1191,7 +1194,7 @@ void nwipe_gui_verify( void )
 
 	/* Update the footer window. */
 	werase( footer_window );
-	nwipe_gui_title( footer_window, nwipe_buttons2 );
+	nwipe_gui_title( footer_window, selection_footer );
 	wrefresh( footer_window );
 
 	do
@@ -1335,7 +1338,7 @@ void nwipe_gui_noblank( void )
 
 	/* Update the footer window. */
 	werase( footer_window );
-	nwipe_gui_title( footer_window, nwipe_buttons2 );
+	nwipe_gui_title( footer_window, selection_footer );
 	wrefresh( footer_window );
 
 	do	
@@ -1466,7 +1469,7 @@ void nwipe_gui_method( void )
 
 	/* Update the footer window. */
 	werase( footer_window );
-	nwipe_gui_title( footer_window, nwipe_buttons2 );
+	nwipe_gui_title( footer_window, selection_footer );
 	wrefresh( footer_window );
 
 	if( nwipe_options.method == &nwipe_zero       ) { focus = 0; }
@@ -1815,7 +1818,7 @@ void *nwipe_gui_status( void *ptr )
 	slots /= 3;
 
 	/* Add text to footer window */
-	nwipe_gui_title( footer_window, nwipe_buttons3 );
+	nwipe_gui_title( footer_window, end_wipe_footer );
 	wrefresh( footer_window );
 
 	while ( nwipe_active && terminate_signal != 1) {
