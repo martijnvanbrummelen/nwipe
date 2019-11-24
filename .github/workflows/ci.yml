@@ -1,11 +1,11 @@
-name: CI on Ubuntu 18.04
+name: CI_on_Ubuntu-latest
 
 on: [push]
 
 jobs:
   build:
 
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v1
