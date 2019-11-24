@@ -1,5 +1,5 @@
 # nwipe
-![GitHub CI badge](https://github.com/martijnvanbrummelen/nwipe/workflows/CI%20on%20Ubuntu-latest/badge.svg)
+![GitHub CI badge](https://github.com/martijnvanbrummelen/nwipe/workflows/CI_on_Ubuntu-latest/badge.svg)
 
 nwipe is a command that will securely erase disks using a variety of
 recognised methods.  It is a fork of the dwipe command used by
