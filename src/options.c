@@ -206,6 +206,9 @@ int nwipe_options_parse( int argc, char** argv )
 					exit( EINVAL );
 				}
 
+				/* getopt_long should raise on invalid option, so we should never get here. */
+				exit( EINVAL );
+
 			case 'm': /* Method option. */
 
 				if( strcmp( optarg, "dod522022m" ) == 0 || strcmp( optarg, "dod" ) == 0 )
