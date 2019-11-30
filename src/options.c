@@ -296,7 +296,7 @@ int nwipe_options_parse( int argc, char** argv )
 						{ /* This section deals with file names that exceed
 						     MAX_DRIVE_PATH_LENGTH */
 							nwipe_options.exclude[idx_drive][idx_drive_chr] = 0;
-							while( optarg[idx_optarg] != 0 || optarg[idx_optarg] != ',' )
+							while( optarg[idx_optarg] != 0 && optarg[idx_optarg] != ',' )
 							{
 								idx_optarg++;
 							}
