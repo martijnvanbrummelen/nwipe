@@ -172,7 +172,6 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     nwipe_log( NWIPE_LOG_INFO,"Found drive model=\"%s\", device path=\"%s\", size=\"%s\", serial number=\"%s\"", next_device->label, next_device->device_name, next_device->device_size_text, next_device->serial_no);
 
 	(*c)[dcount] = next_device;
-        
 	return 1;
 }
 

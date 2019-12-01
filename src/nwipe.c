@@ -79,10 +79,8 @@ int main( int argc, char** argv )
         /* The array of pointers to enumerated contexts. */
         /* Initialised and populated in device scan.     */
         nwipe_context_t **c1 = 0;
-
         /* Parse command line options. */
         nwipe_optind = nwipe_options_parse( argc, argv );
-
         if( nwipe_optind == argc )
         {
                 /* File names were not given by the user.  Scan for devices. */
@@ -91,7 +89,8 @@ int main( int argc, char** argv )
 
                 if( nwipe_enumerated == 0 )
                 {
-                        nwipe_log( NWIPE_LOG_ERROR, "Storage devices not found." );
+                        nwipe_log( NWIPE_LOG_INFO, "Storage devices not found." );
+                        cleanup();
                         return -1;
                 }
 
@@ -109,6 +108,8 @@ int main( int argc, char** argv )
                 nwipe_enumerated = nwipe_device_get( &c1, argv, argc );
                 if ( nwipe_enumerated == 0 )
                 {
+                    nwipe_log( NWIPE_LOG_ERROR, "Devices not found. Check you're not excluding drives unnecessarily." );
+                    printf("No drives found");
                     cleanup();
                     exit(1);
                 }
@@ -536,12 +537,6 @@ int main( int argc, char** argv )
         
         nwipe_log( NWIPE_LOG_NOTICE, "Nwipe Successfully Exited." );
 
-        /* Flush any remaining logs. */
-        for (i=0; i < log_current_element; i++)
-        {
-                printf("%s\n", log_lines[i]);
-        }
-
         cleanup();
 
         /* Success. */
@@ -655,14 +650,24 @@ void *signal_hand(void *ptr)
 
 int cleanup()
 {
+   int i;
+   
+   /* Flush any remaining logs. */
+   for (i=0; i < log_current_element; i++)
+   {
+      printf("%s\n", log_lines[i]);
+   }
+   
 	/* Deallocate memory used by logging */
-	int idx;
-	for ( idx=0; idx < log_elements_allocated; idx++ )
-	{
-		free ( log_lines[idx] );
-	}
-	log_elements_allocated=0; /* zeroed just in case cleanup is called twice */
-	free ( log_lines );
+   if ( log_elements_allocated != 0 )
+   {
+      for ( i=0; i < log_elements_allocated; i++ )
+      {
+         free ( log_lines[i] );
+      }
+      log_elements_allocated=0; /* zeroed just in case cleanup is called twice */
+      free ( log_lines );
+   }
 	
 	/* TODO: All other cleanup required */
 	

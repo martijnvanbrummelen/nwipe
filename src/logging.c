@@ -28,6 +28,7 @@
 
 #include "stdio.h"
 #include "stdlib.h"
+#include "stdarg.h"
 #include "nwipe.h"
 #include "context.h"
 #include "method.h"
@@ -54,18 +55,23 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 	int chars_written;
 	
 	int message_buffer_length;
+   int r; /* result buffer */
 
 	/* A time buffer. */
 	time_t t;
 
 	/* A pointer to the system time struct. */
 	struct tm* p;
+   r = pthread_mutex_lock( &mutex1 );
+	if ( r !=0 )
+   {
+      fprintf( stderr, "nwipe_log: pthread_mutex_lock failed. Code %i \n", r );
+      return;
+   }
 
 	/* Get the current time. */
 	t = time( NULL );
 	p = localtime( &t );
-
-	pthread_mutex_lock( &mutex1 );
 
 	/* Position of writing to current log string */
 	int line_current_pos = 0;
@@ -84,8 +90,12 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 	if ( chars_written < 0 )
 	{
 		fprintf( stderr, "nwipe_log: snprintf error when writing log line to memory.\n" );
-		pthread_mutex_unlock( &mutex1 );
-		return;
+		r = pthread_mutex_unlock( &mutex1 );
+      if ( r !=0 )
+      {
+         fprintf( stderr, "nwipe_log: pthread_mutex_unlock failed. Code %i \n", r );
+         return;
+      }
 	}
 	else
 	{
@@ -147,8 +157,12 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 		if ( chars_written < 0 )
 		{
 			fprintf( stderr, "nwipe_log: snprintf error when writing log line to memory.\n" );
-			pthread_mutex_unlock( &mutex1 );
-			return;
+			r = pthread_mutex_unlock( &mutex1 );
+         if ( r !=0 )
+         {
+            fprintf( stderr, "nwipe_log: pthread_mutex_unlock failed. Code %i \n", r );
+            return;
+         }
 		}
 		else
 		{
@@ -179,9 +193,13 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 		if ( chars_written < 0 )
 		{
 			fprintf( stderr, "nwipe_log: snprintf error when writing log line to memory.\n" );
-			pthread_mutex_unlock( &mutex1 );
-			va_end( ap );
-			return;
+			r = pthread_mutex_unlock( &mutex1 );
+         if ( r !=0 )
+         {
+            fprintf( stderr, "nwipe_log: pthread_mutex_unlock failed. Code %i \n", r );
+            va_end( ap );
+            return;
+         }
 		}
 		else
 		{
@@ -204,9 +222,13 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 		if ( result == NULL )
 		{
 			fprintf( stderr, "nwipe_log: realloc failed when adding a log line.\n" );
-			pthread_mutex_unlock( &mutex1 );
-			va_end( ap );
-			return;
+			r = pthread_mutex_unlock( &mutex1 );
+         if ( r !=0 )
+         {
+            fprintf( stderr, "nwipe_log: pthread_mutex_unlock failed. Code %i \n", r );
+            va_end( ap );
+            return;
+         }
 		}
 		log_lines = result;
 
@@ -216,9 +238,13 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 		if (malloc_result == NULL)
 		{
 			fprintf( stderr, "nwipe_log: malloc failed when adding a log line.\n" );
-			pthread_mutex_unlock( &mutex1 );
-			va_end( ap );
-			return;
+			r = pthread_mutex_unlock( &mutex1 );
+         if ( r !=0 )
+         {
+            fprintf( stderr, "nwipe_log: pthread_mutex_unlock failed. Code %i \n", r );
+            va_end( ap );
+            return;
+         }
 		}
 		log_lines[log_current_element] = malloc_result;
 	}
@@ -242,15 +268,11 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 	}
 */
 
-	/* A result buffer. */
-	int r;
-
 	/* The log file pointer. */
 	FILE* fp;
 
 	/* The log file descriptor. */
 	int fd;
-
 
 	if (nwipe_options.logfile[0] == '\0')
 	{
@@ -270,7 +292,12 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 		if( fp == NULL )
 		{
 			fprintf( stderr, "nwipe_log: Unable to open '%s' for logging.\n", nwipe_options.logfile );
-			return;
+			r = pthread_mutex_unlock( &mutex1 );
+         if ( r !=0 )
+         {
+            fprintf( stderr, "nwipe_log: pthread_mutex_unlock failed. Code %i \n", r );
+            return;
+         }
 		}
 		
 		/* Get the file descriptor of the log file. */
@@ -283,7 +310,16 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 		{
 			perror( "nwipe_log: flock:" );
 			fprintf( stderr, "nwipe_log: Unable to lock '%s' for logging.\n", nwipe_options.logfile );
-			return;
+			r = pthread_mutex_unlock( &mutex1 );
+         if ( r !=0 )
+         {
+            fprintf( stderr, "nwipe_log: pthread_mutex_unlock failed. Code %i \n", r );
+
+            /* Unlock the file. */
+            r = flock( fd, LOCK_UN );
+            fclose( fp );
+            return;
+         }
 		}
 
 		fprintf( fp, "%s\n", log_lines[log_current_element] );
@@ -307,7 +343,12 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 		}
 	}
 	
-	pthread_mutex_unlock( &mutex1 );
+	r = pthread_mutex_unlock( &mutex1 );
+   if ( r !=0 )
+   {
+      fprintf( stderr, "nwipe_log: pthread_mutex_unlock failed. Code %i \n", r );
+   }
+   return;
 	
 
 } /* nwipe_log */
