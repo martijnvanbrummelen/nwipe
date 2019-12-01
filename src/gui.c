@@ -339,7 +339,6 @@ void nwipe_gui_free( void )
  * Releases the ncurses gui.
  *
  */
-
 	/* Free ncurses resources. */
 	if( del_panel( footer_panel ) != OK )
    {
