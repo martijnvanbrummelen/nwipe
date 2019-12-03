@@ -2,8 +2,10 @@
 ![GitHub CI badge](https://github.com/martijnvanbrummelen/nwipe/workflows/CI_on_Ubuntu-latest/badge.svg)
 ![GitHub CI badge](https://github.com/martijnvanbrummelen/nwipe/workflows/CI_on_ubuntu-16.04/badge.svg)
 
-nwipe is a command that will securely erase disks using a variety of
-recognised methods which include:
+nwipe is a program that will securely erase disks. It can operate as both a command line
+tool without a GUI or with an ncurses GUI as shown in the example below.
+
+The user can select from a variety of recognised secure erase methods which include:
 
 * Quick erase        - Fills the device with zeros, one round only.
 * RCMP TSSIT OPS-II  - Royal Candian Mounted Police Technical Security Standard, OPS-II
