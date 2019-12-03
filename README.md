@@ -3,7 +3,8 @@
 ![GitHub CI badge](https://github.com/martijnvanbrummelen/nwipe/workflows/CI_on_ubuntu-16.04/badge.svg)
 
 nwipe is a program that will securely erase disks. It can operate as both a command line
-tool without a GUI or with an ncurses GUI as shown in the example below.
+tool without a GUI or with an ncurses GUI as shown in the example below. It can wipe multiple
+disks simultaneously.
 
 The user can select from a variety of recognised secure erase methods which include:
 
