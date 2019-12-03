@@ -83,6 +83,12 @@ make
 make install
 ```
 
+Then run nwipe !
+```
+cd src
+sudo ./nwipe
+```
+
 ### Hacking
 
 If you wish to submit pull requests to this code we would prefer you enable all warnings when compiling.
