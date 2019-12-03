@@ -88,6 +88,10 @@ Then run nwipe !
 cd src
 sudo ./nwipe
 ```
+or
+```
+sudo nwipe
+```
 
 ### Hacking
 
