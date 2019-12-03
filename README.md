@@ -3,12 +3,28 @@
 ![GitHub CI badge](https://github.com/martijnvanbrummelen/nwipe/workflows/CI_on_ubuntu-16.04/badge.svg)
 
 nwipe is a command that will securely erase disks using a variety of
-recognised methods.  It is a fork of the dwipe command used by
-Darik's Boot and Nuke (dban).  nwipe is included with partedmagic if you
-want a quick and easy bootable CD version.  nwipe was created out of
-a need to run the DBAN dwipe command outside of DBAN, in order to
-allow its use with any host distribution, thus giving better hardware
-support.
+recognised methods which include:
+
+* Quick erase        - Fills the device with zeros, one round only.
+* RCMP TSSIT OPS-II  - Royal Candian Mounted Police Technical Security Standard, OPS-II
+* DoD Short          - The American Department of Defense 5220.22-M short 3 pass wipe. 1,2,& 7.
+* DoD 5220.22M       - The American Department of Defense 5220.22-M full 7 pass wipe. 1-7
+* Gutmann Wipe       - Peter Gutmann's method. (Secure Deletion of Data from Magnetic and Solid-State Memory)
+* PRNG Stream        - Fills the device with a stream from the PRNG.
+* Verify only        - This method only reads the device and checks that it is all zero.
+
+It also includes the following pseudo random number generators:
+* mersenne
+* twister
+* isaac
+
+It is a fork of the dwipe command used by
+Darik's Boot and Nuke (dban).  nwipe is included with partedmagic and
+ShredOS if you want a quick and easy bootable CD or USB version.
+
+Nwipe was created out of a need to run the DBAN dwipe command outside
+of DBAN, in order to allow its use with any host distribution, thus
+giving better hardware support.
 
 ## Compiling & Installing
 
