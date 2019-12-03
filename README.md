@@ -26,6 +26,8 @@ Nwipe was created out of a need to run the DBAN dwipe command outside
 of DBAN, in order to allow its use with any host distribution, thus
 giving better hardware support.
 
+![Example wipe](/images/example_wipe.png)
+
 ## Compiling & Installing
 
 `nwipe` requires the following libraries to be installed:
