@@ -4,7 +4,7 @@
  * used by configure to dynamically assign those values 
  * to documentation files.
  */
-const char *version_string = "0.26";
+const char *version_string = "0.27rc1";
 const char *program_name   = "nwipe";
 const char *author_name    = "Martijn van Brummelen";
 const char *email_address  = "git@brumit.nl";
