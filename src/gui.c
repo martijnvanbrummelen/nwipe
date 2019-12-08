@@ -32,6 +32,7 @@
 #include <ncurses.h>
 #include <panel.h>
 #include <stdint.h>
+#include <time.h>
 
 #include "nwipe.h"
 #include "context.h"
@@ -1796,6 +1797,10 @@ void *nwipe_gui_status( void *ptr )
 	int nwipe_hh;
 	int nwipe_mm;
 	int nwipe_ss;
+   
+   struct timespec tim, tim2;
+   tim.tv_sec = 0;
+   tim.tv_nsec = 100000000L; /* sleep for 0.1 seconds */
 
 	/* The number of active wipe processes. */
 	/* Set to 1 initially to start loop.    */
@@ -2120,6 +2125,12 @@ void *nwipe_gui_status( void *ptr )
 			refresh();                      /* Do refresh() to restore the    */
 							/* Screen contents                */
 		}
+		
+		/* Stop this function unnecessarily running the CPU or a CPU core at 100% */
+		if(nanosleep(&tim , &tim2) < 0 )   
+      {
+         printf("Nano sleep system call failed \n");
+      }
 
 		/* Test for a thread cancellation request */
 		pthread_testcancel();
