@@ -9,6 +9,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+    - name: update repo
+      run: sudo apt-get update
     - name: installing system dependencies
       run: sudo apt-get install -y build-essential pkg-config automake libncurses5-dev autotools-dev libparted-dev dmidecode
     - name: creating autoconf files
