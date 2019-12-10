@@ -280,10 +280,6 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 		{
 			printf( "%s\n", log_lines[log_current_element] );
 		}
-		else
-		{
-			log_current_element++;
-		}
 	} else
 	{
 		/* Open the log file for appending. */
@@ -342,6 +338,8 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 			fprintf( stderr, "Error: Unable to close '%s' after logging.\n", nwipe_options.logfile );
 		}
 	}
+	
+	log_current_element++;
 	
 	r = pthread_mutex_unlock( &mutex1 );
    if ( r !=0 )
