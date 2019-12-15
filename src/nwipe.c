@@ -71,6 +71,9 @@ int main( int argc, char** argv )
         
         /* Initialise the termintaion signal, 1=terminate nwipe */
         terminate_signal = 0;
+        
+        /* nwipes return status value, set prior to exit at the end of nwipe, as no other exit points allowed */
+        int return_status = 0;
 
         /* Two arrays are used, containing pointers to the the typedef for each disk */
         /* The first array (c1) points to all devices, the second points to only     */
@@ -131,6 +134,7 @@ int main( int argc, char** argv )
         {
                 nwipe_perror( errno, __FUNCTION__, "open" );
                 nwipe_log( NWIPE_LOG_FATAL, "Unable to open entropy source %s.", NWIPE_KNOB_ENTROPY );
+                cleanup();
                 return errno;
         }
 
@@ -204,7 +208,12 @@ int main( int argc, char** argv )
         } /* file arguments */
 
         /* Check for initialization errors. */
-        if( nwipe_error ) { return -1; }
+        if( nwipe_error )
+        {
+           nwipe_log( NWIPE_LOG_ERROR, "Initialization eror %i\n", nwipe_error );
+           cleanup();
+           return -1;
+        }
 
         /* Start the ncurses interface. */
         if( !nwipe_options.nogui )
@@ -454,6 +463,7 @@ int main( int argc, char** argv )
         if ( terminate_signal == 1 )
         {
            nwipe_log( NWIPE_LOG_INFO, "Program interrupted" );
+           printf("Program interrupted");
         }
         else
         {
@@ -472,8 +482,8 @@ int main( int argc, char** argv )
 
                 if ( c2[i]->thread )
                 {
-                        nwipe_log( NWIPE_LOG_INFO, "main():Cancelling wipe thread for %s", c2[i]->device_name );
-                        nwipe_log( NWIPE_LOG_INFO, "main():Please wait.. disk cache is being flushed" );
+                        nwipe_log( NWIPE_LOG_INFO, "Requesting wipe thread cancellation for %s", c2[i]->device_name );
+                        nwipe_log( NWIPE_LOG_INFO, "Please wait.." );
                         pthread_cancel( c2[i]->thread );
                 }
         }
@@ -491,6 +501,7 @@ int main( int argc, char** argv )
                 {
                      nwipe_log( NWIPE_LOG_WARNING, "main()>pthread_join():Error when waiting for GUI thread to cancel." );
                 }
+                nwipe_log( NWIPE_LOG_INFO, "GUI compute_stats thread has been cancelled" );
         }
         
         /* Release the gui. */
@@ -498,7 +509,7 @@ int main( int argc, char** argv )
         {
             nwipe_gui_free();
         }
-           
+          
         /* Now join the wipe threads and wait until they have terminated */
         for( i = 0 ; i < nwipe_selected ; i++ )
         {
@@ -512,10 +523,23 @@ int main( int argc, char** argv )
                            nwipe_log( NWIPE_LOG_WARNING, "main()>pthread_join():Error when waiting for wipe thread to cancel." );
                         }
                         c2[i]->thread = 0; /* Zero the thread so we know it's been cancelled */
-
+                        nwipe_log( NWIPE_LOG_INFO, "Wipe thread for device %s has been cancelled", c2[i]->device_name );
                         /* Close the device file descriptor. */
                         close( c2[i]->device_fd );
                 }
+                
+        }
+        
+        for( i = 0 ; i < nwipe_selected ; i++ )
+        {
+        
+                /* Check for non-fatal errors. */
+                if( c2[i]->result > 0 )
+                {
+                   nwipe_log( NWIPE_LOG_FATAL, "Nwipe exited with non fatal errors on device = %s\n", c2[i]->device_name);
+                   return_status = 1;
+                   
+               }
                 
         }
 
@@ -523,24 +547,24 @@ int main( int argc, char** argv )
         {
         
                 /* Check for fatal errors. */
-                if( c2[i]->result < 0 ){ return -1; }
+                if( c2[i]->result < 0 )
+                {
+                   nwipe_log( NWIPE_LOG_ERROR, "Nwipe exited with fatal errors on device = %s\n", c2[i]->device_name );
+                   return_status = -1; 
+                   
+               }
                         
         }
 
-        for( i = 0 ; i < nwipe_selected ; i++ )
+        if ( return_status == 0 )
         {
-        
-                /* Check for non-fatal errors. */
-                if( c2[i]->result > 0 ){ return 1; }
-                
+            nwipe_log( NWIPE_LOG_INFO, "Nwipe successfully exited." );
         }
-        
-        nwipe_log( NWIPE_LOG_NOTICE, "Nwipe Successfully Exited." );
 
         cleanup();
 
-        /* Success. */
-        return 0;
+        /* Exit. */
+        return return_status;
 
 } /* main */
 
@@ -651,12 +675,16 @@ void *signal_hand(void *ptr)
 int cleanup()
 {
    int i;
-   
-   /* Flush any remaining logs. */
-   for (i=0; i < log_current_element; i++)
+   extern int log_elements_displayed;
+   extern int log_elements_allocated;
+   extern char **log_lines;
+
+   /* Print the logs held in memory. */
+   for (i=log_elements_displayed; i < log_elements_allocated; i++)
    {
       printf("%s\n", log_lines[i]);
    }
+   fflush(stdout);
    
 	/* Deallocate memory used by logging */
    if ( log_elements_allocated != 0 )

@@ -40,7 +40,9 @@
 char **log_lines;
 int log_current_element = 0;
 int log_elements_allocated = 0;
+int log_elements_displayed = 0;
 pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
+
 
 void nwipe_log( nwipe_log_t level, const char* format, ... )
 {
@@ -215,6 +217,7 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 		}
 	}
 
+   fflush(stdout);
 	/* Increase the current log element pointer - we will write here, deallocation is done in cleanup() in nwipe.c */
 	if (log_current_element == log_elements_allocated) {
 		log_elements_allocated++;
@@ -279,7 +282,8 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 		if (nwipe_options.nogui)
 		{
 			printf( "%s\n", log_lines[log_current_element] );
-		}
+         log_elements_displayed++;
+		}  
 	} else
 	{
 		/* Open the log file for appending. */
