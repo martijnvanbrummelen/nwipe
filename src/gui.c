@@ -2109,17 +2109,6 @@ void *nwipe_gui_status( void *ptr )
 			/* Flush stdout and disable buffering, otherwise output missed new lines. */
 			fflush(stdout);
 			setbuf(stdout, NULL);
-			
-			pthread_mutex_lock( &mutex1 );
-			
-			for (i=0; i < log_current_element; i++)
-			{
-				printf("%s\n", log_lines[i]);
-			}
-			log_current_element = 0;
-
-			pthread_mutex_unlock( &mutex1 );
-			
 			reset_prog_mode();              /* Return to the previous tty mode*/
 							/* stored by def_prog_mode()      */
 			refresh();                      /* Do refresh() to restore the    */
