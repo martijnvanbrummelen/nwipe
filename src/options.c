@@ -439,7 +439,7 @@ void display_help()
   puts("                          starts wiping all devices immediately. If devices have");
   puts("                          been specified, starts wiping only those specified");
   puts("                          devices immediately.\n");
-  puts("      --sync=NUM          Will preform a sync after NUM writes (default: 0)");
+  puts("      --sync=NUM          Will perform a sync after NUM writes (default: 0)");
   puts("                          0 - fdatasync after the disk is completely written");
   puts("                          1 - fdatasync after every write");
   puts("                          1000000 - fdatasync after 1000000 writes ect.");
@@ -470,7 +470,7 @@ void display_help()
   puts("      --nogui             Do not show the GUI interface. Automatically invokes" );
   puts("                          the nowait option. Must be used with the --autonuke");
   puts("                          option. Send SIGUSR1 to log current stats\n");
-  puts("  -e, --exclude=DEVICES   Up to ten comma separted devices to be excluded");
+  puts("  -e, --exclude=DEVICES   Up to ten comma separated devices to be excluded");
   puts("                          --exclude=/dev/sdc");
   puts("                          --exclude=/dev/sdc,/dev/sdd");
   puts("                          --exclude=/dev/sdc,/dev/sdd,/dev/mapper/cryptswap1\n");
