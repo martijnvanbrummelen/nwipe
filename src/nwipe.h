@@ -2,7 +2,7 @@
  *  nwipe.h: The header file of the nwipe program.
  *
  *  Copyright Darik Horn <dajhorn-dban@vanadac.com>.
- *  
+ *
  *  Modifications to original dwipe Copyright Andy Beverley <andy@andybev.com>
  *
  *  This program is free software; you can redistribute it and/or modify it under
@@ -16,11 +16,9 @@
  *
  *  You should have received a copy of the GNU General Public License along with
  *  this program; if not, write to the Free Software Foundation, Inc.,
- *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA. 
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  */
-
-
 
 #ifndef NWIPE_H_
 #define NWIPE_H_
@@ -82,14 +80,14 @@ pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER; */
 
 /* Ncurses headers. */
 #ifdef NCURSES_IN_SUBDIR
-    #include <ncurses/ncurses.h>
+#include <ncurses/ncurses.h>
 #else
-    #include <ncurses.h>
+#include <ncurses.h>
 #endif
 #ifdef PANEL_IN_SUBDIR
-    #include <ncurses/panel.h>
+#include <ncurses/panel.h>
 #else
-    #include <panel.h>
+#include <panel.h>
 #endif
 
 /* Kernel device headers. */
@@ -97,23 +95,23 @@ pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER; */
 
 /* These types are usually defined in <asm/types.h> for __KERNEL__ code. */
 typedef unsigned long long u64;
-typedef unsigned long      u32;
-typedef unsigned short     u16;
-typedef unsigned char      u8;
+typedef unsigned long u32;
+typedef unsigned short u16;
+typedef unsigned char u8;
 
 /* This is required for ioctl BLKGETSIZE64, but it conflicts with <wait.h>. */
 /* #include <linux/fs.h> */
 
 /* Define ioctls that cannot be included. */
-#define BLKSSZGET    _IO(0x12,104)
-#define BLKBSZGET    _IOR(0x12,112,size_t)
-#define BLKBSZSET    _IOW(0x12,113,size_t)
-#define BLKGETSIZE64 _IOR(0x12,114,sizeof(u64))
+#define BLKSSZGET _IO( 0x12, 104 )
+#define BLKBSZGET _IOR( 0x12, 112, size_t )
+#define BLKBSZSET _IOW( 0x12, 113, size_t )
+#define BLKGETSIZE64 _IOR( 0x12, 114, sizeof( u64 ) )
 
 /* This is required for ioctl FDFLUSH. */
 #include <linux/fd.h>
 
-void *signal_hand(void *);
+void* signal_hand( void* );
 
 #endif /* NWIPE_H_ */
 
