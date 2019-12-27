@@ -64,7 +64,7 @@ const char* nwipe_dodshort_label   = "DoD Short";
 const char* nwipe_gutmann_label    = "Gutmann Wipe";
 const char* nwipe_ops2_label       = "RCMP TSSIT OPS-II";
 const char* nwipe_random_label     = "PRNG Stream";
-const char* nwipe_zero_label       = "Quick Erase";
+const char* nwipe_zero_label       = "Zero Fill";
 const char* nwipe_verify_label     = "Verify Blank";
 
 const char* nwipe_unknown_label    = "Unknown Method (FIXME)";
