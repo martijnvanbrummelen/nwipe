@@ -1538,7 +1538,7 @@ void nwipe_gui_method( void )
 
 				/*                                 0         1         2         3         4         5         6         7         8  */
 				mvwprintw( main_window, yy++, tab1, "The American Department of Defense 5220.22-M short wipe.                     " );
-				mvwprintw( main_window, yy++, tab1, "This method is composed of passes 1,2,7 from the standard wipe.              " );
+				mvwprintw( main_window, yy++, tab1, "This method is composed of passes 1, 2 & 7 from the standard wipe.           " );
 				break;
 
 			case 3:
@@ -2251,4 +2251,3 @@ void nwipe_update_speedring( nwipe_speedring_t* speedring, u64 speedring_bytes, 
 }
 
 /* eof */
-
