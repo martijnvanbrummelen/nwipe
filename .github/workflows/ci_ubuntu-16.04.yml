@@ -1,6 +1,6 @@
 name: CI_on_ubuntu-16.04
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
