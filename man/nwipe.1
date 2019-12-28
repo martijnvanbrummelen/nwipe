@@ -1,4 +1,4 @@
-.TH NWIPE "1" "September 2019" "nwipe version 0.26" "User Commands"
+.TH NWIPE "1" "December 2019" "nwipe version 0.26" "User Commands"
 .SH NAME
 nwipe \- securely erase disks
 .SH SYNOPSIS
@@ -36,6 +36,10 @@ those specified devices immediately.
 .TP
 \fB\-\-sync\fR
 Open devices in sync mode
+.TP
+\fB\-\-noblank\fR
+Do not perform the final blanking pass after the wipe (default is to blank,
+except when the method is RCMP TSSIT OPS\-II).
 .TP
 \fB\-\-nowait\fR
 Do not wait for a key before exiting (default is to wait).

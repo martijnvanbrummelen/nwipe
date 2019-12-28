@@ -1366,15 +1366,19 @@ void nwipe_gui_noblank( void )
 
 				/*                                 0         1         2         3         4         5         6         7        8  */
 				mvwprintw( main_window, yy++, tab1, "Perform a final blanking pass after the wipe, leaving disk with only zeros. " );
+				mvwprintw( main_window, yy++, tab1, "Note that the RCMP TSSIT OPS-II method never blanks the device regardless   " );
+				mvwprintw( main_window, yy++, tab1, "of this setting.                                                            " );
 				mvwprintw( main_window, yy++, tab1, "                                                                            " );
 				break;
 
 			case 1:
 
-				mvwprintw( main_window, 2, tab2, "syslinux.cfg:  nuke=\"nwipe -b\"" );
+				mvwprintw( main_window, 2, tab2, "syslinux.cfg:  nuke=\"nwipe --noblank\"" );
 
 				/*                                 0         1         2         3         4         5         6         7        8  */
 				mvwprintw( main_window, yy++, tab1, "Do not perform a final blanking pass. Leave data as per final wiping pass.  " );
+				mvwprintw( main_window, yy++, tab1, "Note that the RCMP TSSIT OPS-II method never blanks the device regardless   " );
+				mvwprintw( main_window, yy++, tab1, "of this setting.                                                            " );
 				mvwprintw( main_window, yy++, tab1, "                                                                            " );
 				break;
 
