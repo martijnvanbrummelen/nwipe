@@ -53,7 +53,7 @@ int nwipe_options_parse( int argc, char** argv )
 	int i;
 
 	/* The list of acceptable short options. */
-	char nwipe_options_short[] = "Vhl:hm:p:r:e:";
+	char nwipe_options_short[] = "Vhl:m:p:r:e:";
 
 	/* The list of acceptable long options. */
 	static struct option nwipe_options_long[] = {
