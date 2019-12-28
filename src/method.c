@@ -22,11 +22,11 @@
 
 /* HOWTO:  Add another wipe method.
  *
- *  1.  Create a new function here and add the prototype to the 'nwipe.h' file.
+ *  1.  Create a new function here and add the prototype to the 'method.h' file.
  *  2.  Update nwipe_method_label() appropriately.
- *  3.  Put the passes that you wish to run into a nwipe_patterns_t array.
+ *  3.  Put the passes that you wish to run into a nwipe_pattern_t array.
  *  4.  Call nwipe_runmethod() with your array of patterns.
- *  5.  Cut-and-paste within the 'options.c' file so that the new method can be invoked.
+ *  5.  Copy-and-paste within the 'options.c' file so that the new method can be invoked.
  *  6.  Optionally try to plug your function into 'gui.c'.
  *
  *
