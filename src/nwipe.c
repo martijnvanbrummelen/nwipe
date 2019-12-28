@@ -50,12 +50,12 @@ int terminate_signal;
 
 int main( int argc, char** argv )
 {
-    int nwipe_optind; // The result of nwipe_options().
-    int nwipe_enumerated; // The number of contexts that have been enumerated.
-    int nwipe_error = 0; // An error counter.
-    int nwipe_selected = 0; // The number of contexts that have been selected.
-    pthread_t nwipe_gui_thread = 0; // The thread ID of the GUI thread.
-    pthread_t nwipe_sigint_thread; // The thread ID of the sigint handler.
+    int nwipe_optind;  // The result of nwipe_options().
+    int nwipe_enumerated;  // The number of contexts that have been enumerated.
+    int nwipe_error = 0;  // An error counter.
+    int nwipe_selected = 0;  // The number of contexts that have been selected.
+    pthread_t nwipe_gui_thread = 0;  // The thread ID of the GUI thread.
+    pthread_t nwipe_sigint_thread;  // The thread ID of the sigint handler.
 
     /* The entropy source file handle. */
     int nwipe_entropy;
@@ -197,7 +197,6 @@ int main( int argc, char** argv )
         c1[i]->prng_seed.length = 0;
         c1[i]->prng_seed.s = 0;
         c1[i]->prng_state = 0;
-
     }
 
     /* Check for initialization errors. */
@@ -253,7 +252,6 @@ int main( int argc, char** argv )
             /* Copy the context. */
             c2[j++] = c1[i];
         }
-
     }
 
     /* TODO: free c1 and c2 memory. */
@@ -320,7 +318,6 @@ int main( int argc, char** argv )
             if( ioctl( c2[i]->device_fd, BLKBSZGET, &c2[i]->block_size ) == 0 )
             {
                 nwipe_log( NWIPE_LOG_INFO, "Device '%s' has block size %i.", c2[i]->device_name, c2[i]->block_size );
-
             }
             else
             {
@@ -401,7 +398,6 @@ int main( int argc, char** argv )
                 nwipe_gui_free();
             return errno;
         }
-
     }
 
     /* Change the terminal mode to non-blocking input. */
@@ -539,7 +535,6 @@ int main( int argc, char** argv )
 
     /* Exit. */
     return return_status;
-
 }
 
 void* signal_hand( void* ptr )
@@ -626,11 +621,13 @@ void* signal_hand( void* ptr )
                         if( c[i]->result == 0 )
                         {
                             nwipe_log( NWIPE_LOG_INFO, "%s: Success", c[i]->device_name );
-                        } else if( c[i]->signal )
+                        }
+                        else if( c[i]->signal )
                         {
                             nwipe_log(
                                 NWIPE_LOG_INFO, "%s: >>> FAILURE! <<<: signal %i", c[i]->device_name, c[i]->signal );
-                        } else
+                        }
+                        else
                         {
                             nwipe_log(
                                 NWIPE_LOG_INFO, "%s: >>> FAILURE! <<<: code %i", c[i]->device_name, c[i]->result );
@@ -653,15 +650,11 @@ void* signal_hand( void* ptr )
                 return ( (void*) 0 );
 
                 break;
-
             }
-
         }
-
     }
 
     return ( 0 );
-
 }
 
 int cleanup()

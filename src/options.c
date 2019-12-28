@@ -284,12 +284,14 @@ int nwipe_options_parse( int argc, char** argv )
                         nwipe_options.exclude[idx_drive++][idx_drive_chr] = 0;
                         idx_drive_chr = 0;
                         idx_optarg++;
-                    } else
+                    }
+                    else
                     {
                         if( idx_drive_chr < MAX_DRIVE_PATH_LENGTH )
                         {
                             nwipe_options.exclude[idx_drive][idx_drive_chr++] = optarg[idx_optarg++];
-                        } else
+                        }
+                        else
                         {
                             /* This section deals with file names that exceed MAX_DRIVE_PATH_LENGTH */
                             nwipe_options.exclude[idx_drive][idx_drive_chr] = 0;
@@ -365,7 +367,8 @@ void nwipe_options_log( void )
     if( nwipe_options.autonuke )
     {
         nwipe_log( NWIPE_LOG_NOTICE, "  autonuke = %i (on)", nwipe_options.autonuke );
-    } else
+    }
+    else
     {
         nwipe_log( NWIPE_LOG_NOTICE, "  autonuke = %i (off)", nwipe_options.autonuke );
     }
