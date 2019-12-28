@@ -17,9 +17,8 @@ The user can select from a variety of recognised secure erase methods which incl
 * Verify only        - This method only reads the device and checks that it is all zero.
 
 It also includes the following pseudo random number generators:
-* mersenne
-* twister
-* isaac
+* Mersenne Twister
+* ISAAC
 
 It is a fork of the dwipe command used by
 Darik's Boot and Nuke (dban).  nwipe is included with [partedmagic](https://partedmagic.com) and
