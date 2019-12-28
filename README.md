@@ -15,6 +15,7 @@ The user can select from a variety of recognised secure erase methods which incl
 * Gutmann Wipe       - Peter Gutmann's method (Secure Deletion of Data from Magnetic and Solid-State Memory).
 * PRNG Stream        - Fills the device with a stream from the PRNG.
 * Verify only        - This method only reads the device and checks that it is all zero.
+* HMG IS5 enhanced   - Secure Sanitisation of Protectively Marked Information or Sensitive Information
 
 It also includes the following pseudo random number generators:
 * Mersenne Twister

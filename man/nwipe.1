@@ -60,6 +60,9 @@ off   \- Do not verify
 last  \- Verify after the last pass
 .IP
 all   \- Verify every pass
+.IP
+Please mind that HMG IS5 enhanced always verifies the last (PRNG) pass
+regardless of this option.
 .TP
 \fB\-m\fR, \fB\-\-method\fR=\fIMETHOD\fR
 The wiping method (default: dodshort).
@@ -77,6 +80,8 @@ random / prng / stream \- PRNG Stream
 zero / quick           \- Overwrite with zeros
 .IP
 verify                 \- Verifies disk is zero filled
+.IP
+is5enh                 \- HMG IS5 enhanced
 .TP
 \fB\-l\fR, \fB\-\-logfile\fR=\fIFILE\fR
 Filename to log to. Default is STDOUT

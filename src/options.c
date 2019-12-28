@@ -254,6 +254,12 @@ int nwipe_options_parse( int argc, char** argv )
 					break;
 				}
 
+				if( strcmp( optarg, "is5enh" ) == 0 )
+				{
+					nwipe_options.method = &nwipe_is5enh;
+					break;
+				}
+
 				/* Else we do not know this wipe method. */
 				fprintf( stderr, "Error: Unknown wipe method '%s'.\n", optarg );
 				exit( EINVAL );
