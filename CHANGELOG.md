@@ -4,6 +4,7 @@ RELEASE NOTES
 v0.27 (pending release)
 -----------------------
 - Add `verify` method to verify a disk is zero filled [#128](https://github.com/martijnvanbrummelen/nwipe/pull/128)
+- Add new HMG IS5 enhanced wipe method [#168](https://github.com/martijnvanbrummelen/nwipe/pull/168)
 
 v0.26
 -----
