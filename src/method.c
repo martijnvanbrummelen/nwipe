@@ -22,11 +22,11 @@
 
 /* HOWTO:  Add another wipe method.
  *
- *  1.  Create a new function here and add the prototype to the 'nwipe.h' file.
+ *  1.  Create a new function here and add the prototype to the 'method.h' file.
  *  2.  Update nwipe_method_label() appropriately.
- *  3.  Put the passes that you wish to run into a nwipe_patterns_t array.
+ *  3.  Put the passes that you wish to run into a nwipe_pattern_t array.
  *  4.  Call nwipe_runmethod() with your array of patterns.
- *  5.  Cut-and-paste within the 'options.c' file so that the new method can be invoked.
+ *  5.  Copy-and-paste within the 'options.c' file so that the new method can be invoked.
  *  6.  Optionally try to plug your function into 'gui.c'.
  *
  *
@@ -66,6 +66,7 @@ const char* nwipe_ops2_label       = "RCMP TSSIT OPS-II";
 const char* nwipe_random_label     = "PRNG Stream";
 const char* nwipe_zero_label       = "Zero Fill";
 const char* nwipe_verify_label     = "Verify Blank";
+const char* nwipe_is5enh_label     = "HMG IS5 Enhanced";
 
 const char* nwipe_unknown_label    = "Unknown Method (FIXME)";
 
@@ -83,6 +84,7 @@ const char* nwipe_method_label( void* method )
 	if( method == &nwipe_random     ) { return nwipe_random_label;     }
 	if( method == &nwipe_zero       ) { return nwipe_zero_label;       }
 	if( method == &nwipe_verify     ) { return nwipe_verify_label;     }
+	if( method == &nwipe_is5enh     ) { return nwipe_is5enh_label;     }
 
 	/* else */
 	return nwipe_unknown_label;
@@ -574,7 +576,24 @@ void *nwipe_ops2( void *ptr )
     return NULL;
 } /* nwipe_ops2 */
 
+void *nwipe_is5enh( void *ptr )
+{
+	nwipe_context_t *c = (nwipe_context_t *) ptr;
+	c->wipe_status = 1;
 
+	char is5enh[3] = {'\x00', '\xFF', '\x00'};
+	nwipe_pattern_t patterns[] =
+	{
+		{  1, &is5enh[0] }, /* Pass 1: 0s                                */
+		{  1, &is5enh[1] }, /* Pass 2: 1s                                */
+		{ -1, &is5enh[2] }, /* Pass 3: random bytes with verification    */
+		{  0, NULL   }
+	};
+	c->result = nwipe_runmethod( c, patterns );
+
+	c->wipe_status = 0;
+	return NULL;
+} /* nwipe_is5enh */
 
 void *nwipe_random( void *ptr )
 {
@@ -796,7 +815,10 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 				/* Check for a fatal error. */
 				if( r < 0 ) { return r; }
 	
-				if( nwipe_options.verify == NWIPE_VERIFY_ALL || lastpass == 1 )
+				/* Make sure IS5 enhanced always verifies its PRNG pass regardless */
+				/* of the current combination of the --noblank (which influences   */
+				/* the lastpass variable) and --verify options.                    */
+				if( nwipe_options.verify == NWIPE_VERIFY_ALL || lastpass == 1 || nwipe_options.method == &nwipe_is5enh )
 				{
 					nwipe_log( NWIPE_LOG_NOTICE, "Verifying pass %i of %i, round %i of %i, on device '%s'.", \
 			  		  c->pass_working, c->pass_count, c->round_working, c->round_count, c->device_name );

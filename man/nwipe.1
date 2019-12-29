@@ -1,4 +1,4 @@
-.TH NWIPE "1" "September 2019" "nwipe version 0.26" "User Commands"
+.TH NWIPE "1" "December 2019" "nwipe version 0.26" "User Commands"
 .SH NAME
 nwipe \- securely erase disks
 .SH SYNOPSIS
@@ -37,6 +37,10 @@ those specified devices immediately.
 \fB\-\-sync\fR
 Open devices in sync mode
 .TP
+\fB\-\-noblank\fR
+Do not perform the final blanking pass after the wipe (default is to blank,
+except when the method is RCMP TSSIT OPS\-II).
+.TP
 \fB\-\-nowait\fR
 Do not wait for a key before exiting (default is to wait).
 .TP
@@ -50,9 +54,15 @@ SIGUSR1 can be used to retrieve the current wiping statistics.
 .TP
 \fB\-\-verify\fR=\fITYPE\fR
 Whether to perform verification of erasure (default: last)
+.IP
 off   \- Do not verify
+.IP
 last  \- Verify after the last pass
+.IP
 all   \- Verify every pass
+.IP
+Please mind that HMG IS5 enhanced always verifies the last (PRNG) pass
+regardless of this option.
 .TP
 \fB\-m\fR, \fB\-\-method\fR=\fIMETHOD\fR
 The wiping method (default: dodshort).
@@ -70,6 +80,8 @@ random / prng / stream \- PRNG Stream
 zero / quick           \- Overwrite with zeros
 .IP
 verify                 \- Verifies disk is zero filled
+.IP
+is5enh                 \- HMG IS5 enhanced
 .TP
 \fB\-l\fR, \fB\-\-logfile\fR=\fIFILE\fR
 Filename to log to. Default is STDOUT

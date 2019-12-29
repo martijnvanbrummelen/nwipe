@@ -1366,15 +1366,19 @@ void nwipe_gui_noblank( void )
 
 				/*                                 0         1         2         3         4         5         6         7        8  */
 				mvwprintw( main_window, yy++, tab1, "Perform a final blanking pass after the wipe, leaving disk with only zeros. " );
+				mvwprintw( main_window, yy++, tab1, "Note that the RCMP TSSIT OPS-II method never blanks the device regardless   " );
+				mvwprintw( main_window, yy++, tab1, "of this setting.                                                            " );
 				mvwprintw( main_window, yy++, tab1, "                                                                            " );
 				break;
 
 			case 1:
 
-				mvwprintw( main_window, 2, tab2, "syslinux.cfg:  nuke=\"nwipe -b\"" );
+				mvwprintw( main_window, 2, tab2, "syslinux.cfg:  nuke=\"nwipe --noblank\"" );
 
 				/*                                 0         1         2         3         4         5         6         7        8  */
 				mvwprintw( main_window, yy++, tab1, "Do not perform a final blanking pass. Leave data as per final wiping pass.  " );
+				mvwprintw( main_window, yy++, tab1, "Note that the RCMP TSSIT OPS-II method never blanks the device regardless   " );
+				mvwprintw( main_window, yy++, tab1, "of this setting.                                                            " );
 				mvwprintw( main_window, yy++, tab1, "                                                                            " );
 				break;
 
@@ -1450,7 +1454,7 @@ void nwipe_gui_method( void )
    extern int terminate_signal;
 
 	/* The number of implemented methods. */
-	const int count = 7;
+	const int count = 8;
 
 	/* The first tabstop. */
 	const int tab1 = 2;
@@ -1479,6 +1483,7 @@ void nwipe_gui_method( void )
         if( nwipe_options.method == &nwipe_gutmann    ) { focus = 4; }
         if( nwipe_options.method == &nwipe_random     ) { focus = 5; }
         if( nwipe_options.method == &nwipe_verify     ) { focus = 6; }
+        if( nwipe_options.method == &nwipe_is5enh     ) { focus = 7; }
 
 
 	do
@@ -1497,6 +1502,7 @@ void nwipe_gui_method( void )
                 mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_gutmann    ) );
                 mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_random     ) );
                 mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_verify     ) );
+                mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_is5enh     ) );
                 mvwprintw( main_window, yy++, tab1, "                                             " );
 
 		/* Print the cursor. */
@@ -1584,6 +1590,19 @@ void nwipe_gui_method( void )
 
 				break;
 
+			case 7:
+
+				mvwprintw( main_window, 2, tab2, "syslinux.cfg: nuke=\"nwipe --method is5enh\"" );
+				mvwprintw( main_window, 3, tab2, "Security Level: Medium (3 passes)" );
+
+				/*                                 0         1         2         3         4         5         6         7         8  */
+				mvwprintw( main_window, yy++, tab1, "HMG IA/IS 5 (Infosec Standard 5): Secure Sanitisation of Protectively Marked " );
+				mvwprintw( main_window, yy++, tab1, "Information or Sensitive Information                                         " );
+				mvwprintw( main_window, yy++, tab1, "                                                                             " );
+				mvwprintw( main_window, yy++, tab1, "This method fills the device with 0s, then with 1s, then with a PRNG stream, " );
+				mvwprintw( main_window, yy++, tab1, "then reads the device to verify the PRNG stream was successfully written.    " );
+				break;
+
 		} /* switch */
 
 		/* Add a border. */
@@ -1660,6 +1679,10 @@ void nwipe_gui_method( void )
                 
                 case 6:
                         nwipe_options.method = &nwipe_verify;
+                        break;
+
+                case 7:
+                        nwipe_options.method = &nwipe_is5enh;
                         break;
         }
 

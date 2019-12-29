@@ -53,7 +53,7 @@ int nwipe_options_parse( int argc, char** argv )
     int i;
 
     /* The list of acceptable short options. */
-    char nwipe_options_short[] = "Vhl:hm:p:r:e:";
+    char nwipe_options_short[] = "Vhl:m:p:r:e:";
 
     /* The list of acceptable long options. */
     static struct option nwipe_options_long[] = {
@@ -251,6 +251,12 @@ int nwipe_options_parse( int argc, char** argv )
                     nwipe_options.method = &nwipe_verify;
                     break;
                 }
+
+                if( strcmp( optarg, "is5enh" ) == 0 )
+				        {
+					          nwipe_options.method = &nwipe_is5enh;
+					          break;
+				        }
 
                 /* Else we do not know this wipe method. */
                 fprintf( stderr, "Error: Unknown wipe method '%s'.\n", optarg );
