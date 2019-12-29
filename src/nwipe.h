@@ -114,5 +114,3 @@ typedef unsigned char u8;
 void* signal_hand( void* );
 
 #endif /* NWIPE_H_ */
-
-/* eof */
