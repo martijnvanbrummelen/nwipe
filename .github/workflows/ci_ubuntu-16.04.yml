@@ -1,6 +1,6 @@
 name: CI_on_ubuntu-16.04
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
@@ -20,5 +20,7 @@ jobs:
     - name: compiling
       run: make
     # Changing the path should no longer be necessary when clang-format6 is installed.
-    # - name: verifying code style
+    - name: verifying code style
+    # TODO use check-format when all the code has been formatted.
     #   run: export PATH=$PATH:/usr/lib/llvm-5.0/bin && make check-format
+      run: export PATH=$PATH:/usr/lib/llvm-5.0/bin && clang-format -i -style=file src/nwipe.c src/nwipe.h src/options.c src/options.h && git diff-index --quiet HEAD
