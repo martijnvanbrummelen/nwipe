@@ -1983,7 +1983,7 @@ void *nwipe_gui_status( void *ptr )
 
 				else
 				{
-					if( c[i]->result == 0 ) { mvwprintw( main_window, yy++, 4, "(SUCCESS!) " );                         }
+					if( c[i]->result == 0 ) { mvwprintw( main_window, yy++, 4, "[%05.2f%% complete, SUCCESS! ", c[i]->round_percent); }
 					else if( c[i]->signal ) { mvwprintw( main_window, yy++, 4, "(>>> FAILURE! <<<, signal %i) ", c[i]->signal ); }
 					else                   { mvwprintw( main_window, yy++, 4, "(>>>FAILURE!<<<, code %i) ", c[i]->result );   }
 
