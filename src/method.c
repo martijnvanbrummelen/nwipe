@@ -683,8 +683,7 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
     /* Tell the parent the number of rounds that will be run. */
     c->round_count = nwipe_options.rounds;
 
-    /* Set the number of bytes that will be written across all rounds. */
-    //c->round_size = c->round_count * c->pass_size;
+    /* Set the initial number of bytes that will be written across all rounds. */
     c->round_size = c->pass_size;
 
     /* For the selected method, calculate the correct round_size value (for correct percentage calculation) */
@@ -1039,7 +1038,7 @@ void calculate_round_size( nwipe_context_t* c )
     /* This is where the round size is adjusted. round_size is used in the running percentage completion
      * calculation. round size is calculated based on pass_size, pass_count, number of rounds, blanking
      * on/off and verification on/off
-     * 
+     *
      * To hopefully make this adjustment more understandable, I have presented each calculation
      * under each method. This should make it easier to add a new method here without breaking the
      * calculations for other methods.
@@ -1202,7 +1201,7 @@ void calculate_round_size( nwipe_context_t* c )
             }
             break;
     }
-    
+
     /* Multiple the round_size by the number of rounds (times) the user wants to wipe the drive with this method.
      */
     c->round_size *= c->round_count;
