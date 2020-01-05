@@ -55,6 +55,8 @@ void *nwipe_random( void *ptr );
 void *nwipe_zero( void *ptr );
 void *nwipe_verify( void *ptr );
 
+void calculate_round_size( nwipe_context_t* );
+
 #endif /* METHOD_H_ */
 
 /* eof */
