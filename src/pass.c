@@ -30,6 +30,7 @@
 #include "options.h"
 #include "pass.h"
 #include "logging.h"
+#include "gui.h"
 
 
 int nwipe_random_verify( nwipe_context_t* c )

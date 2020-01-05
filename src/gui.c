@@ -1983,6 +1983,7 @@ void *nwipe_gui_status( void *ptr )
 
 				else
 				{
+               nwipe_active = compute_stats(ptr); // compute the final percentage completion value.
 					if( c[i]->result == 0 ) { mvwprintw( main_window, yy++, 4, "[%05.2f%% complete, SUCCESS! ", c[i]->round_percent); }
 					else if( c[i]->signal ) { mvwprintw( main_window, yy++, 4, "(>>> FAILURE! <<<, signal %i) ", c[i]->signal ); }
 					else                   { mvwprintw( main_window, yy++, 4, "(>>>FAILURE!<<<, code %i) ", c[i]->result );   }
@@ -2146,7 +2147,6 @@ void *nwipe_gui_status( void *ptr )
 
 		/* Test for a thread cancellation request */
 		pthread_testcancel();
-
 	} // while
 
 	if (nwipe_options.logfile[0] == '\0')
@@ -2190,41 +2190,41 @@ int compute_stats(void *ptr)
 	for( i = 0 ; i < count ; i++ )
 	{
 		/* Check whether the child process is still running the wipe. */
-//		if( c[i]->thread > 0 )
 		if( c[i]->wipe_status == 1 )
 		{
 			/* Increment the child counter. */
 			nwipe_active += 1;
+		}
 
-			/* Maintain a rolling average of throughput. */
-			nwipe_update_speedring( &c[i]->speedring, c[i]->round_done, nwipe_time_now );
+		/* Even if the wipe has finished ALWAYS run the stats one last time so the final SUCCESS percentage value is correct.
+		 * Maintain a rolling average of throughput. */
+		nwipe_update_speedring( &c[i]->speedring, c[i]->round_done, nwipe_time_now );
 
-			if( c[i]->speedring.timestotal > 0 )
+		if( c[i]->speedring.timestotal > 0 )
+		{
+			/* Update the current average throughput in bytes-per-second. */
+			c[i]->throughput = c[i]->speedring.bytestotal / c[i]->speedring.timestotal;
+
+			/* Update the estimated remaining runtime. */
+			/* Check that throughput is not zero (sometimes caused during a sync) */
+			if (c[i]->throughput == 0)
 			{
-				/* Update the current average throughput in bytes-per-second. */
-				c[i]->throughput = c[i]->speedring.bytestotal / c[i]->speedring.timestotal;
-
-				/* Update the estimated remaining runtime. */
-				/* Check that throughput is not zero (sometimes caused during a sync) */
-				if (c[i]->throughput == 0)
-				{
-					c[i]->throughput = 1;
-				}
-				
-				c[i]->eta = ( c[i]->round_size - c[i]->round_done ) / c[i]->throughput;
-
-				if( c[i]->eta > nwipe_misc_thread_data->maxeta )
-				{
-					nwipe_misc_thread_data->maxeta = c[i]->eta;
-				}
+				c[i]->throughput = 1;
 			}
 
-			/* Update the percentage value. */
-			c[i]->round_percent = (double) c[i]->round_done / (double) c[i]->round_size * 100;
+			c[i]->eta = ( c[i]->round_size - c[i]->round_done ) / c[i]->throughput;
 
-			/* Accumulate combined throughput. */
-			nwipe_misc_thread_data->throughput += c[i]->throughput;
-		} /* child running */
+			if( c[i]->eta > nwipe_misc_thread_data->maxeta )
+			{
+				nwipe_misc_thread_data->maxeta = c[i]->eta;
+			}
+		}
+
+		/* Update the percentage value. */
+		c[i]->round_percent = (double) c[i]->round_done / (double) c[i]->round_size * 100;
+      
+		/* Accumulate combined throughput. */
+		nwipe_misc_thread_data->throughput += c[i]->throughput;
 
 		/* Accumulate the error count. */
 		nwipe_misc_thread_data->errors += c[i]->pass_errors;
