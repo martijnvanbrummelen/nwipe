@@ -126,8 +126,11 @@ void* nwipe_zero( void* ptr )
     /* set wipe in progress flag for GUI */
     c->wipe_status = 1;
 
-    /* Do nothing because nwipe_runmethod appends a zero-fill. */
-    nwipe_pattern_t patterns[] = {{0, NULL}};
+    /* setup for a zero-fill. */
+
+    char zerofill[1] = {'\x00'};
+    nwipe_pattern_t patterns[] = {{1, &zerofill[0]},  // pass 1: 0s
+                                  {0, NULL}};
 
     /* Run the method. */
     c->result = nwipe_runmethod( c, patterns );
@@ -965,7 +968,7 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 
     } /* verify */
 
-    else if( nwipe_options.method == &nwipe_zero || nwipe_options.noblank == 0 )
+    else if( nwipe_options.noblank == 0 )
     {
         /* Tell the user that we are on the final pass. */
         c->pass_type = NWIPE_PASS_FINAL_BLANK;
@@ -1072,22 +1075,26 @@ void calculate_round_size( nwipe_context_t* c )
         i++;
     }
 
+    /* Multiple the round_size by the number of rounds (times) the user wants to wipe the drive with this method.
+     */
+    c->round_size *= c->round_count;
+
     /* For each method create the correct round_size value */
     switch( selected_method )
     {
         case 0:
             /* NWIPE_ZERO
              * ---------- */
-            /* pass size and pass count are both zero, so increase by device size, while
-             * selecting blanking in the GUI has no affect on this method so no need to
-             * increase round_size by device size. */
 
-            c->round_size += c->device_size;
+            if( nwipe_options.verify == NWIPE_VERIFY_ALL )
+            {
+                c->round_size += c->device_size;
+            }
             if( nwipe_options.verify == NWIPE_VERIFY_LAST )
             {
                 c->round_size += c->device_size;
             }
-            if( nwipe_options.verify == NWIPE_VERIFY_ALL )
+            if( nwipe_options.noblank == 0 )
             {
                 c->round_size += c->device_size;
             }
@@ -1201,10 +1208,6 @@ void calculate_round_size( nwipe_context_t* c )
             }
             break;
     }
-
-    /* Multiple the round_size by the number of rounds (times) the user wants to wipe the drive with this method.
-     */
-    c->round_size *= c->round_count;
 }
 
 /* eof */
