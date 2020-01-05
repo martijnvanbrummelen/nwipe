@@ -127,9 +127,9 @@ void* nwipe_zero( void* ptr )
     c->wipe_status = 1;
 
     /* setup for a zero-fill. */
-    
+
     char zerofill[1] = {'\x00'};
-    nwipe_pattern_t patterns[] = {{1, &zerofill[0]}, // pass 1: 0s
+    nwipe_pattern_t patterns[] = {{1, &zerofill[0]},  // pass 1: 0s
                                   {0, NULL}};
 
     /* Run the method. */
