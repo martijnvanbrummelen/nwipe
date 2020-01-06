@@ -23,4 +23,4 @@ jobs:
     - name: verifying code style
     # TODO use check-format when all the code has been formatted.
     #   run: export PATH=$PATH:/usr/lib/llvm-5.0/bin && make check-format
-      run: export PATH=$PATH:/usr/lib/llvm-5.0/bin && clang-format -i -style=file src/context.h src/device.h src/device.c src/nwipe.c src/nwipe.h src/options.c src/options.h src/version.h src/version.c src/method.h src/method.c src/pass.c src/pass.h && git diff-index --quiet HEAD
+      run: export PATH=$PATH:/usr/lib/llvm-5.0/bin && clang-format -i -style=file src/context.h src/device.h src/device.c src/nwipe.c src/nwipe.h src/options.c src/options.h src/version.h src/version.c src/method.h src/method.c src/pass.c src/pass.h src/prng.c src/prng.h && git diff-index --quiet HEAD
