@@ -678,7 +678,7 @@ int cleanup()
         {
             free( log_lines[i] );
         }
-        log_elements_allocated = 0; /* zeroed just in case cleanup is called twice */
+        log_elements_allocated = 0;  // zeroed just in case cleanup is called twice.
         free( log_lines );
     }
 
