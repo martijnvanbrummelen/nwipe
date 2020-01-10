@@ -21,8 +21,8 @@
 #include "prng.h"
 #include "logging.h"
 
-#include "mt19937ar-cok.h"
-#include "isaac_rand.h"
+#include "mt19937ar-cok/mt19937ar-cok.h"
+#include "isaac_rand/isaac_rand.h"
 
 nwipe_prng_t nwipe_twister = {"Mersenne Twister (mt19937ar-cok)", nwipe_twister_init, nwipe_twister_read};
 
