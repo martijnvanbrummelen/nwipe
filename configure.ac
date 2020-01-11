@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.64])
 AC_INIT([nwipe], [0.26], [git@brumit.nl])
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE(foreign subdir-objects)
 AC_OUTPUT(Makefile src/Makefile man/Makefile)
 AC_CONFIG_SRCDIR([src/nwipe.c])
 AC_CONFIG_HEADERS([config.h])

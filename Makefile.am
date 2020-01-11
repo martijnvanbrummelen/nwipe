@@ -1,9 +1,9 @@
-AUTOMAKE_OPTIONS = foreign
 SUBDIRS = src man
-NWIPESOURCES = src/*.c src/*.h
 
+# The set of files to be formatted.
+FORMATSOURCES = src/*.c src/*.h
 format:
-	clang-format -i -style=file $(NWIPESOURCES)
+	clang-format -i -style=file $(FORMATSOURCES)
 
 check-format:
-	clang-format -i -style=file $(NWIPESOURCES) && git diff-index --quiet HEAD
+	clang-format -i -style=file $(FORMATSOURCES) && git diff-index --quiet HEAD
