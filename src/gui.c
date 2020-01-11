@@ -475,48 +475,24 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
             {
                 case NWIPE_SELECT_TRUE:
 
-                    wprintw( main_window,
-                             " [wipe] %i. %s - %s, S/N:%s, (%s)",
-                             ( i + offset + 1 ),
-                             c[i + offset]->device_name + SKIP_DEV_PREFIX,
-                             c[i + offset]->label,
-                             c[i + offset]->serial_no,
-                             c[i + offset]->device_size_text );
+                    wprintw( main_window, " [wipe] %i. %s", ( i + offset + 1 ), c[i + offset]->device_label );
                     break;
 
                 case NWIPE_SELECT_FALSE:
                     /* Print an element that is not selected. */
-                    wprintw( main_window,
-                             " [    ] %i. %s - %s, S/N:%s, (%s)",
-                             ( i + offset + 1 ),
-                             c[i + offset]->device_name + SKIP_DEV_PREFIX,
-                             c[i + offset]->label,
-                             c[i + offset]->serial_no,
-                             c[i + offset]->device_size_text );
+                    wprintw( main_window, " [    ] %i. %s", ( i + offset + 1 ), c[i + offset]->device_label );
                     break;
 
                 case NWIPE_SELECT_TRUE_PARENT:
 
                     /* This element will be wiped when its parent is wiped. */
-                    wprintw( main_window,
-                             " [****] %i. %s - %s, S/N:%s, (%s)",
-                             ( i + offset + 1 ),
-                             c[i + offset]->device_name + SKIP_DEV_PREFIX,
-                             c[i + offset]->label,
-                             c[i + offset]->serial_no,
-                             c[i + offset]->device_size_text );
+                    wprintw( main_window, " [****] %i. %s", ( i + offset + 1 ), c[i + offset]->device_label );
                     break;
 
                 case NWIPE_SELECT_FALSE_CHILD:
 
                     /* We can't wipe this element because it has a child that is being wiped. */
-                    wprintw( main_window,
-                             " [----] %i. %s - %s, S/N:%s, (%s)",
-                             ( i + offset + 1 ),
-                             c[i + offset]->device_name + SKIP_DEV_PREFIX,
-                             c[i + offset]->label,
-                             c[i + offset]->serial_no,
-                             c[i + offset]->device_size_text );
+                    wprintw( main_window, " [----] %i. %s", ( i + offset + 1 ), c[i + offset]->device_label );
                     break;
 
                 case NWIPE_SELECT_DISABLED:
@@ -2131,21 +2107,8 @@ void* nwipe_gui_status( void* ptr )
             /* Print information for the user. */
             for( i = offset; i < offset + slots && i < count; i++ )
             {
-                /* Print the context label. */
-                if( strlen( (const char*) c[i]->serial_no ) )
-                {
-                    mvwprintw( main_window,
-                               yy++,
-                               2,
-                               "%s - %s (S/N:%s)",
-                               c[i]->device_name + SKIP_DEV_PREFIX,
-                               c[i]->label,
-                               c[i]->serial_no );
-                }
-                else
-                {
-                    mvwprintw( main_window, yy++, 2, "%s - %s", c[i]->device_name + SKIP_DEV_PREFIX, c[i]->label );
-                }
+                /* Print the device label. */
+                mvwprintw( main_window, yy++, 2, "%s", c[i]->device_label );
 
                 /* Check whether the child process is still running the wipe. */
                 if( c[i]->wipe_status == 1 )
