@@ -111,6 +111,13 @@ through the code properly.
 
 The `-Wall` and `-Wextra` flags enable all compiler warnings. Please submit code with zero warnings.
 
+Also make sure that your changes are consistent with the coding style defined in the `.clang-format` file, using:
+```
+make format
+```
+You will need `clang-format` installed to use the `format` command.
+
+
 Once done with your coding then the released/patch/fixed code can be compiled,
 with all the normal optimisations, using:
 ```
