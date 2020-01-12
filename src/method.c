@@ -1196,11 +1196,18 @@ void calculate_round_size( nwipe_context_t* c )
             /* This method ALWAYS verifies the 3rd pass so increase by device size,
              * and does not need to be increased by device size for VERIFY_ALL*/
 
-            c->round_size += c->device_size;
-
             if( nwipe_options.verify == NWIPE_VERIFY_LAST )
             {
                 c->round_size += c->device_size;
+            }
+            if( nwipe_options.verify == NWIPE_VERIFY_ALL )
+            {
+                c->round_size += c->device_size;
+            }
+            else
+            {
+                /* Adjusts for verify on every third pass multiplied by number of rounds */
+                c->round_size += ( c->device_size * c->round_count );
             }
             if( nwipe_options.noblank == 0 )
             {
