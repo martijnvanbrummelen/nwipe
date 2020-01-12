@@ -305,31 +305,33 @@ int main( int argc, char** argv )
         */
 
         /* Print serial number of device if it exists. */
-        if( strlen( (const char*) c2[i]->serial_no ) )
+        if( strlen( (const char*) c2[i]->device_serial_no ) )
         {
-            nwipe_log( NWIPE_LOG_INFO, "Device %s has serial number %s", c2[i]->device_name, c2[i]->serial_no );
+            nwipe_log( NWIPE_LOG_INFO, "Device %s has serial number %s", c2[i]->device_name, c2[i]->device_serial_no );
         }
 
         /* Do sector size and block size checking. */
-        if( ioctl( c2[i]->device_fd, BLKSSZGET, &c2[i]->sector_size ) == 0 )
+        if( ioctl( c2[i]->device_fd, BLKSSZGET, &c2[i]->device_sector_size ) == 0 )
         {
-            nwipe_log( NWIPE_LOG_INFO, "Device '%s' has sector size %i.", c2[i]->device_name, c2[i]->sector_size );
+            nwipe_log(
+                NWIPE_LOG_INFO, "Device '%s' has sector size %i.", c2[i]->device_name, c2[i]->device_sector_size );
 
-            if( ioctl( c2[i]->device_fd, BLKBSZGET, &c2[i]->block_size ) == 0 )
+            if( ioctl( c2[i]->device_fd, BLKBSZGET, &c2[i]->device_block_size ) == 0 )
             {
-                nwipe_log( NWIPE_LOG_INFO, "Device '%s' has block size %i.", c2[i]->device_name, c2[i]->block_size );
+                nwipe_log(
+                    NWIPE_LOG_INFO, "Device '%s' has block size %i.", c2[i]->device_name, c2[i]->device_block_size );
             }
             else
             {
                 nwipe_log( NWIPE_LOG_WARNING, "Device '%s' failed BLKBSZGET ioctl.", c2[i]->device_name );
-                c2[i]->block_size = 0;
+                c2[i]->device_block_size = 0;
             }
         }
         else
         {
             nwipe_log( NWIPE_LOG_WARNING, "Device '%s' failed BLKSSZGET ioctl.", c2[i]->device_name );
-            c2[i]->sector_size = 0;
-            c2[i]->block_size = 0;
+            c2[i]->device_sector_size = 0;
+            c2[i]->device_block_size = 0;
         }
 
         /* The st_size field is zero for block devices. */

@@ -148,7 +148,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     memset( next_device, 0, sizeof( nwipe_context_t ) );
 
     /* Get device information */
-    next_device->label = dev->model;
+    next_device->device_model = dev->model;
     next_device->device_name = dev->path;
     next_device->device_size = dev->length * dev->sector_size;
     next_device->device_size_text = ped_unit_format_byte( dev, dev->length * dev->sector_size );
@@ -169,17 +169,41 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     close( fd );
 
     for( idx = 0; idx < 20; idx++ )
-        next_device->serial_no[idx] = next_device->identity.serial_no[idx];
+    {
+        next_device->device_serial_no[idx] = next_device->identity.serial_no[idx];
+    }
 
-    next_device->serial_no[20] = 0; /* terminate the string */
-    trim( (char*) next_device->serial_no ); /* Remove leading/training whitespace from serial number and left justify */
+    // Terminate the string.
+    next_device->device_serial_no[20] = 0;
+    // Remove leading/trailing whitespace from serial number and left justify.
+    trim( (char*) next_device->device_serial_no );
+
+    if( strlen( (const char*) next_device->device_serial_no ) )
+    {
+        snprintf( next_device->device_label,
+                  NWIPE_DEVICE_LABEL_LENGTH,
+                  "%s (%s) - %s S/N:%s",
+                  next_device->device_name,
+                  next_device->device_size_text,
+                  next_device->device_model,
+                  next_device->device_serial_no );
+    }
+    else
+    {
+        snprintf( next_device->device_label,
+                  NWIPE_DEVICE_LABEL_LENGTH,
+                  "%s (%s) - %s",
+                  next_device->device_name,
+                  next_device->device_size_text,
+                  next_device->device_model );
+    }
 
     nwipe_log( NWIPE_LOG_INFO,
                "Found drive model=\"%s\", device path=\"%s\", size=\"%s\", serial number=\"%s\"",
-               next_device->label,
+               next_device->device_model,
                next_device->device_name,
                next_device->device_size_text,
-               next_device->serial_no );
+               next_device->device_serial_no );
 
     ( *c )[dcount] = next_device;
     return 1;

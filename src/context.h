@@ -65,9 +65,15 @@ typedef struct nwipe_speedring_t_
     u32 position;
 } nwipe_speedring_t;
 
+#define NWIPE_DEVICE_LABEL_LENGTH 200
+
 typedef struct nwipe_context_t_
 {
-    int block_size;  // The soft block size reported the device.
+    /*
+     * Device fields
+     */
+    int device_block_size;  // The soft block size reported by the device.
+    int device_sector_size;  // The hard sector size reported by the device.
     int device_bus;  // The device bus number.
     int device_fd;  // The file descriptor of the device file being wiped.
     int device_host;  // The host number.
@@ -79,12 +85,15 @@ typedef struct nwipe_context_t_
     char* device_name;  // The device file name.
     long long device_size;  // The device size in bytes.
     char* device_size_text;  // The device size in a more (human)readable format.
+    char* device_model;  // The model of the device.
+    char device_label[NWIPE_DEVICE_LABEL_LENGTH];  // The label (name, model, size and serial) of the device.
     struct stat device_stat;  // The device file state from fstat().
     nwipe_device_t device_type;  // Indicates an IDE, SCSI, or Compaq SMART device.
+    char device_serial_no[21];  // Serial number(processed, 20 characters plus null termination) of the device.
     int device_target;  // The device target.
+
     u64 eta;  // The estimated number of seconds until method completion.
     int entropy_fd;  // The entropy source. Usually /dev/urandom.
-    char* label;  // The string that we will show the user.
     int pass_count;  // The number of passes performed by the working wipe method.
     u64 pass_done;  // The number of bytes that have already been i/o'd in this pass.
     u64 pass_errors;  // The number of errors across all passes.
@@ -101,7 +110,6 @@ typedef struct nwipe_context_t_
     u64 round_size;  // The total number of i/o bytes across all rounds.
     double round_percent;  // The percentage complete across all rounds.
     int round_working;  // The current working round.
-    int sector_size;  // The hard sector size reported by the device.
     nwipe_select_t select;  // Indicates whether this device should be wiped.
     int signal;  // Set when the child is killed by a signal.
     nwipe_speedring_t speedring;  // Ring buffer for computing the rolling throughput average.
@@ -110,7 +118,6 @@ typedef struct nwipe_context_t_
     u64 throughput;  // Average throughput in bytes per second.
     u64 verify_errors;  // The number of verification errors across all passes.
     int wipe_status;  // Wipe finished = 0, wipe in progress = 1, wipe yet to start = -1.
-    char serial_no[21];  // Serial number(processed), 20 characters, plus null termination.
     /*
      * Identity contains the raw serial number of the drive
      * (where applicable), however, for use within nwipe use the
