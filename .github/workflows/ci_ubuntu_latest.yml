@@ -1,4 +1,4 @@
-name: CI_on_Ubuntu-latest
+name: ci_ubuntu_latest
 
 on: [push, pull_request]
 
