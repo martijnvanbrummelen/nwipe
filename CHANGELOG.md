@@ -1,10 +1,18 @@
 RELEASE NOTES
 =============
 
-v0.27 (pending release)
+v0.27 (pending release, proposed date end of February 2020)
 -----------------------
 - Add `verify` method to verify a disk is zero filled [#128](https://github.com/martijnvanbrummelen/nwipe/pull/128)
 - Add new HMG IS5 enhanced wipe method [#168](https://github.com/martijnvanbrummelen/nwipe/pull/168)
+- Fix percentage progress and show on completion of wipe (Thanks PartialVolume)
+- Implement clang-format support (Thanks louib)
+- Implement more frequent disk sync support (Thanks Legogizmo)
+- Format command line help to 80 character line length [#114](https://github.com/martijnvanbrummelen/nwipe/pull/114) (Thanks PartialVolume)
+- Fix nwipe message log and missing messages that was causing segfaults under certain conditions (Thanks PartialVolume)
+- Add the Github build CI service and update Readme with build status labels (Thanks louib)
+- Miscellaneous smaller fixes
+
 
 v0.26
 -----
