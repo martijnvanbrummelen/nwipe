@@ -645,6 +645,9 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
     /* An index variable. */
     int i = 0;
 
+    /* Buffer for formatted time. (start, end) */
+    char fmtTm[80];
+
     /* Variable to track if it is the last pass */
     int lastpass = 0;
 
@@ -707,6 +710,11 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
                "Invoking method '%s' on device '%s'.",
                nwipe_method_label( nwipe_options.method ),
                c->device_name );
+
+    c->round_starttm = time( NULL );
+
+    strftime( fmtTm, 80, "%F %T", localtime( &c->round_starttm ) );
+    nwipe_log( NWIPE_LOG_NOTICE, "Started with device '%s' at %s", c->device_name, fmtTm );
 
     while( c->round_working < c->round_count )
     {
@@ -1010,6 +1018,17 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 
     /* Tell the parent that we have fininshed the final pass. */
     c->pass_type = NWIPE_PASS_NONE;
+
+    /* Mark the end of the rounds, used by GUI for overall throughput. */
+    c->round_endtm = time( NULL );
+
+    strftime( fmtTm, 80, "%F %T", localtime( &c->round_endtm ) );
+    nwipe_log( NWIPE_LOG_NOTICE, "Finished with device '%s' at %s", c->device_name, fmtTm );
+    nwipe_log( NWIPE_LOG_NOTICE,
+               "%s: %lld bytes in %ld seconds",
+               c->device_name,
+               c->device_size,
+               ( c->round_endtm - c->round_starttm ) );
 
     if( c->verify_errors > 0 )
     {

@@ -85,6 +85,7 @@ typedef struct nwipe_context_t_
     char* device_name;  // The device file name.
     long long device_size;  // The device size in bytes.
     char* device_size_text;  // The device size in a more (human)readable format.
+    double device_size_GB;	// The device size in a gigabytes (GiB), in float format for GUI.
     char* device_model;  // The model of the device.
     char device_label[NWIPE_DEVICE_LABEL_LENGTH];  // The label (name, model, size and serial) of the device.
     struct stat device_stat;  // The device file state from fstat().
@@ -110,6 +111,8 @@ typedef struct nwipe_context_t_
     u64 round_size;  // The total number of i/o bytes across all rounds.
     double round_percent;  // The percentage complete across all rounds.
     int round_working;  // The current working round.
+    time_t round_starttm;	// Start time of rounds; used to determine total throughput.
+    time_t round_endtm;		// End time of rounds; used to determine total throughput.
     nwipe_select_t select;  // Indicates whether this device should be wiped.
     int signal;  // Set when the child is killed by a signal.
     nwipe_speedring_t speedring;  // Ring buffer for computing the rolling throughput average.

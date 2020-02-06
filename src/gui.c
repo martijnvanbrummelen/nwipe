@@ -428,6 +428,15 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
     /* Less two lines for the box and two lines for padding. */
     slots = wlines - 4;
 
+    /* Values to indicate deselected, selected, unavailable, etc. */
+	/* (Also is a baby-step toward multi-lingual support. */
+    char* ind_selected = "wipe";
+    char* ind_unselected = "    ";
+    char* ind_parent_selected = "****";
+    char* ind_false_child = "----";
+    char* ind_disabled = "????";
+    char* cur_ind = ind_unselected;
+
     do
     {
         /* Clear the main window. */
@@ -471,38 +480,57 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                 waddch( main_window, ' ' );
             }
 
+			/* Select which strings need to be displayed. */
             switch( c[i + offset]->select )
             {
                 case NWIPE_SELECT_TRUE:
-
-                    wprintw( main_window, " [wipe] %i. %s", ( i + offset + 1 ), c[i + offset]->device_label );
+                    cur_ind = ind_selected;
                     break;
 
                 case NWIPE_SELECT_FALSE:
                     /* Print an element that is not selected. */
-                    wprintw( main_window, " [    ] %i. %s", ( i + offset + 1 ), c[i + offset]->device_label );
+                    cur_ind = ind_unselected;
                     break;
 
                 case NWIPE_SELECT_TRUE_PARENT:
-
                     /* This element will be wiped when its parent is wiped. */
-                    wprintw( main_window, " [****] %i. %s", ( i + offset + 1 ), c[i + offset]->device_label );
+                    cur_ind = ind_parent_selected;
                     break;
 
                 case NWIPE_SELECT_FALSE_CHILD:
-
                     /* We can't wipe this element because it has a child that is being wiped. */
-                    wprintw( main_window, " [----] %i. %s", ( i + offset + 1 ), c[i + offset]->device_label );
+                    cur_ind = ind_false_child;
                     break;
 
                 case NWIPE_SELECT_DISABLED:
-
                     /* We don't know how to wipe this device. (Iomega Zip drives.) */
-                    wprintw( main_window, " [????] %s", "Unrecognized Device" );
+                    cur_ind = ind_disabled;
                     break;
 
                 default:
+                    cur_ind = ind_unselected;
+                    break;
 
+            } /* switch select */
+
+            switch( c[i + offset]->select )
+            {
+                case NWIPE_SELECT_TRUE:
+                case NWIPE_SELECT_FALSE:
+                case NWIPE_SELECT_TRUE_PARENT:
+                case NWIPE_SELECT_FALSE_CHILD:
+                case NWIPE_SELECT_DISABLED:
+                    wprintw( main_window,
+                             " [%s] %i. %-14s %-25s  %-20s %10.3f GiB",
+                             cur_ind,
+                             ( i + offset + 1 ),
+                             c[i + offset]->device_name,
+                             c[i + offset]->device_model,
+                             c[i + offset]->device_serial_no,
+                             c[i + offset]->device_size_GB );
+                    break;
+
+                default:
                     /* TODO: Handle the sanity error. */
                     break;
 
@@ -1646,7 +1674,7 @@ void nwipe_gui_method( void )
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "The American Department of Defense 5220.22-M short wipe.                     " );
+                           "The U.S. Department of Defense 5220.22-M short wipe.                     " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
@@ -2108,7 +2136,15 @@ void* nwipe_gui_status( void* ptr )
             for( i = offset; i < offset + slots && i < count; i++ )
             {
                 /* Print the device label. */
-                mvwprintw( main_window, yy++, 2, "%s", c[i]->device_label );
+                /* mvwprintw( main_window, yy++, 2, "%s", c[i]->device_label ); */
+                mvwprintw( main_window,
+                           yy++,
+                           2,
+                           "%-10s %-25s  %-20s %10.3f GiB",
+                           c[i]->device_name,
+                           c[i]->device_model,
+                           c[i]->device_serial_no,
+                           c[i]->device_size_GB );
 
                 /* Check whether the child process is still running the wipe. */
                 if( c[i]->wipe_status == 1 )
@@ -2117,7 +2153,7 @@ void* nwipe_gui_status( void* ptr )
                     mvwprintw( main_window,
                                yy++,
                                4,
-                               "[%05.2f%%, round %i of %i, pass %i of %i] ",
+                               "[%6.2f%%, round %i of %i, pass %i of %i] ",
                                c[i]->round_percent,
                                c[i]->round_working,
                                c[i]->round_count,
@@ -2130,7 +2166,13 @@ void* nwipe_gui_status( void* ptr )
                     nwipe_active = compute_stats( ptr );  // compute the final percentage completion value.
                     if( c[i]->result == 0 )
                     {
-                        mvwprintw( main_window, yy++, 4, "[%05.2f%% complete, SUCCESS! ", c[i]->round_percent );
+                        mvwprintw( main_window,
+                                   yy++,
+                                   4,
+                                   "[%6.2f%% complete, SUCCESS!] (Overall: %llu MiB/s) ",
+					c[i]->round_percent,
+                                   ( ( c[i]->round_size / ( u64 )( c[i]->round_endtm - c[i]->round_starttm ) )
+                                     / ( u64 )( 1024L * 1024L ) ) );
                     }
                     else if( c[i]->signal )
                     {
@@ -2174,11 +2216,6 @@ void* nwipe_gui_status( void* ptr )
                         break;
                 }
 
-                if( c[i]->sync_status )
-                {
-                    wprintw( main_window, "[syncing] " );
-                }
-
                 if( c[i]->throughput >= INT64_C( 1000000000000 ) )
                 {
                     wprintw( main_window, "[%llu TB/s] ", c[i]->throughput / INT64_C( 1000000000000 ) );
@@ -2198,6 +2235,11 @@ void* nwipe_gui_status( void* ptr )
                 else
                 {
                     wprintw( main_window, "[%llu B/s] ", c[i]->throughput / INT64_C( 1 ) );
+                }
+
+                if( c[i]->sync_status )
+                {
+                    wprintw( main_window, "[syncing] " );
                 }
 
                 /* Insert whitespace. */
