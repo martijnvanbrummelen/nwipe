@@ -429,7 +429,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
     slots = wlines - 4;
 
     /* Values to indicate deselected, selected, unavailable, etc. */
-	/* (Also is a baby-step toward multi-lingual support. */
+    /* (Also is a baby-step toward multi-lingual support. */
     char* ind_selected = "wipe";
     char* ind_unselected = "    ";
     char* ind_parent_selected = "****";
@@ -480,7 +480,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                 waddch( main_window, ' ' );
             }
 
-			/* Select which strings need to be displayed. */
+            /* Select which strings need to be displayed. */
             switch( c[i + offset]->select )
             {
                 case NWIPE_SELECT_TRUE:
@@ -2170,7 +2170,7 @@ void* nwipe_gui_status( void* ptr )
                                    yy++,
                                    4,
                                    "[%6.2f%% complete, SUCCESS!] (Overall: %llu MiB/s) ",
-					c[i]->round_percent,
+                                   c[i]->round_percent,
                                    ( ( c[i]->round_size / ( u64 )( c[i]->round_endtm - c[i]->round_starttm ) )
                                      / ( u64 )( 1024L * 1024L ) ) );
                     }

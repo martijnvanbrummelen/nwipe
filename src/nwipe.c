@@ -573,8 +573,7 @@ void* signal_hand( void* ptr )
         {
 
             // Log current status. All values are automatically updated by the GUI
-            case SIGUSR1:
-            {
+            case SIGUSR1: {
                 compute_stats( ptr );
 
                 for( i = 0; i < nwipe_misc_thread_data->nwipe_selected; i++ )
@@ -643,8 +642,7 @@ void* signal_hand( void* ptr )
             case SIGHUP:
             case SIGINT:
             case SIGQUIT:
-            case SIGTERM:
-            {
+            case SIGTERM: {
                 /* Set termination flag for main() which will do housekeeping prior to exit */
                 terminate_signal = 1;
 
