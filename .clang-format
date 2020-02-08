@@ -19,6 +19,7 @@ AlwaysBreakTemplateDeclarations: false
 BinPackArguments: false
 BinPackParameters: false
 BraceWrapping:
+  AfterCaseLabel:  false
   AfterClass:      true
   AfterFunction:   true
   AfterControlStatement: true
