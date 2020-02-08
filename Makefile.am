@@ -6,4 +6,4 @@ format:
 	clang-format -i -style=file $(FORMATSOURCES)
 
 check-format:
-	clang-format -i -style=file $(FORMATSOURCES) && git diff-index --quiet HEAD
+	clang-format -i -style=file $(FORMATSOURCES) && git diff --exit-code
