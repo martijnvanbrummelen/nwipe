@@ -1,7 +1,7 @@
 RELEASE NOTES
 =============
 
-v0.27 (pending release, proposed date end of February 2020)
+v0.27
 -----------------------
 - Add `verify` method to verify a disk is zero filled [#128](https://github.com/martijnvanbrummelen/nwipe/pull/128) (Thanks Legogizmo)
 - Add new HMG IS5 enhanced wipe method [#168](https://github.com/martijnvanbrummelen/nwipe/pull/168) (Thanks infrastation)
