@@ -1,6 +1,13 @@
 RELEASE NOTES
 =============
 
+v0.28 (Pending Release Summer 2020 ?)
+-----------------------
+Proposed changes
+- Fix GUI when terminal is resized, currently not handled correctly (work in progress by PartialVolume)
+- Add enhancement fibre channel wiping of sg drives, ie non 512 bytes/sector such as 524/528 bytes/sector etc (work in progress by PartialVolume)
+- HPA/DCO detection and adjustment to wipe full drive.
+
 v0.27
 -----------------------
 - Add `verify` method to verify a disk is zero filled [#128](https://github.com/martijnvanbrummelen/nwipe/pull/128) (Thanks Legogizmo)
