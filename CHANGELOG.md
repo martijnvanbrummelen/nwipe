@@ -4,8 +4,9 @@ RELEASE NOTES
 v0.28-pre-release (Pending Release Summer 2020 ?)
 -----------------------
 Proposed changes (Changes that have been implemented in the master are tagged with [DONE])
-- Fix GUI when terminal is resized, currently not handled correctly (work in progress by PartialVolume)
-- Add enhancement fibre channel wiping of sg drives, ie non 512 bytes/sector such as 524/528 bytes/sector etc (work in progress by PartialVolume)
+- Fix premature exit when terminal resized on completion of wipes (PartialVolume)
+- Fix GUI when terminal is resized, currently not handled correctly causing missing or incorrectly sized ncurses windows/panels (work in progress by PartialVolume)
+- Add enhancement fibre channel wiping of non 512 bytes/sector drives such as 524/528 bytes/sector etc (work in progress by PartialVolume)
 - HPA/DCO detection and adjustment to wipe full drive.
 
 v0.27
