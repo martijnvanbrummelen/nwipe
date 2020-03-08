@@ -77,7 +77,7 @@
 #define NWIPE_GUI_OPTIONS_ROUNDS_X 1
 
 /* Stats window: width, height, x coordinate, y coordinate. */
-#define NWIPE_GUI_STATS_W 36
+#define NWIPE_GUI_STATS_W ( COLS - 44 )
 #define NWIPE_GUI_STATS_H 7
 #define NWIPE_GUI_STATS_Y 1
 #define NWIPE_GUI_STATS_X 44
@@ -127,6 +127,18 @@ const char* main_window_footer = "S=Start M=Method P=PRNG V=Verify R=Rounds B=Bl
 const char* selection_footer = "J=Down K=Up Space=Select Backspace=Cancel Ctrl-C=Quit";
 const char* end_wipe_footer = "B=Blank screen Ctrl-C=Quit";
 const char* rounds_footer = "Left=Erase Esc=Cancel Ctrl-C=Quit";
+
+/* The number of lines available in the terminal */
+int stdscr_lines;
+
+/* The number of columns available in the terminal */
+int stdscr_cols;
+
+/* The size of the terminal lines when previously checked */
+int stdscr_lines_previous;
+
+/* The size of the terminal columns when previously checked */
+int stdscr_cols_previous;
 
 void nwipe_gui_title( WINDOW* w, const char* s )
 {
@@ -214,108 +226,19 @@ void nwipe_gui_init( void )
     wclear( stdscr );
 
     /* Create the header window. */
-    header_window = newwin( NWIPE_GUI_HEADER_H, NWIPE_GUI_HEADER_W, NWIPE_GUI_HEADER_Y, NWIPE_GUI_HEADER_X );
-    header_panel = new_panel( header_window );
+    nwipe_gui_create_header_window();
 
-    if( has_colors() )
-    {
-        /* Set the background style of the header window. */
-        wbkgdset( header_window, COLOR_PAIR( 4 ) | ' ' );
-    }
+    /* Create the footer window and panel */
+    nwipe_gui_create_footer_window( main_window_footer );
 
-    /* Clear the header window. */
-    wclear( header_window );
-
-    /* Print the product banner. */
-    nwipe_gui_title( header_window, banner );
-
-    /* Create the footer window. */
-    footer_window = newwin( NWIPE_GUI_FOOTER_H, NWIPE_GUI_FOOTER_W, NWIPE_GUI_FOOTER_Y, NWIPE_GUI_FOOTER_X );
-    footer_panel = new_panel( footer_window );
-
-    if( has_colors() )
-    {
-        /* Set the background style of the footer window. */
-        wbkgdset( footer_window, COLOR_PAIR( 4 ) | ' ' );
-    }
-
-    /* Clear the footer window. */
-    wclear( footer_window );
-
-    /* Create the options window. */
-    options_window = newwin( NWIPE_GUI_OPTIONS_H, NWIPE_GUI_OPTIONS_W, NWIPE_GUI_OPTIONS_Y, NWIPE_GUI_OPTIONS_X );
-    options_panel = new_panel( options_window );
-
-    if( has_colors() )
-    {
-        /* Set the background style of the options window. */
-        wbkgdset( options_window, COLOR_PAIR( 1 ) | ' ' );
-
-        /* Apply the color change to the options window. */
-        wattron( options_window, COLOR_PAIR( 1 ) );
-    }
-
-    /* Clear the options window. */
-    wclear( options_window );
-
-    /* Add a border. */
-    box( options_window, 0, 0 );
+    /* Create the options window and panel */
+    nwipe_gui_create_options_window();
 
     /* Create the stats window. */
-    stats_window = newwin( NWIPE_GUI_STATS_H, NWIPE_GUI_STATS_W, NWIPE_GUI_STATS_Y, NWIPE_GUI_STATS_X );
-    stats_panel = new_panel( stats_window );
+    nwipe_gui_create_stats_window();
 
-    if( has_colors() )
-    {
-        /* Set the background style of the stats window. */
-        wbkgdset( stats_window, COLOR_PAIR( 1 ) | ' ' );
-
-        /* Apply the color change to the stats window. */
-        wattron( stats_window, COLOR_PAIR( 1 ) );
-    }
-
-    /* Clear the new window. */
-    wclear( stats_window );
-
-    /* Add a border. */
-    box( stats_window, 0, 0 );
-
-    /* Add a title. */
-    nwipe_gui_title( stats_window, stats_title );
-
-    /* Print field labels. */
-    mvwprintw( stats_window, NWIPE_GUI_STATS_RUNTIME_Y, NWIPE_GUI_STATS_RUNTIME_X, "Runtime:       " );
-    mvwprintw( stats_window, NWIPE_GUI_STATS_ETA_Y, NWIPE_GUI_STATS_ETA_X, "Remaining:     " );
-    mvwprintw( stats_window, NWIPE_GUI_STATS_LOAD_Y, NWIPE_GUI_STATS_LOAD_X, "Load Averages: " );
-    mvwprintw( stats_window, NWIPE_GUI_STATS_THROUGHPUT_Y, NWIPE_GUI_STATS_THROUGHPUT_X, "Throughput:    " );
-    mvwprintw( stats_window, NWIPE_GUI_STATS_ERRORS_Y, NWIPE_GUI_STATS_ERRORS_X, "Errors:        " );
-
-    /* Create the main window. */
-    main_window = newwin( NWIPE_GUI_MAIN_H, NWIPE_GUI_MAIN_W, NWIPE_GUI_MAIN_Y, NWIPE_GUI_MAIN_X );
-    main_panel = new_panel( main_window );
-
-    if( has_colors() )
-    {
-        /* Set the background style. */
-        wbkgdset( main_window, COLOR_PAIR( 1 ) | ' ' );
-
-        /* Apply the color change. */
-        wattron( main_window, COLOR_PAIR( 1 ) );
-    }
-
-    /* Clear the main window. */
-    werase( main_window );
-
-    /* Add a border. */
-    box( main_window, 0, 0 );
-
-    /* Refresh the screen. */
-    wrefresh( stdscr );
-    wrefresh( header_window );
-    wrefresh( footer_window );
-    wrefresh( options_window );
-    wrefresh( stats_window );
-    wrefresh( main_window );
+    /* Create a new main window and panel */
+    nwipe_gui_create_main_window();
 
     update_panels();
     doupdate();
@@ -379,6 +302,169 @@ void nwipe_gui_free( void )
 
 } /* nwipe_gui_free */
 
+void nwipe_gui_create_main_window()
+{
+    /* Create the main window. */
+    main_window = newwin( NWIPE_GUI_MAIN_H, NWIPE_GUI_MAIN_W, NWIPE_GUI_MAIN_Y, NWIPE_GUI_MAIN_X );
+    main_panel = new_panel( main_window );
+
+    if( has_colors() )
+    {
+        /* Set the background style. */
+        wbkgdset( main_window, COLOR_PAIR( 1 ) | ' ' );
+
+        /* Apply the color change. */
+        wattron( main_window, COLOR_PAIR( 1 ) );
+    }
+
+    /* Clear the main window. */
+    wclear( main_window );
+
+    /* Add a border. */
+    box( main_window, 0, 0 );
+
+    /* refresh main window */
+    wrefresh( main_window );
+
+} /* nwipe_gui_create_main_window */
+
+void nwipe_gui_create_header_window()
+{
+    /* Create the header window. */
+    header_window = newwin( NWIPE_GUI_HEADER_H, NWIPE_GUI_HEADER_W, NWIPE_GUI_HEADER_Y, NWIPE_GUI_HEADER_X );
+    header_panel = new_panel( header_window );
+
+    if( has_colors() )
+    {
+        /* Set the background style of the header window. */
+        wbkgdset( header_window, COLOR_PAIR( 4 ) | ' ' );
+    }
+
+    /* Clear the header window. */
+    wclear( header_window );
+
+    /* Print the product banner. */
+    nwipe_gui_title( header_window, banner );
+
+} /* nwipe_gui_create_header_window */
+
+void nwipe_gui_create_footer_window( const char* footer_text )
+{
+    /* Create the footer window. */
+    footer_window = newwin( NWIPE_GUI_FOOTER_H, NWIPE_GUI_FOOTER_W, NWIPE_GUI_FOOTER_Y, NWIPE_GUI_FOOTER_X );
+    footer_panel = new_panel( footer_window );
+
+    if( has_colors() )
+    {
+        /* Set the background style of the footer window. */
+        wbkgdset( footer_window, COLOR_PAIR( 4 ) | ' ' );
+    }
+
+    /* Clear the footer window. */
+    wclear( footer_window );
+
+    /* Add help text to the footer */
+    nwipe_gui_title( footer_window, footer_text );
+
+    /* Refresh the footer window */
+    wrefresh( footer_window );
+
+} /* nwipe_gui_create_footer_window */
+
+void nwipe_gui_create_options_window()
+{
+    /* Create the options window. */
+    options_window = newwin( NWIPE_GUI_OPTIONS_H, NWIPE_GUI_OPTIONS_W, NWIPE_GUI_OPTIONS_Y, NWIPE_GUI_OPTIONS_X );
+    options_panel = new_panel( options_window );
+
+    if( has_colors() )
+    {
+        /* Set the background style of the options window. */
+        wbkgdset( options_window, COLOR_PAIR( 1 ) | ' ' );
+
+        /* Apply the color change to the options window. */
+        wattron( options_window, COLOR_PAIR( 1 ) );
+    }
+
+    /* Clear the options window. */
+    wclear( options_window );
+
+    /* Add a border. */
+    box( options_window, 0, 0 );
+
+} /* nwipe_gui_create_options_window */
+
+void nwipe_gui_create_stats_window()
+{
+    /* Create the stats window. */
+    stats_window = newwin( NWIPE_GUI_STATS_H, NWIPE_GUI_STATS_W, NWIPE_GUI_STATS_Y, NWIPE_GUI_STATS_X );
+    stats_panel = new_panel( stats_window );
+
+    if( has_colors() )
+    {
+        /* Set the background style of the stats window. */
+        wbkgdset( stats_window, COLOR_PAIR( 1 ) | ' ' );
+
+        /* Apply the color change to the stats window. */
+        wattron( stats_window, COLOR_PAIR( 1 ) );
+    }
+
+    /* Clear the new window. */
+    wclear( stats_window );
+
+    /* Add a border. */
+    box( stats_window, 0, 0 );
+
+    /* Add a title. */
+    nwipe_gui_title( stats_window, stats_title );
+
+    /* Print field labels. */
+    mvwprintw( stats_window, NWIPE_GUI_STATS_RUNTIME_Y, NWIPE_GUI_STATS_RUNTIME_X, "Runtime:       " );
+    mvwprintw( stats_window, NWIPE_GUI_STATS_ETA_Y, NWIPE_GUI_STATS_ETA_X, "Remaining:     " );
+    mvwprintw( stats_window, NWIPE_GUI_STATS_LOAD_Y, NWIPE_GUI_STATS_LOAD_X, "Load Averages: " );
+    mvwprintw( stats_window, NWIPE_GUI_STATS_THROUGHPUT_Y, NWIPE_GUI_STATS_THROUGHPUT_X, "Throughput:    " );
+    mvwprintw( stats_window, NWIPE_GUI_STATS_ERRORS_Y, NWIPE_GUI_STATS_ERRORS_X, "Errors:        " );
+
+} /* nwipe_gui_create_stats_window */
+
+void nwipe_gui_create_all_windows_on_terminal_resize( const char* footer_text )
+{
+    /* Get the terminal size */
+    getmaxyx( stdscr, stdscr_lines, stdscr_cols );
+
+    /* If the user has resized the terminal then recreate the windows and panels */
+    if( stdscr_cols_previous != stdscr_cols || stdscr_lines_previous != stdscr_lines )
+    {
+        /* save the revised terminal size so we check whether the user has resized next time */
+        stdscr_lines_previous = stdscr_lines;
+        stdscr_cols_previous = stdscr_cols;
+
+        /* Clear the screen. */
+        wclear( stdscr );
+
+        /* Create a new header window and panel due to terminal size having changed */
+        nwipe_gui_create_header_window();
+
+        /* Create a new main window and panel due to terminal size having changed */
+        nwipe_gui_create_main_window();
+
+        /* Create a new footer window and panel due to terminal size having changed */
+        nwipe_gui_create_footer_window( footer_text );
+
+        /* Create a new options window and panel due to terminal size having changed */
+        nwipe_gui_create_options_window();
+
+        /* Create a new stats window and panel due to terminal size having changed */
+        nwipe_gui_create_stats_window();
+
+        /* Update the options window. */
+        nwipe_gui_options();
+
+        update_panels();
+        doupdate();
+    }
+}
+
 void nwipe_gui_select( int count, nwipe_context_t** c )
 {
     /**
@@ -422,21 +508,42 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
     /* The current working line. */
     int yy;
 
-    /* There is one slot per line. */
-    getmaxyx( main_window, wlines, wcols );
+    /* Flag, Valid key hit = 1, anything else = 0 */
+    int validkeyhit;
 
-    /* Less two lines for the box and two lines for padding. */
-    slots = wlines - 4;
+    /* Get the terminal size */
+    getmaxyx( stdscr, stdscr_lines, stdscr_cols );
+
+    /* save the terminal size so we check whether the user has resized */
+    stdscr_lines_previous = stdscr_lines;
+    stdscr_cols_previous = stdscr_cols;
 
     do
     {
-        /* Clear the main window. */
+
+        nwipe_gui_create_all_windows_on_terminal_resize( main_window_footer );
+
+        /* There is one slot per line. */
+        getmaxyx( main_window, wlines, wcols );
+
+        /* Less two lines for the box and two lines for padding. */
+        slots = wlines - 4;
+
+        /* Clear the main window, necessary when switching selections such as method etc */
         werase( main_window );
 
-        /* Update the footer window. */
-        werase( footer_window );
-        nwipe_gui_title( footer_window, main_window_footer );
-        wrefresh( footer_window );
+        /* Refresh main window */
+        wrefresh( main_window );
+
+        /* If the user selected an option the footer text would have changed.
+         * Here we set it back to the main key help text */
+        nwipe_gui_create_footer_window( main_window_footer );
+
+        /* Refresh the stats window */
+        wrefresh( stats_window );
+
+        /* Refresh the options window */
+        wrefresh( options_window );
 
         /* Update the options window. */
         nwipe_gui_options();
@@ -538,108 +645,169 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
          * sluggish, any slower and more time is spent unnecessarily looping
          * which wastes CPU cycles.
          */
-        timeout( 250 );  // block getch() for 250ms.
-        keystroke = getch();  // Get user input.
-        timeout( -1 );  // Switch back to blocking mode.
 
-        switch( keystroke )
+        validkeyhit = 0;
+
+        do
         {
-            case KEY_DOWN:
-            case 'j':
-            case 'J':
+            timeout( 250 );  // block getch() for 250ms.
+            keystroke = getch();  // Get user input.
+            timeout( -1 );  // Switch back to blocking mode.
 
-                /* Increment the focus. */
-                focus += 1;
+            switch( keystroke )
+            {
+                case KEY_DOWN:
+                case 'j':
+                case 'J':
 
-                if( focus >= count )
-                {
-                    /* The focus is already at the last element. */
-                    focus = count - 1;
-                    break;
-                }
+                    /* Increment the focus. */
+                    focus += 1;
 
-                if( focus - offset >= slots )
-                {
-                    /* The next element is offscreen. Scroll down. */
-                    offset += 1;
-                    break;
-                }
-
-                break;
-
-            case KEY_UP:
-            case 'k':
-            case 'K':
-
-                /* Decrement the focus. */
-                focus -= 1;
-
-                if( focus < 0 )
-                {
-                    /* The focus is already at the last element. */
-                    focus = 0;
-                    break;
-                }
-
-                if( focus < offset )
-                {
-                    /* The next element is offscreen. Scroll up. */
-                    offset -= 1;
-                    break;
-                }
-
-                break;
-
-            case KEY_ENTER:
-            case 10:
-            case ' ':
-
-                /* TODO: This block should be made into a function. */
-
-                if( c[focus]->select == NWIPE_SELECT_TRUE )
-                {
-                    /* Reverse the selection of this element. */
-                    c[focus]->select = NWIPE_SELECT_FALSE;
-
-                    if( c[focus]->device_part == 0 )
+                    if( focus >= count )
                     {
-                        /* Sub-deselect all partitions and slices within this disk. */
-                        for( i = 0; i < count; i++ )
-                        {
-                            if( c[i]->device_type == c[focus]->device_type && c[i]->device_host == c[focus]->device_host
-                                && c[i]->device_bus == c[focus]->device_bus
-                                && c[i]->device_target == c[focus]->device_target
-                                && c[i]->device_lun == c[focus]->device_lun && c[i]->device_part > 0 )
-                            {
-                                c[i]->select = NWIPE_SELECT_FALSE;
-                            }
+                        /* The focus is already at the last element. */
+                        focus = count - 1;
+                        break;
+                    }
 
-                        } /* for all contexts */
-
-                    } /* if sub-deselect */
-
-                    else
+                    if( focus - offset >= slots )
                     {
-                        /* The number of selected partitions or slices within this disk. */
-                        int j = 0;
+                        /* The next element is offscreen. Scroll down. */
+                        offset += 1;
+                        break;
+                    }
+                    validkeyhit = 1;
 
-                        for( i = 0; i < count; i++ )
+                    break;
+
+                case KEY_UP:
+                case 'k':
+                case 'K':
+
+                    /* Decrement the focus. */
+                    focus -= 1;
+
+                    if( focus < 0 )
+                    {
+                        /* The focus is already at the last element. */
+                        focus = 0;
+                        break;
+                    }
+
+                    if( focus < offset )
+                    {
+                        /* The next element is offscreen. Scroll up. */
+                        offset -= 1;
+                        break;
+                    }
+                    validkeyhit = 1;
+
+                    break;
+
+                case KEY_ENTER:
+                case 10:
+                case ' ':
+
+                    /* TODO: This block should be made into a function. */
+
+                    if( c[focus]->select == NWIPE_SELECT_TRUE )
+                    {
+                        /* Reverse the selection of this element. */
+                        c[focus]->select = NWIPE_SELECT_FALSE;
+
+                        if( c[focus]->device_part == 0 )
                         {
-                            if( c[i]->device_type == c[focus]->device_type && c[i]->device_host == c[focus]->device_host
-                                && c[i]->device_bus == c[focus]->device_bus
-                                && c[i]->device_target == c[focus]->device_target
-                                && c[i]->device_lun == c[focus]->device_lun && c[i]->device_part > 0
-                                && c[i]->select == NWIPE_SELECT_TRUE )
+                            /* Sub-deselect all partitions and slices within this disk. */
+                            for( i = 0; i < count; i++ )
                             {
-                                /* Increment the counter. */
-                                j += 1;
-                            }
+                                if( c[i]->device_type == c[focus]->device_type
+                                    && c[i]->device_host == c[focus]->device_host
+                                    && c[i]->device_bus == c[focus]->device_bus
+                                    && c[i]->device_target == c[focus]->device_target
+                                    && c[i]->device_lun == c[focus]->device_lun && c[i]->device_part > 0 )
+                                {
+                                    c[i]->select = NWIPE_SELECT_FALSE;
+                                }
 
-                        } /* for all contexts */
+                            } /* for all contexts */
 
-                        if( j == 0 )
+                        } /* if sub-deselect */
+
+                        else
                         {
-                            /* Find the parent disk of this partition or slice. */
+                            /* The number of selected partitions or slices within this disk. */
+                            int j = 0;
+
+                            for( i = 0; i < count; i++ )
+                            {
+                                if( c[i]->device_type == c[focus]->device_type
+                                    && c[i]->device_host == c[focus]->device_host
+                                    && c[i]->device_bus == c[focus]->device_bus
+                                    && c[i]->device_target == c[focus]->device_target
+                                    && c[i]->device_lun == c[focus]->device_lun && c[i]->device_part > 0
+                                    && c[i]->select == NWIPE_SELECT_TRUE )
+                                {
+                                    /* Increment the counter. */
+                                    j += 1;
+                                }
+
+                            } /* for all contexts */
+
+                            if( j == 0 )
+                            {
+                                /* Find the parent disk of this partition or slice. */
+                                for( i = 0; i < count; i++ )
+                                {
+                                    if( c[i]->device_type == c[focus]->device_type
+                                        && c[i]->device_host == c[focus]->device_host
+                                        && c[i]->device_bus == c[focus]->device_bus
+                                        && c[i]->device_target == c[focus]->device_target
+                                        && c[i]->device_lun == c[focus]->device_lun && c[i]->device_part == 0 )
+                                    {
+                                        /* Enable the disk element. */
+                                        c[i]->select = NWIPE_SELECT_FALSE;
+                                    }
+
+                                } /* for all contexts */
+
+                            } /* if */
+
+                        } /* else super-enable */
+
+                        validkeyhit = 1;
+
+                        break;
+
+                    } /* if NWIPE_SELECT_TRUE */
+
+                    if( c[focus]->select == NWIPE_SELECT_FALSE )
+                    {
+                        /* Reverse the selection. */
+                        c[focus]->select = NWIPE_SELECT_TRUE;
+
+                        if( c[focus]->device_part == 0 )
+                        {
+                            /* Sub-select all partitions and slices within this disk. */
+                            for( i = 0; i < count; i++ )
+                            {
+                                if( c[i]->device_type == c[focus]->device_type
+                                    && c[i]->device_host == c[focus]->device_host
+                                    && c[i]->device_bus == c[focus]->device_bus
+                                    && c[i]->device_target == c[focus]->device_target
+                                    && c[i]->device_lun == c[focus]->device_lun && c[i]->device_part > 0 )
+                                {
+                                    c[i]->select = NWIPE_SELECT_TRUE_PARENT;
+                                }
+
+                            } /* for */
+
+                        } /* if sub-select */
+
+                        else
+                        {
+                            /* ASSERT: ( c[focus]->device_part > 0 ) */
+
+                            /* Super-deselect the disk that contains this device. */
                             for( i = 0; i < count; i++ )
                             {
                                 if( c[i]->device_type == c[focus]->device_type
@@ -648,117 +816,79 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                                     && c[i]->device_target == c[focus]->device_target
                                     && c[i]->device_lun == c[focus]->device_lun && c[i]->device_part == 0 )
                                 {
-                                    /* Enable the disk element. */
-                                    c[i]->select = NWIPE_SELECT_FALSE;
+                                    c[i]->select = NWIPE_SELECT_FALSE_CHILD;
                                 }
-
-                            } /* for all contexts */
-
-                        } /* if */
-
-                    } /* else super-enable */
-
-                    break;
-
-                } /* if NWIPE_SELECT_TRUE */
-
-                if( c[focus]->select == NWIPE_SELECT_FALSE )
-                {
-                    /* Reverse the selection. */
-                    c[focus]->select = NWIPE_SELECT_TRUE;
-
-                    if( c[focus]->device_part == 0 )
-                    {
-                        /* Sub-select all partitions and slices within this disk. */
-                        for( i = 0; i < count; i++ )
-                        {
-                            if( c[i]->device_type == c[focus]->device_type && c[i]->device_host == c[focus]->device_host
-                                && c[i]->device_bus == c[focus]->device_bus
-                                && c[i]->device_target == c[focus]->device_target
-                                && c[i]->device_lun == c[focus]->device_lun && c[i]->device_part > 0 )
-                            {
-                                c[i]->select = NWIPE_SELECT_TRUE_PARENT;
                             }
 
-                        } /* for */
+                        } /* else super-deselect */
 
-                    } /* if sub-select */
+                        validkeyhit = 1;
 
-                    else
-                    {
-                        /* ASSERT: ( c[focus]->device_part > 0 ) */
+                        break;
 
-                        /* Super-deselect the disk that contains this device. */
-                        for( i = 0; i < count; i++ )
-                        {
-                            if( c[i]->device_type == c[focus]->device_type && c[i]->device_host == c[focus]->device_host
-                                && c[i]->device_bus == c[focus]->device_bus
-                                && c[i]->device_target == c[focus]->device_target
-                                && c[i]->device_lun == c[focus]->device_lun && c[i]->device_part == 0 )
-                            {
-                                c[i]->select = NWIPE_SELECT_FALSE_CHILD;
-                            }
-                        }
+                    } /* if NWIPE_SELECT_FALSE */
 
-                    } /* else super-deselect */
-
+                    /* TODO: Explain to the user why they can't change this. */
+                    validkeyhit = 1;
                     break;
 
-                } /* if NWIPE_SELECT_FALSE */
+                case 'm':
+                case 'M':
 
-                /* TODO: Explain to the user why they can't change this. */
-                break;
+                    /*  Run the method dialog. */
+                    nwipe_gui_method();
+                    validkeyhit = 1;
+                    break;
 
-            case 'm':
-            case 'M':
+                case 'p':
+                case 'P':
 
-                /*  Run the method dialog. */
-                nwipe_gui_method();
-                break;
+                    /* Run the PRNG dialog. */
+                    nwipe_gui_prng();
+                    validkeyhit = 1;
+                    break;
 
-            case 'p':
-            case 'P':
+                case 'r':
+                case 'R':
 
-                /* Run the PRNG dialog. */
-                nwipe_gui_prng();
-                break;
+                    /* Run the rounds dialog. */
+                    nwipe_gui_rounds();
+                    validkeyhit = 1;
+                    break;
 
-            case 'r':
-            case 'R':
+                case 'v':
+                case 'V':
 
-                /* Run the rounds dialog. */
-                nwipe_gui_rounds();
-                break;
+                    /* Run the option dialog. */
+                    nwipe_gui_verify();
+                    validkeyhit = 1;
+                    break;
 
-            case 'v':
-            case 'V':
+                case 'b':
+                case 'B':
 
-                /* Run the option dialog. */
-                nwipe_gui_verify();
-                break;
+                    /* Run the noblank dialog. */
+                    nwipe_gui_noblank();
+                    validkeyhit = 1;
+                    break;
 
-            case 'b':
-            case 'B':
+                case 'S':
 
-                /* Run the noblank dialog. */
-                nwipe_gui_noblank();
-                break;
+                    /* User want to start the wipe */
+                    validkeyhit = 1;
+                    break;
 
-        } /* keystroke switch */
+            } /* keystroke switch */
+
+            /* Check the terminal size, if the user has changed it the while loop checks for
+             * this change and exits the valid key hit loop so the windows can be updated */
+            getmaxyx( stdscr, stdscr_lines, stdscr_cols );
+
+        } /* key hit loop */
+        while( validkeyhit == 0 && terminate_signal != 1 && stdscr_cols_previous == stdscr_cols
+               && stdscr_lines_previous == stdscr_lines );
 
     } while( keystroke != 'S' && terminate_signal != 1 );
-
-    /* Clear the main window. */
-    werase( main_window );
-
-    /* Refresh the main window. */
-    wrefresh( main_window );
-
-    /* Clear the footer. */
-    werase( footer_window );
-
-    /* Refresh the footer window. */
-    wrefresh( footer_window );
 
 } /* nwipe_gui_select */
 
@@ -861,6 +991,8 @@ void nwipe_gui_rounds( void )
     {
         /* Erase the main window. */
         werase( main_window );
+
+        nwipe_gui_create_all_windows_on_terminal_resize( selection_footer );
 
         /* Add a border. */
         box( main_window, 0, 0 );
@@ -1009,6 +1141,8 @@ void nwipe_gui_prng( void )
     {
         /* Clear the main window. */
         werase( main_window );
+
+        nwipe_gui_create_all_windows_on_terminal_resize( selection_footer );
 
         /* Initialize the working row. */
         yy = 2;
@@ -1183,6 +1317,8 @@ void nwipe_gui_verify( void )
 
     do
     {
+        nwipe_gui_create_all_windows_on_terminal_resize( selection_footer );
+
         /* Clear the main window. */
         werase( main_window );
 
@@ -1360,6 +1496,8 @@ void nwipe_gui_noblank( void )
 
     do
     {
+        nwipe_gui_create_all_windows_on_terminal_resize( selection_footer );
+
         /* Clear the main window. */
         werase( main_window );
 
@@ -1562,6 +1700,8 @@ void nwipe_gui_method( void )
     {
         /* Clear the main window. */
         werase( main_window );
+
+        nwipe_gui_create_all_windows_on_terminal_resize( selection_footer );
 
         /* Initialize the working row. */
         yy = 2;
@@ -1937,6 +2077,9 @@ void* nwipe_gui_status( void* ptr )
     /* The current time. */
     time_t nwipe_time_now;
 
+    /* The time when all wipes ended */
+    time_t nwipe_time_stopped;
+
     /* The index of the element that is visible in the first slot. */
     static int offset;
 
@@ -1956,6 +2099,9 @@ void* nwipe_gui_status( void* ptr )
     /* User input buffer. */
     int keystroke;
 
+    /* controls main while loop */
+    int loop_control;
+
     /* The combined througput of all processes. */
     nwipe_misc_thread_data->throughput = 0;
 
@@ -1974,6 +2120,10 @@ void* nwipe_gui_status( void* ptr )
     tim.tv_sec = 0;
     tim.tv_nsec = 100000000L; /* sleep for 0.1 seconds */
 
+    /* Throughput variables */
+    u64 nwipe_throughput;
+    u64 nwipe_throughput_stopped;
+
     /* The number of active wipe processes. */
     /* Set to 1 initially to start loop.    */
     int nwipe_active = 1;
@@ -1984,23 +2134,23 @@ void* nwipe_gui_status( void* ptr )
         nwipe_time_start = time( NULL ) - 1;
     }
 
-    /* Get the window dimensions. */
-    getmaxyx( main_window, wlines, wcols );
+    loop_control = 1;
 
-    /* Less four lines for the box and padding. */
-    slots = wlines - 4;
-
-    /* Each element prints three lines. */
-    slots /= 3;
-
-    /* Add text to footer window */
-    nwipe_gui_title( footer_window, end_wipe_footer );
-    wrefresh( footer_window );
-
-    while( nwipe_active && terminate_signal != 1 )
+    // while( nwipe_active && terminate_signal != 1 )
+    while( loop_control )
     {
         /* Get the current time. */
-        nwipe_time_now = time( NULL );
+        if( nwipe_active && terminate_signal != 1 )
+        {
+            nwipe_time_now = time( NULL );
+            nwipe_time_stopped = nwipe_time_now;
+        }
+        else
+        {
+            nwipe_time_now = nwipe_time_stopped;
+        }
+
+        nwipe_gui_create_all_windows_on_terminal_resize( selection_footer );
 
         /* Erase the main window. */
         werase( main_window );
@@ -2008,8 +2158,40 @@ void* nwipe_gui_status( void* ptr )
         /* Erase the stats window. */
         werase( stats_window );
 
+        /* Erase the footer window */
+        werase( footer_window );
+
         /* Initialize our working offset to the third line. */
         yy = 2;
+
+        /* Get the window dimensions. */
+        getmaxyx( main_window, wlines, wcols );
+
+        /* Less four lines for the box and padding. */
+        slots = wlines - 4;
+
+        /* Each element prints three lines. */
+        slots /= 3;
+
+        /* Add text to footer window */
+        if( nwipe_active && terminate_signal != 1 )
+        {
+            nwipe_gui_title( footer_window, end_wipe_footer );
+        }
+        else
+        {
+            nwipe_gui_title( footer_window, "Wipe finished - press enter to exit. Logged to STDOUT" );
+        }
+        wrefresh( footer_window );
+
+        if( terminate_signal == 1 )
+        {
+            loop_control = 0;
+        }
+
+        box( options_window, 0, 0 );
+        nwipe_gui_title( options_window, options_title );
+        wrefresh( options_window );
 
         /* Try to get a keystroke. */
         keystroke = getch();
@@ -2090,6 +2272,18 @@ void* nwipe_gui_status( void* ptr )
 
                     break;
 
+                case ' ':
+                case 0x0a:
+
+                    /* Check whether we have finished all wipes, if yes exit while loop if user pressed spacebar or
+                     * return */
+                    if( !nwipe_active || terminate_signal == 1 )
+                    {
+                        loop_control = 0;
+                    }
+
+                    break;
+
                 default:
 
                     /* Do nothing. */
@@ -2102,7 +2296,10 @@ void* nwipe_gui_status( void* ptr )
         if( nwipe_gui_blank == 0 )
         {
 
-            nwipe_active = compute_stats( ptr );  // Returns number of active wipe threads
+            if( nwipe_active && terminate_signal != 1 )
+            {
+                nwipe_active = compute_stats( ptr );  // Returns number of active wipe threads
+            }
 
             /* Print information for the user. */
             for( i = offset; i < offset + slots && i < count; i++ )
@@ -2127,7 +2324,10 @@ void* nwipe_gui_status( void* ptr )
                 } /* child running */
                 else
                 {
-                    nwipe_active = compute_stats( ptr );  // compute the final percentage completion value.
+                    if( nwipe_active && terminate_signal != 1 )
+                    {
+                        nwipe_active = compute_stats( ptr );  // compute the final percentage completion value.
+                    }
                     if( c[i]->result == 0 )
                     {
                         mvwprintw( main_window, yy++, 4, "[%05.2f%% complete, SUCCESS! ", c[i]->round_percent );
@@ -2222,10 +2422,18 @@ void* nwipe_gui_status( void* ptr )
             /* Refresh the main window. */
             wrefresh( main_window );
 
-            /* Update the load average field. */
-            nwipe_gui_load();
+            /* Update the load average field, but only if we are still wiping */
+            if( nwipe_active && terminate_signal != 1 )
+            {
+                nwipe_gui_load();
+                nwipe_throughput = nwipe_misc_thread_data->throughput;
+                nwipe_throughput_stopped = nwipe_throughput;
+            }
+            else
+            {
+                nwipe_throughput = nwipe_throughput_stopped;
+            }
 
-            u64 nwipe_throughput = nwipe_misc_thread_data->throughput;
             if( nwipe_throughput >= INT64_C( 1000000000000 ) )
             {
                 nwipe_throughput /= INT64_C( 1000000000000 );
@@ -2357,8 +2565,7 @@ void* nwipe_gui_status( void* ptr )
                   nwipe_options.logfile );
         nwipe_gui_title( footer_window, finish_message );
     }
-    wrefresh( footer_window );
-    nwipe_misc_thread_data->gui_thread = 0;
+    terminate_signal = 1;
 
     return NULL;
 } /* nwipe_gui_status */
