@@ -442,15 +442,15 @@ int main( int argc, char** argv )
     if( terminate_signal == 1 )
     {
         nwipe_log( NWIPE_LOG_INFO, "Program interrupted" );
-        printf( "Program interrupted" );
     }
     else
     {
         if( !nwipe_options.nowait )
         {
-            /* Wait for the user to press enter to exit */
-            nocbreak();
-            getch();
+            do
+            {
+                sleep( 1 );
+            } while( terminate_signal != 1 );
         }
     }
     nwipe_log( NWIPE_LOG_INFO, "Exit in progress" );

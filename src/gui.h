@@ -25,6 +25,13 @@
 
 void nwipe_gui_free( void );  // Stop the GUI.
 void nwipe_gui_init( void );  // Start the GUI.
+void nwipe_gui_create_main_window( void );  // Create the main window
+void nwipe_gui_create_header_window( void );  // Create the header window
+void nwipe_gui_create_footer_window( const char* );  // Create the footer window
+void nwipe_gui_create_options_window( void );  // Create the options window
+void nwipe_gui_create_stats_window( void );  // Create the stats window
+void nwipe_gui_create_all_windows_on_terminal_resize(
+    const char* footer_text );  // If terminal is resized recreate all windows
 void nwipe_gui_select( int count, nwipe_context_t** c );  // Select devices to wipe.
 void* nwipe_gui_status( void* ptr );  // Update operation progress.
 void nwipe_gui_method( void );  // Change the method option.
