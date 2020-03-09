@@ -14,4 +14,4 @@ Modifications to original dwipe Copyright Andy Beverley <andy@andybev.com>\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty; not even for MERCHANTABILITY or FITNESS\n\
 FOR A PARTICULAR PURPOSE.\n";
-const char* banner = "nwipe 0.28-pre-release";
+const char* banner = "nwipe 0.28-pre-release-1";
