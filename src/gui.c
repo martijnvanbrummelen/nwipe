@@ -325,7 +325,6 @@ void nwipe_gui_create_main_window()
 
     /* refresh main window */
     wnoutrefresh( main_window );
-    
 
 } /* nwipe_gui_create_main_window */
 
@@ -346,7 +345,7 @@ void nwipe_gui_create_header_window()
 
     /* Print the product banner. */
     nwipe_gui_title( header_window, banner );
-    
+
     /* Refresh the header window */
     wnoutrefresh( header_window );
 
@@ -974,7 +973,7 @@ void nwipe_gui_options( void )
     nwipe_gui_title( options_window, options_title );
 
     /* Refresh the window. */
-    //wrefresh( options_window );
+    // wrefresh( options_window );
     wnoutrefresh( options_window );
 
 } /* nwipe_gui_options */
@@ -2203,7 +2202,7 @@ void* nwipe_gui_status( void* ptr )
         {
             nwipe_gui_title( footer_window, "Wipe finished - press enter to exit. Logged to STDOUT" );
         }
-        //wrefresh( footer_window );
+        // wrefresh( footer_window );
         wnoutrefresh( footer_window );
 
         if( terminate_signal == 1 )
@@ -2213,7 +2212,7 @@ void* nwipe_gui_status( void* ptr )
 
         box( options_window, 0, 0 );
         nwipe_gui_title( options_window, options_title );
-        //wrefresh( options_window );
+        // wrefresh( options_window );
         wnoutrefresh( options_window );
 
         /* Try to get a keystroke. */
@@ -2443,7 +2442,7 @@ void* nwipe_gui_status( void* ptr )
             box( main_window, 0, 0 );
 
             /* Refresh the main window. */
-            //wrefresh( main_window );
+            // wrefresh( main_window );
             wnoutrefresh( main_window );
 
             /* Update the load average field, but only if we are still wiping */
@@ -2547,14 +2546,13 @@ void* nwipe_gui_status( void* ptr )
             mvwprintw( stats_window, 0, ( NWIPE_GUI_STATS_W - strlen( stats_title ) ) / 2, "%s", stats_title );
 
             /* Refresh the stats window. */
-            //wrefresh( stats_window );
-            
+            // wrefresh( stats_window );
+
             /* Refresh internal representation of stats window */
             wnoutrefresh( stats_window );
-            
+
             /* Output all windows to screen */
             doupdate();
-            
 
         }  // end blank screen if
 
