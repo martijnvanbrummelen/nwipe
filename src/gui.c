@@ -318,13 +318,14 @@ void nwipe_gui_create_main_window()
     }
 
     /* Clear the main window. */
-    wclear( main_window );
+    werase( main_window );
 
     /* Add a border. */
     box( main_window, 0, 0 );
 
     /* refresh main window */
-    wrefresh( main_window );
+    wnoutrefresh( main_window );
+    
 
 } /* nwipe_gui_create_main_window */
 
@@ -341,10 +342,13 @@ void nwipe_gui_create_header_window()
     }
 
     /* Clear the header window. */
-    wclear( header_window );
+    werase( header_window );
 
     /* Print the product banner. */
     nwipe_gui_title( header_window, banner );
+    
+    /* Refresh the header window */
+    wnoutrefresh( header_window );
 
 } /* nwipe_gui_create_header_window */
 
@@ -360,16 +364,29 @@ void nwipe_gui_create_footer_window( const char* footer_text )
         wbkgdset( footer_window, COLOR_PAIR( 4 ) | ' ' );
     }
 
-    /* Clear the footer window. */
-    wclear( footer_window );
+    /* Erase the footer window. */
+    werase( footer_window );
 
     /* Add help text to the footer */
     nwipe_gui_title( footer_window, footer_text );
 
     /* Refresh the footer window */
-    wrefresh( footer_window );
+    wnoutrefresh( footer_window );
 
 } /* nwipe_gui_create_footer_window */
+
+void nwipe_gui_amend_footer_window( const char* footer_text )
+{
+    /* Clear the footer window. */
+    werase( footer_window );
+
+    /* Add help text to the footer */
+    nwipe_gui_title( footer_window, footer_text );
+
+    /* Refresh the footer window */
+    wnoutrefresh( footer_window );
+
+} /* nwipe_gui_amend_footer_window */
 
 void nwipe_gui_create_options_window()
 {
@@ -387,7 +404,7 @@ void nwipe_gui_create_options_window()
     }
 
     /* Clear the options window. */
-    wclear( options_window );
+    werase( options_window );
 
     /* Add a border. */
     box( options_window, 0, 0 );
@@ -410,7 +427,7 @@ void nwipe_gui_create_stats_window()
     }
 
     /* Clear the new window. */
-    wclear( stats_window );
+    werase( stats_window );
 
     /* Add a border. */
     box( stats_window, 0, 0 );
@@ -533,17 +550,17 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
         werase( main_window );
 
         /* Refresh main window */
-        wrefresh( main_window );
+        wnoutrefresh( main_window );
 
         /* If the user selected an option the footer text would have changed.
          * Here we set it back to the main key help text */
         nwipe_gui_create_footer_window( main_window_footer );
 
         /* Refresh the stats window */
-        wrefresh( stats_window );
+        wnoutrefresh( stats_window );
 
         /* Refresh the options window */
-        wrefresh( options_window );
+        wnoutrefresh( options_window );
 
         /* Update the options window. */
         nwipe_gui_options();
@@ -636,7 +653,10 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
         nwipe_gui_title( main_window, select_title );
 
         /* Refresh the window. */
-        wrefresh( main_window );
+        wnoutrefresh( main_window );
+
+        /* Output to physical screen */
+        doupdate();
 
         /* Wait 250ms for input from getch, if nothing getch will then continue,
          * This is necessary so that the while loop can be exited by the
@@ -954,7 +974,8 @@ void nwipe_gui_options( void )
     nwipe_gui_title( options_window, options_title );
 
     /* Refresh the window. */
-    wrefresh( options_window );
+    //wrefresh( options_window );
+    wnoutrefresh( options_window );
 
 } /* nwipe_gui_options */
 
@@ -2150,7 +2171,7 @@ void* nwipe_gui_status( void* ptr )
             nwipe_time_now = nwipe_time_stopped;
         }
 
-        nwipe_gui_create_all_windows_on_terminal_resize( selection_footer );
+        nwipe_gui_create_all_windows_on_terminal_resize( end_wipe_footer );
 
         /* Erase the main window. */
         werase( main_window );
@@ -2182,7 +2203,8 @@ void* nwipe_gui_status( void* ptr )
         {
             nwipe_gui_title( footer_window, "Wipe finished - press enter to exit. Logged to STDOUT" );
         }
-        wrefresh( footer_window );
+        //wrefresh( footer_window );
+        wnoutrefresh( footer_window );
 
         if( terminate_signal == 1 )
         {
@@ -2191,7 +2213,8 @@ void* nwipe_gui_status( void* ptr )
 
         box( options_window, 0, 0 );
         nwipe_gui_title( options_window, options_title );
-        wrefresh( options_window );
+        //wrefresh( options_window );
+        wnoutrefresh( options_window );
 
         /* Try to get a keystroke. */
         keystroke = getch();
@@ -2420,7 +2443,8 @@ void* nwipe_gui_status( void* ptr )
             box( main_window, 0, 0 );
 
             /* Refresh the main window. */
-            wrefresh( main_window );
+            //wrefresh( main_window );
+            wnoutrefresh( main_window );
 
             /* Update the load average field, but only if we are still wiping */
             if( nwipe_active && terminate_signal != 1 )
@@ -2523,24 +2547,16 @@ void* nwipe_gui_status( void* ptr )
             mvwprintw( stats_window, 0, ( NWIPE_GUI_STATS_W - strlen( stats_title ) ) / 2, "%s", stats_title );
 
             /* Refresh the stats window. */
-            wrefresh( stats_window );
+            //wrefresh( stats_window );
+            
+            /* Refresh internal representation of stats window */
+            wnoutrefresh( stats_window );
+            
+            /* Output all windows to screen */
+            doupdate();
+            
 
         }  // end blank screen if
-
-        if( nwipe_options.logfile[0] == '\0' )
-        {
-
-            // Logging to STDOUT. Flush log.
-
-            def_prog_mode();  // Save the tty modes.
-            endwin();  // End curses mode temporarily.
-
-            /* Flush stdout and disable buffering, otherwise output missed new lines. */
-            fflush( stdout );
-            setbuf( stdout, NULL );
-            reset_prog_mode();  // Return to the previous tty mode stored by def_prog_mode().
-            refresh();  // Do refresh() to restore the screen contents.
-        }
 
         /* Stop this function unnecessarily running the CPU or a CPU core at 100% */
         if( nanosleep( &tim, &tim2 ) < 0 )
@@ -2550,7 +2566,8 @@ void* nwipe_gui_status( void* ptr )
 
         /* Test for a thread cancellation request */
         pthread_testcancel();
-    }
+
+    } /* End of while loop */
 
     if( nwipe_options.logfile[0] == '\0' )
     {
