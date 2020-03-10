@@ -427,10 +427,10 @@ int nwipe_log_sysinfo()
         "processor-frequency",
         ""  // terminates the keyword array. DO NOT REMOVE
     };
-    
+
     char dmidecode_command[] = "dmidecode -s %s";
 
-    char cmd[sizeof(dmidecode_keywords)+sizeof(dmidecode_command)];
+    char cmd[sizeof( dmidecode_keywords ) + sizeof( dmidecode_command )];
 
     unsigned int keywords_idx;
 
