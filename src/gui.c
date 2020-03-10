@@ -2154,21 +2154,21 @@ void* nwipe_gui_status( void* ptr )
         /* This is the first time that we have been called. */
         nwipe_time_start = time( NULL ) - 1;
     }
-    
+
     nwipe_gui_title( footer_window, end_wipe_footer );
 
     loop_control = 1;
 
     while( loop_control )
     {
-       /* IMPORTANT ! Halfdelay(1) causes getch() to pause for 0.1 secs. This is important for two reasons.
-        * 1. Pauses the getch for 0.1 secs so that the screen is only updated max 10 times/sec. Without
-        *    this delay the loop would run hundreds of times per sec maxing out the core.
-        * 2. By keeping the delay below 0.2 seconds, i.e 0.1, it makes the keypress and resizing
-        *    nice and responsive.
-        */
-        halfdelay(1); // Important, don't change this unless you know what you are doing ! Related to getch().
-    
+        /* IMPORTANT ! Halfdelay(1) causes getch() to pause for 0.1 secs. This is important for two reasons.
+         * 1. Pauses the getch for 0.1 secs so that the screen is only updated max 10 times/sec. Without
+         *    this delay the loop would run hundreds of times per sec maxing out the core.
+         * 2. By keeping the delay below 0.2 seconds, i.e 0.1, it makes the keypress and resizing
+         *    nice and responsive.
+         */
+        halfdelay( 1 );  // Important, don't change this unless you know what you are doing ! Related to getch().
+
         keystroke = getch();  // Get user input.
 
         /* Get the current time. */
@@ -2190,19 +2190,19 @@ void* nwipe_gui_status( void* ptr )
 
         /* Erase the footer window */
         werase( footer_window );
-        
+
         /* Only repaint the windows on terminal resize if the user hasn't blanked the screen */
         if( nwipe_gui_blank == 0 )
         {
-            if ( nwipe_active != 0 )
+            if( nwipe_active != 0 )
             {
-                  /* if resizing the terminal during a wipe a specific footer is required */
-                  nwipe_gui_create_all_windows_on_terminal_resize( end_wipe_footer );
+                /* if resizing the terminal during a wipe a specific footer is required */
+                nwipe_gui_create_all_windows_on_terminal_resize( end_wipe_footer );
             }
             else
             {
-                  /* and if the wipes have finished a different footer is required */
-                  nwipe_gui_create_all_windows_on_terminal_resize( wipes_finished_footer );
+                /* and if the wipes have finished a different footer is required */
+                nwipe_gui_create_all_windows_on_terminal_resize( wipes_finished_footer );
             }
         }
 
@@ -2217,20 +2217,20 @@ void* nwipe_gui_status( void* ptr )
 
         /* Each element prints three lines. */
         slots /= 3;
-        
+
         if( nwipe_active == 0 || terminate_signal == 1 )
         {
-           nwipe_gui_title( footer_window, wipes_finished_footer );
-         
-           // Refresh the footer_window ;
-           wnoutrefresh( footer_window );
+            nwipe_gui_title( footer_window, wipes_finished_footer );
+
+            // Refresh the footer_window ;
+            wnoutrefresh( footer_window );
         }
 
         if( terminate_signal == 1 )
         {
             loop_control = 0;
         }
-            
+
         if( keystroke > 0x0a && keystroke < 0x7e && nwipe_gui_blank == 1 )
         {
             /* Show screen */
@@ -2246,10 +2246,10 @@ void* nwipe_gui_status( void* ptr )
             show_panel( stats_panel );
             show_panel( options_panel );
             show_panel( main_panel );
-            
+
             /* reprint the footer */
             nwipe_gui_title( footer_window, end_wipe_footer );
-         
+
             // Refresh the footer_window ;
             wnoutrefresh( footer_window );
 
@@ -2550,7 +2550,8 @@ void* nwipe_gui_status( void* ptr )
 
             /* Print the error count. */
             mvwprintw( stats_window, NWIPE_GUI_STATS_ERRORS_Y, NWIPE_GUI_STATS_ERRORS_X, "Errors:" );
-            mvwprintw( stats_window, NWIPE_GUI_STATS_ERRORS_Y, NWIPE_GUI_STATS_TAB, "%llu", nwipe_misc_thread_data->errors );
+            mvwprintw(
+                stats_window, NWIPE_GUI_STATS_ERRORS_Y, NWIPE_GUI_STATS_TAB, "%llu", nwipe_misc_thread_data->errors );
 
             /* Add a border. */
             box( stats_window, 0, 0 );
