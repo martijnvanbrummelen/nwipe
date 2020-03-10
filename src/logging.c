@@ -395,7 +395,6 @@ int nwipe_log_sysinfo()
 {
     FILE* fp;
     char path[256];
-    char cmd[50];
     int len;
     int r;  // A result buffer.
 
@@ -428,6 +427,11 @@ int nwipe_log_sysinfo()
         "processor-frequency",
         ""  // terminates the keyword array. DO NOT REMOVE
     };
+    
+    char dmidecode_command[] = "dmidecode -s %s";
+
+    char cmd[sizeof(dmidecode_keywords)+sizeof(dmidecode_command)];
+
     unsigned int keywords_idx;
 
     keywords_idx = 0;
@@ -435,7 +439,7 @@ int nwipe_log_sysinfo()
     /* Run the dmidecode command to retrieve each dmidecode keyword, one at a time */
     while( dmidecode_keywords[keywords_idx][0] != 0 )
     {
-        sprintf( cmd, "dmidecode -s %s", &dmidecode_keywords[keywords_idx][0] );
+        sprintf( cmd, dmidecode_command, &dmidecode_keywords[keywords_idx][0] );
         fp = popen( cmd, "r" );
         if( fp == NULL )
         {
