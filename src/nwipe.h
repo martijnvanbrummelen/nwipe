@@ -1,4 +1,4 @@
-/*
+/*.
  *  nwipe.h: The header file of the nwipe program.
  *
  *  Copyright Darik Horn <dajhorn-dban@vanadac.com>.
