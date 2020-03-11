@@ -2622,7 +2622,7 @@ int compute_stats( void* ptr )
          * correct. Maintain a rolling average of throughput. */
         nwipe_update_speedring( &c[i]->speedring, c[i]->round_done, nwipe_time_now );
 
-        if( c[i]->speedring.timestotal > 0 )
+        if( c[i]->speedring.timestotal > 0 && c[i]->wipe_status == 1 )
         {
             /* Update the current average throughput in bytes-per-second. */
             c[i]->throughput = c[i]->speedring.bytestotal / c[i]->speedring.timestotal;
