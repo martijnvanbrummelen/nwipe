@@ -1,6 +1,14 @@
 RELEASE NOTES
 =============
 
+v0.29-pre-release (Pending release May/Jun 2020)
+-----------------------
+Features/fixes in 0.29 that have been committed to the master are tagged with [DONE],
+other items in 0.29 are proposed and yet to be implemented.
+- [DONE] Add auto power off option on completion of wipe ( --autopoweroff ) (Thanks PartialVolume)
+- [DONE] Fix --nowait option the wasn't working.
+
+
 v0.28
 -----------------------
 - Fix premature exit when terminal resized on completion of wipes (Thanks PartialVolume)

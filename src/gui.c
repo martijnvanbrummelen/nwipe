@@ -2317,7 +2317,7 @@ void* nwipe_gui_status( void* ptr )
                 case 0x0a:
 
                     /* Check whether we have finished all wipes, if yes exit while loop if user pressed spacebar or
-                     * return */
+                     * return. */
                     if( !nwipe_active || terminate_signal == 1 )
                     {
                         loop_control = 0;
@@ -2332,6 +2332,15 @@ void* nwipe_gui_status( void* ptr )
             }
 
         } /* keystroke */
+        
+        /* if wipe has completed and user has specified auto poweroff or nowait then we can skip waiting for the user to press return */
+        if( !nwipe_active )
+        {
+            if( nwipe_options.autopoweroff || nwipe_options.nowait )
+            {
+               loop_control = 0;
+            }
+        }
 
         /* Update screen if not blanked. */
         if( nwipe_gui_blank == 0 )

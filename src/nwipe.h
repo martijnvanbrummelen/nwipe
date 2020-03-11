@@ -25,6 +25,8 @@
 
 /* Function prototypes */
 int cleanup();
+void check_for_autopoweroff( void);
+void* signal_hand( void* );
 
 #ifndef _LARGEFILE64_SOURCE
 #define _LARGEFILE64_SOURCE
@@ -110,7 +112,5 @@ typedef unsigned char u8;
 
 /* This is required for ioctl FDFLUSH. */
 #include <linux/fd.h>
-
-void* signal_hand( void* );
 
 #endif /* NWIPE_H_ */

@@ -19,6 +19,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  */
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE
+#endif
+
 #ifndef _POSIX_SOURCE
 #define _POSIX_SOURCE
 #endif
@@ -439,13 +443,9 @@ int main( int argc, char** argv )
         sleep( 2 ); /* DO NOT REMOVE ! Stops the routine hogging CPU cycles */
     }
 
-    if( terminate_signal == 1 )
+    if( terminate_signal != 1 )
     {
-        nwipe_log( NWIPE_LOG_INFO, "Program interrupted" );
-    }
-    else
-    {
-        if( !nwipe_options.nowait )
+        if( !nwipe_options.nowait && !nwipe_options.autopoweroff )
         {
             do
             {
@@ -453,6 +453,7 @@ int main( int argc, char** argv )
             } while( terminate_signal != 1 );
         }
     }
+    
     nwipe_log( NWIPE_LOG_INFO, "Exit in progress" );
 
     /* Send a REQUEST for the wipe threads to be cancelled */
@@ -534,6 +535,8 @@ int main( int argc, char** argv )
     }
 
     cleanup();
+    
+    check_for_autopoweroff();
 
     /* Exit. */
     return return_status;
@@ -687,4 +690,22 @@ int cleanup()
     /* TODO: All other cleanup required */
 
     return 0;
+}
+void check_for_autopoweroff( void )
+{
+    char cmd[]="shutdown -P +1 \"System going down in one minute\"";
+    FILE* fp;
+    int r;  // A result buffer.
+    
+    /* User request auto power down ? */
+    if( nwipe_options.autopoweroff == 1 )
+    {
+        fp = popen( cmd, "r" );
+        if( fp == NULL )
+        {
+            nwipe_log( NWIPE_LOG_INFO, "Failed to autopoweroff to %s", cmd );
+            return;
+        }
+        r = pclose( fp );
+    }
 }

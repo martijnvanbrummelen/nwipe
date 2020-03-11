@@ -59,6 +59,9 @@ int nwipe_options_parse( int argc, char** argv )
     static struct option nwipe_options_long[] = {
         /* Set when the user wants to wipe without a confirmation prompt. */
         {"autonuke", no_argument, 0, 0},
+        
+        /* Set when the user wants to have the system powerdown on completion of wipe. */
+        {"autopoweroff", no_argument, 0, 0},
 
         /* A GNU standard option. Corresponds to the 'h' short option. */
         {"help", no_argument, 0, 'h'},
@@ -104,6 +107,7 @@ int nwipe_options_parse( int argc, char** argv )
 
     /* Set default options. */
     nwipe_options.autonuke = 0;
+    nwipe_options.autopoweroff = 0;
     nwipe_options.method = &nwipe_dodshort;
     nwipe_options.prng = &nwipe_twister;
     nwipe_options.rounds = 1;
@@ -140,6 +144,12 @@ int nwipe_options_parse( int argc, char** argv )
                 if( strcmp( nwipe_options_long[i].name, "autonuke" ) == 0 )
                 {
                     nwipe_options.autonuke = 1;
+                    break;
+                }
+                
+                if( strcmp( nwipe_options_long[i].name, "autopoweroff" ) == 0 )
+                {
+                    nwipe_options.autopoweroff = 1;
                     break;
                 }
 
@@ -378,6 +388,15 @@ void nwipe_options_log( void )
     {
         nwipe_log( NWIPE_LOG_NOTICE, "  autonuke = %i (off)", nwipe_options.autonuke );
     }
+    
+    if( nwipe_options.autopoweroff )
+    {
+        nwipe_log( NWIPE_LOG_NOTICE, "  autopoweroff = %i (on)", nwipe_options.autopoweroff );
+    }
+    else
+    {
+        nwipe_log( NWIPE_LOG_NOTICE, "  autopoweroff = %i (off)", nwipe_options.autopoweroff );
+    }
 
     if( nwipe_options.noblank )
     {
@@ -440,6 +459,9 @@ void display_help()
     puts( "                          starts wiping all devices immediately. If devices have" );
     puts( "                          been specified, starts wiping only those specified" );
     puts( "                          devices immediately.\n" );
+    puts( "      --autopoweroff      Power off system on completion of wipe delayed for" );
+    puts( "                          for one minute. During this one minute delay you can" );
+    puts( "                          abort the shutdown by typing sudo shutdown -c\n" );
     puts( "      --sync=NUM          Will perform a sync after NUM writes (default: 0)" );
     puts( "                          0 - fdatasync after the disk is completely written" );
     puts( "                          1 - fdatasync after every write" );
