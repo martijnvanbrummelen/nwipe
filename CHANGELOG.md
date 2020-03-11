@@ -5,9 +5,9 @@ v0.28
 -----------------------
 - Fix premature exit when terminal resized on completion of wipes (Thanks PartialVolume)
 - Fix GUI when terminal is resized, currently not handled correctly causing missing or incorrectly sized ncurses windows/panels (Thanks PartialVolume)
-- Fix GUI screen flicker under various situations. [#200] Fixes #115 (Thanks PartialVolume)
+- Fix GUI screen flicker under various situations. [#200](https://github.com/martijnvanbrummelen/nwipe/pull/200) Fixes [#115](https://github.com/martijnvanbrummelen/nwipe/issues/115) (Thanks PartialVolume)
 - Fix responsivness of screen during wipe when resized. Info is updated every 10th/sec. Key presses are more responsive. (Thanks PartialVolume)
-- Fix compiler warning regarding buffer overflow. Fixes #202 (Thanks PartialVolume)
+- Fix compiler warning regarding buffer overflow. Fixes [#202](https://github.com/martijnvanbrummelen/nwipe/issues/202) (Thanks PartialVolume)
 - Fix Man page (Thanks martijnvanbrummelen)
 
 v0.27
