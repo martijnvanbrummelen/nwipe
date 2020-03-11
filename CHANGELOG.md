@@ -9,6 +9,7 @@ v0.28
 - Fix responsivness of screen during wipe when resized. Info is updated every 10th/sec. Key presses are more responsive. (Thanks PartialVolume)
 - Fix compiler warning regarding buffer overflow. Fixes [#202](https://github.com/martijnvanbrummelen/nwipe/issues/202) (Thanks PartialVolume)
 - Fix Man page (Thanks martijnvanbrummelen)
+- Fix individual device throughput. On completion of a wipe instead of the throughput calculation stopping for a completed wipe, it would continue to calculate resulting in a particular drives throughtput slowly dropping until eventually it reached zero. The overall throughput was not affected. (Thanks PartialVolume)
 
 v0.27
 -----------------------
