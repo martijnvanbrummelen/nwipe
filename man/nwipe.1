@@ -1,4 +1,4 @@
-.TH NWIPE "1" "March 2020" "nwipe version 0.28" "User Commands"
+.TH NWIPE "1" "March 2020" "nwipe version 0.29" "User Commands"
 .SH NAME
 nwipe \- securely erase disks
 .SH SYNOPSIS
@@ -33,6 +33,10 @@ Prints a help summary
 If no devices have been specified on the command line, starts wiping all
 devices immediately. If devices have been specified, starts wiping only
 those specified devices immediately.
+.TP
+\fB\-\-autopoweroff\fR
+Power off system on completion of wipe delayed for for one minute. During
+this one minute delay you can abort the shutdown by typing sudo shutdown -c
 .TP
 \fB\-\-sync\fR
 Open devices in sync mode
