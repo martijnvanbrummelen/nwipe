@@ -453,7 +453,7 @@ int main( int argc, char** argv )
             } while( terminate_signal != 1 );
         }
     }
-    
+
     nwipe_log( NWIPE_LOG_INFO, "Exit in progress" );
 
     /* Send a REQUEST for the wipe threads to be cancelled */
@@ -535,7 +535,7 @@ int main( int argc, char** argv )
     }
 
     cleanup();
-    
+
     check_for_autopoweroff();
 
     /* Exit. */
@@ -693,10 +693,10 @@ int cleanup()
 }
 void check_for_autopoweroff( void )
 {
-    char cmd[]="shutdown -P +1 \"System going down in one minute\"";
+    char cmd[] = "shutdown -P +1 \"System going down in one minute\"";
     FILE* fp;
     int r;  // A result buffer.
-    
+
     /* User request auto power down ? */
     if( nwipe_options.autopoweroff == 1 )
     {

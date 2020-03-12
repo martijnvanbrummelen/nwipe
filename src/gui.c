@@ -2332,13 +2332,14 @@ void* nwipe_gui_status( void* ptr )
             }
 
         } /* keystroke */
-        
-        /* if wipe has completed and user has specified auto poweroff or nowait then we can skip waiting for the user to press return */
+
+        /* if wipe has completed and user has specified auto poweroff or nowait then we can skip waiting for the user to
+         * press return */
         if( !nwipe_active )
         {
             if( nwipe_options.autopoweroff || nwipe_options.nowait )
             {
-               loop_control = 0;
+                loop_control = 0;
             }
         }
 

@@ -59,7 +59,7 @@ int nwipe_options_parse( int argc, char** argv )
     static struct option nwipe_options_long[] = {
         /* Set when the user wants to wipe without a confirmation prompt. */
         {"autonuke", no_argument, 0, 0},
-        
+
         /* Set when the user wants to have the system powerdown on completion of wipe. */
         {"autopoweroff", no_argument, 0, 0},
 
@@ -146,7 +146,7 @@ int nwipe_options_parse( int argc, char** argv )
                     nwipe_options.autonuke = 1;
                     break;
                 }
-                
+
                 if( strcmp( nwipe_options_long[i].name, "autopoweroff" ) == 0 )
                 {
                     nwipe_options.autopoweroff = 1;
@@ -388,7 +388,7 @@ void nwipe_options_log( void )
     {
         nwipe_log( NWIPE_LOG_NOTICE, "  autonuke = %i (off)", nwipe_options.autonuke );
     }
-    
+
     if( nwipe_options.autopoweroff )
     {
         nwipe_log( NWIPE_LOG_NOTICE, "  autopoweroff = %i (on)", nwipe_options.autopoweroff );

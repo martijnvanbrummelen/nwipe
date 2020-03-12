@@ -25,7 +25,7 @@
 
 /* Function prototypes */
 int cleanup();
-void check_for_autopoweroff( void);
+void check_for_autopoweroff( void );
 void* signal_hand( void* );
 
 #ifndef _LARGEFILE64_SOURCE
