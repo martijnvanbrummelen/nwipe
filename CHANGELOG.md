@@ -1,12 +1,14 @@
 RELEASE NOTES
 =============
 
-v0.29-pre-release (Pending release May/Jun 2020)
+v0.29 release candidate, proposed release May/Jun 2020.
 -----------------------
 Features/fixes in 0.29 that have been committed to the master are tagged with [DONE],
 other items in 0.29 are proposed and yet to be implemented.
 - [DONE] Add auto power off option on completion of wipe ( --autopoweroff ) (Thanks PartialVolume)
-- [DONE] Fix --nowait option the wasn't working.
+- [DONE] Fix --nowait option that wasn't working. (Thanks PartialVolume)
+- Add enhancement fibre channel wiping of non 512 bytes/sector drives such as 524/528 bytes/sector etc (work in progress by PartialVolume) (Work in progress)
+- HPA/DCO detection and adjustment to wipe full drive. (work in progress)
 
 
 v0.28
