@@ -60,6 +60,7 @@ typedef struct
     nwipe_prng_t* prng;  // The pseudo random number generator implementation.
     int rounds;  // The number of times that the wipe method should be called.
     int sync;  // A flag to indicate whether and how often writes should be sync'd.
+    int verbose;  // Make log more verbose
     nwipe_verify_t verify;  // A flag to indicate whether writes should be verified.
 } nwipe_options_t;
 

@@ -53,7 +53,7 @@ int nwipe_options_parse( int argc, char** argv )
     int i;
 
     /* The list of acceptable short options. */
-    char nwipe_options_short[] = "Vhl:m:p:r:e:";
+    char nwipe_options_short[] = "Vvhl:m:p:r:e:";
 
     /* The list of acceptable long options. */
     static struct option nwipe_options_long[] = {
@@ -100,6 +100,9 @@ int nwipe_options_parse( int argc, char** argv )
         {"verify", required_argument, 0, 0},
 
         /* Display program version. */
+        {"verbose", no_argument, 0, 'v'},
+
+        /* Display program version. */
         {"version", no_argument, 0, 'V'},
 
         /* Requisite padding for getopt(). */
@@ -116,6 +119,7 @@ int nwipe_options_parse( int argc, char** argv )
     nwipe_options.nosignals = 0;
     nwipe_options.nogui = 0;
     nwipe_options.sync = 100000;
+    nwipe_options.verbose = 0;
     nwipe_options.verify = NWIPE_VERIFY_LAST;
     memset( nwipe_options.logfile, '\0', sizeof( nwipe_options.logfile ) );
 
@@ -175,6 +179,12 @@ int nwipe_options_parse( int argc, char** argv )
                 {
                     nwipe_options.nogui = 1;
                     nwipe_options.nowait = 1;
+                    break;
+                }
+
+                if( strcmp( nwipe_options_long[i].name, "verbose" ) == 0 )
+                {
+                    nwipe_options.verbose = 1;
                     break;
                 }
 
@@ -353,6 +363,11 @@ int nwipe_options_parse( int argc, char** argv )
 
                 break;
 
+            case 'v': /* verbose */
+
+                nwipe_options.verbose = 1;
+                break;
+
             case 'V': /* Version option. */
 
                 printf( "%s version %s\n", program_name, version_string );
@@ -454,6 +469,7 @@ void display_help()
     /* Limit line length to a maximum of 80 characters so it looks good in 80x25 terminals i.e shredos */
     /*  ___12345678901234567890123456789012345678901234567890123456789012345678901234567890< Do not exceed */
     puts( "  -V, --version           Prints the version number\n" );
+    puts( "  -v, --verbose           Prints more messages to the log\n" );
     puts( "  -h, --help              Prints this help\n" );
     puts( "      --autonuke          If no devices have been specified on the command line," );
     puts( "                          starts wiping all devices immediately. If devices have" );

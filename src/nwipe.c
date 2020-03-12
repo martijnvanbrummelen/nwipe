@@ -462,8 +462,11 @@ int main( int argc, char** argv )
 
         if( c2[i]->thread )
         {
-            nwipe_log( NWIPE_LOG_INFO, "Requesting wipe thread cancellation for %s", c2[i]->device_name );
-            nwipe_log( NWIPE_LOG_INFO, "Please wait.." );
+            if( nwipe_options.verbose )
+            {
+                nwipe_log( NWIPE_LOG_INFO, "Requesting wipe thread cancellation for %s", c2[i]->device_name );
+                nwipe_log( NWIPE_LOG_INFO, "Please wait.." );
+            }
             pthread_cancel( c2[i]->thread );
         }
     }
@@ -471,7 +474,10 @@ int main( int argc, char** argv )
     /* Kill the GUI thread */
     if( nwipe_gui_thread )
     {
-        nwipe_log( NWIPE_LOG_INFO, "Cancelling the GUI thread." );
+        if( nwipe_options.verbose )
+        {
+            nwipe_log( NWIPE_LOG_INFO, "Cancelling the GUI thread." );
+        }
 
         /* We don't want to use pthread_cancel as our GUI thread is aware of the control-c
          *  signal and will exit itself we just join the GUI thread and wait for confirmation
@@ -481,7 +487,10 @@ int main( int argc, char** argv )
         {
             nwipe_log( NWIPE_LOG_WARNING, "main()>pthread_join():Error when waiting for GUI thread to cancel." );
         }
-        nwipe_log( NWIPE_LOG_INFO, "GUI compute_stats thread has been cancelled" );
+        if( nwipe_options.verbose )
+        {
+            nwipe_log( NWIPE_LOG_INFO, "GUI compute_stats thread has been cancelled" );
+        }
     }
 
     /* Release the gui. */
@@ -503,7 +512,12 @@ int main( int argc, char** argv )
                 nwipe_log( NWIPE_LOG_WARNING, "main()>pthread_join():Error when waiting for wipe thread to cancel." );
             }
             c2[i]->thread = 0; /* Zero the thread so we know it's been cancelled */
-            nwipe_log( NWIPE_LOG_INFO, "Wipe thread for device %s has been cancelled", c2[i]->device_name );
+
+            if( nwipe_options.verbose )
+            {
+                nwipe_log( NWIPE_LOG_INFO, "Wipe thread for device %s has been cancelled", c2[i]->device_name );
+            }
+
             /* Close the device file descriptor. */
             close( c2[i]->device_fd );
         }
