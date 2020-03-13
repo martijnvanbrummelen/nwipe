@@ -9,6 +9,8 @@ other items in 0.29 are proposed and yet to be implemented.
 - [DONE] Fix --nowait option that wasn't working. (Thanks PartialVolume)
 - [DONE] Add verbose option. -v, --verbose.
 - [DONE] Add a spinner to the GUI for each drive being wiped. When nwipe is syncing the percentage completion pauses, having a spinner gives a clear indication that the wipe is still running. Each devices spinner disappears on completion of a given devices wipe.
+- [DONE] Make log messages, especially the ones with the tag 'notice' succinct and less than 80 characters including the timestamp. This is of more importance when nwipe is used on a 80x30 terminal (ALT-F2, Shredos etc) but generally makes the logs more readable. While doing this all information was still retained.
+
 - Add enhancement fibre channel wiping of non 512 bytes/sector drives such as 524/528 bytes/sector etc (work in progress by PartialVolume)
 - HPA/DCO detection and adjustment to wipe full drive. (work in progress by PartialVolume)
 
