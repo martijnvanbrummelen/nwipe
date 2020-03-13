@@ -80,7 +80,7 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
     /* Print the date. The rc script uses the same format. */
     chars_written = snprintf( message_buffer,
                               MAX_LOG_LINE_CHARS,
-                              "[%i/%02i/%02i %02i:%02i:%02i] nwipe: ",
+                              "[%i/%02i/%02i %02i:%02i:%02i] ",
                               1900 + p->tm_year,
                               1 + p->tm_mon,
                               p->tm_mday,
@@ -443,7 +443,7 @@ int nwipe_log_sysinfo()
         fp = popen( cmd, "r" );
         if( fp == NULL )
         {
-            nwipe_log( NWIPE_LOG_INFO, "nwipe_log_sysinfo: Failed to create stream to %s", cmd );
+            nwipe_log( NWIPE_LOG_WARNING, "nwipe_log_sysinfo: Failed to create stream to %s", cmd );
             return 1;
         }
         /* Read the output a line at a time - output it. */
@@ -455,13 +455,13 @@ int nwipe_log_sysinfo()
             {
                 path[len - 1] = 0;
             }
-            nwipe_log( NWIPE_LOG_INFO, "%s = %s", &dmidecode_keywords[keywords_idx][0], path );
+            nwipe_log( NWIPE_LOG_NOTICE, "%s = %s", &dmidecode_keywords[keywords_idx][0], path );
         }
         /* close */
         r = pclose( fp );
         if( r > 0 )
         {
-            nwipe_log( NWIPE_LOG_INFO,
+            nwipe_log( NWIPE_LOG_WARNING,
                        "nwipe_log_sysinfo(): dmidecode failed, \"%s\" exit status = %u",
                        cmd,
                        WEXITSTATUS( r ) );

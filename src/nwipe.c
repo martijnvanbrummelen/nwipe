@@ -317,15 +317,8 @@ int main( int argc, char** argv )
         /* Do sector size and block size checking. */
         if( ioctl( c2[i]->device_fd, BLKSSZGET, &c2[i]->device_sector_size ) == 0 )
         {
-            nwipe_log(
-                NWIPE_LOG_INFO, "Device '%s' has sector size %i.", c2[i]->device_name, c2[i]->device_sector_size );
 
-            if( ioctl( c2[i]->device_fd, BLKBSZGET, &c2[i]->device_block_size ) == 0 )
-            {
-                nwipe_log(
-                    NWIPE_LOG_INFO, "Device '%s' has block size %i.", c2[i]->device_name, c2[i]->device_block_size );
-            }
-            else
+            if( ioctl( c2[i]->device_fd, BLKBSZGET, &c2[i]->device_block_size ) != 0 )
             {
                 nwipe_log( NWIPE_LOG_WARNING, "Device '%s' failed BLKBSZGET ioctl.", c2[i]->device_name );
                 c2[i]->device_block_size = 0;
@@ -386,13 +379,23 @@ int main( int argc, char** argv )
 
         if( c2[i]->device_size == 0 )
         {
-            nwipe_log( NWIPE_LOG_ERROR, "Device '%s' is size %llu.", c2[i]->device_name, c2[i]->device_size );
+            nwipe_log( NWIPE_LOG_ERROR,
+                       "%s, sect/blk/dev %llu/%i/%i",
+                       c2[i]->device_name,
+                       c2[i]->device_sector_size,
+                       c2[i]->device_block_size,
+                       c2[i]->device_size );
             nwipe_error++;
             continue;
         }
         else
         {
-            nwipe_log( NWIPE_LOG_INFO, "Device '%s' is size %llu.", c2[i]->device_name, c2[i]->device_size );
+            nwipe_log( NWIPE_LOG_NOTICE,
+                       "%s, sect/blk/dev %llu/%i/%i",
+                       c2[i]->device_name,
+                       c2[i]->device_sector_size,
+                       c2[i]->device_block_size,
+                       c2[i]->device_size );
         }
 
         /* Fork a child process. */
