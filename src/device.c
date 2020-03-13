@@ -197,13 +197,13 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
                   next_device->device_size_text,
                   next_device->device_model );
     }
-    
-        nwipe_log( NWIPE_LOG_NOTICE,
-                 "Found %s, %s, %s, S/N=%s",
-                  next_device->device_name,
-                  next_device->device_model,
-                  next_device->device_size_text,
-                  next_device->device_serial_no );
+
+    nwipe_log( NWIPE_LOG_NOTICE,
+               "Found %s, %s, %s, S/N=%s",
+               next_device->device_name,
+               next_device->device_model,
+               next_device->device_size_text,
+               next_device->device_serial_no );
 
     ( *c )[dcount] = next_device;
     return 1;

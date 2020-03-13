@@ -703,21 +703,16 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
     /* Initialize the working round counter. */
     c->round_working = 0;
 
-    nwipe_log( NWIPE_LOG_NOTICE,
-               "Invoking method '%s' on %s",
-               nwipe_method_label( nwipe_options.method ),
-               c->device_name );
+    nwipe_log(
+        NWIPE_LOG_NOTICE, "Invoking method '%s' on %s", nwipe_method_label( nwipe_options.method ), c->device_name );
 
     while( c->round_working < c->round_count )
     {
         /* Increment the round counter. */
         c->round_working += 1;
 
-        nwipe_log( NWIPE_LOG_NOTICE,
-                   "Starting round %i of %i on %s",
-                   c->round_working,
-                   c->round_count,
-                   c->device_name );
+        nwipe_log(
+            NWIPE_LOG_NOTICE, "Starting round %i of %i on %s", c->round_working, c->round_count, c->device_name );
 
         /* Initialize the working pass counter. */
         c->pass_working = 0;
@@ -884,11 +879,8 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 
         } /* for passes */
 
-        nwipe_log( NWIPE_LOG_NOTICE,
-                   "Finished round %i of %i on %s",
-                   c->round_working,
-                   c->round_count,
-                   c->device_name );
+        nwipe_log(
+            NWIPE_LOG_NOTICE, "Finished round %i of %i on %s", c->round_working, c->round_count, c->device_name );
 
     } /* while rounds */
 
