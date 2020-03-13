@@ -136,8 +136,8 @@ If you already have nwipe installed from the repository, you need to take care w
 
 Note the ./, that means only look in the current directory for nwipe. if you forgot to type ./ the computer would run the old 0.24 nwipe.
 
-Once you have copied the script below into a file called  buildnwipe, you need to give the file execute permissions `chmod +x buildnwipe` before you can run it.
-
+Once you have copied the script below into a file called  buildnwipe, you need to give the file execute permissions `chmod +x buildnwipe` before you can run it. [Download script](
+https://drive.google.com/file/d/1-kKgvCvKYYuSH_UUBKrLwsI0Xf7fckGg/view?usp=sharing)
 ```
 #!/bin/bash
 cd "$HOME"
