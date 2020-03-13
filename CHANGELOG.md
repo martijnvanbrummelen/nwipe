@@ -8,6 +8,7 @@ other items in 0.29 are proposed and yet to be implemented.
 - [DONE] Add auto power off option on completion of wipe ( --autopoweroff ) (Thanks PartialVolume)
 - [DONE] Fix --nowait option that wasn't working. (Thanks PartialVolume)
 - [DONE] Add verbose option. -v, --verbose.
+- [DONE] Add a spinner to the GUI for each drive being wiped. When nwipe is syncing the percentage completion pauses, having a spinner gives a clear indication that the wipe is still running. Each devices spinner disappears on completion of a given devices wipe.
 - Add enhancement fibre channel wiping of non 512 bytes/sector drives such as 524/528 bytes/sector etc (work in progress by PartialVolume)
 - HPA/DCO detection and adjustment to wipe full drive. (work in progress by PartialVolume)
 

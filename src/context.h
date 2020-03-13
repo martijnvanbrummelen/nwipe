@@ -118,6 +118,8 @@ typedef struct nwipe_context_t_
     u64 throughput;  // Average throughput in bytes per second.
     u64 verify_errors;  // The number of verification errors across all passes.
     int wipe_status;  // Wipe finished = 0, wipe in progress = 1, wipe yet to start = -1.
+    int spinner_idx;  // Index into the spinner character array
+    char spinner_character[1];  // The current spinner character
     /*
      * Identity contains the raw serial number of the drive
      * (where applicable), however, for use within nwipe use the
