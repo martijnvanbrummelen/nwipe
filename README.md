@@ -123,6 +123,37 @@ with all the normal optimisations, using:
 ```
 ./configure --prefix=/usr && make && make install
 ```
+### Automating the download and compilation process
+
+Here's a script that will do just that!. It will create a directory in your home folder called 'nwipe_master'. It installs all the libraries required to compile the software (build-essential) and all the libraries that nwipe requires (libparted etc). It downloads the latest master copy of nwipe from github. It then compiles the software and then runs the latest nwipe. It doesn't write over the version of nwipe that's installed in the repository (If you had nwipe already installed). To run the latest master version of nwipe manually you would run it like this `sudo ~/nwipe_master/nwipe/src/nwipe`
+
+You can run the script multiple times, the first time it's run it will install all the libraries, subsequent times it will just say the the libraries are upto date. As it always downloads a fresh copy of the nwipe master from Github, you can always stay up to date. Just run it to get the latest version of nwipe. It takes all of 11 seconds on my I7.
+
+If you already have nwipe installed from the repository, you need to take care which version you are running. If you typed `nwipe` from any directory it will always run the original repository copy of nwipe. To run the latest nwipe you have to explicitly tell it where the new copy is, e.g in the directory `~/nwipe_master/nwipe/src` . That's why you would run it by typing `sudo ~/nwipe_master/nwipe/src/nwipe` alternatively you could cd to the directory and run it like this:
+
+> cd ~/nwipe_master/nwipe/src
+./nwipe
+
+Note the ./, that means only look in the current directory for nwipe. if you forgot to type ./ the computer would run the old 0.24 nwipe.
+
+Once you have copied the script below into a file called  buildnwipe, you need to give the file execute permissions `chmod +x buildnwipe` before you can run it.
+
+```
+#!/bin/bash
+cd "$HOME"
+nwipe_directory="nwipe_master"
+mkdir $nwipe_directory
+cd $nwipe_directory
+sudo apt install build-essential pkg-config automake libncurses5-dev autotools-dev libparted-dev dmidecode git
+rm -rf nwipe
+git clone https://github.com/martijnvanbrummelen/nwipe.git
+cd "nwipe"
+./init.sh
+./configure
+make
+cd "src"
+sudo ./nwipe
+```
 
 ## Bugs
 
