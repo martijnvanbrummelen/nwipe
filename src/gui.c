@@ -2089,6 +2089,9 @@ void* nwipe_gui_status( void* ptr )
     /* The throughput format pointer. */
     char* nwipe_format;
 
+    /* Spinner character */
+    char spinner_string[2];
+
     /* We count time from when this function is first called. */
     static time_t nwipe_time_start = 0;
 
@@ -2449,6 +2452,20 @@ void* nwipe_gui_status( void* ptr )
 
                 /* Insert whitespace. */
                 yy += 1;
+
+                /* Increment the next spinner character for this context if the thread is active */
+                if( c[i]->wipe_status == 1 )
+                {
+                    spinner( c, i );
+                    spinner_string[0] = c[i]->spinner_character[0];
+                }
+                else
+                {
+                    /* if the wipe thread is no longer active, replace the spinner with a space */
+                    spinner_string[0] = ' ';
+                }
+                spinner_string[1] = 0;
+                wprintw( main_window, " %s ", spinner_string );
             }
 
             if( offset > 0 )
@@ -2703,4 +2720,31 @@ void nwipe_update_speedring( nwipe_speedring_t* speedring, u64 speedring_bytes, 
     {
         speedring->position = 0;
     }
+}
+
+int spinner( nwipe_context_t** ptr, int device_idx )
+{
+    nwipe_context_t** c;
+
+    c = ptr;
+
+    /* The spinner characters |/-\|/-\ */
+    char sc[9] = "|/-\\|/-\\/";
+
+    /* check sanity of index */
+    if( c[device_idx]->spinner_idx < 0 || c[device_idx]->spinner_idx > 7 )
+    {
+        return 1;
+    }
+
+    c[device_idx]->spinner_character[0] = sc[c[device_idx]->spinner_idx];
+
+    c[device_idx]->spinner_idx++;
+
+    if( c[device_idx]->spinner_idx > 7 )
+    {
+        c[device_idx]->spinner_idx = 0;
+    }
+
+    return 0;
 }
