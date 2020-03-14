@@ -132,8 +132,10 @@ You can run the script multiple times, the first time it's run it will install a
 
 If you already have nwipe installed from the repository, you need to take care which version you are running. If you typed `nwipe` from any directory it will always run the original repository copy of nwipe. To run the latest nwipe you have to explicitly tell it where the new copy is, e.g in the directory `~/nwipe_master/nwipe/src` . That's why you would run it by typing `sudo ~/nwipe_master/nwipe/src/nwipe` alternatively you could cd to the directory and run it like this:
 
-> cd ~/nwipe_master/nwipe/src
->./nwipe
+```
+cd ~/nwipe_master/nwipe/src
+./nwipe
+```
 
 Note the ./, that means only look in the current directory for nwipe. if you forgot to type ./ the computer would run the old 0.24 nwipe.
 
