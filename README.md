@@ -66,7 +66,7 @@ yum install ncurses-devel
 yum install parted-devel
 yum install dmidecode
 ```
-Note. dmidecode is optional, it provides SMBIOS/DMI host data to stdout or the log file.
+Note. dmidecode is optional, it provides SMBIOS/DMI host data to stdout or the log file. If you want a quick and easy way to keep your copy of nwipe running the latest master release of nwipe see this section [automating the download and compilation](https://github.com/martijnvanbrummelen/nwipe#automating-the-download-and-compilation-process)
 
 ### Compilation
 
