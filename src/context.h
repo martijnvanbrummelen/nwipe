@@ -120,6 +120,9 @@ typedef struct nwipe_context_t_
     int wipe_status;  // Wipe finished = 0, wipe in progress = 1, wipe yet to start = -1.
     int spinner_idx;  // Index into the spinner character array
     char spinner_character[1];  // The current spinner character
+    double duration;  // Duration of the wipe in seconds
+    time_t start_time;  // Start time of wipe
+    time_t end_time;  // End time of wipe
     /*
      * Identity contains the raw serial number of the drive
      * (where applicable), however, for use within nwipe use the

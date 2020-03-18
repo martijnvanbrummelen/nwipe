@@ -123,6 +123,9 @@ void* nwipe_zero( void* ptr )
     nwipe_context_t* c;
     c = (nwipe_context_t*) ptr;
 
+    /* get current time at the start of the wipe  */
+    time( &c->start_time );
+
     /* set wipe in progress flag for GUI */
     c->wipe_status = 1;
 
@@ -138,6 +141,9 @@ void* nwipe_zero( void* ptr )
     /* Finished. Set the wipe_status flag so that the GUI knows */
     c->wipe_status = 0;
 
+    /* get current time at the end of the wipe  */
+    time( &c->end_time );
+
     return NULL;
 } /* nwipe_zero */
 
@@ -149,6 +155,9 @@ void* nwipe_verify( void* ptr )
 
     nwipe_context_t* c;
     c = (nwipe_context_t*) ptr;
+
+    /* get current time at the start of the wipe  */
+    time( &c->start_time );
 
     /* set wipe in progress flag for GUI */
     c->wipe_status = 1;
@@ -162,6 +171,9 @@ void* nwipe_verify( void* ptr )
     /* Finished. Set the wipe_status flag so that the GUI knows */
     c->wipe_status = 0;
 
+    /* get current time at the end of the wipe  */
+    time( &c->end_time );
+
     return NULL;
 } /* nwipe_verify */
 
@@ -174,6 +186,9 @@ void* nwipe_dod522022m( void* ptr )
 
     nwipe_context_t* c;
     c = (nwipe_context_t*) ptr;
+
+    /* get current time at the start of the wipe  */
+    time( &c->start_time );
 
     /* set wipe in progress flag for GUI */
     c->wipe_status = 1;
@@ -230,6 +245,9 @@ void* nwipe_dod522022m( void* ptr )
     /* Finished. Set the wipe_status flag so that the GUI knows */
     c->wipe_status = 0;
 
+    /* get current time at the end of the wipe  */
+    time( &c->end_time );
+
     return NULL;
 } /* nwipe_dod522022m */
 
@@ -243,6 +261,9 @@ void* nwipe_dodshort( void* ptr )
 
     nwipe_context_t* c;
     c = (nwipe_context_t*) ptr;
+
+    /* get current time at the start of the wipe  */
+    time( &c->start_time );
 
     /* set wipe in progress flag for GUI */
     c->wipe_status = 1;
@@ -292,6 +313,9 @@ void* nwipe_dodshort( void* ptr )
     /* Finished. Set the wipe_status flag so that the GUI knows */
     c->wipe_status = 0;
 
+    /* get current time at the end of the wipe  */
+    time( &c->end_time );
+
     return NULL;
 } /* nwipe_dodshort */
 
@@ -304,6 +328,9 @@ void* nwipe_gutmann( void* ptr )
 
     nwipe_context_t* c;
     c = (nwipe_context_t*) ptr;
+
+    /* get current time at the start of the wipe  */
+    time( &c->start_time );
 
     /* set wipe in progress flag for GUI */
     c->wipe_status = 1;
@@ -426,6 +453,9 @@ void* nwipe_gutmann( void* ptr )
     /* Finished. Set the wipe_status flag so that the GUI knows */
     c->wipe_status = 0;
 
+    /* get current time at the end of the wipe  */
+    time( &c->end_time );
+
     return NULL;
 } /* nwipe_gutmann */
 
@@ -442,6 +472,9 @@ void* nwipe_ops2( void* ptr )
 
     nwipe_context_t* c;
     c = (nwipe_context_t*) ptr;
+
+    /* get current time at the start of the wipe  */
+    time( &c->start_time );
 
     /* set wipe in progress flag for GUI */
     c->wipe_status = 1;
@@ -588,12 +621,19 @@ void* nwipe_ops2( void* ptr )
     /* Finished. Set the wipe_status flag so that the GUI knows */
     c->wipe_status = 0;
 
+    /* get current time at the end of the wipe  */
+    time( &c->end_time );
+
     return NULL;
 } /* nwipe_ops2 */
 
 void* nwipe_is5enh( void* ptr )
 {
     nwipe_context_t* c = (nwipe_context_t*) ptr;
+
+    /* get current time at the start of the wipe  */
+    time( &c->start_time );
+
     c->wipe_status = 1;
 
     char is5enh[3] = {'\x00', '\xFF', '\x00'};
@@ -604,6 +644,10 @@ void* nwipe_is5enh( void* ptr )
     c->result = nwipe_runmethod( c, patterns );
 
     c->wipe_status = 0;
+
+    /* get current time at the end of the wipe  */
+    time( &c->end_time );
+
     return NULL;
 } /* nwipe_is5enh */
 
@@ -617,6 +661,9 @@ void* nwipe_random( void* ptr )
     nwipe_context_t* c;
     c = (nwipe_context_t*) ptr;
 
+    /* get current time at the start of the wipe  */
+    time( &c->start_time );
+
     /* set wipe in progress flag for GUI */
     c->wipe_status = 1;
 
@@ -628,6 +675,9 @@ void* nwipe_random( void* ptr )
 
     /* Finished. Set the wipe_status flag so that the GUI knows */
     c->wipe_status = 0;
+
+    /* get current time at the end of the wipe  */
+    time( &c->end_time );
 
     return NULL;
 } /* nwipe_random */
@@ -879,8 +929,19 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 
         } /* for passes */
 
-        nwipe_log(
-            NWIPE_LOG_NOTICE, "Finished round %i of %i on %s", c->round_working, c->round_count, c->device_name );
+        if( c->round_working < c->round_count )
+        {
+            nwipe_log(
+                NWIPE_LOG_NOTICE, "Finished round %i of %i on %s", c->round_working, c->round_count, c->device_name );
+        }
+        else
+        {
+            nwipe_log( NWIPE_LOG_NOTICE,
+                       "Finished final round %i of %i on %s",
+                       c->round_working,
+                       c->round_count,
+                       c->device_name );
+        }
 
     } /* while rounds */
 
@@ -955,8 +1016,14 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
         {
             return r;
         }
-
-        nwipe_log( NWIPE_LOG_NOTICE, "[SUCCESS] Verified that %s is empty.", c->device_name );
+        if( c->verify_errors == 0 )
+        {
+            nwipe_log( NWIPE_LOG_NOTICE, "[SUCCESS] Verified that %s is empty.", c->device_name );
+        }
+        else
+        {
+            nwipe_log( NWIPE_LOG_ERROR, "[FAILURE] %s IS NOT empty.", c->device_name );
+        }
 
     } /* verify */
 
@@ -989,7 +1056,14 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
                 return r;
             }
 
-            nwipe_log( NWIPE_LOG_NOTICE, "[SUCCESS] Verified that %s is empty.", c->device_name );
+            if( c->verify_errors == 0 )
+            {
+                nwipe_log( NWIPE_LOG_NOTICE, "[SUCCESS] Verified that %s is empty.", c->device_name );
+            }
+            else
+            {
+                nwipe_log( NWIPE_LOG_NOTICE, "[FAILURE] %s Verification errors, not empty", c->device_name );
+            }
         }
 
         nwipe_log( NWIPE_LOG_NOTICE, "[SUCCESS] Blanked device %s", c->device_name );
