@@ -19,6 +19,7 @@
 
 #include "nwipe.h"
 #include "prng.h"
+#include "context.h"
 #include "logging.h"
 
 #include "mt19937ar-cok/mt19937ar-cok.h"

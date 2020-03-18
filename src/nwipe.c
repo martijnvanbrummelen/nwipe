@@ -51,6 +51,7 @@
 #include <parted/debug.h>
 
 int terminate_signal;
+int user_abort;
 
 int main( int argc, char** argv )
 {
@@ -73,6 +74,9 @@ int main( int argc, char** argv )
 
     /* Initialise the termintaion signal, 1=terminate nwipe */
     terminate_signal = 0;
+
+    /* Initialise the user abort signal, 1=User aborted with CNTRL-C,SIGTERM, SIGQUIT, SIGINT etc.. */
+    user_abort = 0;
 
     /* nwipes return status value, set prior to exit at the end of nwipe, as no other exit points allowed */
     int return_status = 0;
@@ -313,7 +317,7 @@ int main( int argc, char** argv )
         /* Print serial number of device if it exists. */
         if( strlen( (const char*) c2[i]->device_serial_no ) )
         {
-            nwipe_log( NWIPE_LOG_INFO, "Device %s has serial number %s", c2[i]->device_name, c2[i]->device_serial_no );
+            nwipe_log( NWIPE_LOG_NOTICE, "%s has serial number %s", c2[i]->device_name, c2[i]->device_serial_no );
         }
 
         /* Do sector size and block size checking. */
@@ -458,9 +462,10 @@ int main( int argc, char** argv )
             } while( terminate_signal != 1 );
         }
     }
-
-    nwipe_log( NWIPE_LOG_INFO, "Exit in progress" );
-
+    if( nwipe_options.verbose )
+    {
+        nwipe_log( NWIPE_LOG_INFO, "Exit in progress" );
+    }
     /* Send a REQUEST for the wipe threads to be cancelled */
     for( i = 0; i < nwipe_selected; i++ )
     {
@@ -548,6 +553,9 @@ int main( int argc, char** argv )
         }
     }
 
+    /* Generate and send the drive status summary to the log */
+    nwipe_log_summary( c2, nwipe_selected );
+
     if( return_status == 0 )
     {
         nwipe_log( NWIPE_LOG_INFO, "Nwipe successfully exited." );
@@ -595,8 +603,7 @@ void* signal_hand( void* ptr )
         {
 
             // Log current status. All values are automatically updated by the GUI
-            case SIGUSR1:
-            {
+            case SIGUSR1: {
                 compute_stats( ptr );
 
                 for( i = 0; i < nwipe_misc_thread_data->nwipe_selected; i++ )
@@ -665,10 +672,12 @@ void* signal_hand( void* ptr )
             case SIGHUP:
             case SIGINT:
             case SIGQUIT:
-            case SIGTERM:
-            {
+            case SIGTERM: {
                 /* Set termination flag for main() which will do housekeeping prior to exit */
                 terminate_signal = 1;
+
+                /* Set the user abort flag */
+                user_abort = 1;
 
                 /* Return control to the main thread, returning the signal received */
                 return ( (void*) 0 );

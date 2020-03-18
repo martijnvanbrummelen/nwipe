@@ -32,11 +32,14 @@ typedef enum nwipe_log_t_ {
     NWIPE_LOG_WARNING,  // Things that the user should know about.
     NWIPE_LOG_ERROR,  // Non-fatal errors that result in failure.
     NWIPE_LOG_FATAL,  // Errors that cause the program to exit.
-    NWIPE_LOG_SANITY  // Programming errors.
+    NWIPE_LOG_SANITY,  // Programming errors.
+    NWIPE_LOG_NOTIMESTAMP  // logs the message without the timestamp
 } nwipe_log_t;
 
 void nwipe_log( nwipe_log_t level, const char* format, ... );
 void nwipe_perror( int nwipe_errno, const char* f, const char* s );
 int nwipe_log_sysinfo();
+void nwipe_log_summary( nwipe_context_t**, int );  // This produces the wipe status table on exit
+void Determine_bandwidth_nomenclature( u64, char*, int );
 
 #endif /* LOGGING_H_ */

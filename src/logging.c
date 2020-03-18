@@ -28,6 +28,7 @@
 
 #include "stdio.h"
 #include "stdlib.h"
+#include "string.h"
 #include "stdarg.h"
 #include "nwipe.h"
 #include "context.h"
@@ -77,16 +78,22 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
     /* Position of writing to current log string */
     int line_current_pos = 0;
 
+    /* initialise characters written */
+    chars_written = 0;
+
     /* Print the date. The rc script uses the same format. */
-    chars_written = snprintf( message_buffer,
-                              MAX_LOG_LINE_CHARS,
-                              "[%i/%02i/%02i %02i:%02i:%02i] ",
-                              1900 + p->tm_year,
-                              1 + p->tm_mon,
-                              p->tm_mday,
-                              p->tm_hour,
-                              p->tm_min,
-                              p->tm_sec );
+    if( level != NWIPE_LOG_NOTIMESTAMP )
+    {
+        chars_written = snprintf( message_buffer,
+                                  MAX_LOG_LINE_CHARS,
+                                  "[%i/%02i/%02i %02i:%02i:%02i] ",
+                                  1900 + p->tm_year,
+                                  1 + p->tm_mon,
+                                  p->tm_mday,
+                                  p->tm_hour,
+                                  p->tm_min,
+                                  p->tm_sec );
+    }
 
     /*
      * Has the end of the buffer been reached ?, snprintf returns the number of characters that would have been
@@ -127,6 +134,7 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
         {
 
             case NWIPE_LOG_NONE:
+            case NWIPE_LOG_NOTIMESTAMP:
                 /* Do nothing. */
                 break;
 
@@ -470,4 +478,298 @@ int nwipe_log_sysinfo()
         keywords_idx++;
     }
     return 0;
+}
+
+void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
+{
+    int i;
+    int idx_src;
+    int idx_dest;
+    char device[7];
+    char status[9];
+    char throughput[13];
+    char total_throughput_string[13];
+    char summary_top_border[256];
+    char summary_top_column_titles[256];
+    char blank[3];
+    char verify[3];
+    // char duration[5];
+    char duration[314];
+    char model[18];
+    char serial_no[20];
+    char exclamation_flag[2];
+    int hours;
+    int minutes;
+    int seconds;
+    u64 total_duration_seconds;
+    u64 total_throughput;
+    nwipe_context_t** c;
+    c = ptr;
+
+    exclamation_flag[0] = 0;
+    device[0] = 0;
+    status[0] = 0;
+    throughput[0] = 0;
+    summary_top_border[0] = 0;
+    summary_top_column_titles[0] = 0;
+    blank[0] = 0;
+    verify[0] = 0;
+    duration[0] = 0;
+    model[0] = 0;
+    serial_no[0] = 0;
+    hours = 0;
+    minutes = 0;
+    seconds = 0;
+
+    /* A time buffer. */
+    time_t t;
+
+    /* A pointer to the system time struct. */
+    struct tm* p;
+
+    /* Nothing to do, user didn't select any devices */
+    if( nwipe_selected == 0 )
+    {
+        return;
+    }
+
+    /* initialise */
+    total_throughput = 0;
+
+    /* Get the current time. */
+    t = time( NULL );
+    p = localtime( &t );
+    /* IMPORTANT: Keep maximum columns (line length) to 80 characters for use with 80x30 terminals, Shredos, ALT-F2 etc
+     * --------------------------------01234567890123456789012345678901234567890123456789012345678901234567890123456789-*/
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "" );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP,
+               "********************************************************************************" );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "! Device | Status | Thru-put | HH:MM:SS | Model/Serial Number" );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP,
+               "--------------------------------------------------------------------------------" );
+    /* Example layout:
+     *                                "!    sdv |--FAIL--|  120MB/s | 01:22:01 | WD6788.8488YNHj/ZX677888388-N       "
+     * ); "     sdv | Erased |  120MB/s | 01:25:04 | WD6784.8488JKGG/ZX677888388-N       " ); "     sdv | Erased |
+     * 120MB/s | 01:19:07 | WD6788.848HHDDR/ZX677888388-N       " ); End of Example layout */
+
+    for( i = 0; i < nwipe_selected; i++ )
+    {
+        /* Device name, strip any prefixed /dev/.. leaving up to 6 right justified
+         * characters eg "   sda", prefixed with space to 6 characters, note that
+         * we are processing the strings right to left */
+
+        idx_dest = 6;
+        device[idx_dest--] = 0;
+        idx_src = strlen( c[i]->device_name );
+        idx_src--;
+
+        while( idx_dest >= 0 )
+        {
+            /* if the device name contains a / start prefixing spaces */
+            if( c[i]->device_name[idx_src] == '/' )
+            {
+                device[idx_dest--] = ' ';
+                continue;
+            }
+            if( idx_src >= 0 )
+            {
+                device[idx_dest--] = c[i]->device_name[idx_src--];
+            }
+        }
+        extern int user_abort;
+
+        /* Any errors ? if so set the exclamation_flag and fail message,
+         * All status messages should be eight characters EXACTLY !
+         */
+        if( user_abort == 1 )
+        {
+            strncpy( exclamation_flag, "!", 1 );
+            exclamation_flag[1] = 0;
+
+            strncpy( status, "UABORTED", 8 );
+            status[8] = 0;
+        }
+        else
+        {
+            if( c[i]->result != 0 )
+            {
+                strncpy( exclamation_flag, "!", 1 );
+                exclamation_flag[1] = 0;
+
+                strncpy( status, "-FAILED-", 8 );
+                status[8] = 0;
+            }
+            else
+            {
+
+                if( c[i]->pass_errors != 0 )
+                {
+                    strncpy( exclamation_flag, "!", 1 );
+                    exclamation_flag[1] = 0;
+
+                    strncpy( status, "-FAILED-", 8 );
+                    status[8] = 0;
+                }
+                else
+                {
+                    strncpy( exclamation_flag, " ", 1 );
+                    exclamation_flag[1] = 0;
+
+                    strncpy( status, " Erased ", 8 );
+                    status[8] = 0;
+                }
+            }
+        }
+
+        /* Determine the size of throughput so that the correct nomenclature can be used */
+        Determine_bandwidth_nomenclature( c[i]->throughput, throughput, 13 );
+
+        /* Add this devices throughput to the total throughput */
+        total_throughput += c[i]->throughput;
+
+        /* Retrieve the duration of the wipe in seconds and convert hours and minutes and seconds */
+        /* WARNING More work needs doing on ..
+         *
+         * model
+         * serial no
+         * the footer
+         * testing under various fault situations ... WARNING */
+
+        c[i]->duration = difftime( c[i]->end_time, c[i]->start_time );
+
+        total_duration_seconds = (u64) c[i]->duration;
+
+        if( total_duration_seconds % 60 )
+        {
+            minutes = total_duration_seconds / 60;
+
+            seconds = total_duration_seconds - ( minutes * 60 );
+        }
+        else
+        {
+            minutes = total_duration_seconds / 60;
+
+            seconds = 0;
+        }
+        if( minutes > 59 )
+        {
+            hours = minutes / 60;
+            if( minutes % 60 )
+            {
+                minutes = minutes - ( hours * 60 );
+            }
+            else
+            {
+                minutes = 0;
+            }
+        }
+
+        /* Device Model */
+        strncpy( model, c[i]->device_model, 17 );
+        model[17] = 0;
+
+        /* Serial No. */
+        strncpy( serial_no, c[i]->device_serial_no, 20 );
+        model[17] = 0;
+
+        nwipe_log( NWIPE_LOG_NOTIMESTAMP,
+                   "%s %s |%s| %s | %02i:%02i:%02i | %s/%s",
+                   exclamation_flag,
+                   device,
+                   status,
+                   throughput,
+                   hours,
+                   minutes,
+                   seconds,
+                   model,
+                   serial_no );
+    }
+
+    /* Determine the size of throughput so that the correct nomenclature can be used */
+    Determine_bandwidth_nomenclature( total_throughput, total_throughput_string, 13 );
+
+    /* Blank abreviations used in summary table B=blank, NB=no blank */
+    if( nwipe_options.noblank )
+    {
+        strcpy( blank, "NB" );
+    }
+    else
+    {
+        strcpy( blank, "B" );
+    }
+
+    /* Verify abreviations used in summary table */
+    switch( nwipe_options.verify )
+    {
+        case NWIPE_VERIFY_NONE:
+            strcpy( verify, "NV" );
+            break;
+
+        case NWIPE_VERIFY_LAST:
+            strcpy( verify, "VL" );
+            break;
+
+        case NWIPE_VERIFY_ALL:
+            strcpy( verify, "VA" );
+            break;
+    }
+
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP,
+               "--------------------------------------------------------------------------------" );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP,
+               "[%i/%02i/%02i %02i:%02i:%02i] Total Throughput %s, %s, %iR+%s+%s",
+               1900 + p->tm_year,
+               1 + p->tm_mon,
+               p->tm_mday,
+               p->tm_hour,
+               p->tm_min,
+               p->tm_sec,
+               total_throughput_string,
+               nwipe_method_label( nwipe_options.method ),
+               nwipe_options.rounds,
+               blank,
+               verify );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP,
+               "********************************************************************************" );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "" );
+}
+
+void Determine_bandwidth_nomenclature( u64 speed, char* result, int result_array_size )
+{
+    int idx;
+
+    /* A pointer to a result character string with a minimum of 13 characters in length
+     * should be provided.
+     *
+     * Outputs a string of the form xxxTB/s, xxxGB/s, xxxMB/s, xxxKB/s B/s depending on the value of 'speed'
+     */
+
+    /* Initialise the output array */
+    idx = 0;
+    while( idx < result_array_size )
+    {
+        result[idx++] = 0;
+    }
+
+    /* Determine the size of throughput so that the correct nomenclature can be used */
+    if( speed >= INT64_C( 1000000000000 ) )
+    {
+        snprintf( result, result_array_size, "%4lluTB/s", speed / INT64_C( 1000000000000 ) );
+    }
+    else if( speed >= INT64_C( 1000000000 ) )
+    {
+        snprintf( result, result_array_size, "%4lluGB/s", speed / INT64_C( 1000000000 ) );
+    }
+    else if( speed >= INT64_C( 1000000 ) )
+    {
+        snprintf( result, result_array_size, "%4lluMB/s", speed / INT64_C( 1000000 ) );
+    }
+    else if( speed >= INT64_C( 1000 ) )
+    {
+        snprintf( result, result_array_size, "%4lluKB/s", speed / INT64_C( 1000 ) );
+    }
+    else
+    {
+        snprintf( result, result_array_size, "%4llu B/s", speed / INT64_C( 1 ) );
+    }
 }
