@@ -269,7 +269,12 @@ int main( int argc, char** argv )
         /* A result buffer for the BLKGETSIZE64 ioctl. */
         u64 size64;
 
+        /* Initialise the spinner character index */
         c2[i]->spinner_idx = 0;
+
+        /* Initialise the start and end time of the wipe */
+        c2[i]->start_time = 0;
+        c2[i]->end_time = 0;
 
         /* Initialise the wipe_status flag, -1 = wipe not yet started */
         c2[i]->wipe_status = -1;

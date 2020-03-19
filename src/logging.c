@@ -627,15 +627,21 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
         /* Add this devices throughput to the total throughput */
         total_throughput += c[i]->throughput;
 
-        /* Retrieve the duration of the wipe in seconds and convert hours and minutes and seconds */
-        /* WARNING More work needs doing on ..
-         *
-         * model
-         * serial no
-         * the footer
-         * testing under various fault situations ... WARNING */
+        /* Retrieve the duration of the wipe in seconds and convert to hours and minutes and seconds */
 
-        c[i]->duration = difftime( c[i]->end_time, c[i]->start_time );
+        if( c[i]->start_time != 0 && c[i]->end_time != 0 )
+        {
+            /* For a summary when the wipe has finished */
+            c[i]->duration = difftime( c[i]->end_time, c[i]->start_time );
+        }
+        else
+        {
+            if( c[i]->start_time != 0 && c[i]->end_time == 0 )
+            {
+                /* For a summary in the event of a system shutdown */
+                c[i]->duration = difftime( t, c[i]->start_time );
+            }
+        }
 
         total_duration_seconds = (u64) c[i]->duration;
 
