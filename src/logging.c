@@ -645,30 +645,33 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
 
         total_duration_seconds = (u64) c[i]->duration;
 
-        if( total_duration_seconds % 60 )
-        {
-            minutes = total_duration_seconds / 60;
+        //        if( total_duration_seconds % 60 )
+        //        {
+        //            minutes = total_duration_seconds / 60;
+        //
+        //            seconds = total_duration_seconds - ( minutes * 60 );
+        //        }
+        //        else
+        //        {
+        //            minutes = total_duration_seconds / 60;
+        //
+        //            seconds = 0;
+        //        }
+        //        if( minutes > 59 )
+        //        {
+        //            hours = minutes / 60;
+        //            if( minutes % 60 )
+        //            {
+        //                minutes = minutes - ( hours * 60 );
+        //            }
+        //            else
+        //            {
+        //                minutes = 0;
+        //            }
+        //        }
 
-            seconds = total_duration_seconds - ( minutes * 60 );
-        }
-        else
-        {
-            minutes = total_duration_seconds / 60;
-
-            seconds = 0;
-        }
-        if( minutes > 59 )
-        {
-            hours = minutes / 60;
-            if( minutes % 60 )
-            {
-                minutes = minutes - ( hours * 60 );
-            }
-            else
-            {
-                minutes = 0;
-            }
-        }
+        /* Convert binary seconds into three binary variables, hours, minutes and seconds */
+        convert_seconds_to_hours_minutes_seconds( total_duration_seconds, &hours, &minutes, &seconds );
 
         /* Device Model */
         strncpy( model, c[i]->device_model, 17 );
@@ -777,5 +780,35 @@ void Determine_bandwidth_nomenclature( u64 speed, char* result, int result_array
     else
     {
         snprintf( result, result_array_size, "%4llu B/s", speed / INT64_C( 1 ) );
+    }
+}
+
+void convert_seconds_to_hours_minutes_seconds( u64 total_seconds, int* hours, int* minutes, int* seconds )
+{
+    /* Convert binary seconds into binary hours, minutes and seconds */
+
+    if( total_seconds % 60 )
+    {
+        *minutes = total_seconds / 60;
+
+        *seconds = total_seconds - ( *minutes * 60 );
+    }
+    else
+    {
+        *minutes = total_seconds / 60;
+
+        *seconds = 0;
+    }
+    if( *minutes > 59 )
+    {
+        *hours = *minutes / 60;
+        if( *minutes % 60 )
+        {
+            *minutes = *minutes - ( *hours * 60 );
+        }
+        else
+        {
+            *minutes = 0;
+        }
     }
 }

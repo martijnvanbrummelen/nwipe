@@ -437,6 +437,10 @@ int main( int argc, char** argv )
     }
 
     /* Wait for all the wiping threads to finish, but don't wait if we receive the terminate signal */
+
+    /* set getch delay to 2/10th second. */
+    halfdelay( 10 );
+
     i = 0;
     while( i < nwipe_selected && terminate_signal == 0 )
     {
@@ -454,7 +458,7 @@ int main( int argc, char** argv )
             i++;
             continue;
         }
-        sleep( 2 ); /* DO NOT REMOVE ! Stops the routine hogging CPU cycles */
+        sleep( 1 ); /* DO NOT REMOVE ! Stops the routine hogging CPU cycles */
     }
 
     if( terminate_signal != 1 )
@@ -464,6 +468,7 @@ int main( int argc, char** argv )
             do
             {
                 sleep( 1 );
+
             } while( terminate_signal != 1 );
         }
     }
@@ -577,6 +582,13 @@ int main( int argc, char** argv )
 void* signal_hand( void* ptr )
 {
     int sig;
+    int hours;
+    int minutes;
+    int seconds;
+
+    hours = 0;
+    minutes = 0;
+    seconds = 0;
 
     // Define signals that this handler should react to
     sigset_t sigset;
@@ -588,6 +600,7 @@ void* signal_hand( void* ptr )
     sigaddset( &sigset, SIGUSR1 );
 
     int i;
+    char eta[9];
 
     /* Set up the structs we will use for the data required. */
     nwipe_thread_data_ptr_t* nwipe_thread_data_ptr;
@@ -642,14 +655,20 @@ void* signal_hand( void* ptr )
                         {
                             status = "[syncing]";
                         }
+
+                        convert_seconds_to_hours_minutes_seconds( c[i]->eta, &hours, &minutes, &seconds );
+
                         nwipe_log( NWIPE_LOG_INFO,
-                                   "%s: %05.2f%%, round %i of %i, pass %i of %i %s",
+                                   "%s: %05.2f%%, round %i of %i, pass %i of %i, eta %02i:%02i:%02i, %s",
                                    c[i]->device_name,
                                    c[i]->round_percent,
                                    c[i]->round_working,
                                    c[i]->round_count,
                                    c[i]->pass_working,
                                    c[i]->pass_count,
+                                   hours,
+                                   minutes,
+                                   seconds,
                                    status );
                     }
                     else
