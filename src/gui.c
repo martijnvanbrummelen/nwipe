@@ -2669,6 +2669,9 @@ int compute_stats( void* ptr )
             }
         }
 
+        /* Calculate the average throughput */
+        c[i]->throughput = (double) c[i]->round_done / (double) difftime( nwipe_time_now, c[i]->start_time );
+
         /* Update the percentage value. */
         c[i]->round_percent = (double) c[i]->round_done / (double) c[i]->round_size * 100;
 
