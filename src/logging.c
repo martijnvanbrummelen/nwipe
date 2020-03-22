@@ -437,8 +437,9 @@ int nwipe_log_sysinfo()
     };
 
     char dmidecode_command[] = "dmidecode -s %s";
+    char dmidecode_command2[] = "/sbin/dmidecode -s %s";
 
-    char cmd[sizeof( dmidecode_keywords ) + sizeof( dmidecode_command )];
+    char cmd[sizeof( dmidecode_keywords ) + sizeof( dmidecode_command2 )];
 
     unsigned int keywords_idx;
 
@@ -451,8 +452,14 @@ int nwipe_log_sysinfo()
         fp = popen( cmd, "r" );
         if( fp == NULL )
         {
-            nwipe_log( NWIPE_LOG_WARNING, "nwipe_log_sysinfo: Failed to create stream to %s", cmd );
-            return 1;
+            /* Run dmidecode from /sbin/, required for Debian SID */
+            sprintf( cmd, dmidecode_command2, &dmidecode_keywords[keywords_idx][0] );
+            fp = popen( cmd, "r" );
+            if( fp == NULL )
+            {
+                nwipe_log( NWIPE_LOG_WARNING, "nwipe_log_sysinfo: Failed to create stream to %s", cmd );
+                return 1;
+            }
         }
         /* Read the output a line at a time - output it. */
         while( fgets( path, sizeof( path ) - 1, fp ) != NULL )
