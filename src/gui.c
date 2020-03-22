@@ -2401,32 +2401,59 @@ void* nwipe_gui_status( void* ptr )
                 {
                     wprintw( main_window, "[pass errors: %llu] ", c[i]->pass_errors );
                 }
-
-                switch( c[i]->pass_type )
+                if( c[i]->wipe_status == 1 )
                 {
-                    case NWIPE_PASS_FINAL_BLANK:
-                        wprintw( main_window, "[blanking] " );
-                        break;
+                    switch( c[i]->pass_type )
+                    {
+                        case NWIPE_PASS_FINAL_BLANK:
+                            if( !c[i]->sync_status )
+                            {
+                                wprintw( main_window, "[blanking] " );
+                            }
+                            else
+                            {
+                                wprintw( main_window, "[--------] " );
+                            }
+                            break;
 
-                    case NWIPE_PASS_FINAL_OPS2:
-                        wprintw( main_window, "[OPS-II final] " );
-                        break;
+                        case NWIPE_PASS_FINAL_OPS2:
+                            if( !c[i]->sync_status )
+                            {
+                                wprintw( main_window, "[OPS-II final] " );
+                            }
+                            else
+                            {
+                                wprintw( main_window, "[------------] " );
+                            }
+                            break;
 
-                    case NWIPE_PASS_WRITE:
-                        wprintw( main_window, "[writing] " );
-                        break;
+                        case NWIPE_PASS_WRITE:
+                            if( !c[i]->sync_status )
+                            {
+                                wprintw( main_window, "[writing] " );
+                            }
+                            else
+                            {
+                                wprintw( main_window, "[-------] " );
+                            }
+                            break;
 
-                    case NWIPE_PASS_VERIFY:
-                        wprintw( main_window, "[verifying] " );
-                        break;
+                        case NWIPE_PASS_VERIFY:
+                            wprintw( main_window, "[verifying] " );
+                            break;
 
-                    case NWIPE_PASS_NONE:
-                        break;
-                }
+                        case NWIPE_PASS_NONE:
+                            break;
+                    }
 
-                if( c[i]->sync_status )
-                {
-                    wprintw( main_window, "[syncing] " );
+                    if( c[i]->sync_status )
+                    {
+                        wprintw( main_window, "[syncing] " );
+                    }
+                    else
+                    {
+                        wprintw( main_window, "[-------] " );
+                    }
                 }
 
                 if( c[i]->throughput >= INT64_C( 1000000000000 ) )
