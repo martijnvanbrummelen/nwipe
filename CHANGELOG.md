@@ -13,6 +13,7 @@ other items in 0.29 are proposed and yet to be implemented.
 - [DONE] Add a summary table to the log that shows each drives status, i.e. erased or failed, throughput, duration of wipe, model, serial no etc. In particular it benefits those that wipe many drives simultaneously in rack servers. At a glance any failed drives can be seen without having to browse back through the log. (Thanks PartialVolume)
 - [DONE] Add ETA to --nogui wipes status when SIGUSR1 (kill -s USR1 (nwipes PID) is issued on the command line.
 - [DONE] Fix misleading throughput calculation. Throughput now shows average throughput calculated from start of wipe.
+- [DONE] Fix system info not being displayed in Debian Sid. #229 (Thanks PartialVolume)
 - Add enhancement fibre channel wiping of non 512 bytes/sector drives such as 524/528 bytes/sector etc (work in progress by PartialVolume)
 - HPA/DCO detection and adjustment to wipe full drive. (work in progress by PartialVolume)
 
