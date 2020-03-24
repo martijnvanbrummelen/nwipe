@@ -52,7 +52,9 @@ sudo apt install \
   libncurses5-dev \
   autotools-dev \
   libparted-dev \
-  dmidecode
+  dmidecode \
+  readlink \
+  smartmontools
 ```
 
 ### Fedora prerequisites
@@ -65,8 +67,22 @@ dnf groupinstall "C Development Tools and Libraries"
 yum install ncurses-devel
 yum install parted-devel
 yum install dmidecode
+yum install readlink
+yum install smartmontools
 ```
-Note. dmidecode is optional, it provides SMBIOS/DMI host data to stdout or the log file. If you want a quick and easy way to keep your copy of nwipe running the latest master release of nwipe see this section [automating the download and compilation](https://github.com/martijnvanbrummelen/nwipe#automating-the-download-and-compilation-process)
+Note. The following programs are optionally installed although recommended. 1. dmidecode 2. readlink 3. smartmontools.
+
+#### dmidecode
+dmidecode provides SMBIOS/DMI host data to stdout or the log file. If you don't install it you won't see the SMBIOS/DMI host data at the beginning of nwipes log.
+
+#### readlink
+readlink determines the bus type, i.e. ATA, USB etc. Without it the --nousb option won't work and bus type information will be missing from nwipes selection and wipe windows.
+
+#### smartmontools
+smartmontools obtains serial number information for supported USB to IDE/SATA adapters. Without it, drives plugged into USB ports will not show serial number information.
+
+
+If you want a quick and easy way to keep your copy of nwipe running the latest master release of nwipe see this section [automating the download and compilation](https://github.com/martijnvanbrummelen/nwipe#automating-the-download-and-compilation-process)
 
 ### Compilation
 
