@@ -30,8 +30,9 @@ typedef enum nwipe_device_t_ {
     NWIPE_DEVICE_IDE,
     NWIPE_DEVICE_SCSI,
     NWIPE_DEVICE_COMPAQ,  // Unimplemented.
-    NWIPE_DEVICE_USB,  // Unimplemented.
-    NWIPE_DEVICE_IEEE1394  // Unimplemented.
+    NWIPE_DEVICE_USB,
+    NWIPE_DEVICE_IEEE1394,  // Unimplemented.
+    NWIPE_DEVICE_ATA
 } nwipe_device_t;
 
 typedef enum nwipe_pass_t_ {
@@ -88,7 +89,8 @@ typedef struct nwipe_context_t_
     char* device_model;  // The model of the device.
     char device_label[NWIPE_DEVICE_LABEL_LENGTH];  // The label (name, model, size and serial) of the device.
     struct stat device_stat;  // The device file state from fstat().
-    nwipe_device_t device_type;  // Indicates an IDE, SCSI, or Compaq SMART device.
+    nwipe_device_t device_type;  // Indicates an IDE, SCSI, or Compaq SMART device in enumerated form (int)
+    char device_type_str[14];  // Indicates an IDE, SCSI, USB etc as per nwipe_device_t but in ascii
     char device_serial_no[21];  // Serial number(processed, 20 characters plus null termination) of the device.
     int device_target;  // The device target.
 
