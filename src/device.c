@@ -186,11 +186,12 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     trim( (char*) next_device->device_serial_no );
 
     /* if we couldn't obtain serial number by using the above method .. this this */
-    nwipe_get_device_bus_type_and_serialno( next_device->device_name, &next_device->device_type, tmp_serial );
-
-    if( next_device->device_serial_no[0] == 0 )
+    if( nwipe_get_device_bus_type_and_serialno( next_device->device_name, &next_device->device_type, tmp_serial ) == 0 )
     {
-        strcpy( next_device->device_serial_no, tmp_serial );
+        if( next_device->device_serial_no[0] == 0 )
+        {
+            strcpy( next_device->device_serial_no, tmp_serial );
+        }
     }
 
     switch( next_device->device_type )
