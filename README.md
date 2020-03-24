@@ -163,7 +163,7 @@ cd "$HOME"
 nwipe_directory="nwipe_master"
 mkdir $nwipe_directory
 cd $nwipe_directory
-sudo apt install build-essential pkg-config automake libncurses5-dev autotools-dev libparted-dev dmidecode git
+sudo apt install build-essential pkg-config automake libncurses5-dev autotools-dev libparted-dev dmidecode readlink smartmontools git
 rm -rf nwipe
 git clone https://github.com/martijnvanbrummelen/nwipe.git
 cd "nwipe"
