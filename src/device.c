@@ -20,10 +20,16 @@
  *
  */
 
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE
+#endif
+
+#include <stdio.h>
 #include <stdint.h>
 
 #include "nwipe.h"
 #include "context.h"
+#include "device.h"
 #include "method.h"
 #include "options.h"
 #include "logging.h"
@@ -111,6 +117,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     nwipe_context_t* next_device;
     int fd;
     int idx;
+    char tmp_serial[21];
 
     /* Check whether this drive is on the excluded drive list ? */
     idx = 0;
@@ -178,12 +185,36 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     // Remove leading/trailing whitespace from serial number and left justify.
     trim( (char*) next_device->device_serial_no );
 
+    /* if we couldn't obtain serial number by using the above method .. this this */
+    nwipe_get_device_bus_type_and_serialno( next_device->device_name, &next_device->device_type, tmp_serial );
+
+    if( next_device->device_serial_no[0] == 0 )
+    {
+        strcpy( next_device->device_serial_no, tmp_serial );
+    }
+
+    switch( next_device->device_type )
+    {
+        case NWIPE_DEVICE_UNKNOWN:
+            strcpy( next_device->device_type_str, "UNK" );
+            break;
+
+        case NWIPE_DEVICE_USB:
+            strcpy( next_device->device_type_str, "USB" );
+            break;
+
+        case NWIPE_DEVICE_ATA:
+            strcpy( next_device->device_type_str, "ATA" );
+            break;
+    }
+
     if( strlen( (const char*) next_device->device_serial_no ) )
     {
         snprintf( next_device->device_label,
                   NWIPE_DEVICE_LABEL_LENGTH,
-                  "%s (%s) - %s S/N:%s",
+                  "%s %s (%s) - %s S/N:%s",
                   next_device->device_name,
+                  next_device->device_type_str,
                   next_device->device_size_text,
                   next_device->device_model,
                   next_device->device_serial_no );
@@ -192,15 +223,19 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     {
         snprintf( next_device->device_label,
                   NWIPE_DEVICE_LABEL_LENGTH,
-                  "%s (%s) - %s",
+                  "%s %s (%s) - %s",
                   next_device->device_name,
+                  next_device->device_type_str,
                   next_device->device_size_text,
                   next_device->device_model );
     }
 
+    next_device->device_type_str[0] = 0;
+
     nwipe_log( NWIPE_LOG_NOTICE,
-               "Found %s, %s, %s, S/N=%s",
+               "Found %s, %s, %s, %s, S/N=%s",
                next_device->device_name,
+               next_device->device_type_str,
                next_device->device_model,
                next_device->device_size_text,
                next_device->device_serial_no );
@@ -260,4 +295,160 @@ char* trim( char* str )
         *endp = '\0';
     }
     return str;
+}
+
+int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, char* serialnumber )
+{
+    /* The caller provides a string that contains the device, i.e. /dev/sdc, also a pointer
+     * to a 5 byte string (4 charaacters + null terminator) and thirdly a 21 byte
+     * character string (20 characters + null terminator).
+     *
+     * The function populates the bus and serial number strings for the given device.
+     * Results for bus would typically be ATA or USB but can also 4 digits.
+     */
+
+    FILE* fp;
+
+    int r;  // A result buffer.
+    int idx_src;
+    int idx_dest;
+    int device_len;
+    int set_return_value;
+
+    char readlink_command[] = "readlink /sys/block/%s";
+    char smartctl_command[] = "smartctl -i %s";
+    char device_shortform[50];
+    char result[512];
+    char final_cmd_readlink[sizeof( readlink_command ) + sizeof( device_shortform )];
+    char final_cmd_smartctl[sizeof( smartctl_command ) + 256];
+
+    /* Initialise return value */
+    set_return_value = 0;
+
+    *bus = 0;
+
+    /* Scan device name and if device is for instance /dev/sdx then convert to sdx
+     * If already sdx then just copy. */
+
+    idx_dest = 0;
+    device_shortform[idx_dest] = 0;
+    device_len = strlen( device );
+    idx_src = device_len;
+
+    while( idx_src >= 0 )
+    {
+        if( device[idx_src] == '/' || idx_src == 0 )
+        {
+            idx_src++;
+
+            /* Now scan forwards copying the short form device i.e sdc */
+            while( idx_src < device_len )
+            {
+                device_shortform[idx_dest++] = device[idx_src++];
+            }
+            break;
+        }
+        else
+        {
+            idx_src--;
+        }
+    }
+    device_shortform[idx_dest] = 0;
+
+    /* Obtain the devices link information
+     */
+    sprintf( final_cmd_readlink, readlink_command, device_shortform );
+    fp = popen( final_cmd_readlink, "r" );
+    if( fp == NULL )
+    {
+        nwipe_log( NWIPE_LOG_WARNING,
+                   "nwipe_get_device_bus_type_and_serialno: Failed to create stream to %s",
+                   readlink_command );
+        set_return_value = 1;
+    }
+    else
+    {
+        /* Read the output a line at a time - output it. */
+        if( fgets( result, sizeof( result ) - 1, fp ) != NULL )
+        {
+            if( nwipe_options.verbose )
+            {
+                nwipe_log( NWIPE_LOG_DEBUG, "Readlink result = %s", result );
+            }
+
+            /* Scan the readlink results for bus types, i.e. USB or ATA
+             * Example: readlink
+             * /sys/block/sdd../devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0/host6/target6:0:0/6:0:0:0/block/sdd
+             */
+
+            if( strstr( result, "/usb" ) != 0 )
+            {
+                *bus = NWIPE_DEVICE_USB;
+            }
+            else
+            {
+                if( strstr( result, "/ata" ) != 0 )
+                {
+                    *bus = NWIPE_DEVICE_ATA;
+                }
+            }
+        }
+        /* close */
+        r = pclose( fp );
+
+        if( r > 0 )
+        {
+            nwipe_log( NWIPE_LOG_WARNING,
+                       "nwipe_get_device_bus_type_and_serialno(): readlink failed, \"%s\" exit status = %u",
+                       final_cmd_readlink,
+                       WEXITSTATUS( r ) );
+            set_return_value = 1;
+        }
+    }
+
+    /*
+     * Retrieve smartmontools drive information if USB bridge supports it, so we can retrieve the serial number of the
+     * drive that's on the other side of the USB bridge.. */
+
+    sprintf( final_cmd_smartctl, smartctl_command, device );
+    fp = popen( final_cmd_smartctl, "r" );
+    if( fp == NULL )
+    {
+        nwipe_log( NWIPE_LOG_WARNING,
+                   "nwipe_get_device_bus_type_and_serialno(): Failed to create stream to %s",
+                   smartctl_command );
+        set_return_value = 2;
+    }
+    else
+    {
+        /* Read the output a line at a time - output it. */
+        while( fgets( result, sizeof( result ) - 1, fp ) != NULL )
+        {
+            if( nwipe_options.verbose )
+            {
+                nwipe_log( NWIPE_LOG_DEBUG, "Smartctl result = %s", result );
+            }
+
+            if( strstr( result, "Serial Number:" ) != 0 )
+            {
+                /* strip any leading or trailing spaces and left justify, +15 is the length of "Serial Number:" */
+                trim( &result[15] );
+
+                strncpy( serialnumber, &result[15], 20 );
+            }
+        }
+        /* close */
+        r = pclose( fp );
+
+        if( r > 0 )
+        {
+            nwipe_log( NWIPE_LOG_WARNING,
+                       "nwipe_get_device_bus_type_and_serialno(): smartctl failed, \"%s\" exit status = %u",
+                       final_cmd_smartctl,
+                       WEXITSTATUS( r ) );
+            set_return_value = 1;
+        }
+    }
+
+    return set_return_value;
 }
