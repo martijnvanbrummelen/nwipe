@@ -418,7 +418,8 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
             }
         }
     }
-    else
+
+    if( fp != NULL )
     {
         /* Read the output a line at a time - output it. */
         if( fgets( result, sizeof( result ) - 1, fp ) != NULL )
@@ -496,7 +497,8 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
             }
         }
     }
-    else
+
+    if( fp != NULL )
     {
         /* Read the output a line at a time - output it. */
         while( fgets( result, sizeof( result ) - 1, fp ) != NULL )
