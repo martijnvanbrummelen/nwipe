@@ -40,6 +40,12 @@ giving better hardware support.
 * pthreads
 * parted
 
+and optionally, but recommended!, the following programs:
+
+* dmidecode
+* readlink
+* smartmontools
+
 ### Debian & Ubuntu prerequisites
 
 If you are compiling `nwipe` from source, the following libraries will need to be installed first:
