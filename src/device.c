@@ -391,81 +391,96 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
     }
     device_shortform[idx_dest] = 0;
 
-    /* Obtain the devices link information */
-    sprintf( final_cmd_readlink, readlink_command, device_shortform );
+    final_cmd_readlink[0] = 0;
 
-    fp = popen( final_cmd_readlink, "r" );
-
-    if( fp == NULL )
+    /* Determine whether we can access readlink, required if the PATH environment is not setup ! (Debian sid 'su' as
+     * opposed to 'su -' */
+    if( system( "which readlink > /dev/null 2>&1" ) )
     {
-        sprintf( final_cmd_readlink, readlink_command2, device_shortform );
+        if( system( "which /sbin/readlink > /dev/null 2>&1" ) )
+        {
+            if( system( "which /usr/bin/readlink > /dev/null 2>&1" ) )
+            {
+                nwipe_log( NWIPE_LOG_WARNING, "Command not found. Install readlink !" );
+            }
+            else
+            {
+                sprintf( final_cmd_readlink, readlink_command3, device_shortform );
+            }
+        }
+        else
+        {
+            sprintf( final_cmd_readlink, readlink_command2, device_shortform );
+        }
+    }
+    else
+    {
+        sprintf( final_cmd_readlink, readlink_command, device_shortform );
+    }
+
+    if( final_cmd_readlink[0] != 0 )
+    {
 
         fp = popen( final_cmd_readlink, "r" );
 
         if( fp == NULL )
         {
-            sprintf( final_cmd_readlink, readlink_command3, device_shortform );
+            nwipe_log( NWIPE_LOG_WARNING,
+                       "nwipe_get_device_bus_type_and_serialno: Failed to create stream to %s",
+                       readlink_command );
 
-            fp = popen( final_cmd_readlink, "r" );
-
-            if( fp == NULL )
-            {
-                nwipe_log( NWIPE_LOG_WARNING,
-                           "nwipe_get_device_bus_type_and_serialno: Failed to create stream to %s",
-                           readlink_command );
-
-                set_return_value = 1;
-            }
+            set_return_value = 1;
         }
-    }
 
-    if( fp != NULL )
-    {
-        /* Read the output a line at a time - output it. */
-        if( fgets( result, sizeof( result ) - 1, fp ) != NULL )
+        if( fp != NULL )
         {
-            if( nwipe_options.verbose )
+            /* Read the output a line at a time - output it. */
+            if( fgets( result, sizeof( result ) - 1, fp ) != NULL )
             {
-                nwipe_log( NWIPE_LOG_DEBUG, "Readlink result = %s", result );
-            }
-
-            /* Scan the readlink results for bus types, i.e. USB or ATA
-             * Example: readlink
-             * /sys/block/sdd../devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0/host6/target6:0:0/6:0:0:0/block/sdd
-             */
-
-            if( strstr( result, "/usb" ) != 0 )
-            {
-                *bus = NWIPE_DEVICE_USB;
-            }
-            else
-            {
-                if( strstr( result, "/ata" ) != 0 )
+                if( nwipe_options.verbose )
                 {
-                    *bus = NWIPE_DEVICE_ATA;
+                    strip_CR_LF( result );
+                    nwipe_log( NWIPE_LOG_DEBUG, "Readlink: %s", result );
+                }
+
+                /* Scan the readlink results for bus types, i.e. USB or ATA
+                 * Example: readlink
+                 * /sys/block/sdd../devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0/host6/target6:0:0/6:0:0:0/block/sdd
+                 */
+
+                if( strstr( result, "/usb" ) != 0 )
+                {
+                    *bus = NWIPE_DEVICE_USB;
+                }
+                else
+                {
+                    if( strstr( result, "/ata" ) != 0 )
+                    {
+                        *bus = NWIPE_DEVICE_ATA;
+                    }
                 }
             }
-        }
-        /* close */
-        r = pclose( fp );
+            /* close */
+            r = pclose( fp );
 
-        if( r > 0 )
-        {
-            exit_status = WEXITSTATUS( r );
-            if( nwipe_options.verbose )
+            if( r > 0 )
             {
-                nwipe_log( NWIPE_LOG_WARNING,
-                           "nwipe_get_device_bus_type_and_serialno(): readlink failed, \"%s\" exit status = %u",
-                           final_cmd_readlink,
-                           exit_status );
-            }
+                exit_status = WEXITSTATUS( r );
+                if( nwipe_options.verbose )
+                {
+                    nwipe_log( NWIPE_LOG_WARNING,
+                               "nwipe_get_device_bus_type_and_serialno(): readlink failed, \"%s\" exit status = %u",
+                               final_cmd_readlink,
+                               exit_status );
+                }
 
-            if( exit_status == 127 )
-            {
-                nwipe_log( NWIPE_LOG_WARNING, "Command not found. Install Readlink recommended !" );
-            }
+                if( exit_status == 127 )
+                {
+                    nwipe_log( NWIPE_LOG_WARNING, "Command not found. Install Readlink recommended !" );
+                }
 
-            set_return_value = 2;
+                set_return_value = 2;
+            }
         }
     }
 
@@ -473,83 +488,115 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
      * Retrieve smartmontools drive information if USB bridge supports it, so we can retrieve the serial number of the
      * drive that's on the other side of the USB bridge.. */
 
-    sprintf( final_cmd_smartctl, smartctl_command, device );
-    fp = popen( final_cmd_smartctl, "r" );
-    if( fp == NULL )
-    {
-        sprintf( final_cmd_smartctl, smartctl_command2, device );
+    final_cmd_smartctl[0] = 0;
 
+    /* Determine whether we can access smartctl, required if the PATH environment is not setup ! (Debian sid 'su' as
+     * opposed to 'su -' */
+    if( system( "which smartctl > /dev/null 2>&1" ) )
+    {
+        if( system( "which /sbin/smartctl > /dev/null 2>&1" ) )
+        {
+            if( system( "which /usr/bin/smartctl > /dev/null 2>&1" ) )
+            {
+                nwipe_log( NWIPE_LOG_WARNING, "Command not found. Install smartmontools !" );
+            }
+            else
+            {
+                sprintf( final_cmd_smartctl, smartctl_command3, device );
+            }
+        }
+        else
+        {
+            sprintf( final_cmd_smartctl, smartctl_command2, device );
+        }
+    }
+    else
+    {
+        sprintf( final_cmd_smartctl, smartctl_command, device );
+    }
+
+    if( final_cmd_smartctl[0] != 0 )
+    {
         fp = popen( final_cmd_smartctl, "r" );
 
         if( fp == NULL )
         {
-            sprintf( final_cmd_smartctl, smartctl_command3, device );
+            nwipe_log( NWIPE_LOG_WARNING,
+                       "nwipe_get_device_bus_type_and_serialno(): Failed to create stream to %s",
+                       smartctl_command );
 
-            fp = popen( final_cmd_smartctl, "r" );
-
-            if( fp == NULL )
-            {
-                nwipe_log( NWIPE_LOG_WARNING,
-                           "nwipe_get_device_bus_type_and_serialno(): Failed to create stream to %s",
-                           smartctl_command );
-
-                set_return_value = 3;
-            }
+            set_return_value = 3;
         }
-    }
-
-    if( fp != NULL )
-    {
-        /* Read the output a line at a time - output it. */
-        while( fgets( result, sizeof( result ) - 1, fp ) != NULL )
+        else
         {
-            if( nwipe_options.verbose )
+            /* Read the output a line at a time - output it. */
+            while( fgets( result, sizeof( result ) - 1, fp ) != NULL )
             {
-                nwipe_log( NWIPE_LOG_DEBUG, "Smartctl result = %s", result );
-            }
-
-            if( strstr( result, "Serial Number:" ) != 0 )
-            {
-                /* strip any leading or trailing spaces and left justify, +15 is the length of "Serial Number:" */
-                trim( &result[15] );
-
-                strncpy( serialnumber, &result[15], 20 );
-            }
-        }
-        /* close */
-        r = pclose( fp );
-
-        if( r > 0 )
-        {
-            exit_status = WEXITSTATUS( r );
-            if( nwipe_options.verbose )
-            {
-                nwipe_log( NWIPE_LOG_WARNING,
-                           "nwipe_get_device_bus_type_and_serialno(): smartctl failed, \"%s\" exit status = %u",
-                           final_cmd_smartctl,
-                           exit_status );
-            }
-            set_return_value = 6;
-
-            if( exit_status == 127 )
-            {
-                nwipe_log( NWIPE_LOG_WARNING, "Command not found. Install Smartctl recommended !" );
-
-                set_return_value = 4;
-            }
-
-            if( exit_status == 1 )
-            {
-                nwipe_log( NWIPE_LOG_WARNING, "%s USB bridge, no passthru support", device );
-
-                if( *bus == NWIPE_DEVICE_USB )
+                if( nwipe_options.verbose && result[0] != 0x0A )
                 {
-                    strcpy( serialnumber, "(no ATA pass thru)" );
-                    set_return_value = 5;
+                    strip_CR_LF( result );
+                    nwipe_log( NWIPE_LOG_DEBUG, "smartctl: %s", result );
+                }
+
+                if( strstr( result, "Serial Number:" ) != 0 )
+                {
+                    /* strip any leading or trailing spaces and left justify, +15 is the length of "Serial Number:" */
+                    trim( &result[15] );
+
+                    strncpy( serialnumber, &result[15], 20 );
+                }
+            }
+
+            /* close */
+            r = pclose( fp );
+
+            if( r > 0 )
+            {
+                exit_status = WEXITSTATUS( r );
+                if( nwipe_options.verbose && exit_status != 1 )
+                {
+                    nwipe_log( NWIPE_LOG_WARNING,
+                               "nwipe_get_device_bus_type_and_serialno(): smartctl failed, \"%s\" exit status = %u",
+                               final_cmd_smartctl,
+                               exit_status );
+                }
+                set_return_value = 6;
+
+                if( exit_status == 127 )
+                {
+                    nwipe_log( NWIPE_LOG_WARNING, "Command not found. Install Smartctl recommended !" );
+
+                    set_return_value = 4;
+                }
+
+                if( exit_status == 1 )
+                {
+                    nwipe_log( NWIPE_LOG_WARNING, "%s USB bridge, no passthru support", device );
+
+                    if( *bus == NWIPE_DEVICE_USB )
+                    {
+                        strcpy( serialnumber, "(no ATA pass thru)" );
+                        set_return_value = 5;
+                    }
                 }
             }
         }
     }
 
     return set_return_value;
+}
+
+void strip_CR_LF( char* str )
+{
+    /* In the specified string, replace any CR or LF with a space */
+    int idx = 0;
+    int len = strlen( str );
+    while( idx < len )
+    {
+        if( str[idx] == 0x0A || str[idx] == 0x0D )
+        {
+            str[idx] = ' ';
+        }
+        idx++;
+    }
 }
