@@ -117,6 +117,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     nwipe_context_t* next_device;
     int fd;
     int idx;
+    int r;
     char tmp_serial[21];
 
     /* Check whether this drive is on the excluded drive list ? */
@@ -182,12 +183,17 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
 
     // Terminate the string.
     next_device->device_serial_no[20] = 0;
+
     // Remove leading/trailing whitespace from serial number and left justify.
     trim( (char*) next_device->device_serial_no );
 
     /* if we couldn't obtain serial number by using the above method .. this this */
-    if( nwipe_get_device_bus_type_and_serialno( next_device->device_name, &next_device->device_type, tmp_serial ) == 0 )
+    r = nwipe_get_device_bus_type_and_serialno( next_device->device_name, &next_device->device_type, tmp_serial );
+
+    /* If serial number & bus retrieved (0) OR unsupported USB bus identified (5) */
+    if( r == 0 || r == 5 )
     {
+        /* If the serial number hasn't already been populated */
         if( next_device->device_serial_no[0] == 0 )
         {
             strcpy( next_device->device_serial_no, tmp_serial );
@@ -200,8 +206,24 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
             strcpy( next_device->device_type_str, "UNK" );
             break;
 
+        case NWIPE_DEVICE_IDE:
+            strcpy( next_device->device_type_str, "IDE" );
+            break;
+
+        case NWIPE_DEVICE_SCSI:
+            strcpy( next_device->device_type_str, "SCSI" );
+            break;
+
+        case NWIPE_DEVICE_COMPAQ:
+            strcpy( next_device->device_type_str, "CPQ" );
+            break;
+
         case NWIPE_DEVICE_USB:
             strcpy( next_device->device_type_str, "USB" );
+            break;
+
+        case NWIPE_DEVICE_IEEE1394:
+            strcpy( next_device->device_type_str, "IEEE1394" );
             break;
 
         case NWIPE_DEVICE_ATA:
@@ -213,7 +235,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     {
         snprintf( next_device->device_label,
                   NWIPE_DEVICE_LABEL_LENGTH,
-                  "%s %s (%s) - %s S/N:%s",
+                  "%s %s (%s) - %s/%s",
                   next_device->device_name,
                   next_device->device_type_str,
                   next_device->device_size_text,
@@ -230,8 +252,6 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
                   next_device->device_size_text,
                   next_device->device_model );
     }
-
-    next_device->device_type_str[0] = 0;
 
     nwipe_log( NWIPE_LOG_NOTICE,
                "Found %s, %s, %s, %s, S/N=%s",
@@ -301,11 +321,21 @@ char* trim( char* str )
 int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, char* serialnumber )
 {
     /* The caller provides a string that contains the device, i.e. /dev/sdc, also a pointer
-     * to a 5 byte string (4 charaacters + null terminator) and thirdly a 21 byte
-     * character string (20 characters + null terminator).
+     * to a integer (bus type) and thirdly a 21 byte
+     * character string which this function populates with the serial number (20 characters + null terminator).
      *
-     * The function populates the bus and serial number strings for the given device.
-     * Results for bus would typically be ATA or USB but can also 4 digits.
+     * The function populates the bus integer and serial number strings for the given device.
+     * Results for bus would typically be ATA or USB see nwipe_device_t in context.h
+     *
+     * Return Values:
+     * 0 = Success
+     * 1 = popen failed to create stream for readlink
+     * 2 = readlink exit code not 0, see nwipe logs
+     * 3 = popen failed to create stream for smartctl
+     * 4 = smartctl command not found, install smartmontools
+     * 5 = smartctl detected un supported USB to IDE/SATA adapter
+     * 6 = All other errors !
+     *
      */
 
     FILE* fp;
@@ -315,6 +345,7 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
     int idx_dest;
     int device_len;
     int set_return_value;
+    int exit_status;
 
     char readlink_command[] = "readlink /sys/block/%s";
     char smartctl_command[] = "smartctl -i %s";
@@ -356,15 +387,17 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
     }
     device_shortform[idx_dest] = 0;
 
-    /* Obtain the devices link information
-     */
+    /* Obtain the devices link information */
     sprintf( final_cmd_readlink, readlink_command, device_shortform );
+
     fp = popen( final_cmd_readlink, "r" );
+
     if( fp == NULL )
     {
         nwipe_log( NWIPE_LOG_WARNING,
                    "nwipe_get_device_bus_type_and_serialno: Failed to create stream to %s",
                    readlink_command );
+
         set_return_value = 1;
     }
     else
@@ -399,11 +432,21 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
 
         if( r > 0 )
         {
-            nwipe_log( NWIPE_LOG_WARNING,
-                       "nwipe_get_device_bus_type_and_serialno(): readlink failed, \"%s\" exit status = %u",
-                       final_cmd_readlink,
-                       WEXITSTATUS( r ) );
-            set_return_value = 1;
+            exit_status = WEXITSTATUS( r );
+            if( nwipe_options.verbose )
+            {
+                nwipe_log( NWIPE_LOG_WARNING,
+                           "nwipe_get_device_bus_type_and_serialno(): readlink failed, \"%s\" exit status = %u",
+                           final_cmd_readlink,
+                           exit_status );
+            }
+
+            if( exit_status == 127 )
+            {
+                nwipe_log( NWIPE_LOG_WARNING, "Command not found. Install Readlink recommended !" );
+            }
+
+            set_return_value = 2;
         }
     }
 
@@ -418,7 +461,7 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
         nwipe_log( NWIPE_LOG_WARNING,
                    "nwipe_get_device_bus_type_and_serialno(): Failed to create stream to %s",
                    smartctl_command );
-        set_return_value = 2;
+        set_return_value = 3;
     }
     else
     {
@@ -443,11 +486,33 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
 
         if( r > 0 )
         {
-            nwipe_log( NWIPE_LOG_WARNING,
-                       "nwipe_get_device_bus_type_and_serialno(): smartctl failed, \"%s\" exit status = %u",
-                       final_cmd_smartctl,
-                       WEXITSTATUS( r ) );
-            set_return_value = 1;
+            exit_status = WEXITSTATUS( r );
+            if( nwipe_options.verbose )
+            {
+                nwipe_log( NWIPE_LOG_WARNING,
+                           "nwipe_get_device_bus_type_and_serialno(): smartctl failed, \"%s\" exit status = %u",
+                           final_cmd_smartctl,
+                           exit_status );
+            }
+            set_return_value = 6;
+
+            if( exit_status == 127 )
+            {
+                nwipe_log( NWIPE_LOG_WARNING, "Command not found. Install Smartctl recommended !" );
+
+                set_return_value = 4;
+            }
+
+            if( exit_status == 1 )
+            {
+                nwipe_log( NWIPE_LOG_WARNING, "USB to IDE/SATA adapter does not support passthru.?" );
+
+                if( *bus == NWIPE_DEVICE_USB )
+                {
+                    strcpy( serialnumber, "(no ATA pass thru)" );
+                    set_return_value = 5;
+                }
+            }
         }
     }
 
