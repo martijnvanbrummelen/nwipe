@@ -235,7 +235,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     {
         snprintf( next_device->device_label,
                   NWIPE_DEVICE_LABEL_LENGTH,
-                  "%s %s (%s) - %s/%s",
+                  "%s %s (%s) %s/%s",
                   next_device->device_name,
                   next_device->device_type_str,
                   next_device->device_size_text,
@@ -246,7 +246,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     {
         snprintf( next_device->device_label,
                   NWIPE_DEVICE_LABEL_LENGTH,
-                  "%s %s (%s) - %s",
+                  "%s %s (%s) %s",
                   next_device->device_name,
                   next_device->device_type_str,
                   next_device->device_size_text,
@@ -348,7 +348,11 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
     int exit_status;
 
     char readlink_command[] = "readlink /sys/block/%s";
+    char readlink_command2[] = "/usr/bin/readlink /sys/block/%s";
+    char readlink_command3[] = "/sbin/readlink /sys/block/%s";
     char smartctl_command[] = "smartctl -i %s";
+    char smartctl_command2[] = "/sbin/smartctl -i %s";
+    char smartctl_command3[] = "/usr/bin/smartctl -i %s";
     char device_shortform[50];
     char result[512];
     char final_cmd_readlink[sizeof( readlink_command ) + sizeof( device_shortform )];
@@ -394,11 +398,25 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
 
     if( fp == NULL )
     {
-        nwipe_log( NWIPE_LOG_WARNING,
-                   "nwipe_get_device_bus_type_and_serialno: Failed to create stream to %s",
-                   readlink_command );
+        sprintf( final_cmd_readlink, readlink_command2, device_shortform );
 
-        set_return_value = 1;
+        fp = popen( final_cmd_readlink, "r" );
+
+        if( fp == NULL )
+        {
+            sprintf( final_cmd_readlink, readlink_command3, device_shortform );
+
+            fp = popen( final_cmd_readlink, "r" );
+
+            if( fp == NULL )
+            {
+                nwipe_log( NWIPE_LOG_WARNING,
+                           "nwipe_get_device_bus_type_and_serialno: Failed to create stream to %s",
+                           readlink_command );
+
+                set_return_value = 1;
+            }
+        }
     }
     else
     {
@@ -458,10 +476,25 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
     fp = popen( final_cmd_smartctl, "r" );
     if( fp == NULL )
     {
-        nwipe_log( NWIPE_LOG_WARNING,
-                   "nwipe_get_device_bus_type_and_serialno(): Failed to create stream to %s",
-                   smartctl_command );
-        set_return_value = 3;
+        sprintf( final_cmd_smartctl, smartctl_command2, device );
+
+        fp = popen( final_cmd_smartctl, "r" );
+
+        if( fp == NULL )
+        {
+            sprintf( final_cmd_smartctl, smartctl_command3, device );
+
+            fp = popen( final_cmd_smartctl, "r" );
+
+            if( fp == NULL )
+            {
+                nwipe_log( NWIPE_LOG_WARNING,
+                           "nwipe_get_device_bus_type_and_serialno(): Failed to create stream to %s",
+                           smartctl_command );
+
+                set_return_value = 3;
+            }
+        }
     }
     else
     {
@@ -505,7 +538,7 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
 
             if( exit_status == 1 )
             {
-                nwipe_log( NWIPE_LOG_WARNING, "USB to IDE/SATA adapter does not support passthru.?" );
+                nwipe_log( NWIPE_LOG_WARNING, "%s USB bridge, no passthru support", device );
 
                 if( *bus == NWIPE_DEVICE_USB )
                 {
