@@ -438,6 +438,8 @@ int nwipe_log_sysinfo()
 
     char dmidecode_command[] = "dmidecode -s %s";
     char dmidecode_command2[] = "/sbin/dmidecode -s %s";
+    char dmidecode_command3[] = "/usr/bin/dmidecode -s %s";
+    char* p_dmidecode_command;
 
     char cmd[sizeof( dmidecode_keywords ) + sizeof( dmidecode_command2 )];
 
@@ -445,44 +447,67 @@ int nwipe_log_sysinfo()
 
     keywords_idx = 0;
 
-    /* Run the dmidecode command to retrieve each dmidecode keyword, one at a time */
-    while( dmidecode_keywords[keywords_idx][0] != 0 )
+    p_dmidecode_command = 0;
+
+    if( system( "which dmidecode > /dev/null 2>&1" ) )
     {
-        sprintf( cmd, dmidecode_command, &dmidecode_keywords[keywords_idx][0] );
-        fp = popen( cmd, "r" );
-        if( fp == NULL )
+        if( system( "which /sbin/dmidecode > /dev/null 2>&1" ) )
         {
-            /* Run dmidecode from /sbin/, required for Debian SID */
-            sprintf( cmd, dmidecode_command2, &dmidecode_keywords[keywords_idx][0] );
+            if( system( "which /usr/bin/dmidecode > /dev/null 2>&1" ) )
+            {
+                nwipe_log( NWIPE_LOG_WARNING, "Command not found. Install dmidecode !" );
+            }
+            else
+            {
+                p_dmidecode_command = &dmidecode_command3[0];
+            }
+        }
+        else
+        {
+            p_dmidecode_command = &dmidecode_command2[0];
+        }
+    }
+    else
+    {
+        p_dmidecode_command = &dmidecode_command[0];
+    }
+
+    if( p_dmidecode_command != 0 )
+    {
+
+        /* Run the dmidecode command to retrieve each dmidecode keyword, one at a time */
+        while( dmidecode_keywords[keywords_idx][0] != 0 )
+        {
+            sprintf( cmd, p_dmidecode_command, &dmidecode_keywords[keywords_idx][0] );
             fp = popen( cmd, "r" );
             if( fp == NULL )
             {
                 nwipe_log( NWIPE_LOG_WARNING, "nwipe_log_sysinfo: Failed to create stream to %s", cmd );
                 return 1;
             }
-        }
-        /* Read the output a line at a time - output it. */
-        while( fgets( path, sizeof( path ) - 1, fp ) != NULL )
-        {
-            /* Remove any trailing return from the string, as nwipe_log automatically adds a return */
-            len = strlen( path );
-            if( path[len - 1] == '\n' )
+            /* Read the output a line at a time - output it. */
+            while( fgets( path, sizeof( path ) - 1, fp ) != NULL )
             {
-                path[len - 1] = 0;
+                /* Remove any trailing return from the string, as nwipe_log automatically adds a return */
+                len = strlen( path );
+                if( path[len - 1] == '\n' )
+                {
+                    path[len - 1] = 0;
+                }
+                nwipe_log( NWIPE_LOG_NOTICE, "%s = %s", &dmidecode_keywords[keywords_idx][0], path );
             }
-            nwipe_log( NWIPE_LOG_NOTICE, "%s = %s", &dmidecode_keywords[keywords_idx][0], path );
+            /* close */
+            r = pclose( fp );
+            if( r > 0 )
+            {
+                nwipe_log( NWIPE_LOG_WARNING,
+                           "nwipe_log_sysinfo(): dmidecode failed, \"%s\" exit status = %u",
+                           cmd,
+                           WEXITSTATUS( r ) );
+                return 1;
+            }
+            keywords_idx++;
         }
-        /* close */
-        r = pclose( fp );
-        if( r > 0 )
-        {
-            nwipe_log( NWIPE_LOG_WARNING,
-                       "nwipe_log_sysinfo(): dmidecode failed, \"%s\" exit status = %u",
-                       cmd,
-                       WEXITSTATUS( r ) );
-            return 1;
-        }
-        keywords_idx++;
     }
     return 0;
 }
