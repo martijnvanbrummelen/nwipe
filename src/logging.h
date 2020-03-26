@@ -40,7 +40,7 @@ void nwipe_log( nwipe_log_t level, const char* format, ... );
 void nwipe_perror( int nwipe_errno, const char* f, const char* s );
 int nwipe_log_sysinfo();
 void nwipe_log_summary( nwipe_context_t**, int );  // This produces the wipe status table on exit
-void Determine_bandwidth_nomenclature( u64, char*, int );
+void Determine_C_B_nomenclature( u64, char*, int );
 void convert_seconds_to_hours_minutes_seconds( u64, int*, int*, int* );
 
 #endif /* LOGGING_H_ */

@@ -654,7 +654,7 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
         }
 
         /* Determine the size of throughput so that the correct nomenclature can be used */
-        Determine_bandwidth_nomenclature( c[i]->throughput, throughput, 13 );
+        Determine_C_B_nomenclature( c[i]->throughput, throughput, 13 );
 
         /* Add this devices throughput to the total throughput */
         total_throughput += c[i]->throughput;
@@ -689,7 +689,7 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
         model[17] = 0;
 
         nwipe_log( NWIPE_LOG_NOTIMESTAMP,
-                   "%s %s |%s| %s | %02i:%02i:%02i | %s/%s",
+                   "%s %s |%s| %s/s | %02i:%02i:%02i | %s/%s",
                    exclamation_flag,
                    device,
                    status,
@@ -702,7 +702,7 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
     }
 
     /* Determine the size of throughput so that the correct nomenclature can be used */
-    Determine_bandwidth_nomenclature( total_throughput, total_throughput_string, 13 );
+    Determine_C_B_nomenclature( total_throughput, total_throughput_string, 13 );
 
     /* Blank abreviations used in summary table B=blank, NB=no blank */
     if( nwipe_options.noblank )
@@ -733,7 +733,7 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
     nwipe_log( NWIPE_LOG_NOTIMESTAMP,
                "--------------------------------------------------------------------------------" );
     nwipe_log( NWIPE_LOG_NOTIMESTAMP,
-               "[%i/%02i/%02i %02i:%02i:%02i] Total Throughput %s, %s, %iR+%s+%s",
+               "[%i/%02i/%02i %02i:%02i:%02i] Total Throughput %s/s, %s, %iR+%s+%s",
                1900 + p->tm_year,
                1 + p->tm_mon,
                p->tm_mday,
@@ -750,18 +750,20 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
     nwipe_log( NWIPE_LOG_NOTIMESTAMP, "" );
 }
 
-void Determine_bandwidth_nomenclature( u64 speed, char* result, int result_array_size )
+void Determine_C_B_nomenclature( u64 speed, char* result, int result_array_size )
 {
-    int idx;
 
-    /* A pointer to a result character string with a minimum of 13 characters in length
+    /* C_B ? Determine Capacity or Bandwidth nomenclature
+     *
+     * A pointer to a result character string with a minimum of 13 characters in length
      * should be provided.
      *
      * Outputs a string of the form xxxTB/s, xxxGB/s, xxxMB/s, xxxKB/s B/s depending on the value of 'speed'
      */
 
     /* Initialise the output array */
-    idx = 0;
+    int idx = 0;
+
     while( idx < result_array_size )
     {
         result[idx++] = 0;
@@ -770,23 +772,23 @@ void Determine_bandwidth_nomenclature( u64 speed, char* result, int result_array
     /* Determine the size of throughput so that the correct nomenclature can be used */
     if( speed >= INT64_C( 1000000000000 ) )
     {
-        snprintf( result, result_array_size, "%4lluTB/s", speed / INT64_C( 1000000000000 ) );
+        snprintf( result, result_array_size, "%3lluTB", speed / INT64_C( 1000000000000 ) );
     }
     else if( speed >= INT64_C( 1000000000 ) )
     {
-        snprintf( result, result_array_size, "%4lluGB/s", speed / INT64_C( 1000000000 ) );
+        snprintf( result, result_array_size, "%3lluGB", speed / INT64_C( 1000000000 ) );
     }
     else if( speed >= INT64_C( 1000000 ) )
     {
-        snprintf( result, result_array_size, "%4lluMB/s", speed / INT64_C( 1000000 ) );
+        snprintf( result, result_array_size, "%3lluMB", speed / INT64_C( 1000000 ) );
     }
     else if( speed >= INT64_C( 1000 ) )
     {
-        snprintf( result, result_array_size, "%4lluKB/s", speed / INT64_C( 1000 ) );
+        snprintf( result, result_array_size, "%3lluKB", speed / INT64_C( 1000 ) );
     }
     else
     {
-        snprintf( result, result_array_size, "%4llu B/s", speed / INT64_C( 1 ) );
+        snprintf( result, result_array_size, "%3llu B", speed / INT64_C( 1 ) );
     }
 }
 

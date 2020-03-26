@@ -67,6 +67,7 @@ typedef struct nwipe_speedring_t_
 } nwipe_speedring_t;
 
 #define NWIPE_DEVICE_LABEL_LENGTH 200
+#define NWIPE_DEVICE_SIZE_TXT_LENGTH 7
 
 typedef struct nwipe_context_t_
 {
@@ -86,6 +87,7 @@ typedef struct nwipe_context_t_
     char* device_name;  // The device file name.
     long long device_size;  // The device size in bytes.
     char* device_size_text;  // The device size in a more (human)readable format.
+    char device_size_txt[NWIPE_DEVICE_SIZE_TXT_LENGTH];  // The device size in a more (human)readable format.
     char* device_model;  // The model of the device.
     char device_label[NWIPE_DEVICE_LABEL_LENGTH];  // The label (name, model, size and serial) of the device.
     struct stat device_stat;  // The device file state from fstat().
