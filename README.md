@@ -146,7 +146,7 @@ with all the normal optimisations, using:
 ```
 ./configure --prefix=/usr && make && make install
 ```
-### Automating the download and compilation process for Debian based distro.
+### Automating the download and compilation process for Debian based distros.
 
 Here's a script that will do just that!. It will create a directory in your home folder called 'nwipe_master'. It installs all the libraries required to compile the software (build-essential) and all the libraries that nwipe requires (libparted etc). It downloads the latest master copy of nwipe from github. It then compiles the software and then runs the latest nwipe. It doesn't write over the version of nwipe that's installed in the repository (If you had nwipe already installed). To run the latest master version of nwipe manually you would run it like this `sudo ~/nwipe_master/nwipe/src/nwipe`
 
