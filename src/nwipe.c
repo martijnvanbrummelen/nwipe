@@ -122,6 +122,12 @@ int main( int argc, char** argv )
         }
     }
 
+    if( terminate_signal == 1 )
+    {
+        cleanup();
+        exit( 1 );
+    }
+
     /* Log the System information */
     nwipe_log_sysinfo();
 

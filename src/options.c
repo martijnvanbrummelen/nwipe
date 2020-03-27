@@ -84,6 +84,9 @@ int nwipe_options_parse( int argc, char** argv )
         /* Whether to blank the disk after wiping. */
         {"noblank", no_argument, 0, 0},
 
+        /* Whether to ignore all USB devices. */
+        {"nousb", no_argument, 0, 0},
+
         /* Whether to exit after wiping or wait for a keypress. */
         {"nowait", no_argument, 0, 0},
 
@@ -115,6 +118,7 @@ int nwipe_options_parse( int argc, char** argv )
     nwipe_options.prng = &nwipe_twister;
     nwipe_options.rounds = 1;
     nwipe_options.noblank = 0;
+    nwipe_options.nousb = 0;
     nwipe_options.nowait = 0;
     nwipe_options.nosignals = 0;
     nwipe_options.nogui = 0;
@@ -160,6 +164,12 @@ int nwipe_options_parse( int argc, char** argv )
                 if( strcmp( nwipe_options_long[i].name, "noblank" ) == 0 )
                 {
                     nwipe_options.noblank = 1;
+                    break;
+                }
+
+                if( strcmp( nwipe_options_long[i].name, "nousb" ) == 0 )
+                {
+                    nwipe_options.nousb = 1;
                     break;
                 }
 
@@ -509,6 +519,8 @@ void display_help()
     puts( "      --nogui             Do not show the GUI interface. Automatically invokes" );
     puts( "                          the nowait option. Must be used with the --autonuke" );
     puts( "                          option. Send SIGUSR1 to log current stats\n" );
+    puts( "      --nousb             Do show or wipe any USB devices whether in GUI" );
+    puts( "                          mode, --nogui or --autonuke modes.\n" );
     puts( "  -e, --exclude=DEVICES   Up to ten comma separated devices to be excluded" );
     puts( "                          --exclude=/dev/sdc" );
     puts( "                          --exclude=/dev/sdc,/dev/sdd" );

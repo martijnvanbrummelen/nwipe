@@ -47,6 +47,8 @@
 int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount );
 char* trim( char* str );
 
+extern int terminate_signal;
+
 int nwipe_device_scan( nwipe_context_t*** c )
 {
     /**
@@ -67,6 +69,13 @@ int nwipe_device_scan( nwipe_context_t*** c )
     {
         if( check_device( c, dev, dcount ) )
             dcount++;
+
+        /* Don't bother scanning drives if the terminate signal is active ! as in the case of
+         * the readlink program missing which is required if the --nousb option has been specified */
+        if( terminate_signal == 1 )
+        {
+            break;
+        }
     }
 
     /* Return the number of devices that were found. */
@@ -104,6 +113,13 @@ int nwipe_device_get( nwipe_context_t*** c, char** devnamelist, int ndevnames )
 
         if( check_device( c, dev, dcount ) )
             dcount++;
+
+        /* Don't bother scanning drives if the terminate signal is active ! as in the case of
+         * the readlink program missing which is required if the --nousb option has been specified */
+        if( terminate_signal == 1 )
+        {
+            break;
+        }
     }
 
     /* Return the number of devices that were found. */
@@ -119,6 +135,9 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     int idx;
     int r;
     char tmp_serial[21];
+    nwipe_device_t bus;
+
+    bus = 0;
 
     /* Check whether this drive is on the excluded drive list ? */
     idx = 0;
@@ -128,6 +147,35 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
         {
             nwipe_log( NWIPE_LOG_NOTICE, "Device %s excluded as per command line option -e", dev->path );
             return 0;
+        }
+    }
+
+    /* Check whether the user has specified using the --nousb option
+     * that all USB devices should not be displayed or wiped whether
+     * in GUI, --nogui or --autonuke modes */
+
+    if( nwipe_options.nousb )
+    {
+        /* retrieve bus and drive serial number, HOWEVER we are only interested in the bus at this time */
+        r = nwipe_get_device_bus_type_and_serialno( dev->path, &bus, tmp_serial );
+
+        if( r == 0 || r == 5 )
+        {
+            if( bus == NWIPE_DEVICE_USB )
+            {
+                nwipe_log( NWIPE_LOG_NOTICE, "Device %s ignored as per command line option --nousb", dev->path );
+                return 0;
+            }
+        }
+        else
+        {
+            if( r == 2 )
+            {
+                nwipe_log(
+                    NWIPE_LOG_NOTICE, "--nousb requires the 'readlink' program, please install readlink", dev->path );
+                terminate_signal = 1;
+                return 0;
+            }
         }
     }
 
@@ -403,6 +451,13 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
             if( system( "which /usr/bin/readlink > /dev/null 2>&1" ) )
             {
                 nwipe_log( NWIPE_LOG_WARNING, "Command not found. Install readlink !" );
+                set_return_value = 2;
+
+                /* Return immediatley if --nousb specified. Readlink is a requirment for this option. */
+                if( nwipe_options.nousb )
+                {
+                    return set_return_value;
+                }
             }
             else
             {
@@ -481,6 +536,7 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
                 }
 
                 set_return_value = 2;
+                return set_return_value;
             }
         }
     }

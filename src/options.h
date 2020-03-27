@@ -50,6 +50,7 @@ typedef struct
     int autonuke;  // Do not prompt the user for confirmation when set.
     int autopoweroff;  // Power off on completion of wipe
     int noblank;  // Do not perform a final blanking pass.
+    int nousb;  // Do not show or wipe any USB devices.
     int nowait;  // Do not wait for a final key before exiting.
     int nosignals;  // Do not allow signals to interrupt a wipe.
     int nogui;  // Do not show the GUI.
