@@ -17,6 +17,7 @@ other items in 0.29 are proposed and yet to be implemented.
 - [DONE] Add serial number display for USB to IDE/SATA adapters. This only works if the USB to IDE/SATA adapter supports ATA pass through. See #149 for further details (Thanks PartialVolume)
 - [DONE] Fix disk capacity nomenclature, width and padding on drive selection screen. See #237 (Thanks PartialVolume)
 - [DONE] Add bus type, ATA or USB, amongst others to drive selection and wipe windows. (Thanks PartialVolume)
+- [DONE] Add --nousb option. If you use the option --nousb, all USB devices will be ignored. They won't show up in the GUI and they won't be wiped if you use the --nogui --autonuke command. They will even be ignored if you specifically name them on the command line.
 - Add enhancement fibre channel wiping of non 512 bytes/sector drives such as 524/528 bytes/sector etc (work in progress by PartialVolume)
 - HPA/DCO detection and adjustment to wipe full drive. (work in progress by PartialVolume)
 
