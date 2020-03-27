@@ -533,10 +533,12 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
                 if( exit_status == 127 )
                 {
                     nwipe_log( NWIPE_LOG_WARNING, "Command not found. Install Readlink recommended !" );
+                    set_return_value = 2;
+                    if( nwipe_options.nousb )
+                    {
+                        return set_return_value;
+                    }
                 }
-
-                set_return_value = 2;
-                return set_return_value;
             }
         }
     }
