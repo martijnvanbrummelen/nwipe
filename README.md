@@ -59,7 +59,7 @@ sudo apt install \
   autotools-dev \
   libparted-dev \
   dmidecode \
-  readlink \
+  coreutils \
   smartmontools
 ```
 
@@ -73,7 +73,7 @@ dnf groupinstall "C Development Tools and Libraries"
 yum install ncurses-devel
 yum install parted-devel
 yum install dmidecode
-yum install readlink
+yum install coreutils
 yum install smartmontools
 ```
 Note. The following programs are optionally installed although recommended. 1. dmidecode 2. readlink 3. smartmontools.
@@ -81,8 +81,8 @@ Note. The following programs are optionally installed although recommended. 1. d
 #### dmidecode
 dmidecode provides SMBIOS/DMI host data to stdout or the log file. If you don't install it you won't see the SMBIOS/DMI host data at the beginning of nwipes log.
 
-#### readlink
-readlink determines the bus type, i.e. ATA, USB etc. Without it the --nousb option won't work and bus type information will be missing from nwipes selection and wipe windows.
+#### coreutils (provides readlink) 
+readlink determines the bus type, i.e. ATA, USB etc. Without it the --nousb option won't work and bus type information will be missing from nwipes selection and wipe windows. The coreutils package is often automatically installed as default in most if not all distros.
 
 #### smartmontools
 smartmontools obtains serial number information for supported USB to IDE/SATA adapters. Without it, drives plugged into USB ports will not show serial number information.
