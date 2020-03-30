@@ -2404,41 +2404,34 @@ void* nwipe_gui_status( void* ptr )
                 {
                     switch( c[i]->pass_type )
                     {
+                        /* Each text field in square brackets should be the same number of characters
+                         * to retain output in columns */
                         case NWIPE_PASS_FINAL_BLANK:
                             if( !c[i]->sync_status )
                             {
-                                wprintw( main_window, "[blanking] " );
-                            }
-                            else
-                            {
-                                wprintw( main_window, "[--------] " );
+                                wprintw( main_window, "[ blanking] " );
                             }
                             break;
 
                         case NWIPE_PASS_FINAL_OPS2:
                             if( !c[i]->sync_status )
                             {
-                                wprintw( main_window, "[OPS-II final] " );
-                            }
-                            else
-                            {
-                                wprintw( main_window, "[------------] " );
+                                wprintw( main_window, "[OPS2final] " );
                             }
                             break;
 
                         case NWIPE_PASS_WRITE:
                             if( !c[i]->sync_status )
                             {
-                                wprintw( main_window, "[writing] " );
-                            }
-                            else
-                            {
-                                wprintw( main_window, "[-------] " );
+                                wprintw( main_window, "[ writing ] " );
                             }
                             break;
 
                         case NWIPE_PASS_VERIFY:
-                            wprintw( main_window, "[verifying] " );
+                            if( !c[i]->sync_status )
+                            {
+                                wprintw( main_window, "[verifying] " );
+                            }
                             break;
 
                         case NWIPE_PASS_NONE:
@@ -2447,11 +2440,7 @@ void* nwipe_gui_status( void* ptr )
 
                     if( c[i]->sync_status )
                     {
-                        wprintw( main_window, "[syncing] " );
-                    }
-                    else
-                    {
-                        wprintw( main_window, "[-------] " );
+                        wprintw( main_window, "[ syncing ] " );
                     }
                 }
 
