@@ -213,11 +213,17 @@ void nwipe_gui_init( void )
         /* Set white on green for success messages. */
         init_pair( 5, COLOR_WHITE, COLOR_GREEN );
 
-        /* Set white on green for failure messages. */
+        /* Set white on red for failure messages. */
         init_pair( 6, COLOR_WHITE, COLOR_RED );
 
         /* Set black on black for when hiding the display. */
         init_pair( 7, COLOR_BLACK, COLOR_BLACK );
+
+        /* Set green on blue for reverse bold messages */
+        init_pair( 8, COLOR_GREEN, COLOR_WHITE );
+
+        /* Set green on blue for reverse bold error messages */
+        init_pair( 9, COLOR_RED, COLOR_WHITE );
 
         /* Set the background style. */
         wbkgdset( stdscr, COLOR_PAIR( 1 ) | ' ' );
@@ -2375,11 +2381,15 @@ void* nwipe_gui_status( void* ptr )
                     }
                     else if( c[i]->signal )
                     {
+                        wattron( main_window, COLOR_PAIR( 9 ) );
                         mvwprintw( main_window, yy++, 4, "(>>> FAILURE! <<<, signal %i) ", c[i]->signal );
+                        wattroff( main_window, COLOR_PAIR( 9 ) );
                     }
                     else
                     {
+                        wattron( main_window, COLOR_PAIR( 9 ) );
                         mvwprintw( main_window, yy++, 4, "(>>>FAILURE!<<<, code %i) ", c[i]->result );
+                        wattroff( main_window, COLOR_PAIR( 9 ) );
                     }
 
                 } /* child returned */
