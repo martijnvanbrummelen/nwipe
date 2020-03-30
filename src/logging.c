@@ -772,19 +772,19 @@ void Determine_C_B_nomenclature( u64 speed, char* result, int result_array_size 
     /* Determine the size of throughput so that the correct nomenclature can be used */
     if( speed >= INT64_C( 1000000000000 ) )
     {
-        snprintf( result, result_array_size, "%3lluTB", speed / INT64_C( 1000000000000 ) );
+        snprintf( result, result_array_size, "%3llu TB", speed / INT64_C( 1000000000000 ) );
     }
     else if( speed >= INT64_C( 1000000000 ) )
     {
-        snprintf( result, result_array_size, "%3lluGB", speed / INT64_C( 1000000000 ) );
+        snprintf( result, result_array_size, "%3llu GB", speed / INT64_C( 1000000000 ) );
     }
     else if( speed >= INT64_C( 1000000 ) )
     {
-        snprintf( result, result_array_size, "%3lluMB", speed / INT64_C( 1000000 ) );
+        snprintf( result, result_array_size, "%3llu MB", speed / INT64_C( 1000000 ) );
     }
     else if( speed >= INT64_C( 1000 ) )
     {
-        snprintf( result, result_array_size, "%3lluKB", speed / INT64_C( 1000 ) );
+        snprintf( result, result_array_size, "%3llu KB", speed / INT64_C( 1000 ) );
     }
     else
     {

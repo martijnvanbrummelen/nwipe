@@ -45,4 +45,6 @@ int spinner( nwipe_context_t** ptr, int );  // Return the next spinner character
 int compute_stats( void* ptr );
 void nwipe_update_speedring( nwipe_speedring_t* speedring, u64 speedring_done, time_t speedring_now );
 
+#define NOMENCLATURE_RESULT_STR_SIZE 8
+
 #endif /* GUI_H_ */

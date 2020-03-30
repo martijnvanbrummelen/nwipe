@@ -2079,15 +2079,7 @@ void* nwipe_gui_status( void* ptr )
     nwipe_misc_thread_data = nwipe_thread_data_ptr->nwipe_misc_thread_data;
     count = nwipe_misc_thread_data->nwipe_selected;
 
-    /* Throughput print formats. */
-    char* nwipe_tera = "%llu TB/s";
-    char* nwipe_giga = "%llu GB/s";
-    char* nwipe_mega = "%llu MB/s";
-    char* nwipe_kilo = "%llu KB/s";
-    char* nwipe_unit = "%llu B/s";
-
-    /* The throughput format pointer. */
-    char* nwipe_format;
+    char nomenclature_result_str[NOMENCLATURE_RESULT_STR_SIZE]; /* temporary usage */
 
     /* Spinner character */
     char spinner_string[2];
@@ -2444,26 +2436,10 @@ void* nwipe_gui_status( void* ptr )
                     }
                 }
 
-                if( c[i]->throughput >= INT64_C( 1000000000000 ) )
-                {
-                    wprintw( main_window, "[%llu TB/s] ", c[i]->throughput / INT64_C( 1000000000000 ) );
-                }
-                else if( c[i]->throughput >= INT64_C( 1000000000 ) )
-                {
-                    wprintw( main_window, "[%llu GB/s] ", c[i]->throughput / INT64_C( 1000000000 ) );
-                }
-                else if( c[i]->throughput >= INT64_C( 1000000 ) )
-                {
-                    wprintw( main_window, "[%llu MB/s] ", c[i]->throughput / INT64_C( 1000000 ) );
-                }
-                else if( c[i]->throughput >= INT64_C( 1000 ) )
-                {
-                    wprintw( main_window, "[%llu KB/s] ", c[i]->throughput / INT64_C( 1000 ) );
-                }
-                else
-                {
-                    wprintw( main_window, "[%llu B/s] ", c[i]->throughput / INT64_C( 1 ) );
-                }
+                /* Determine throughput nomenclature for this drive and output drives throughput to GUI */
+                Determine_C_B_nomenclature( c[i]->throughput, nomenclature_result_str, NOMENCLATURE_RESULT_STR_SIZE );
+
+                wprintw( main_window, "[%s/s] ", nomenclature_result_str );
 
                 /* Insert whitespace. */
                 yy += 1;
@@ -2509,37 +2485,14 @@ void* nwipe_gui_status( void* ptr )
 
             nwipe_throughput = nwipe_misc_thread_data->throughput;
 
-            if( nwipe_throughput >= INT64_C( 1000000000000 ) )
-            {
-                nwipe_throughput /= INT64_C( 1000000000000 );
-                nwipe_format = nwipe_tera;
-            }
-            else if( nwipe_throughput >= INT64_C( 1000000000 ) )
-            {
-                nwipe_throughput /= INT64_C( 1000000000 );
-                nwipe_format = nwipe_giga;
-            }
-            else if( nwipe_throughput >= INT64_C( 1000000 ) )
-            {
-                nwipe_throughput /= INT64_C( 1000000 );
-                nwipe_format = nwipe_mega;
-            }
-            else if( nwipe_throughput >= INT64_C( 1000 ) )
-            {
-                nwipe_throughput /= INT64_C( 1000 );
-                nwipe_format = nwipe_kilo;
-            }
-            else
-            {
-                nwipe_throughput /= INT64_C( 1 );
-                nwipe_format = nwipe_unit;
-            }
+            /* Determine the nomenclature for the combined throughput */
+            Determine_C_B_nomenclature( nwipe_throughput, nomenclature_result_str, NOMENCLATURE_RESULT_STR_SIZE );
 
             /* Print the combined throughput. */
             mvwprintw( stats_window, NWIPE_GUI_STATS_THROUGHPUT_Y, NWIPE_GUI_STATS_THROUGHPUT_X, "Throughput:" );
 
             mvwprintw(
-                stats_window, NWIPE_GUI_STATS_THROUGHPUT_Y, NWIPE_GUI_STATS_TAB, nwipe_format, nwipe_throughput );
+                stats_window, NWIPE_GUI_STATS_THROUGHPUT_Y, NWIPE_GUI_STATS_TAB, "%s/s", nomenclature_result_str );
 
             /* Change the current time into a delta. */
             nwipe_time_now -= nwipe_time_start;
@@ -2586,7 +2539,7 @@ void* nwipe_gui_status( void* ptr )
             /* Print the error count. */
             mvwprintw( stats_window, NWIPE_GUI_STATS_ERRORS_Y, NWIPE_GUI_STATS_ERRORS_X, "Errors:" );
             mvwprintw(
-                stats_window, NWIPE_GUI_STATS_ERRORS_Y, NWIPE_GUI_STATS_TAB, "%llu", nwipe_misc_thread_data->errors );
+                stats_window, NWIPE_GUI_STATS_ERRORS_Y, NWIPE_GUI_STATS_TAB, "  %llu", nwipe_misc_thread_data->errors );
 
             /* Add a border. */
             box( stats_window, 0, 0 );
