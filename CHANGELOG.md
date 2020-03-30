@@ -18,6 +18,8 @@ other items in 0.29 are proposed and yet to be implemented.
 - [DONE] Fix disk capacity nomenclature, width and padding on drive selection screen. See [#237](https://github.com/martijnvanbrummelen/nwipe/issues/237) (Thanks PartialVolume)
 - [DONE] Add bus type, ATA or USB, amongst others to drive selection and wipe windows. (Thanks PartialVolume)
 - [DONE] Add --nousb option. If you use the option --nousb, all USB devices will be ignored. They won't show up in the GUI and they won't be wiped if you use the --nogui --autonuke command. They will even be ignored if you specifically name them on the command line.
+- [DONE] Miscellaneous GUI fixes, throughput display format, percentage display format to improve column alignment when wiping multiple discs. (Thanks PartialVolume)
+- [DONE] Improve visibility of failure messages with red text on white background. (Thanks PartialVolume)
 - Add enhancement fibre channel wiping of non 512 bytes/sector drives such as 524/528 bytes/sector etc (work in progress by PartialVolume)
 - HPA/DCO detection and adjustment to wipe full drive. (work in progress by PartialVolume)
 
