@@ -2367,7 +2367,7 @@ void* nwipe_gui_status( void* ptr )
                     mvwprintw( main_window,
                                yy++,
                                4,
-                               "[%05.2f%%, round %i of %i, pass %i of %i] ",
+                               "[%5.2f%%, round %i of %i, pass %i of %i] ",
                                c[i]->round_percent,
                                c[i]->round_working,
                                c[i]->round_count,
