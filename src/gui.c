@@ -2146,7 +2146,6 @@ void* nwipe_gui_status( void* ptr )
 
     /* Throughput variables */
     u64 nwipe_throughput;
-    u64 nwipe_throughput_stopped;
 
     /* The number of active wipe processes. */
     /* Set to 1 initially to start loop.    */
@@ -2350,7 +2349,7 @@ void* nwipe_gui_status( void* ptr )
         if( nwipe_gui_blank == 0 )
         {
 
-            if( nwipe_active && terminate_signal != 1 )
+            if( terminate_signal != 1 )
             {
                 nwipe_active = compute_stats( ptr );  // Returns number of active wipe threads
             }
@@ -2517,13 +2516,9 @@ void* nwipe_gui_status( void* ptr )
             if( nwipe_active && terminate_signal != 1 )
             {
                 nwipe_gui_load();
-                nwipe_throughput = nwipe_misc_thread_data->throughput;
-                nwipe_throughput_stopped = nwipe_throughput;
             }
-            else
-            {
-                nwipe_throughput = nwipe_throughput_stopped;
-            }
+
+            nwipe_throughput = nwipe_misc_thread_data->throughput;
 
             if( nwipe_throughput >= INT64_C( 1000000000000 ) )
             {
@@ -2554,11 +2549,8 @@ void* nwipe_gui_status( void* ptr )
             /* Print the combined throughput. */
             mvwprintw( stats_window, NWIPE_GUI_STATS_THROUGHPUT_Y, NWIPE_GUI_STATS_THROUGHPUT_X, "Throughput:" );
 
-            if( nwipe_throughput > 0 )
-            {
-                mvwprintw(
-                    stats_window, NWIPE_GUI_STATS_THROUGHPUT_Y, NWIPE_GUI_STATS_TAB, nwipe_format, nwipe_throughput );
-            }
+            mvwprintw(
+                stats_window, NWIPE_GUI_STATS_THROUGHPUT_Y, NWIPE_GUI_STATS_TAB, nwipe_format, nwipe_throughput );
 
             /* Change the current time into a delta. */
             nwipe_time_now -= nwipe_time_start;
@@ -2670,40 +2662,43 @@ int compute_stats( void* ptr )
         {
             /* Increment the child counter. */
             nwipe_active += 1;
-        }
 
-        /* Even if the wipe has finished ALWAYS run the stats one last time so the final SUCCESS percentage value is
-         * correct. Maintain a rolling average of throughput. */
-        nwipe_update_speedring( &c[i]->speedring, c[i]->round_done, nwipe_time_now );
+            /* Even if the wipe has finished ALWAYS run the stats one last time so the final SUCCESS percentage value is
+             * correct. Maintain a rolling average of throughput. */
+            nwipe_update_speedring( &c[i]->speedring, c[i]->round_done, nwipe_time_now );
 
-        if( c[i]->speedring.timestotal > 0 && c[i]->wipe_status == 1 )
-        {
-            /* Update the current average throughput in bytes-per-second. */
-            c[i]->throughput = c[i]->speedring.bytestotal / c[i]->speedring.timestotal;
-
-            /* Update the estimated remaining runtime. */
-            /* Check that throughput is not zero (sometimes caused during a sync) */
-            if( c[i]->throughput == 0 )
+            if( c[i]->speedring.timestotal > 0 && c[i]->wipe_status == 1 )
             {
-                c[i]->throughput = 1;
+                /* Update the current average throughput in bytes-per-second. */
+                c[i]->throughput = c[i]->speedring.bytestotal / c[i]->speedring.timestotal;
+
+                /* Update the estimated remaining runtime. */
+                /* Check that throughput is not zero (sometimes caused during a sync) */
+                if( c[i]->throughput == 0 )
+                {
+                    c[i]->throughput = 1;
+                }
+
+                c[i]->eta = ( c[i]->round_size - c[i]->round_done ) / c[i]->throughput;
+
+                if( c[i]->eta > nwipe_misc_thread_data->maxeta )
+                {
+                    nwipe_misc_thread_data->maxeta = c[i]->eta;
+                }
             }
 
-            c[i]->eta = ( c[i]->round_size - c[i]->round_done ) / c[i]->throughput;
-
-            if( c[i]->eta > nwipe_misc_thread_data->maxeta )
-            {
-                nwipe_misc_thread_data->maxeta = c[i]->eta;
-            }
+            /* Calculate the average throughput */
+            c[i]->throughput = (double) c[i]->round_done / (double) difftime( nwipe_time_now, c[i]->start_time );
         }
-
-        /* Calculate the average throughput */
-        c[i]->throughput = (double) c[i]->round_done / (double) difftime( nwipe_time_now, c[i]->start_time );
 
         /* Update the percentage value. */
         c[i]->round_percent = (double) c[i]->round_done / (double) c[i]->round_size * 100;
 
-        /* Accumulate combined throughput. */
-        nwipe_misc_thread_data->throughput += c[i]->throughput;
+        if( c[i]->wipe_status == 1 )
+        {
+            /* Accumulate combined throughput. */
+            nwipe_misc_thread_data->throughput += c[i]->throughput;
+        }
 
         /* Accumulate the error count. */
         nwipe_misc_thread_data->errors += c[i]->pass_errors;
