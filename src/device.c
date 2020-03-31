@@ -236,7 +236,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     // Remove leading/trailing whitespace from serial number and left justify.
     trim( (char*) next_device->device_serial_no );
 
-    /* if we couldn't obtain serial number by using the above method .. this this */
+    /* if we couldn't obtain serial number by using the above method .. try this */
     r = nwipe_get_device_bus_type_and_serialno( next_device->device_name, &next_device->device_type, tmp_serial );
 
     /* If serial number & bus retrieved (0) OR unsupported USB bus identified (5) */
@@ -249,34 +249,43 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
         }
     }
 
+    /* All device strings should be 4 characters, prefix with space if under 4 characters */
     switch( next_device->device_type )
     {
         case NWIPE_DEVICE_UNKNOWN:
-            strcpy( next_device->device_type_str, "UNK" );
+            strcpy( next_device->device_type_str, " UNK" );
             break;
 
         case NWIPE_DEVICE_IDE:
-            strcpy( next_device->device_type_str, "IDE" );
+            strcpy( next_device->device_type_str, " IDE" );
             break;
 
         case NWIPE_DEVICE_SCSI:
-            strcpy( next_device->device_type_str, "SCSI" );
+            strcpy( next_device->device_type_str, " SCSI" );
             break;
 
         case NWIPE_DEVICE_COMPAQ:
-            strcpy( next_device->device_type_str, "CPQ" );
+            strcpy( next_device->device_type_str, " CPQ" );
             break;
 
         case NWIPE_DEVICE_USB:
-            strcpy( next_device->device_type_str, "USB" );
+            strcpy( next_device->device_type_str, " USB" );
             break;
 
         case NWIPE_DEVICE_IEEE1394:
-            strcpy( next_device->device_type_str, "IEEE1394" );
+            strcpy( next_device->device_type_str, "1394" );
             break;
 
         case NWIPE_DEVICE_ATA:
-            strcpy( next_device->device_type_str, "ATA" );
+            strcpy( next_device->device_type_str, " ATA" );
+            break;
+
+        case NWIPE_DEVICE_NVME:
+            strcpy( next_device->device_type_str, "NVME" );
+            break;
+
+        case NWIPE_DEVICE_VIRT:
+            strcpy( next_device->device_type_str, "VIRT" );
             break;
     }
 
@@ -513,6 +522,20 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
                     if( strstr( result, "/ata" ) != 0 )
                     {
                         *bus = NWIPE_DEVICE_ATA;
+                    }
+                    else
+                    {
+                        if( strstr( result, "/nvme/" ) != 0 )
+                        {
+                            *bus = NWIPE_DEVICE_NVME;
+                        }
+                        else
+                        {
+                            if( strstr( result, "/virtual/" ) != 0 )
+                            {
+                                *bus = NWIPE_DEVICE_VIRT;
+                            }
+                        }
                     }
                 }
             }
