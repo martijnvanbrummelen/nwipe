@@ -523,7 +523,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
     int focus = 0;
 
     /* A generic loop variable. */
-    int i;
+    int i = 0;
 
     /* User input buffer. */
     int keystroke;
@@ -551,6 +551,38 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
 
         /* Less two lines for the box and two lines for padding. */
         slots = wlines - 4;
+        if( slots < 0 )
+        {
+            slots = 0;
+        }
+
+        /* The code here adjusts the offset value, required when the terminal is resized vertically */
+        if( slots > count )
+        {
+            offset = 0;
+        }
+        else
+        {
+            if( focus >= count )
+            {
+                /* The focus is already at the last element. */
+                focus = count - 1;
+            }
+            if( focus < 0 )
+            {
+                /* The focus is already at the last element. */
+                focus = 0;
+            }
+        }
+
+        if( count >= slots && slots > 0 )
+        {
+            offset = focus + 1 - slots;
+            if( offset < 0 )
+            {
+                offset = 0;
+            }
+        }
 
         /* Clear the main window, necessary when switching selections such as method etc */
         werase( main_window );
@@ -601,42 +633,59 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                 waddch( main_window, ' ' );
             }
 
-            switch( c[i + offset]->select )
+            /* In the event of the offset value so how becoming invalid, this if statement will prevent a segfault
+             * and the else part will log the out of bounds values for debugging */
+            if( i + offset >= 0 && i + offset < count )
             {
-                case NWIPE_SELECT_TRUE:
 
-                    wprintw( main_window, " [wipe] %i. %s", ( i + offset + 1 ), c[i + offset]->device_label );
-                    break;
+                switch( c[i + offset]->select )
+                {
+                    case NWIPE_SELECT_TRUE:
 
-                case NWIPE_SELECT_FALSE:
-                    /* Print an element that is not selected. */
-                    wprintw( main_window, " [    ] %i. %s", ( i + offset + 1 ), c[i + offset]->device_label );
-                    break;
+                        wprintw( main_window, " [wipe] %i. %s", ( i + offset + 1 ), c[i + offset]->device_label );
+                        break;
 
-                case NWIPE_SELECT_TRUE_PARENT:
+                    case NWIPE_SELECT_FALSE:
+                        /* Print an element that is not selected. */
+                        wprintw( main_window, " [    ] %i. %s", ( i + offset + 1 ), c[i + offset]->device_label );
+                        break;
 
-                    /* This element will be wiped when its parent is wiped. */
-                    wprintw( main_window, " [****] %i. %s", ( i + offset + 1 ), c[i + offset]->device_label );
-                    break;
+                    case NWIPE_SELECT_TRUE_PARENT:
 
-                case NWIPE_SELECT_FALSE_CHILD:
+                        /* This element will be wiped when its parent is wiped. */
+                        wprintw( main_window, " [****] %i. %s", ( i + offset + 1 ), c[i + offset]->device_label );
+                        break;
 
-                    /* We can't wipe this element because it has a child that is being wiped. */
-                    wprintw( main_window, " [----] %i. %s", ( i + offset + 1 ), c[i + offset]->device_label );
-                    break;
+                    case NWIPE_SELECT_FALSE_CHILD:
 
-                case NWIPE_SELECT_DISABLED:
+                        /* We can't wipe this element because it has a child that is being wiped. */
+                        wprintw( main_window, " [----] %i. %s", ( i + offset + 1 ), c[i + offset]->device_label );
+                        break;
 
-                    /* We don't know how to wipe this device. (Iomega Zip drives.) */
-                    wprintw( main_window, " [????] %s", "Unrecognized Device" );
-                    break;
+                    case NWIPE_SELECT_DISABLED:
 
-                default:
+                        /* We don't know how to wipe this device. (Iomega Zip drives.) */
+                        wprintw( main_window, " [????] %s", "Unrecognized Device" );
+                        break;
 
-                    /* TODO: Handle the sanity error. */
-                    break;
+                    default:
 
-            } /* switch select */
+                        /* TODO: Handle the sanity error. */
+                        break;
+
+                } /* switch select */
+            }
+            else
+            {
+                nwipe_log( NWIPE_LOG_DEBUG,
+                           "GUI.c,nwipe_gui_select(), scroll, array index out of bounds, i=%u, count=%u, slots=%u, "
+                           "focus=%u, offset=%u",
+                           i,
+                           count,
+                           slots,
+                           focus,
+                           offset );
+            }
 
         } /* for */
 
@@ -672,10 +721,9 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
          * which wastes CPU cycles.
          */
 
-        validkeyhit = 0;
-
         do
         {
+            validkeyhit = 0;
             timeout( 250 );  // block getch() for 250ms.
             keystroke = getch();  // Get user input.
             timeout( -1 );  // Switch back to blocking mode.
@@ -685,6 +733,8 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                 case KEY_DOWN:
                 case 'j':
                 case 'J':
+
+                    validkeyhit = 1;
 
                     /* Increment the focus. */
                     focus += 1;
@@ -702,13 +752,14 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                         offset += 1;
                         break;
                     }
-                    validkeyhit = 1;
 
                     break;
 
                 case KEY_UP:
                 case 'k':
                 case 'K':
+
+                    validkeyhit = 1;
 
                     /* Decrement the focus. */
                     focus -= 1;
@@ -726,13 +777,14 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                         offset -= 1;
                         break;
                     }
-                    validkeyhit = 1;
 
                     break;
 
                 case KEY_ENTER:
                 case 10:
                 case ' ':
+
+                    validkeyhit = 1;
 
                     /* TODO: This block should be made into a function. */
 
@@ -800,8 +852,6 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
 
                         } /* else super-enable */
 
-                        validkeyhit = 1;
-
                         break;
 
                     } /* if NWIPE_SELECT_TRUE */
@@ -848,54 +898,58 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
 
                         } /* else super-deselect */
 
-                        validkeyhit = 1;
-
                         break;
 
                     } /* if NWIPE_SELECT_FALSE */
 
                     /* TODO: Explain to the user why they can't change this. */
-                    validkeyhit = 1;
                     break;
 
                 case 'm':
                 case 'M':
 
+                    validkeyhit = 1;
+
                     /*  Run the method dialog. */
                     nwipe_gui_method();
-                    validkeyhit = 1;
                     break;
 
                 case 'p':
                 case 'P':
 
+                    validkeyhit = 1;
+
                     /* Run the PRNG dialog. */
                     nwipe_gui_prng();
-                    validkeyhit = 1;
+
                     break;
 
                 case 'r':
                 case 'R':
 
+                    validkeyhit = 1;
+
                     /* Run the rounds dialog. */
                     nwipe_gui_rounds();
-                    validkeyhit = 1;
+
                     break;
 
                 case 'v':
                 case 'V':
 
+                    validkeyhit = 1;
+
                     /* Run the option dialog. */
                     nwipe_gui_verify();
-                    validkeyhit = 1;
                     break;
 
                 case 'b':
                 case 'B':
 
+                    validkeyhit = 1;
+
                     /* Run the noblank dialog. */
                     nwipe_gui_noblank();
-                    validkeyhit = 1;
                     break;
 
                 case 'S':
