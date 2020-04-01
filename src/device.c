@@ -159,7 +159,8 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
         /* retrieve bus and drive serial number, HOWEVER we are only interested in the bus at this time */
         r = nwipe_get_device_bus_type_and_serialno( dev->path, &bus, tmp_serial );
 
-        if( r == 0 || r == 5 )
+        /* See nwipe_get_device_bus_type_and_serialno() function for meaning of these codes */
+        if( r == 0 || ( r >= 3 && r <= 6 ) )
         {
             if( bus == NWIPE_DEVICE_USB )
             {
