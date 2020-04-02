@@ -179,6 +179,25 @@ make
 cd "src"
 sudo ./nwipe
 ```
+### Quick & Easy, bootable version of Nwipe Master
+If you want to just try out a bootable version of nwipe you can download the ShredOS image [shredos-20200402.img](https://drive.google.com/file/d/1Zr_nSt1zvUUd6FGImU_phEPLX4GZlI1Z/view?usp=sharing) and burn it to a USB stick
+
+Check that the checksum matches
+```
+sha1sum shredos-20200402.img
+8088bbced64e854097482702cabc0a831b12b9ee  shredos-20200402.img
+```
+
+Linux: Simply write it to a USB memory stick using the following command, replacing xxx with the device name of the USB memory stick you want to burn to.
+```
+dd if=shredos-20200402.img of=/dev/xxx
+```
+Reboot you computer making sure your bios is setup to boot from USB. It will boot very fast even on an old machine. On an old dual core system I use for testing it boots in around 9 seconds straight into the Nwipe drive selection screen.
+
+Some things to note:
+- ShredOS has two tty terminals, ALT-F1 and ALT-F2. The default terminal ALT-F1 only runs nwipe, the version of nwipe that runs in the default terminal will automatically restart when you exit it, either at the end of a wipe or using CONTROL-C to abort. So if you want to run nwipe in the traditional way, along with any command line options you require, then use the second terminal ALT-F2, i.e nwipe --nousb --logfile=nwipe.log. If you do this the nwipe in the default terminal should be left at the drive selection screen.
+- Although this is the latest version of nwipe that makes limited use of smartmontools, smartmontools is not installed in this version of ShredOS..YET. That will be fixed shortly.
+- Hopefully I can work out a way of doing a nightly automated build of ShredOS with the very latest nwipe master.
 
 ## Bugs
 
