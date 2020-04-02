@@ -180,7 +180,7 @@ cd "src"
 sudo ./nwipe
 ```
 ### Quick & Easy, bootable version of Nwipe Master
-If you want to just try out a bootable version of nwipe you can download the ShredOS image [shredos-20200402.img](https://drive.google.com/file/d/1Zr_nSt1zvUUd6FGImU_phEPLX4GZlI1Z/view?usp=sharing) and burn it to a USB stick
+If you want to just try out a bootable version of nwipe you can download the ShredOS image [shredos-20200402.img](https://bit.ly/34agiNp) and burn it to a USB stick
 
 Check that the checksum matches
 ```
