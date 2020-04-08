@@ -206,6 +206,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
 
     /* Get device information */
     next_device->device_model = dev->model;
+    remove_ATA_prefix( next_device->device_model );
     next_device->device_name = dev->path;
     next_device->device_size = dev->length * dev->sector_size;
     Determine_C_B_nomenclature( next_device->device_size, next_device->device_size_txt, NWIPE_DEVICE_SIZE_TXT_LENGTH );
@@ -681,5 +682,23 @@ void strip_CR_LF( char* str )
             str[idx] = ' ';
         }
         idx++;
+    }
+}
+
+void remove_ATA_prefix( char* str )
+{
+    /* Remove "ATA " prefix if present in the model no. string, left justifing string */
+
+    int idx_pre = 4;
+    int idx_post = 0;
+
+    if( !strncmp( str, "ATA ", 4 ) )
+    {
+        while( str[idx_pre] != 0 )
+        {
+            str[idx_post++] = str[idx_pre++];
+        }
+
+        str[idx_post] = 0;
     }
 }
