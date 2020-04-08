@@ -613,17 +613,18 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
         /* Any errors ? if so set the exclamation_flag and fail message,
          * All status messages should be eight characters EXACTLY !
          */
-        if( user_abort == 1 )
+        if( c[i]->result < 0 )
         {
             strncpy( exclamation_flag, "!", 1 );
             exclamation_flag[1] = 0;
 
-            strncpy( status, "UABORTED", 8 );
+            strncpy( status, "-FAILED-", 8 );
             status[8] = 0;
         }
         else
         {
-            if( c[i]->result != 0 )
+
+            if( c[i]->pass_errors != 0 )
             {
                 strncpy( exclamation_flag, "!", 1 );
                 exclamation_flag[1] = 0;
@@ -633,13 +634,12 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
             }
             else
             {
-
-                if( c[i]->pass_errors != 0 )
+                if( user_abort == 1 )
                 {
                     strncpy( exclamation_flag, "!", 1 );
                     exclamation_flag[1] = 0;
 
-                    strncpy( status, "-FAILED-", 8 );
+                    strncpy( status, "UABORTED", 8 );
                     status[8] = 0;
                 }
                 else
