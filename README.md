@@ -146,7 +146,7 @@ with all the normal optimisations, using:
 ```
 ./configure --prefix=/usr && make && make install
 ```
-### Automating the download and compilation process for Debian based distros.
+## Automating the download and compilation process for Debian based distros.
 
 Here's a script that will do just that!. It will create a directory in your home folder called 'nwipe_master'. It installs all the libraries required to compile the software (build-essential) and all the libraries that nwipe requires (libparted etc). It downloads the latest master copy of nwipe from github. It then compiles the software and then runs the latest nwipe. It doesn't write over the version of nwipe that's installed in the repository (If you had nwipe already installed). To run the latest master version of nwipe manually you would run it like this `sudo ~/nwipe_master/nwipe/src/nwipe`
 
@@ -179,27 +179,8 @@ make
 cd "src"
 sudo ./nwipe
 ```
-### Quick & Easy, bootable version of Nwipe Master for x86_64 systems.
-If you want to just try out a bootable version of nwipe you can download the ShredOS image [shredos-20200405.img](https://bit.ly/2XcaK3I) with the latest nwipe master and burn it to a USB stick
-
-Check that the checksum matches
-```
-sha1sum shredos-20200405.img
-73d9ea782cdf5cf213c11a1993995f0ee03b5878  shredos-20200405.img
-```
-
-Linux: Simply write it to a USB memory stick using the following command, replacing xxx with the device name of the USB memory stick you want to burn to.
-```
-dd if=shredos-20200405.img of=/dev/xxx
-```
-Windows: Use [Rufus](https://rufus.ie/), dd for windows or any of the many equivalents to burn the image to a USB stick.
-
-Reboot your computer, making sure your bios is setup to boot from USB. ShredOS will boot very fast even on an older machine. On an old dual core system I use for testing, ShredOS boots in around 9 seconds straight into the Nwipe drive selection screen.
-
-#### Some things to note:
-- ShredOS has two tty terminals, ALT-F1 and ALT-F2. The default terminal ALT-F1 only runs nwipe. The version of nwipe that runs in the default terminal will automatically restart when you exit it, either at the end of a wipe or using CONTROL-C to abort. So if you want to run nwipe in the traditional way, along with any command line options you require, then use the second terminal ALT-F2, as an example, you could then use the command ```nwipe --nousb --logfile=nwipe.log``` etc. If you do use ALT-F2 to run a second copy of nwipe, please remember that if you already have one copy of nwipe already wiping the second copy of nwipe will hang on starting, therefore nwipe in the default terminal should be left at the drive selection screen to prevent the second occurence of nwipe from hanging. Alternatively, a second occurrence of nwipe could be started by specifying the drive on the command line, i.e.```nwipe /dev/sdc``` etc.
-- The 20200405 version of ShredOS now includes the smartmontools package, Nwipes ability to detect serial numbers on USB devices now works on USB bridges who's chipset supports that functionality. This also now works in ShredOS 20200405.
-- hdparm is also available for those that want to do a firmware supported wipe. A firmware wipe is a planned enhancement to nwipe.
+## Quick & Easy, USB bootable version of Nwipe Master for x86_64 systems.
+If you want to just try out a bootable version of nwipe you can download the ShredOS image that's using the latest version of nwipe master and burn it to a USB stick. Instructions and download can be found [here](https://github.com/PartialVolume/shredos.2020.02/blob/master/README.md#obtaining-and-writing-shredos-to-a-usb-flash-drive-the-easy-way-)
 
 ## Bugs
 
