@@ -124,6 +124,8 @@ const char* stats_title = " Statistics ";
 
 /* Footer labels. */
 const char* main_window_footer = "S=Start M=Method P=PRNG V=Verify R=Rounds B=Blanking Space=Select Ctrl-C=Quit";
+const char* main_window_footer_warning_lower_case_s =
+    "  WARNING: To start the wipe press capital S, you pressed lower case s  ";
 const char* selection_footer = "J=Down K=Up Space=Select Backspace=Cancel Ctrl-C=Quit";
 const char* end_wipe_footer = "B=Blank screen Ctrl-C=Quit";
 const char* rounds_footer = "Left=Erase Esc=Cancel Ctrl-C=Quit";
@@ -224,6 +226,9 @@ void nwipe_gui_init( void )
 
         /* Set green on blue for reverse bold error messages */
         init_pair( 9, COLOR_RED, COLOR_WHITE );
+
+        /* Set black on yellow for warning messages */
+        init_pair( 10, COLOR_BLACK, COLOR_YELLOW );
 
         /* Set the background style. */
         wbkgdset( stdscr, COLOR_PAIR( 1 ) | ' ' );
@@ -956,6 +961,32 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
 
                     /* User want to start the wipe */
                     validkeyhit = 1;
+                    break;
+
+                case 's':
+
+                    /* user has mistakenly hit the lower case 's' instead of capital 'S' */
+
+                    /* Warn the user about their mistake */
+                    wattron( footer_window, COLOR_PAIR( 10 ) );
+                    nwipe_gui_amend_footer_window( main_window_footer_warning_lower_case_s );
+                    doupdate();
+                    sleep( 2 );
+                    wattroff( footer_window, COLOR_PAIR( 10 ) );
+
+                    /* After the delay return footer text back to key help */
+                    nwipe_gui_amend_footer_window( main_window_footer );
+                    doupdate();
+
+                    /* if user insists on holding the s key down, without this the gui would hang
+                     * for a period of time, i.e sleep above x number of repeated 's' keystrokes
+                     * which could run into minutes */
+                    do
+                    {
+                        timeout( 250 );  // block getch() for 250ms.
+                        keystroke = getch();  // Get user input.
+                        timeout( -1 );  // Switch back to blocking mode.
+                    } while( keystroke == 's' );
                     break;
 
             } /* keystroke switch */
