@@ -22,6 +22,7 @@ other items in 0.29 are proposed and yet to be implemented.
 - [DONE] Improve visibility of failure messages with red text on white background. (Thanks PartialVolume)
 - [DONE] Add NVME and VIRT (loop etc) devices to device type table for display in GUI and logs. NVME devices now show up as NVME devices rather than UNK (Thanks PartialVolume)
 - [DONE] Fix very obscure segmentation fault going back to at least 0.24 in drive selection window when resizing terminal vertical axis while drive focus symbol '>' is pointing to the last drive of a multi drive selection window. See [#248](https://github.com/martijnvanbrummelen/nwipe/pull/248) for further details (Thanks PartialVolume)
+- [DONE] Warn the user if they are incorrectly typing a lower case s to start a wipe, when they should be typing a capital S [#262](https://github.com/martijnvanbrummelen/nwipe/issues/262) (Thanks PartialVolume)
 - Add enhancement fibre channel wiping of non 512 bytes/sector drives such as 524/528 bytes/sector etc (work in progress by PartialVolume)
 - HPA/DCO detection and adjustment to wipe full drive. (work in progress by PartialVolume)
 
