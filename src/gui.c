@@ -126,6 +126,8 @@ const char* stats_title = " Statistics ";
 const char* main_window_footer = "S=Start M=Method P=PRNG V=Verify R=Rounds B=Blanking Space=Select Ctrl-C=Quit";
 const char* main_window_footer_warning_lower_case_s =
     "  WARNING: To start the wipe press capital S, you pressed lower case s  ";
+const char* main_window_footer_warning_no_drive_selected =
+    "  No drives selected, use spacebar to select a drive, then press S to start  ";
 const char* selection_footer = "J=Down K=Up Space=Select Backspace=Cancel Ctrl-C=Quit";
 const char* end_wipe_footer = "B=Blank screen Ctrl-C=Quit";
 const char* rounds_footer = "Left=Erase Esc=Cancel Ctrl-C=Quit";
@@ -538,6 +540,9 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
 
     /* Flag, Valid key hit = 1, anything else = 0 */
     int validkeyhit;
+
+    /* counts number of drives and partitions that have been selected */
+    int number_of_selected_contexts = 0;
 
     /* Get the terminal size */
     getmaxyx( stdscr, stdscr_lines, stdscr_cols );
@@ -959,8 +964,36 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
 
                 case 'S':
 
-                    /* User want to start the wipe */
+                    /* User wants to start the wipe */
                     validkeyhit = 1;
+
+                    /* Have any drives have been selected ? */
+                    number_of_selected_contexts = 0;
+                    for( i = 0; i < count; i++ )
+                    {
+                        if( c[i]->select == NWIPE_SELECT_TRUE )
+                        {
+                            number_of_selected_contexts += 1;
+                        }
+                    }
+
+                    /* if no drives have been selected, print a warning on the footer */
+                    if( number_of_selected_contexts == 0 )
+                    {
+                        wattron( footer_window, COLOR_PAIR( 10 ) );
+                        nwipe_gui_amend_footer_window( main_window_footer_warning_no_drive_selected );
+                        doupdate();
+                        sleep( 3 );
+                        wattroff( footer_window, COLOR_PAIR( 10 ) );
+
+                        /* After the delay return footer text back to key help */
+                        nwipe_gui_amend_footer_window( main_window_footer );
+                        doupdate();
+
+                        /* Remove the S from keystroke, which will keep us in the drive selection menu */
+                        keystroke = 0;
+                    }
+
                     break;
 
                 case 's':
@@ -971,7 +1004,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                     wattron( footer_window, COLOR_PAIR( 10 ) );
                     nwipe_gui_amend_footer_window( main_window_footer_warning_lower_case_s );
                     doupdate();
-                    sleep( 2 );
+                    sleep( 3 );
                     wattroff( footer_window, COLOR_PAIR( 10 ) );
 
                     /* After the delay return footer text back to key help */
