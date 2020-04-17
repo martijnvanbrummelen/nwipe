@@ -544,6 +544,9 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
     /* counts number of drives and partitions that have been selected */
     int number_of_selected_contexts = 0;
 
+    /* Control A toggle status -1=indefined, 0=all drives delected, 1=all drives selected */
+    int select_all_toggle_status = -1;
+
     /* Get the terminal size */
     getmaxyx( stdscr, stdscr_lines, stdscr_cols );
 
@@ -643,7 +646,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                 waddch( main_window, ' ' );
             }
 
-            /* In the event of the offset value so how becoming invalid, this if statement will prevent a segfault
+            /* In the event of the offset value some how becoming invalid, this if statement will prevent a segfault
              * and the else part will log the out of bounds values for debugging */
             if( i + offset >= 0 && i + offset < count )
             {
@@ -737,6 +740,12 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
             timeout( 250 );  // block getch() for 250ms.
             keystroke = getch();  // Get user input.
             timeout( -1 );  // Switch back to blocking mode.
+
+            /* We don't necessarily use these but for future reference, here are some cntrl + key values
+             * ^W - 23, ^E - 5, ^R - 18, ^T - 20, ^Y - 25, ^U - 21, ^I - 9, ^O - 15, ^P - 16, ^A - 1, ^D - 4
+             * ^F - 6, ^G - 7, ^H - 8, ^K - 11, ^L - 12, ^X - 24, ^V - 22, ^B - 2, ^N - 14
+             * Use nwipe_log( NWIPE_LOG_DEBUG, "Key Name: %s - %u", keyname(keystroke),keystroke) to
+             * figure out what code is returned by what ever key combination */
 
             switch( keystroke )
             {
@@ -999,6 +1008,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                 case 's':
 
                     /* user has mistakenly hit the lower case 's' instead of capital 'S' */
+                    validkeyhit = 1;
 
                     /* Warn the user about their mistake */
                     wattron( footer_window, COLOR_PAIR( 10 ) );
@@ -1020,6 +1030,41 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                         keystroke = getch();  // Get user input.
                         timeout( -1 );  // Switch back to blocking mode.
                     } while( keystroke == 's' );
+
+                    break;
+
+                case 1:
+
+                    /* Ctrl A - Toggle select/deselect all drives */
+                    validkeyhit = 1;
+
+                    if( select_all_toggle_status == -1 || select_all_toggle_status == 0 )
+                    {
+                        for( i = 0; i < count; i++ )
+                        {
+                            c[i]->select = NWIPE_SELECT_TRUE;
+                        }
+                        select_all_toggle_status = 1;
+                    }
+                    else
+                    {
+                        if( select_all_toggle_status == 1 )
+                        {
+                            for( i = 0; i < count; i++ )
+                            {
+                                c[i]->select = NWIPE_SELECT_FALSE;
+                            }
+                            select_all_toggle_status = 0;
+                        }
+                        else
+                        {
+                            nwipe_log(
+                                NWIPE_LOG_ERROR,
+                                "gui.c:nwipe_gui_select(), Invalid value in variable select_all_toggle_status = %d",
+                                select_all_toggle_status );
+                        }
+                    }
+
                     break;
 
             } /* keystroke switch */
