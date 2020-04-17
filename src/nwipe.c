@@ -89,6 +89,8 @@ int main( int argc, char** argv )
     /* Initialised and populated in device scan.     */
     nwipe_context_t** c1 = 0;
 
+    int wipe_threads_started = 0;
+
     /* Parse command line options. */
     nwipe_optind = nwipe_options_parse( argc, argv );
     if( nwipe_optind == argc )
@@ -269,160 +271,166 @@ int main( int argc, char** argv )
     }
 
     /* TODO: free c1 and c2 memory. */
-
-    for( i = 0; i < nwipe_selected; i++ )
+    if( user_abort == 0 )
     {
-        /* A result buffer for the BLKGETSIZE64 ioctl. */
-        u64 size64;
-
-        /* Initialise the spinner character index */
-        c2[i]->spinner_idx = 0;
-
-        /* Initialise the start and end time of the wipe */
-        c2[i]->start_time = 0;
-        c2[i]->end_time = 0;
-
-        /* Initialise the wipe_status flag, -1 = wipe not yet started */
-        c2[i]->wipe_status = -1;
-
-        /* Open the file for reads and writes. */
-        c2[i]->device_fd = open( c2[i]->device_name, O_RDWR );
-
-        /* Check the open() result. */
-        if( c2[i]->device_fd < 0 )
+        for( i = 0; i < nwipe_selected; i++ )
         {
-            nwipe_perror( errno, __FUNCTION__, "open" );
-            nwipe_log( NWIPE_LOG_WARNING, "Unable to open device '%s'.", c2[i]->device_name );
-            c2[i]->select = NWIPE_SELECT_DISABLED;
-            continue;
-        }
+            /* A result buffer for the BLKGETSIZE64 ioctl. */
+            u64 size64;
 
-        /* Stat the file. */
-        if( fstat( c2[i]->device_fd, &c2[i]->device_stat ) != 0 )
-        {
-            nwipe_perror( errno, __FUNCTION__, "fstat" );
-            nwipe_log( NWIPE_LOG_ERROR, "Unable to stat file '%s'.", c2[i]->device_name );
-            nwipe_error++;
-            continue;
-        }
+            /* Initialise the spinner character index */
+            c2[i]->spinner_idx = 0;
 
-        /* Check that the file is a block device. */
-        if( !S_ISBLK( c2[i]->device_stat.st_mode ) )
-        {
-            nwipe_log( NWIPE_LOG_ERROR, "'%s' is not a block device.", c2[i]->device_name );
-            nwipe_error++;
-            continue;
-        }
+            /* Initialise the start and end time of the wipe */
+            c2[i]->start_time = 0;
+            c2[i]->end_time = 0;
 
-        /* TODO: Lock the file for exclusive access. */
-        /*
-        if( flock( c2[i]->device_fd, LOCK_EX | LOCK_NB ) != 0 )
-        {
-                nwipe_perror( errno, __FUNCTION__, "flock" );
-                nwipe_log( NWIPE_LOG_ERROR, "Unable to lock the '%s' file.", c2[i]->device_name );
+            /* Initialise the wipe_status flag, -1 = wipe not yet started */
+            c2[i]->wipe_status = -1;
+
+            /* Open the file for reads and writes. */
+            c2[i]->device_fd = open( c2[i]->device_name, O_RDWR );
+
+            /* Check the open() result. */
+            if( c2[i]->device_fd < 0 )
+            {
+                nwipe_perror( errno, __FUNCTION__, "open" );
+                nwipe_log( NWIPE_LOG_WARNING, "Unable to open device '%s'.", c2[i]->device_name );
+                c2[i]->select = NWIPE_SELECT_DISABLED;
+                continue;
+            }
+
+            /* Stat the file. */
+            if( fstat( c2[i]->device_fd, &c2[i]->device_stat ) != 0 )
+            {
+                nwipe_perror( errno, __FUNCTION__, "fstat" );
+                nwipe_log( NWIPE_LOG_ERROR, "Unable to stat file '%s'.", c2[i]->device_name );
                 nwipe_error++;
                 continue;
-        }
-        */
+            }
 
-        /* Print serial number of device if it exists. */
-        if( strlen( (const char*) c2[i]->device_serial_no ) )
-        {
-            nwipe_log( NWIPE_LOG_NOTICE, "%s has serial number %s", c2[i]->device_name, c2[i]->device_serial_no );
-        }
-
-        /* Do sector size and block size checking. */
-        if( ioctl( c2[i]->device_fd, BLKSSZGET, &c2[i]->device_sector_size ) == 0 )
-        {
-
-            if( ioctl( c2[i]->device_fd, BLKBSZGET, &c2[i]->device_block_size ) != 0 )
+            /* Check that the file is a block device. */
+            if( !S_ISBLK( c2[i]->device_stat.st_mode ) )
             {
-                nwipe_log( NWIPE_LOG_WARNING, "Device '%s' failed BLKBSZGET ioctl.", c2[i]->device_name );
+                nwipe_log( NWIPE_LOG_ERROR, "'%s' is not a block device.", c2[i]->device_name );
+                nwipe_error++;
+                continue;
+            }
+
+            /* TODO: Lock the file for exclusive access. */
+            /*
+            if( flock( c2[i]->device_fd, LOCK_EX | LOCK_NB ) != 0 )
+            {
+                    nwipe_perror( errno, __FUNCTION__, "flock" );
+                    nwipe_log( NWIPE_LOG_ERROR, "Unable to lock the '%s' file.", c2[i]->device_name );
+                    nwipe_error++;
+                    continue;
+            }
+            */
+
+            /* Print serial number of device if it exists. */
+            if( strlen( (const char*) c2[i]->device_serial_no ) )
+            {
+                nwipe_log( NWIPE_LOG_NOTICE, "%s has serial number %s", c2[i]->device_name, c2[i]->device_serial_no );
+            }
+
+            /* Do sector size and block size checking. */
+            if( ioctl( c2[i]->device_fd, BLKSSZGET, &c2[i]->device_sector_size ) == 0 )
+            {
+
+                if( ioctl( c2[i]->device_fd, BLKBSZGET, &c2[i]->device_block_size ) != 0 )
+                {
+                    nwipe_log( NWIPE_LOG_WARNING, "Device '%s' failed BLKBSZGET ioctl.", c2[i]->device_name );
+                    c2[i]->device_block_size = 0;
+                }
+            }
+            else
+            {
+                nwipe_log( NWIPE_LOG_WARNING, "Device '%s' failed BLKSSZGET ioctl.", c2[i]->device_name );
+                c2[i]->device_sector_size = 0;
                 c2[i]->device_block_size = 0;
             }
-        }
-        else
-        {
-            nwipe_log( NWIPE_LOG_WARNING, "Device '%s' failed BLKSSZGET ioctl.", c2[i]->device_name );
-            c2[i]->device_sector_size = 0;
-            c2[i]->device_block_size = 0;
-        }
 
-        /* The st_size field is zero for block devices. */
-        /* ioctl( c2[i]->device_fd, BLKGETSIZE64, &c2[i]->device_size ); */
+            /* The st_size field is zero for block devices. */
+            /* ioctl( c2[i]->device_fd, BLKGETSIZE64, &c2[i]->device_size ); */
 
-        /* Seek to the end of the device to determine its size. */
-        c2[i]->device_size = lseek( c2[i]->device_fd, 0, SEEK_END );
+            /* Seek to the end of the device to determine its size. */
+            c2[i]->device_size = lseek( c2[i]->device_fd, 0, SEEK_END );
 
-        /* Also ask the driver for the device size. */
-        /* if( ioctl( c2[i]->device_fd, BLKGETSIZE64, &size64 ) ) */
-        if( ioctl( c2[i]->device_fd, _IOR( 0x12, 114, size_t ), &size64 ) )
-        {
-            /* The ioctl failed. */
-            fprintf( stderr, "Error: BLKGETSIZE64 failed  on '%s'.\n", c2[i]->device_name );
-            nwipe_log( NWIPE_LOG_ERROR, "BLKGETSIZE64 failed  on '%s'.\n", c2[i]->device_name );
-            nwipe_error++;
-        }
-        c2[i]->device_size = size64;
-
-        /* Check whether the two size values agree. */
-        if( c2[i]->device_size != size64 )
-        {
-            /* This could be caused by the linux last-odd-block problem. */
-            fprintf( stderr, "Error: Last-odd-block detected on '%s'.\n", c2[i]->device_name );
-            nwipe_log( NWIPE_LOG_ERROR, "Last-odd-block detected on '%s'.", c2[i]->device_name );
-            nwipe_error++;
-        }
-
-        if( c2[i]->device_size == (long long) -1 )
-        {
-            /* We cannot determine the size of this device. */
-            nwipe_perror( errno, __FUNCTION__, "lseek" );
-            nwipe_log( NWIPE_LOG_ERROR, "Unable to determine the size of '%s'.", c2[i]->device_name );
-            nwipe_error++;
-        }
-        else
-        {
-            /* Reset the file pointer. */
-            r = lseek( c2[i]->device_fd, 0, SEEK_SET );
-
-            if( r == (off64_t) -1 )
+            /* Also ask the driver for the device size. */
+            /* if( ioctl( c2[i]->device_fd, BLKGETSIZE64, &size64 ) ) */
+            if( ioctl( c2[i]->device_fd, _IOR( 0x12, 114, size_t ), &size64 ) )
             {
-                nwipe_perror( errno, __FUNCTION__, "lseek" );
-                nwipe_log( NWIPE_LOG_ERROR, "Unable to reset the '%s' file offset.", c2[i]->device_name );
+                /* The ioctl failed. */
+                fprintf( stderr, "Error: BLKGETSIZE64 failed  on '%s'.\n", c2[i]->device_name );
+                nwipe_log( NWIPE_LOG_ERROR, "BLKGETSIZE64 failed  on '%s'.\n", c2[i]->device_name );
                 nwipe_error++;
             }
-        }
+            c2[i]->device_size = size64;
 
-        if( c2[i]->device_size == 0 )
-        {
-            nwipe_log( NWIPE_LOG_ERROR,
-                       "%s, sect/blk/dev %llu/%i/%llu",
-                       c2[i]->device_name,
-                       c2[i]->device_sector_size,
-                       c2[i]->device_block_size,
-                       c2[i]->device_size );
-            nwipe_error++;
-            continue;
-        }
-        else
-        {
-            nwipe_log( NWIPE_LOG_NOTICE,
-                       "%s, sect/blk/dev %llu/%i/%llu",
-                       c2[i]->device_name,
-                       c2[i]->device_sector_size,
-                       c2[i]->device_block_size,
-                       c2[i]->device_size );
-        }
+            /* Check whether the two size values agree. */
+            if( c2[i]->device_size != size64 )
+            {
+                /* This could be caused by the linux last-odd-block problem. */
+                fprintf( stderr, "Error: Last-odd-block detected on '%s'.\n", c2[i]->device_name );
+                nwipe_log( NWIPE_LOG_ERROR, "Last-odd-block detected on '%s'.", c2[i]->device_name );
+                nwipe_error++;
+            }
 
-        /* Fork a child process. */
-        errno = pthread_create( &c2[i]->thread, NULL, nwipe_options.method, (void*) c2[i] );
-        if( errno )
-        {
-            nwipe_perror( errno, __FUNCTION__, "pthread_create" );
-            if( !nwipe_options.nogui )
-                nwipe_gui_free();
-            return errno;
+            if( c2[i]->device_size == (long long) -1 )
+            {
+                /* We cannot determine the size of this device. */
+                nwipe_perror( errno, __FUNCTION__, "lseek" );
+                nwipe_log( NWIPE_LOG_ERROR, "Unable to determine the size of '%s'.", c2[i]->device_name );
+                nwipe_error++;
+            }
+            else
+            {
+                /* Reset the file pointer. */
+                r = lseek( c2[i]->device_fd, 0, SEEK_SET );
+
+                if( r == (off64_t) -1 )
+                {
+                    nwipe_perror( errno, __FUNCTION__, "lseek" );
+                    nwipe_log( NWIPE_LOG_ERROR, "Unable to reset the '%s' file offset.", c2[i]->device_name );
+                    nwipe_error++;
+                }
+            }
+
+            if( c2[i]->device_size == 0 )
+            {
+                nwipe_log( NWIPE_LOG_ERROR,
+                           "%s, sect/blk/dev %llu/%i/%llu",
+                           c2[i]->device_name,
+                           c2[i]->device_sector_size,
+                           c2[i]->device_block_size,
+                           c2[i]->device_size );
+                nwipe_error++;
+                continue;
+            }
+            else
+            {
+                nwipe_log( NWIPE_LOG_NOTICE,
+                           "%s, sect/blk/dev %llu/%i/%llu",
+                           c2[i]->device_name,
+                           c2[i]->device_sector_size,
+                           c2[i]->device_block_size,
+                           c2[i]->device_size );
+            }
+
+            /* Fork a child process. */
+            errno = pthread_create( &c2[i]->thread, NULL, nwipe_options.method, (void*) c2[i] );
+            if( errno )
+            {
+                nwipe_perror( errno, __FUNCTION__, "pthread_create" );
+                if( !nwipe_options.nogui )
+                    nwipe_gui_free();
+                return errno;
+            }
+            else
+            {
+                wipe_threads_started = 1;
+            }
         }
     }
 
@@ -549,23 +557,35 @@ int main( int argc, char** argv )
         }
     }
 
-    for( i = 0; i < nwipe_selected; i++ )
+    /* if no wipe threads started then zero each selected drive result flag,
+     * as we don't need to report fatal/non fatal errors if no wipes were ever started ! */
+    if( wipe_threads_started == 0 )
     {
-        /* Check for non-fatal errors. */
-        if( c2[i]->result > 0 )
+        for( i = 0; i < nwipe_selected; i++ )
         {
-            nwipe_log( NWIPE_LOG_FATAL, "Nwipe exited with non fatal errors on device = %s\n", c2[i]->device_name );
-            return_status = 1;
+            c2[i]->result = 0;
         }
     }
-
-    for( i = 0; i < nwipe_selected; i++ )
+    else
     {
-        /* Check for fatal errors. */
-        if( c2[i]->result < 0 )
+        for( i = 0; i < nwipe_selected; i++ )
         {
-            nwipe_log( NWIPE_LOG_ERROR, "Nwipe exited with fatal errors on device = %s\n", c2[i]->device_name );
-            return_status = -1;
+            /* Check for non-fatal errors. */
+            if( c2[i]->result > 0 )
+            {
+                nwipe_log( NWIPE_LOG_FATAL, "Nwipe exited with non fatal errors on device = %s\n", c2[i]->device_name );
+                return_status = 1;
+            }
+        }
+
+        for( i = 0; i < nwipe_selected; i++ )
+        {
+            /* Check for fatal errors. */
+            if( c2[i]->result < 0 )
+            {
+                nwipe_log( NWIPE_LOG_ERROR, "Nwipe exited with fatal errors on device = %s\n", c2[i]->device_name );
+                return_status = -1;
+            }
         }
     }
 
