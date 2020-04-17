@@ -5,7 +5,7 @@
 
 nwipe is a program that will securely erase the entire contents of disks. It can operate as both a command line
 tool without a GUI or with a ncurses GUI as shown in the example below. It can wipe a single drive or multiple
-disks simultaneously. Nwipe can be found in many Linux distro repositories and the latest version of nwipe is always available as a Bootable USB flash image from [here](https://github.com/PartialVolume/shredos.2020.02/blob/master/README.md#obtaining-and-writing-shredos-to-a-usb-flash-drive-the-easy-way-), which can be written to a USB flash drive in seconds, allowing you to boot straight into the latest nwipe.
+disks simultaneously. Nwipe can be found in many Linux distro repositories and the latest version of nwipe is available as a Bootable USB flash image from [here](https://github.com/PartialVolume/shredos.2020.02/blob/master/README.md#obtaining-and-writing-shredos-to-a-usb-flash-drive-the-easy-way-). This can be written to a USB flash drive in seconds, allowing you to boot straight into nwipe.
 
 The user can select from a variety of recognised secure erase methods which include:
 
