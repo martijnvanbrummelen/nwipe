@@ -2,8 +2,6 @@
 ![GitHub CI badge](https://github.com/martijnvanbrummelen/nwipe/workflows/ci_ubuntu_latest/badge.svg)
 ![GitHub CI badge](https://github.com/martijnvanbrummelen/nwipe/workflows/ci_ubuntu_16.04/badge.svg)
 [![GitHub release](https://img.shields.io/github/release/martijnvanbrummelen/nwipe)](https://github.com/martijnvanbrummelen/nwipe/releases/)
-[![](https://img.shields.io/github/downloads/martijnvanbrummelen/nwipe/v0.28/total.svg "v0.28")](https://github.com/martijnvanbrummelen/nwipe/releases/v0.28)
-[![](https://img.shields.io/github/downloads/martijnvanbrummelen/nwipe/v0.27/total.svg "v0.27")](https://github.com/martijnvanbrummelen/nwipe/releases/v0.27)
 
 nwipe is a program that will securely erase the entire contents of disks. It can operate as both a command line
 tool without a GUI or with a ncurses GUI as shown in the example below. It can wipe a single drive or multiple
