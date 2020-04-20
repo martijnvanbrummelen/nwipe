@@ -23,8 +23,8 @@ It also includes the following pseudo random number generators:
 * ISAAC
 
 It is a fork of the dwipe command used by
-Darik's Boot and Nuke (dban).  nwipe is included with [partedmagic](https://partedmagic.com) and
-[ShredOS](https://github.com/nadenislamarre/shredos) if you want a quick and easy bootable CD or USB version. If you want a bootable version of the latest nwipe master that you can write to a USB stick, see [quick and easy bootable version of nwipe master](https://github.com/martijnvanbrummelen/nwipe#quick--easy-bootable-version-of-nwipe-master)
+Darik's Boot and Nuke (dban).  nwipe is included with [partedmagic](https://partedmagic.com), [SystemRescueCD](http://www.system-rescue-cd) and
+[ShredOS](https://github.com/nadenislamarre/shredos) if you want a quick and easy, bootable CD or USB version. If you want a bootable version of the very latest nwipe master that you can write to a USB stick, see [quick and easy bootable version of nwipe master](https://github.com/martijnvanbrummelen/nwipe#quick--easy-bootable-version-of-nwipe-master)
 
 Nwipe was created out of a need to run the DBAN dwipe command outside
 of DBAN, in order to allow its use with any host distribution, thus
