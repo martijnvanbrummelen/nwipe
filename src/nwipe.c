@@ -145,6 +145,7 @@ int main( int argc, char** argv )
         nwipe_perror( errno, __FUNCTION__, "open" );
         nwipe_log( NWIPE_LOG_FATAL, "Unable to open entropy source %s.", NWIPE_KNOB_ENTROPY );
         cleanup();
+        free( c2 );
         return errno;
     }
 
