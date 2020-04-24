@@ -999,7 +999,17 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                         nwipe_gui_amend_footer_window( main_window_footer );
                         doupdate();
 
-                        /* Remove the S from keystroke, which will keep us in the drive selection menu */
+                        /* Remove any repeated S key strokes, without this the gui would hang
+                         * for a period of time, i.e sleep above x number of repeated 's' keystrokes
+                         * which could run into minutes */
+                        do
+                        {
+                            timeout( 250 );  // block getch() for 250ms.
+                            keystroke = getch();  // Get user input.
+                            timeout( -1 );  // Switch back to blocking mode.
+                        } while( keystroke == 'S' );
+
+                        /* Remove the S from keystroke, which allows us to stay within the selection menu loop */
                         keystroke = 0;
                     }
 
@@ -1021,7 +1031,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                     nwipe_gui_amend_footer_window( main_window_footer );
                     doupdate();
 
-                    /* if user insists on holding the s key down, without this the gui would hang
+                    /* Remove any repeated s key strokes, without this the gui would hang
                      * for a period of time, i.e sleep above x number of repeated 's' keystrokes
                      * which could run into minutes */
                     do
