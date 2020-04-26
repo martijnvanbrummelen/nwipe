@@ -30,6 +30,8 @@ Nwipe was created out of a need to run the DBAN dwipe command outside
 of DBAN, in order to allow its use with any host distribution, thus
 giving better hardware support.
 
+The example below shows six drives being simultaneously erased. The video skips to the completion of all six wipes and shows five drives that were successfully erased and one drive that failed due to a I/O error. The drive that failed would then normally be physically destroyed. The five drives that were successfully wiped with zero errors or failures can then be redeployed.
+
 ![Example wipe](/images/example_wipe.gif)
 
 ## Compiling & Installing
