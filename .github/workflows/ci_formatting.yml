@@ -1,21 +1,22 @@
-name: ci_ubuntu_16.04
+name: ci_formatting
 
 on: [push, pull_request]
 
 jobs:
   build:
 
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v1
     - name: updating available system dependencies
       run: sudo apt-get update
     - name: installing system dependencies
-      run: sudo apt-get install -y build-essential pkg-config automake libncurses5-dev autotools-dev libparted-dev dmidecode
+      run: sudo apt-get install -y build-essential pkg-config automake clang-format-5.0
     - name: creating autoconf files
       run: ./init.sh
     - name: configuring
       run: ./configure CFLAGS='-O0 -g -Wall -Wextra'
-    - name: compiling
-      run: make
+    # Changing the path should no longer be necessary when clang-format6 is installed.
+    - name: verifying code style
+      run: export PATH=$PATH:/usr/lib/llvm-5.0/bin && make check-format
