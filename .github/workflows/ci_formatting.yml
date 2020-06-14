@@ -11,8 +11,10 @@ jobs:
     - uses: actions/checkout@v1
     - name: updating available system dependencies
       run: sudo apt-get update
+    - name: TODO remove
+      run: apt-cache search clang-format
     - name: installing system dependencies
-      run: sudo apt-get install -y build-essential pkg-config automake clang-format-5.0
+      run: sudo apt-get install -y build-essential pkg-config automake libncurses5-dev autotools-dev libparted-dev dmidecode clang-format-5.0
     - name: creating autoconf files
       run: ./init.sh
     - name: configuring
