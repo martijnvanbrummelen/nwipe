@@ -98,7 +98,7 @@ For a development setup, see [the hacking section below](#Hacking).
 
 First create all the autoconf files:
 ```
-./init.sh
+./autogen.sh
 ```
 
 Then compile & install using the following standard commands:
@@ -175,7 +175,7 @@ sudo apt install build-essential pkg-config automake libncurses5-dev autotools-d
 rm -rf nwipe
 git clone https://github.com/martijnvanbrummelen/nwipe.git
 cd "nwipe"
-./init.sh
+./autogen.sh
 ./configure
 make
 cd "src"
