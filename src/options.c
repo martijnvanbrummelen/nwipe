@@ -200,9 +200,9 @@ int nwipe_options_parse( int argc, char** argv )
 
                 if( strcmp( nwipe_options_long[i].name, "sync" ) == 0 )
                 {
-                    if( sscanf( optarg, " %i", &nwipe_options.sync ) != 1 || nwipe_options.sync < 1 )
+                    if( sscanf( optarg, " %i", &nwipe_options.sync ) != 1 || nwipe_options.sync < 0 )
                     {
-                        fprintf( stderr, "Error: The sync argument must be a positive integer.\n" );
+                        fprintf( stderr, "Error: The sync argument must be a positive integer or zero.\n" );
                         exit( EINVAL );
                     }
                     break;
