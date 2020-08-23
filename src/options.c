@@ -488,7 +488,7 @@ void display_help()
     puts( "      --autopoweroff      Power off system on completion of wipe delayed for" );
     puts( "                          for one minute. During this one minute delay you can" );
     puts( "                          abort the shutdown by typing sudo shutdown -c\n" );
-    puts( "      --sync=NUM          Will perform a sync after NUM writes (default: 0)" );
+    puts( "      --sync=NUM          Will perform a sync after NUM writes (default: 100000)" );
     puts( "                          0 - fdatasync after the disk is completely written" );
     puts( "                          1 - fdatasync after every write" );
     puts( "                          1000000 - fdatasync after 1000000 writes ect." );
