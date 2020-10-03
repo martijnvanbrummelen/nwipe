@@ -1089,6 +1089,14 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
 
     } while( keystroke != 'S' && terminate_signal != 1 );
 
+    if( keystroke == 'S' )
+    {
+        /* If user has pressed S to start wipe change status line */
+        werase( footer_window );
+        nwipe_gui_title( footer_window, end_wipe_footer );
+        wnoutrefresh( footer_window );
+    }
+
 } /* nwipe_gui_select */
 
 void nwipe_gui_options( void )
