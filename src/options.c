@@ -122,7 +122,7 @@ int nwipe_options_parse( int argc, char** argv )
     nwipe_options.nowait = 0;
     nwipe_options.nosignals = 0;
     nwipe_options.nogui = 0;
-    nwipe_options.sync = 100000;
+    nwipe_options.sync = DEFAULT_SYNC_RATE;
     nwipe_options.verbose = 0;
     nwipe_options.verify = NWIPE_VERIFY_LAST;
     memset( nwipe_options.logfile, '\0', sizeof( nwipe_options.logfile ) );
@@ -488,7 +488,7 @@ void display_help()
     puts( "      --autopoweroff      Power off system on completion of wipe delayed for" );
     puts( "                          for one minute. During this one minute delay you can" );
     puts( "                          abort the shutdown by typing sudo shutdown -c\n" );
-    puts( "      --sync=NUM          Will perform a sync after NUM writes (default: 100000)" );
+    printf( "      --sync=NUM          Will perform a sync after NUM writes (default: %d)\n", DEFAULT_SYNC_RATE );
     puts( "                          0 - fdatasync after the disk is completely written" );
     puts( "                          1 - fdatasync after every write" );
     puts( "                          1000000 - fdatasync after 1000000 writes ect." );
