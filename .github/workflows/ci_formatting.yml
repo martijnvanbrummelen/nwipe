@@ -14,7 +14,7 @@ jobs:
     - name: installing system dependencies
       run: sudo apt-get install -y build-essential pkg-config automake libncurses5-dev autotools-dev libparted-dev dmidecode clang-format-7
     - name: creating autoconf files
-      run: ./init.sh
+      run: ./autogen.sh
     - name: configuring
       run: ./configure CFLAGS='-O0 -g -Wall -Wextra'
     - name: verifying code style
