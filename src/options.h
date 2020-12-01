@@ -37,6 +37,7 @@
 #define NWIPE_KNOB_STAT "/proc/stat"
 #define MAX_NUMBER_EXCLUDED_DRIVES 10
 #define MAX_DRIVE_PATH_LENGTH 200  // e.g. /dev/sda is only 8 characters long, so 200 should be plenty.
+#define DEFAULT_SYNC_RATE 100000
 
 /* Function prototypes for loading options from the environment and command line. */
 int nwipe_options_parse( int argc, char** argv );
