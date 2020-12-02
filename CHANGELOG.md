@@ -3,8 +3,8 @@ RELEASE NOTES
 
 v0.30 release candidate, proposed release December 2020.
 -----------------------
-Features/fixes in 0.29 that have been committed to the master are tagged with [DONE],
-other items in 0.29 are proposed and yet to be implemented.
+Features/fixes since 0.28 that have been committed to the master are tagged with [DONE],
+other items not marked with [DONE] are proposed and yet to be implemented.
 - [DONE] Add auto power off option on completion of wipe ( --autopoweroff ) (Thanks PartialVolume)
 - [DONE] Fix --nowait option that wasn't working. (Thanks PartialVolume)
 - [DONE] Add verbose option. -v, --verbose.
@@ -25,6 +25,8 @@ other items in 0.29 are proposed and yet to be implemented.
 - [DONE] Warn the user if they are incorrectly typing a lower case s to start a wipe, when they should be typing a capital S [#262](https://github.com/martijnvanbrummelen/nwipe/issues/262) (Thanks PartialVolume)
 - [DONE] Warn the user if they are typing capital S in order to start a wipe but haven't yet selected any drives for wiping [#261](https://github.com/martijnvanbrummelen/nwipe/issues/261) (Thanks PartialVolume)
 - [DONE] Add ctrl A that toggles drive selection, all drives selected for wipe or all drives deselected. [#266](https://github.com/martijnvanbrummelen/nwipe/issues/266)
+- [DONE] Fixes compilation issue with NixOS with broken musl libc error due to missing header [#275](https://github.com/martijnvanbrummelen/nwipe/issues/275)
+- [DONE] Fixes status bar message showing incorrect information [#287](https://github.com/martijnvanbrummelen/nwipe/issues/287)
 - Add enhancement fibre channel wiping of non 512 bytes/sector drives such as 524/528 bytes/sector etc (work in progress by PartialVolume)
 - HPA/DCO detection and adjustment to wipe full drive. (work in progress by PartialVolume)
 
