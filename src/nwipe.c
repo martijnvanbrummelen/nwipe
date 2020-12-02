@@ -100,7 +100,8 @@ int main( int argc, char** argv )
 
         if( nwipe_enumerated == 0 )
         {
-            nwipe_log( NWIPE_LOG_INFO, "Storage devices not found." );
+            nwipe_log( NWIPE_LOG_INFO,
+                       "Storage devices not found. Nwipe should be run as root or sudo/su, i.e sudo nwipe etc" );
             cleanup();
             return -1;
         }
