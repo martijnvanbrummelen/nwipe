@@ -31,7 +31,7 @@
 #include <time.h>
 #include <signal.h>
 #include <pthread.h>
-#include <bits/pthreadtypes.h>
+#include <sys/types.h>
 #include <bits/sigthread.h>
 
 #include "nwipe.h"
