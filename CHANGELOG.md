@@ -1,7 +1,7 @@
 RELEASE NOTES
 =============
 
-v0.29 release candidate, proposed release May/Jun 2020.
+v0.30 release candidate, proposed release December 2020.
 -----------------------
 Features/fixes in 0.29 that have been committed to the master are tagged with [DONE],
 other items in 0.29 are proposed and yet to be implemented.
