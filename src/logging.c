@@ -138,19 +138,24 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
                 /* Do nothing. */
                 break;
 
+                /* NOTE! The debug labels, i.e. debug, info, notice etc should be left padded with spaces, in order
+                 * to maintain column alignment. Pad a label to achieve the length of whatever the longest label happens
+                 * to be. Important to know if you are thinking of adding another label.
+                 */
+
             case NWIPE_LOG_DEBUG:
                 chars_written =
-                    snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, "debug: " );
+                    snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, "  debug: " );
                 break;
 
             case NWIPE_LOG_INFO:
                 chars_written =
-                    snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, "info: " );
+                    snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, "   info: " );
                 break;
 
             case NWIPE_LOG_NOTICE:
                 chars_written =
-                    snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, "notice: " );
+                    snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, " notice: " );
                 break;
 
             case NWIPE_LOG_WARNING:
@@ -160,18 +165,18 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 
             case NWIPE_LOG_ERROR:
                 chars_written =
-                    snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, "error: " );
+                    snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, "  error: " );
                 break;
 
             case NWIPE_LOG_FATAL:
                 chars_written =
-                    snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, "fatal: " );
+                    snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, "  fatal: " );
                 break;
 
             case NWIPE_LOG_SANITY:
                 /* TODO: Request that the user report the log. */
                 chars_written =
-                    snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, "sanity: " );
+                    snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, " sanity: " );
                 break;
 
             default:
