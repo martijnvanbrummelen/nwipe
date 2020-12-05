@@ -404,6 +404,88 @@ void nwipe_perror( int nwipe_errno, const char* f, const char* s )
 
 } /* nwipe_perror */
 
+void nwipe_log_OSinfo()
+{
+    /* Read /proc/version, format and write to the log */
+
+    FILE* fp = NULL;
+    char OS_info_temp[MAX_SIZE_OS_STRING + 1];
+    char OS_info[MAX_SIZE_OS_STRING + 1];
+    int idx;
+    int idx2;
+    int idx3;
+    int idx4;
+
+    /* initialise OS_info & OS_info_temp strings */
+    idx = 0;
+    while( idx < MAX_SIZE_OS_STRING + 1 )
+    {
+        OS_info_temp[idx] = 0;
+        OS_info[idx] = 0;
+        idx++;
+    }
+
+    /* Open a pipe to /proc/version for reading */
+    fp = popen( "cat /proc/version", "r" );
+    if( fp == NULL )
+    {
+        nwipe_log( NWIPE_LOG_WARNING, "Unable to create a pipe to /proc/version" );
+        return;
+    }
+
+    /* Read the OS info */
+    if( fgets( OS_info_temp, MAX_SIZE_OS_STRING, fp ) == NULL )
+    {
+        nwipe_log( NWIPE_LOG_WARNING, "fget failed to read /proc/version" );
+        fclose( fp );
+        return;
+    }
+
+    /* Format the string for the log, place on multiple lines as necessary,
+     * column aligned, left offset with n (OS_info_Line_offset) spaces */
+    idx = 0;
+    idx2 = 0;
+    idx3 = OS_info_Line_Length;
+
+    while( OS_info_temp[idx] != 0 )
+    {
+        while( idx2 < idx3 && idx2 < MAX_SIZE_OS_STRING )
+        {
+            /* remove newlines from the source */
+            if( OS_info_temp[idx] == 0x0a )
+            {
+                idx++;
+            }
+
+            /* copy the character */
+            OS_info[idx2++] = OS_info_temp[idx++];
+        }
+        if( OS_info_temp[idx] != 0 )
+        {
+            OS_info[idx2++] = 0x0a;
+            idx4 = 0;
+
+            /* left indent with spaces */
+            while( idx4 < OS_info_Line_offset && idx2 < MAX_SIZE_OS_STRING )
+            {
+                OS_info[idx2++] = ' ';
+                idx4++;
+            }
+
+            /* calculate idx3 ready for next line */
+            idx3 += OS_info_Line_offset + OS_info_Line_Length;
+        }
+        else
+        {
+            continue;
+        }
+    }
+
+    nwipe_log( NWIPE_LOG_INFO, "%s", OS_info );
+    fclose( fp );
+    return;
+}
+
 int nwipe_log_sysinfo()
 {
     FILE* fp;
