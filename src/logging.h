@@ -24,6 +24,10 @@
 /* Maximum size of a log message */
 #define MAX_LOG_LINE_CHARS 512
 
+#define MAX_SIZE_OS_STRING 512 /* Maximum size of acceptable OS string */
+#define OS_info_Line_offset 31 /* OS_info line offset in log */
+#define OS_info_Line_Length 48 /* OS_info line length */
+
 typedef enum nwipe_log_t_ {
     NWIPE_LOG_NONE = 0,
     NWIPE_LOG_DEBUG,  // TODO:  Very verbose logging.
@@ -38,6 +42,7 @@ typedef enum nwipe_log_t_ {
 
 void nwipe_log( nwipe_log_t level, const char* format, ... );
 void nwipe_perror( int nwipe_errno, const char* f, const char* s );
+void nwipe_log_OSinfo();
 int nwipe_log_sysinfo();
 void nwipe_log_summary( nwipe_context_t**, int );  // This produces the wipe status table on exit
 void Determine_C_B_nomenclature( u64, char*, int );

@@ -49,6 +49,7 @@
 
 #include <parted/parted.h>
 #include <parted/debug.h>
+#include "version.h"
 
 int terminate_signal;
 int user_abort;
@@ -71,6 +72,12 @@ int main( int argc, char** argv )
 
     /* The generic result buffer. */
     int r;
+
+    /* Log nwipes version */
+    nwipe_log( NWIPE_LOG_INFO, "%s", banner );
+
+    /* Log OS info */
+    nwipe_log_OSinfo();
 
     /* Initialise the termintaion signal, 1=terminate nwipe */
     terminate_signal = 0;
@@ -119,7 +126,7 @@ int main( int argc, char** argv )
         if( nwipe_enumerated == 0 )
         {
             nwipe_log( NWIPE_LOG_ERROR, "Devices not found. Check you're not excluding drives unnecessarily." );
-            printf( "No drives found" );
+            printf( "No drives found\n" );
             cleanup();
             exit( 1 );
         }
