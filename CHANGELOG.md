@@ -28,6 +28,7 @@ other items not marked with [DONE] are proposed and yet to be implemented.
 - [DONE] Fixed compilation issue with NixOS with broken musl libc error due to missing header [#275](https://github.com/martijnvanbrummelen/nwipe/issues/275)
 - [DONE] Fixed status bar message showing incorrect information [#287](https://github.com/martijnvanbrummelen/nwipe/issues/287)
 - [DONE] Right Justify log labels to maintain column alignment [#280](https://github.com/martijnvanbrummelen/nwipe/issues/280)
+- [DONE] Added nwipe version & OS info to log [#297](https://github.com/martijnvanbrummelen/nwipe/pull/297)
 - Add enhancement fibre channel wiping of non 512 bytes/sector drives such as 524/528 bytes/sector etc (work in progress by PartialVolume)
 - HPA/DCO detection and adjustment to wipe full drive. (work in progress by PartialVolume)
 
