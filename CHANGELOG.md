@@ -1,37 +1,32 @@
 RELEASE NOTES
 =============
 
-v0.30 release candidate, proposed release December 2020.
+v0.30
 -----------------------
-Features/fixes since 0.28 that have been committed to the master are tagged with [DONE],
-other items not marked with [DONE] are proposed and yet to be implemented.
-- [DONE] Add auto power off option on completion of wipe ( --autopoweroff ) (Thanks PartialVolume)
-- [DONE] Fixed --nowait option that wasn't working. (Thanks PartialVolume)
-- [DONE] Add verbose option. -v, --verbose.
-- [DONE] Add a spinner to the GUI for each drive being wiped. When nwipe is syncing the percentage completion pauses, having a spinner gives a clear indication that the wipe is still running. Each devices spinner disappears on completion of a given devices wipe. (Thanks PartialVolume)
-- [DONE] Make log messages, especially the ones with the tag 'notice' succinct and less than 80 characters including the timestamp. This is of more importance when nwipe is used on a 80x30 terminal (ALT-F2, Shredos etc) but generally makes the logs more readable. While doing this all information was still retained. (Thanks PartialVolume)
-- [DONE] Add a summary table to the log that shows each drives status, i.e. erased or failed, throughput, duration of wipe, model, serial no etc. In particular it benefits those that wipe many drives simultaneously in rack servers. At a glance any failed drives can be seen without having to browse back through the log. (Thanks PartialVolume)
-- [DONE] Add ETA to --nogui wipes status when SIGUSR1 (kill -s USR1 (nwipes PID) is issued on the command line.
-- [DONE] Fixed misleading throughput calculation. Throughput now shows average throughput calculated from start of wipe.
-- [DONE] Fixed system info not being displayed in Debian Sid. [#229](https://github.com/martijnvanbrummelen/nwipe/issues/229) (Thanks PartialVolume)
-- [DONE] Add serial number display for USB to IDE/SATA adapters. This only works if the USB to IDE/SATA adapter supports ATA pass through. See [#149](https://github.com/martijnvanbrummelen/nwipe/issues/149) for further details (Thanks PartialVolume)
-- [DONE] Fixed disk capacity nomenclature, width and padding on drive selection screen. See [#237](https://github.com/martijnvanbrummelen/nwipe/issues/237) (Thanks PartialVolume)
-- [DONE] Add bus type, ATA or USB, amongst others to drive selection and wipe windows. (Thanks PartialVolume)
-- [DONE] Add --nousb option. If you use the option --nousb, all USB devices will be ignored. They won't show up in the GUI and they won't be wiped if you use the --nogui --autonuke command. They will even be ignored if you specifically name them on the command line.
-- [DONE] Miscellaneous GUI fixes, throughput display format, percentage display format to improve column alignment when wiping multiple discs. (Thanks PartialVolume)
-- [DONE] Improve visibility of failure messages with red text on white background. (Thanks PartialVolume)
-- [DONE] Add NVME and VIRT (loop etc) devices to device type table for display in GUI and logs. NVME devices now show up as NVME devices rather than UNK (Thanks PartialVolume)
-- [DONE] Fixed very obscure segmentation fault going back to at least 0.24 in drive selection window when resizing terminal vertical axis while drive focus symbol '>' is pointing to the last drive of a multi drive selection window. See [#248](https://github.com/martijnvanbrummelen/nwipe/pull/248) for further details (Thanks PartialVolume)
-- [DONE] Warn the user if they are incorrectly typing a lower case s to start a wipe, when they should be typing a capital S [#262](https://github.com/martijnvanbrummelen/nwipe/issues/262) (Thanks PartialVolume)
-- [DONE] Warn the user if they are typing capital S in order to start a wipe but haven't yet selected any drives for wiping [#261](https://github.com/martijnvanbrummelen/nwipe/issues/261) (Thanks PartialVolume)
-- [DONE] Add ctrl A that toggles drive selection, all drives selected for wipe or all drives deselected. [#266](https://github.com/martijnvanbrummelen/nwipe/issues/266)
-- [DONE] Fixed compilation issue with NixOS with broken musl libc error due to missing header [#275](https://github.com/martijnvanbrummelen/nwipe/issues/275)
-- [DONE] Fixed status bar message showing incorrect information [#287](https://github.com/martijnvanbrummelen/nwipe/issues/287)
-- [DONE] Right Justify log labels to maintain column alignment [#280](https://github.com/martijnvanbrummelen/nwipe/issues/280)
-- [DONE] Added nwipe version & OS info to log [#297](https://github.com/martijnvanbrummelen/nwipe/pull/297)
-- Add enhancement fibre channel wiping of non 512 bytes/sector drives such as 524/528 bytes/sector etc (work in progress by PartialVolume)
-- HPA/DCO detection and adjustment to wipe full drive. (work in progress by PartialVolume)
-
+- Add auto power off option on completion of wipe ( --autopoweroff ) (Thanks PartialVolume)
+- Fixed --nowait option that wasn't working. (Thanks PartialVolume)
+- Add verbose option. -v, --verbose.
+- Add a spinner to the GUI for each drive being wiped. When nwipe is syncing the percentage completion pauses, having a spinner gives a clear indication that the wipe is still running. Each devices spinner disappears on completion of a given devices wipe. (Thanks PartialVolume)
+- Make log messages, especially the ones with the tag 'notice' succinct and less than 80 characters including the timestamp. This is of more importance when nwipe is used on a 80x30 terminal (ALT-F2, Shredos etc) but generally makes the logs more readable. While doing this all information was still retained. (Thanks PartialVolume)
+- Add a summary table to the log that shows each drives status, i.e. erased or failed, throughput, duration of wipe, model, serial no etc. In particular it benefits those that wipe many drives simultaneously in rack servers. At a glance any failed drives can be seen without having to browse back through the log. (Thanks PartialVolume)
+- Add ETA to --nogui wipes status when SIGUSR1 (kill -s USR1 (nwipes PID) is issued on the command line.
+- Fixed misleading throughput calculation. Throughput now shows average throughput calculated from start of wipe.
+- Fixed system info not being displayed in Debian Sid. [#229](https://github.com/martijnvanbrummelen/nwipe/issues/229) (Thanks PartialVolume)
+- Add serial number display for USB to IDE/SATA adapters. This only works if the USB to IDE/SATA adapter supports ATA pass through. See [#149](https://github.com/martijnvanbrummelen/nwipe/issues/149) for further details (Thanks PartialVolume)
+- Fixed disk capacity nomenclature, width and padding on drive selection screen. See [#237](https://github.com/martijnvanbrummelen/nwipe/issues/237) (Thanks PartialVolume)
+- Add bus type, ATA or USB, amongst others to drive selection and wipe windows. (Thanks PartialVolume)
+- Add --nousb option. If you use the option --nousb, all USB devices will be ignored. They won't show up in the GUI and they won't be wiped if you use the --nogui --autonuke command. They will even be ignored if you specifically name them on the command line.
+- Miscellaneous GUI fixes, throughput display format, percentage display format to improve column alignment when wiping multiple discs. (Thanks PartialVolume)
+- Improve visibility of failure messages with red text on white background. (Thanks PartialVolume)
+- Add NVME and VIRT (loop etc) devices to device type table for display in GUI and logs. NVME devices now show up as NVME devices rather than UNK (Thanks PartialVolume)
+- Fixed very obscure segmentation fault going back to at least 0.24 in drive selection window when resizing terminal vertical axis while drive focus symbol '>' is pointing to the last drive of a multi drive selection window. See [#248](https://github.com/martijnvanbrummelen/nwipe/pull/248) for further details (Thanks PartialVolume)
+- Warn the user if they are incorrectly typing a lower case s to start a wipe, when they should be typing a capital S [#262](https://github.com/martijnvanbrummelen/nwipe/issues/262) (Thanks PartialVolume)
+- Warn the user if they are typing capital S in order to start a wipe but haven't yet selected any drives for wiping [#261](https://github.com/martijnvanbrummelen/nwipe/issues/261) (Thanks PartialVolume)
+- Add ctrl A that toggles drive selection, all drives selected for wipe or all drives deselected. [#266](https://github.com/martijnvanbrummelen/nwipe/issues/266)
+- Fixed compilation issue with NixOS with broken musl libc error due to missing header [#275](https://github.com/martijnvanbrummelen/nwipe/issues/275)
+- Fixed status bar message showing incorrect information [#287](https://github.com/martijnvanbrummelen/nwipe/issues/287)
+- Right Justify log labels to maintain column alignment [#280](https://github.com/martijnvanbrummelen/nwipe/issues/280)
+- Added nwipe version & OS info to log [#297](https://github.com/martijnvanbrummelen/nwipe/pull/297)
 
 v0.28
 -----------------------
