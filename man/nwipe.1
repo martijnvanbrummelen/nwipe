@@ -38,8 +38,18 @@ those specified devices immediately.
 Power off system on completion of wipe delayed for for one minute. During
 this one minute delay you can abort the shutdown by typing sudo shutdown -c
 .TP
-\fB\-\-sync\fR
-Open devices in sync mode
+\fB\-\-sync\fR=\fINUM\fR
+Will perform a syn after NUM writes (default: 10000)
+.IP
+0    \- fdatasync after the disk is completely written
+       fdatasync errors not detected until completion.
+       0 is not recommended as disk errors may cause nwipe
+       to appear to hang
+.IP
+1    \- fdatasync after every write
+       Warning: Lower values will reduce wipe speeds.
+.IP
+1000 \- fdatasync after 1000 writes
 .TP
 \fB\-\-noblank\fR
 Do not perform the final blanking pass after the wipe (default is to blank,
