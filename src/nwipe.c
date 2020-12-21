@@ -32,7 +32,6 @@
 #include <signal.h>
 #include <pthread.h>
 #include <sys/types.h>
-#include <bits/sigthread.h>
 
 #include "nwipe.h"
 #include "context.h"
