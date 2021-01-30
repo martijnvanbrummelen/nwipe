@@ -88,6 +88,12 @@ int main( int argc, char** argv )
     /* nwipes return status value, set prior to exit at the end of nwipe, as no other exit points allowed */
     int return_status = 0;
 
+    /* Initialise, flag indicating whether a wipe has actually started or not 0=no, 1=yes */
+    global_wipe_status = 0;
+
+    /* Initialise, flag that indicates whether a fatal error occured on ANY drive */
+    int fatal_errors_flag = 0;
+
     /* Two arrays are used, containing pointers to the the typedef for each disk */
     /* The first array (c1) points to all devices, the second points to only     */
     /* the disks selected for wiping.                                            */
@@ -282,6 +288,9 @@ int main( int argc, char** argv )
     /* TODO: free c1 and c2 memory. */
     if( user_abort == 0 )
     {
+        /* The wipe has been initiated */
+        global_wipe_status = 1;
+
         for( i = 0; i < nwipe_selected; i++ )
         {
             /* A result buffer for the BLKGETSIZE64 ioctl. */
@@ -593,6 +602,7 @@ int main( int argc, char** argv )
             if( c2[i]->result < 0 )
             {
                 nwipe_log( NWIPE_LOG_ERROR, "Nwipe exited with fatal errors on device = %s\n", c2[i]->device_name );
+                fatal_errors_flag = 1;
                 return_status = -1;
             }
         }
@@ -601,9 +611,33 @@ int main( int argc, char** argv )
     /* Generate and send the drive status summary to the log */
     nwipe_log_summary( c2, nwipe_selected );
 
-    if( return_status == 0 )
+    /* Print a one line status message for the user */
+    if( return_status == 0 || return_status == 1 )
     {
-        nwipe_log( NWIPE_LOG_INFO, "Nwipe successfully exited." );
+        if( user_abort == 1 )
+        {
+            if( global_wipe_status == 1 )
+            {
+                nwipe_log( NWIPE_LOG_INFO,
+                           "Nwipe was aborted by the user. Check the summary table for the drive status." );
+            }
+            else
+            {
+                nwipe_log( NWIPE_LOG_INFO, "Nwipe was aborted by the user prior to the wipe starting." );
+            }
+        }
+        else
+        {
+            if( fatal_errors_flag == 1 )
+            {
+                nwipe_log( NWIPE_LOG_INFO,
+                           "Nwipe exited with fatal errors, check the summary table for individual drive status." );
+            }
+            else
+            {
+                nwipe_log( NWIPE_LOG_INFO, "Nwipe successfully completed. See summary table for details." );
+            }
+        }
     }
 
     cleanup();
