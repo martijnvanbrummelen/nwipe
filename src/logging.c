@@ -646,8 +646,8 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
     /* A pointer to the system time struct. */
     struct tm* p;
 
-    /* Nothing to do, user didn't select any devices */
-    if( nwipe_selected == 0 )
+    /* Nothing to do, user never started a wipe so no summary table required. */
+    if( global_wipe_status == 0 )
     {
         return;
     }
@@ -721,21 +721,33 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
             }
             else
             {
-                if( user_abort == 1 )
-                {
-                    strncpy( exclamation_flag, "!", 1 );
-                    exclamation_flag[1] = 0;
-
-                    strncpy( status, "UABORTED", 8 );
-                    status[8] = 0;
-                }
-                else
+                if( c[i]->wipe_status == 0 )
                 {
                     strncpy( exclamation_flag, " ", 1 );
                     exclamation_flag[1] = 0;
 
                     strncpy( status, " Erased ", 8 );
                     status[8] = 0;
+                }
+                else
+                {
+                    if( user_abort == 1 )
+                    {
+                        strncpy( exclamation_flag, "!", 1 );
+                        exclamation_flag[1] = 0;
+
+                        strncpy( status, "UABORTED", 8 );
+                        status[8] = 0;
+                    }
+                    else
+                    {
+                        /* If this ever happens, there is a bug ! */
+                        strncpy( exclamation_flag, " ", 1 );
+                        exclamation_flag[1] = 0;
+
+                        strncpy( status, "INSANITY", 8 );
+                        status[8] = 0;
+                    }
                 }
             }
         }
