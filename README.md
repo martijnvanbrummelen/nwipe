@@ -104,6 +104,7 @@ First create all the autoconf files:
 Then compile & install using the following standard commands:
 ```
 ./configure
+make format (only required if submitting pull requests)
 make
 make install
 ```
@@ -125,6 +126,7 @@ This can be done using the following compile commands:
 
 ```
 ./configure --prefix=/usr CFLAGS='-O0 -g -Wall -Wextra'
+make format (necessary if submitting pull requests)
 make
 make install
 ```
