@@ -123,9 +123,8 @@ const char* options_title = " Options ";
 const char* stats_title = " Statistics ";
 
 /* Footer labels. */
-const char* main_window_footer = "S=Start m=Method p=PRNG v=Verify r=Rounds b=Blanking Space=Select CTRL+A=SelectAll CTRL+C=Quit";
-const char* main_window_footer_warning_lower_case_s =
-    "  WARNING: To start the wipe press SHIFT+S (uppercase S)  ";
+const char* main_window_footer = "S=Start m=Method p=PRNG v=Verify r=Rounds b=Blanking Space=Select CTRL+C=Quit";
+const char* main_window_footer_warning_lower_case_s = "  WARNING: To start the wipe press SHIFT+S (uppercase S)  ";
 const char* main_window_footer_warning_no_drive_selected =
     "  No drives selected, use Spacebar to select a drive, then press S to start  ";
 const char* selection_footer = "J=Down K=Up Space=Select Backspace=Cancel CTRL+C=Quit";
