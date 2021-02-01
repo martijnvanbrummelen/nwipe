@@ -123,15 +123,14 @@ const char* options_title = " Options ";
 const char* stats_title = " Statistics ";
 
 /* Footer labels. */
-const char* main_window_footer = "S=Start M=Method P=PRNG V=Verify R=Rounds B=Blanking Space=Select Ctrl-C=Quit";
-const char* main_window_footer_warning_lower_case_s =
-    "  WARNING: To start the wipe press capital S, you pressed lower case s  ";
+const char* main_window_footer = "S=Start m=Method p=PRNG v=Verify r=Rounds b=Blanking Space=Select CTRL+C=Quit";
+const char* main_window_footer_warning_lower_case_s = "  WARNING: To start the wipe press SHIFT+S (uppercase S)  ";
 const char* main_window_footer_warning_no_drive_selected =
-    "  No drives selected, use spacebar to select a drive, then press S to start  ";
-const char* selection_footer = "J=Down K=Up Space=Select Backspace=Cancel Ctrl-C=Quit";
-const char* end_wipe_footer = "B=Blank screen Ctrl-C=Quit";
-const char* rounds_footer = "Left=Erase Esc=Cancel Ctrl-C=Quit";
-const char* wipes_finished_footer = "Wipe finished - press enter to exit. Logged to STDOUT";
+    "  No drives selected, use Spacebar to select a drive, then press S to start  ";
+const char* selection_footer = "J=Down K=Up Space=Select Backspace=Cancel CTRL+C=Quit";
+const char* end_wipe_footer = "B=Blank screen CTRL+C=Quit";
+const char* rounds_footer = "Left=Erase Esc=Cancel CTRL+C=Quit";
+const char* wipes_finished_footer = "Wipe finished. Press ENTER to exit. Logged to STDOUT";
 
 /* The number of lines available in the terminal */
 int stdscr_lines;
@@ -465,7 +464,7 @@ void nwipe_gui_create_all_windows_on_terminal_resize( const char* footer_text )
     /* If the user has resized the terminal then recreate the windows and panels */
     if( stdscr_cols_previous != stdscr_cols || stdscr_lines_previous != stdscr_lines )
     {
-        /* save the revised terminal size so we check whether the user has resized next time */
+        /* Save the revised terminal size so we check whether the user has resized next time */
         stdscr_lines_previous = stdscr_lines;
         stdscr_cols_previous = stdscr_cols;
 
@@ -541,7 +540,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
     /* Flag, Valid key hit = 1, anything else = 0 */
     int validkeyhit;
 
-    /* counts number of drives and partitions that have been selected */
+    /* Counts number of drives and partitions that have been selected */
     int number_of_selected_contexts = 0;
 
     /* Control A toggle status -1=indefined, 0=all drives delected, 1=all drives selected */
@@ -550,7 +549,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
     /* Get the terminal size */
     getmaxyx( stdscr, stdscr_lines, stdscr_cols );
 
-    /* save the terminal size so we check whether the user has resized */
+    /* Save the terminal size so we check whether the user has resized */
     stdscr_lines_previous = stdscr_lines;
     stdscr_cols_previous = stdscr_cols;
 
@@ -646,7 +645,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                 waddch( main_window, ' ' );
             }
 
-            /* In the event of the offset value some how becoming invalid, this if statement will prevent a segfault
+            /* In the event for the offset value somehow becoming invalid, this if statement will prevent a segfault
              * and the else part will log the out of bounds values for debugging */
             if( i + offset >= 0 && i + offset < count )
             {
@@ -741,9 +740,9 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
             keystroke = getch();  // Get user input.
             timeout( -1 );  // Switch back to blocking mode.
 
-            /* We don't necessarily use these but for future reference, here are some cntrl + key values
-             * ^W - 23, ^E - 5, ^R - 18, ^T - 20, ^Y - 25, ^U - 21, ^I - 9, ^O - 15, ^P - 16, ^A - 1, ^D - 4
-             * ^F - 6, ^G - 7, ^H - 8, ^K - 11, ^L - 12, ^X - 24, ^V - 22, ^B - 2, ^N - 14
+            /* We don't necessarily use all of these. For future reference these are some CTRL+key values
+             * ^A - 1, ^B - 2, ^D - 4, ^E - 5, ^F - 6, ^G - 7, ^H - 8, ^I - 9, ^K - 11, ^L - 12, ^N - 14,
+             * ^O - 15, ^P - 16, ^R - 18, ^T - 20, ^U - 21, ^V - 22, ^W - 23, ^X - 24, ^Y - 25
              * Use nwipe_log( NWIPE_LOG_DEBUG, "Key Name: %s - %u", keyname(keystroke),keystroke) to
              * figure out what code is returned by what ever key combination */
 
@@ -2428,7 +2427,7 @@ void* nwipe_gui_status( void* ptr )
             show_panel( options_panel );
             show_panel( main_panel );
 
-            /* reprint the footer */
+            /* Reprint the footer */
             nwipe_gui_title( footer_window, end_wipe_footer );
 
             // Refresh the footer_window ;
@@ -2514,7 +2513,7 @@ void* nwipe_gui_status( void* ptr )
 
         } /* keystroke */
 
-        /* if wipe has completed and user has specified auto poweroff or nowait then we can skip waiting for the user to
+        /* If wipe has completed and user has specified auto poweroff or nowait then we can skip waiting for the user to
          * press return */
         if( !nwipe_active )
         {
@@ -2643,7 +2642,7 @@ void* nwipe_gui_status( void* ptr )
                 }
                 else
                 {
-                    /* if the wipe thread is no longer active, replace the spinner with a space */
+                    /* If the wipe thread is no longer active, replace the spinner with a space */
                     spinner_string[0] = ' ';
                 }
                 spinner_string[1] = 0;
@@ -2889,7 +2888,7 @@ int spinner( nwipe_context_t** ptr, int device_idx )
     /* The spinner characters |/-\|/-\ */
     char sc[9] = "|/-\\|/-\\/";
 
-    /* check sanity of index */
+    /* Check sanity of index */
     if( c[device_idx]->spinner_idx < 0 || c[device_idx]->spinner_idx > 7 )
     {
         return 1;
