@@ -128,9 +128,13 @@ const char* main_window_footer_warning_lower_case_s =
     "  WARNING: To start the wipe press capital S, you pressed lower case s  ";
 const char* main_window_footer_warning_no_drive_selected =
     "  No drives selected, use spacebar to select a drive, then press S to start  ";
-const char* selection_footer = "J=Down K=Up Space=Select Backspace=Cancel Ctrl-C=Quit";
-const char* end_wipe_footer = "B=Blank screen Ctrl-C=Quit";
-const char* rounds_footer = "Left=Erase Esc=Cancel Ctrl-C=Quit";
+
+/* Oddly enough, placing extra quotes around the footer strings fixes corruption to the right
+ * of the footer message when the terminal is resized, a quirk in ncurses? - DO NOT REMOVE THE \" */
+const char* selection_footer = "\"J=Down K=Up Space=Select Backspace=Cancel Ctrl-C=Quit\"";
+const char* end_wipe_footer = "\"B=Blank screen Ctrl-C=Quit\"";
+const char* rounds_footer = "\"Left=Erase Esc=Cancel Ctrl-C=Quit\"";
+
 const char* wipes_finished_footer = "Wipe finished - press enter to exit. Logged to STDOUT";
 
 /* The number of lines available in the terminal */
