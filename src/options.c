@@ -58,58 +58,58 @@ int nwipe_options_parse( int argc, char** argv )
     /* The list of acceptable long options. */
     static struct option nwipe_options_long[] = {
         /* Set when the user wants to wipe without a confirmation prompt. */
-        {"autonuke", no_argument, 0, 0},
+        { "autonuke", no_argument, 0, 0 },
 
         /* Set when the user wants to have the system powerdown on completion of wipe. */
-        {"autopoweroff", no_argument, 0, 0},
+        { "autopoweroff", no_argument, 0, 0 },
 
         /* A GNU standard option. Corresponds to the 'h' short option. */
-        {"help", no_argument, 0, 'h'},
+        { "help", no_argument, 0, 'h' },
 
         /* The wipe method. Corresponds to the 'm' short option. */
-        {"method", required_argument, 0, 'm'},
+        { "method", required_argument, 0, 'm' },
 
         /* Log file. Corresponds to the 'l' short option. */
-        {"logfile", required_argument, 0, 'l'},
+        { "logfile", required_argument, 0, 'l' },
 
         /* Exclude devices, comma separated list */
-        {"exclude", required_argument, 0, 'e'},
+        { "exclude", required_argument, 0, 'e' },
 
         /* The Pseudo Random Number Generator. */
-        {"prng", required_argument, 0, 'p'},
+        { "prng", required_argument, 0, 'p' },
 
         /* The number of times to run the method. */
-        {"rounds", required_argument, 0, 'r'},
+        { "rounds", required_argument, 0, 'r' },
 
         /* Whether to blank the disk after wiping. */
-        {"noblank", no_argument, 0, 0},
+        { "noblank", no_argument, 0, 0 },
 
         /* Whether to ignore all USB devices. */
-        {"nousb", no_argument, 0, 0},
+        { "nousb", no_argument, 0, 0 },
 
         /* Whether to exit after wiping or wait for a keypress. */
-        {"nowait", no_argument, 0, 0},
+        { "nowait", no_argument, 0, 0 },
 
         /* Whether to allow signals to interrupt a wipe. */
-        {"nosignals", no_argument, 0, 0},
+        { "nosignals", no_argument, 0, 0 },
 
         /* Whether to exit after wiping or wait for a keypress. */
-        {"nogui", no_argument, 0, 0},
+        { "nogui", no_argument, 0, 0 },
 
         /* A flag to indicate whether the devices whould be opened in sync mode. */
-        {"sync", required_argument, 0, 0},
+        { "sync", required_argument, 0, 0 },
 
         /* Verify that wipe patterns are being written to the device. */
-        {"verify", required_argument, 0, 0},
+        { "verify", required_argument, 0, 0 },
 
         /* Display program version. */
-        {"verbose", no_argument, 0, 'v'},
+        { "verbose", no_argument, 0, 'v' },
 
         /* Display program version. */
-        {"version", no_argument, 0, 'V'},
+        { "version", no_argument, 0, 'V' },
 
         /* Requisite padding for getopt(). */
-        {0, 0, 0, 0}};
+        { 0, 0, 0, 0 } };
 
     /* Set default options. */
     nwipe_options.autonuke = 0;

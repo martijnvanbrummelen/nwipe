@@ -131,9 +131,9 @@ void* nwipe_zero( void* ptr )
 
     /* setup for a zero-fill. */
 
-    char zerofill[1] = {'\x00'};
-    nwipe_pattern_t patterns[] = {{1, &zerofill[0]},  // pass 1: 0s
-                                  {0, NULL}};
+    char zerofill[1] = { '\x00' };
+    nwipe_pattern_t patterns[] = { { 1, &zerofill[0] },  // pass 1: 0s
+                                   { 0, NULL } };
 
     /* Run the method. */
     c->result = nwipe_runmethod( c, patterns );
@@ -163,7 +163,7 @@ void* nwipe_verify( void* ptr )
     c->wipe_status = 1;
 
     /* Do nothing because nwipe_runmethod appends a zero-fill. */
-    nwipe_pattern_t patterns[] = {{0, NULL}};
+    nwipe_pattern_t patterns[] = { { 0, NULL } };
 
     /* Run the method. */
     c->result = nwipe_runmethod( c, patterns );
@@ -199,14 +199,14 @@ void* nwipe_dod522022m( void* ptr )
     /* Random characters. (Elements 2 and 6 are unused.) */
     char dod[7];
 
-    nwipe_pattern_t patterns[] = {{1, &dod[0]},  // Pass 1: A random character.
-                                  {1, &dod[1]},  // Pass 2: The bitwise complement of pass 1.
-                                  {-1, ""},  // Pass 3: A random stream.
-                                  {1, &dod[3]},  // Pass 4: A random character.
-                                  {1, &dod[4]},  // Pass 5: A random character.
-                                  {1, &dod[5]},  // Pass 6: The bitwise complement of pass 5.
-                                  {-1, ""},  // Pass 7: A random stream.
-                                  {0, NULL}};
+    nwipe_pattern_t patterns[] = { { 1, &dod[0] },  // Pass 1: A random character.
+                                   { 1, &dod[1] },  // Pass 2: The bitwise complement of pass 1.
+                                   { -1, "" },  // Pass 3: A random stream.
+                                   { 1, &dod[3] },  // Pass 4: A random character.
+                                   { 1, &dod[4] },  // Pass 5: A random character.
+                                   { 1, &dod[5] },  // Pass 6: The bitwise complement of pass 5.
+                                   { -1, "" },  // Pass 7: A random stream.
+                                   { 0, NULL } };
 
     /* Load the array with random characters. */
     r = read( c->entropy_fd, &dod, sizeof( dod ) );
@@ -274,10 +274,10 @@ void* nwipe_dodshort( void* ptr )
     /* Random characters. (Element 3 is unused.) */
     char dod[3];
 
-    nwipe_pattern_t patterns[] = {{1, &dod[0]},  // Pass 1: A random character.
-                                  {1, &dod[1]},  // Pass 2: The bitwise complement of pass 1.
-                                  {-1, ""},  // Pass 3: A random stream.
-                                  {0, NULL}};
+    nwipe_pattern_t patterns[] = { { 1, &dod[0] },  // Pass 1: A random character.
+                                   { 1, &dod[1] },  // Pass 2: The bitwise complement of pass 1.
+                                   { -1, "" },  // Pass 3: A random stream.
+                                   { 0, NULL } };
 
     /* Load the array with random characters. */
     r = read( c->entropy_fd, &dod, sizeof( dod ) );
@@ -348,42 +348,42 @@ void* nwipe_gutmann( void* ptr )
     int n;
 
     /* Define the Gutmann method. */
-    nwipe_pattern_t book[] = {{-1, ""},  // Random pass.
-                              {-1, ""},  // Random pass.
-                              {-1, ""},  // Random pass.
-                              {-1, ""},  // Random pass.
-                              {3, "\x55\x55\x55"},  // Static pass: 0x555555  01010101 01010101 01010101
-                              {3, "\xAA\xAA\xAA"},  // Static pass: 0XAAAAAA  10101010 10101010 10101010
-                              {3, "\x92\x49\x24"},  // Static pass: 0x924924  10010010 01001001 00100100
-                              {3, "\x49\x24\x92"},  // Static pass: 0x492492  01001001 00100100 10010010
-                              {3, "\x24\x92\x49"},  // Static pass: 0x249249  00100100 10010010 01001001
-                              {3, "\x00\x00\x00"},  // Static pass: 0x000000  00000000 00000000 00000000
-                              {3, "\x11\x11\x11"},  // Static pass: 0x111111  00010001 00010001 00010001
-                              {3, "\x22\x22\x22"},  // Static pass: 0x222222  00100010 00100010 00100010
-                              {3, "\x33\x33\x33"},  // Static pass: 0x333333  00110011 00110011 00110011
-                              {3, "\x44\x44\x44"},  // Static pass: 0x444444  01000100 01000100 01000100
-                              {3, "\x55\x55\x55"},  // Static pass: 0x555555  01010101 01010101 01010101
-                              {3, "\x66\x66\x66"},  // Static pass: 0x666666  01100110 01100110 01100110
-                              {3, "\x77\x77\x77"},  // Static pass: 0x777777  01110111 01110111 01110111
-                              {3, "\x88\x88\x88"},  // Static pass: 0x888888  10001000 10001000 10001000
-                              {3, "\x99\x99\x99"},  // Static pass: 0x999999  10011001 10011001 10011001
-                              {3, "\xAA\xAA\xAA"},  // Static pass: 0xAAAAAA  10101010 10101010 10101010
-                              {3, "\xBB\xBB\xBB"},  // Static pass: 0xBBBBBB  10111011 10111011 10111011
-                              {3, "\xCC\xCC\xCC"},  // Static pass: 0xCCCCCC  11001100 11001100 11001100
-                              {3, "\xDD\xDD\xDD"},  // Static pass: 0xDDDDDD  11011101 11011101 11011101
-                              {3, "\xEE\xEE\xEE"},  // Static pass: 0xEEEEEE  11101110 11101110 11101110
-                              {3, "\xFF\xFF\xFF"},  // Static pass: 0xFFFFFF  11111111 11111111 11111111
-                              {3, "\x92\x49\x24"},  // Static pass: 0x924924  10010010 01001001 00100100
-                              {3, "\x49\x24\x92"},  // Static pass: 0x492492  01001001 00100100 10010010
-                              {3, "\x24\x92\x49"},  // Static pass: 0x249249  00100100 10010010 01001001
-                              {3, "\x6D\xB6\xDB"},  // Static pass: 0x6DB6DB  01101101 10110110 11011011
-                              {3, "\xB6\xDB\x6D"},  // Static pass: 0xB6DB6D  10110110 11011011 01101101
-                              {3, "\xDB\x6D\xB6"},  // Static pass: 0XDB6DB6  11011011 01101101 10110110
-                              {-1, ""},  // Random pass.
-                              {-1, ""},  // Random pass.
-                              {-1, ""},  // Random pass.
-                              {-1, ""},  // Random pass.
-                              {0, NULL}};
+    nwipe_pattern_t book[] = { { -1, "" },  // Random pass.
+                               { -1, "" },  // Random pass.
+                               { -1, "" },  // Random pass.
+                               { -1, "" },  // Random pass.
+                               { 3, "\x55\x55\x55" },  // Static pass: 0x555555  01010101 01010101 01010101
+                               { 3, "\xAA\xAA\xAA" },  // Static pass: 0XAAAAAA  10101010 10101010 10101010
+                               { 3, "\x92\x49\x24" },  // Static pass: 0x924924  10010010 01001001 00100100
+                               { 3, "\x49\x24\x92" },  // Static pass: 0x492492  01001001 00100100 10010010
+                               { 3, "\x24\x92\x49" },  // Static pass: 0x249249  00100100 10010010 01001001
+                               { 3, "\x00\x00\x00" },  // Static pass: 0x000000  00000000 00000000 00000000
+                               { 3, "\x11\x11\x11" },  // Static pass: 0x111111  00010001 00010001 00010001
+                               { 3, "\x22\x22\x22" },  // Static pass: 0x222222  00100010 00100010 00100010
+                               { 3, "\x33\x33\x33" },  // Static pass: 0x333333  00110011 00110011 00110011
+                               { 3, "\x44\x44\x44" },  // Static pass: 0x444444  01000100 01000100 01000100
+                               { 3, "\x55\x55\x55" },  // Static pass: 0x555555  01010101 01010101 01010101
+                               { 3, "\x66\x66\x66" },  // Static pass: 0x666666  01100110 01100110 01100110
+                               { 3, "\x77\x77\x77" },  // Static pass: 0x777777  01110111 01110111 01110111
+                               { 3, "\x88\x88\x88" },  // Static pass: 0x888888  10001000 10001000 10001000
+                               { 3, "\x99\x99\x99" },  // Static pass: 0x999999  10011001 10011001 10011001
+                               { 3, "\xAA\xAA\xAA" },  // Static pass: 0xAAAAAA  10101010 10101010 10101010
+                               { 3, "\xBB\xBB\xBB" },  // Static pass: 0xBBBBBB  10111011 10111011 10111011
+                               { 3, "\xCC\xCC\xCC" },  // Static pass: 0xCCCCCC  11001100 11001100 11001100
+                               { 3, "\xDD\xDD\xDD" },  // Static pass: 0xDDDDDD  11011101 11011101 11011101
+                               { 3, "\xEE\xEE\xEE" },  // Static pass: 0xEEEEEE  11101110 11101110 11101110
+                               { 3, "\xFF\xFF\xFF" },  // Static pass: 0xFFFFFF  11111111 11111111 11111111
+                               { 3, "\x92\x49\x24" },  // Static pass: 0x924924  10010010 01001001 00100100
+                               { 3, "\x49\x24\x92" },  // Static pass: 0x492492  01001001 00100100 10010010
+                               { 3, "\x24\x92\x49" },  // Static pass: 0x249249  00100100 10010010 01001001
+                               { 3, "\x6D\xB6\xDB" },  // Static pass: 0x6DB6DB  01101101 10110110 11011011
+                               { 3, "\xB6\xDB\x6D" },  // Static pass: 0xB6DB6D  10110110 11011011 01101101
+                               { 3, "\xDB\x6D\xB6" },  // Static pass: 0XDB6DB6  11011011 01101101 10110110
+                               { -1, "" },  // Random pass.
+                               { -1, "" },  // Random pass.
+                               { -1, "" },  // Random pass.
+                               { -1, "" },  // Random pass.
+                               { 0, NULL } };
 
     /* Put the book array into this array in random order. */
     nwipe_pattern_t patterns[36];
@@ -636,11 +636,11 @@ void* nwipe_is5enh( void* ptr )
 
     c->wipe_status = 1;
 
-    char is5enh[3] = {'\x00', '\xFF', '\x00'};
-    nwipe_pattern_t patterns[] = {{1, &is5enh[0]},  // Pass 1: 0s
-                                  {1, &is5enh[1]},  // Pass 2: 1s
-                                  {-1, &is5enh[2]},  // Pass 3: random bytes with verification
-                                  {0, NULL}};
+    char is5enh[3] = { '\x00', '\xFF', '\x00' };
+    nwipe_pattern_t patterns[] = { { 1, &is5enh[0] },  // Pass 1: 0s
+                                   { 1, &is5enh[1] },  // Pass 2: 1s
+                                   { -1, &is5enh[2] },  // Pass 3: random bytes with verification
+                                   { 0, NULL } };
     c->result = nwipe_runmethod( c, patterns );
 
     c->wipe_status = 0;
@@ -668,7 +668,7 @@ void* nwipe_random( void* ptr )
     c->wipe_status = 1;
 
     /* Define the random method. */
-    nwipe_pattern_t patterns[] = {{-1, ""}, {0, NULL}};
+    nwipe_pattern_t patterns[] = { { -1, "" }, { 0, NULL } };
 
     /* Run the method. */
     c->result = nwipe_runmethod( c, patterns );
@@ -701,7 +701,7 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
     i = 0;
 
     /* The zero-fill pattern for the final pass of most methods. */
-    nwipe_pattern_t pattern_zero = {1, "\x00"};
+    nwipe_pattern_t pattern_zero = { 1, "\x00" };
 
     /* Create the PRNG state buffer. */
     c->prng_seed.length = NWIPE_KNOB_PRNG_STATE_LENGTH;
@@ -1114,14 +1114,14 @@ void calculate_round_size( nwipe_context_t* c )
      */
 
     /* Don't change the order of these values as the case statements use their index in the array */
-    void* array_methods[] = {&nwipe_zero,
-                             &nwipe_ops2,
-                             &nwipe_dodshort,
-                             &nwipe_dod522022m,
-                             &nwipe_gutmann,
-                             &nwipe_random,
-                             &nwipe_is5enh,
-                             NULL};
+    void* array_methods[] = { &nwipe_zero,
+                              &nwipe_ops2,
+                              &nwipe_dodshort,
+                              &nwipe_dod522022m,
+                              &nwipe_gutmann,
+                              &nwipe_random,
+                              &nwipe_is5enh,
+                              NULL };
     int i;
 
     /* This while loop allows us to effectively create a const so we can use a case statement rather than if statements.
