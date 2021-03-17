@@ -25,9 +25,9 @@
 #include "mt19937ar-cok/mt19937ar-cok.h"
 #include "isaac_rand/isaac_rand.h"
 
-nwipe_prng_t nwipe_twister = {"Mersenne Twister (mt19937ar-cok)", nwipe_twister_init, nwipe_twister_read};
+nwipe_prng_t nwipe_twister = { "Mersenne Twister (mt19937ar-cok)", nwipe_twister_init, nwipe_twister_read };
 
-nwipe_prng_t nwipe_isaac = {"ISAAC (rand.c 20010626)", nwipe_isaac_init, nwipe_isaac_read};
+nwipe_prng_t nwipe_isaac = { "ISAAC (rand.c 20010626)", nwipe_isaac_init, nwipe_isaac_read };
 
 int nwipe_u32tobuffer( u8* buffer, u32 rand, int len )
 {
