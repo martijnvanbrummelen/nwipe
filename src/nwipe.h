@@ -74,7 +74,7 @@ void* signal_hand( void* );
 extern int errno;
 
 /* 0=wipe not yet started, 1=wipe has been started by the user */
-int global_wipe_status;
+extern int global_wipe_status;
 
 /* Global array to hold log values to print when logging to STDOUT */
 /* char **log_lines;

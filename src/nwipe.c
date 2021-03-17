@@ -52,6 +52,7 @@
 
 int terminate_signal;
 int user_abort;
+int global_wipe_status;
 
 int main( int argc, char** argv )
 {
