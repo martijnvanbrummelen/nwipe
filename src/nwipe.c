@@ -812,7 +812,7 @@ int cleanup()
 }
 void check_for_autopoweroff( void )
 {
-    char cmd[] = "shutdown -P +1 \"System going down in one minute\"";
+    char cmd[] = "shutdown -Ph +1 \"System going down in one minute\"";
     FILE* fp;
     int r;  // A result buffer.
 
