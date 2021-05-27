@@ -711,7 +711,7 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
         else
         {
 
-            if( c[i]->pass_errors != 0 )
+            if( c[i]->pass_errors != 0 || c[i]->verify_errors != 0 )
             {
                 strncpy( exclamation_flag, "!", 1 );
                 exclamation_flag[1] = 0;
