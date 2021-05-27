@@ -289,6 +289,9 @@ int main( int argc, char** argv )
     /* TODO: free c1 and c2 memory. */
     if( user_abort == 0 )
     {
+        /* Log the wipe options that have been selected immediately prior to the start of the wipe */
+        nwipe_options_log();
+
         /* The wipe has been initiated */
         global_wipe_status = 1;
 
