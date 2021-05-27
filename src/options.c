@@ -399,6 +399,9 @@ int nwipe_options_parse( int argc, char** argv )
 
 void nwipe_options_log( void )
 {
+    extern nwipe_prng_t nwipe_twister;
+    extern nwipe_prng_t nwipe_isaac;
+
     /**
      *  Prints a manifest of options to the log.
      */
@@ -444,6 +447,23 @@ void nwipe_options_log( void )
     }
 
     nwipe_log( NWIPE_LOG_NOTICE, "  banner   = %s", banner );
+
+    if( nwipe_options.prng == &nwipe_twister )
+    {
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Mersenne Twister" );
+    }
+    else
+    {
+        if( nwipe_options.prng == &nwipe_isaac )
+        {
+            nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Isaac" );
+        }
+        else
+        {
+            nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Undefined" );
+        }
+    }
+
     nwipe_log( NWIPE_LOG_NOTICE, "  method   = %s", nwipe_method_label( nwipe_options.method ) );
     nwipe_log( NWIPE_LOG_NOTICE, "  rounds   = %i", nwipe_options.rounds );
     nwipe_log( NWIPE_LOG_NOTICE, "  sync     = %i", nwipe_options.sync );
