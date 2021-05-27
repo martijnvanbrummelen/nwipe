@@ -1066,7 +1066,14 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
             }
         }
 
-        nwipe_log( NWIPE_LOG_NOTICE, "[SUCCESS] Blanked device %s", c->device_name );
+        if( c->verify_errors == 0 && c->pass_errors == 0 )
+        {
+            nwipe_log( NWIPE_LOG_NOTICE, "[SUCCESS] Blanked device %s", c->device_name );
+        }
+        else
+        {
+            nwipe_log( NWIPE_LOG_NOTICE, "[FAILURE] %s may not be blanked", c->device_name );
+        }
 
     } /* final blank */
 

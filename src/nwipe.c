@@ -91,8 +91,9 @@ int main( int argc, char** argv )
     /* Initialise, flag indicating whether a wipe has actually started or not 0=no, 1=yes */
     global_wipe_status = 0;
 
-    /* Initialise, flag that indicates whether a fatal error occured on ANY drive */
+    /* Initialise flags that indicates whether a fatal or non fatal error occured on ANY drive */
     int fatal_errors_flag = 0;
+    int non_fatal_errors_flag = 0;
 
     /* Two arrays are used, containing pointers to the the typedef for each disk */
     /* The first array (c1) points to all devices, the second points to only     */
@@ -592,6 +593,7 @@ int main( int argc, char** argv )
             if( c2[i]->result > 0 )
             {
                 nwipe_log( NWIPE_LOG_FATAL, "Nwipe exited with non fatal errors on device = %s\n", c2[i]->device_name );
+                non_fatal_errors_flag = 1;
                 return_status = 1;
             }
         }
@@ -628,10 +630,10 @@ int main( int argc, char** argv )
         }
         else
         {
-            if( fatal_errors_flag == 1 )
+            if( fatal_errors_flag == 1 || non_fatal_errors_flag == 1 )
             {
                 nwipe_log( NWIPE_LOG_INFO,
-                           "Nwipe exited with fatal errors, check the summary table for individual drive status." );
+                           "Nwipe exited with errors, check the log & summary table for individual drive status." );
             }
             else
             {
