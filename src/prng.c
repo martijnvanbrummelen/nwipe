@@ -53,6 +53,8 @@ int nwipe_u32tobuffer( u8* buffer, u32 rand, int len )
 
 int nwipe_twister_init( NWIPE_PRNG_INIT_SIGNATURE )
 {
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising Mersenne Twister prng" );
+
     if( *state == NULL )
     {
         /* This is the first time that we have been called. */
@@ -90,6 +92,8 @@ int nwipe_isaac_init( NWIPE_PRNG_INIT_SIGNATURE )
 {
     int count;
     randctx* isaac_state = *state;
+
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising Isaac prng" );
 
     if( *state == NULL )
     {
