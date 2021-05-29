@@ -248,6 +248,9 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
     /* Counter to track when to do a fdatasync. */
     int i = 0;
 
+    /* general index counter */
+    int idx;
+
     if( c->prng_seed.s == NULL )
     {
         nwipe_log( NWIPE_LOG_SANITY, "__FUNCTION__: Null seed pointer." );
@@ -260,8 +263,9 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
         return -1;
     }
 
-    /* Create the output buffer. */
-    b = malloc( c->device_stat.st_blksize );
+    /* Create the initialised output buffer. Initialised because we don't want memory leaks
+     * to disk in the event of some future undetected bug in a prng or it's implementation ) */
+    b = calloc( c->device_stat.st_blksize, sizeof( char ) );
 
     /* Check the memory allocation. */
     if( !b )
@@ -316,6 +320,26 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
 
         /* Fill the output buffer with the random pattern. */
         c->prng->read( &c->prng_state, b, blocksize );
+
+        /* For the first block only, check the prng actually wrote something to the buffer */
+        if( z == c->device_size )
+        {
+            idx = c->device_stat.st_blksize;
+            while( idx > 0 )
+            {
+                if( b[idx] != 0 )
+                {
+                    nwipe_log( NWIPE_LOG_NOTICE, "prng stream is active" );
+                    break;
+                }
+                idx--;
+            }
+            if( idx == 0 )
+            {
+                nwipe_log( NWIPE_LOG_FATAL, "ERROR, prng wrote nothing to the buffer" );
+                return -1;
+            }
+        }
 
         /* Write the next block out to the device. */
         r = write( c->device_fd, b, blocksize );
