@@ -16,7 +16,7 @@ MODIFIED:
 
 #ifndef RAND
 #define RAND
-#define RANDSIZL   (8)  /* I recommend 8 for crypto, 4 for simulations */
+#define RANDSIZL   (4)  /* I recommend 8 for crypto, 4 for simulations */
 #define RANDSIZ    (1<<RANDSIZL)
 
 /* context of random number generator */

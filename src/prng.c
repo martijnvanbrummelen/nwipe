@@ -140,18 +140,31 @@ int nwipe_isaac_init( NWIPE_PRNG_INIT_SIGNATURE )
 
 int nwipe_isaac_read( NWIPE_PRNG_READ_SIGNATURE )
 {
-    /* The purpose of this function is unclear, as it does not do anything except immediately return !
-     * Because the variables in the macro NWIPE_PRNG_READ_SIGNATURE were then unused this throws
-     * up a handful of compiler warnings, related to variables being unused. To stop the compiler warnings
-     * I've simply put in a (void) var so that compiler sees the variable are supposed to be unused.
-     *
-     * As this code works, I thought it best not to remove this function, just in case it serves
-     * some purpose or is there for future use.
-     */
+    u32 i = 0;
+    u32 ii;
+    u32 words = count / SIZE_OF_ISAAC;  // the values of isaac is strictly 4 bytes
+    u32 remain = count % SIZE_OF_ISAAC;  // the values of isaac is strictly 4 bytes
 
-    (void) state;
-    (void) buffer;
-    (void) count;
+    randctx* isaac_state = *state;
+
+    /* Isaac returns 4-bytes per call, so progress by 4 bytes. */
+    for( ii = 0; ii < words; ++ii )
+    {
+        /* get the next 32bit random number */
+        isaac( isaac_state );
+
+        nwipe_u32tobuffer( (u8*) ( buffer + i ), isaac_state->randrsl[0], SIZE_OF_ISAAC );
+        i = i + SIZE_OF_ISAAC;
+    }
+
+    /* If there is some remainder copy only relevant number of bytes to not overflow the buffer. */
+    if( remain > 0 )
+    {
+        /* get the next 32bit random number */
+        isaac( isaac_state );
+
+        nwipe_u32tobuffer( (u8*) ( buffer + i ), isaac_state->randrsl[0], SIZE_OF_ISAAC );
+    }
 
     return 0;
 }
