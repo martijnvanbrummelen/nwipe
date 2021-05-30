@@ -223,12 +223,6 @@ int main( int argc, char** argv )
             /* The user must manually select devices. */
             c1[i]->select = NWIPE_SELECT_FALSE;
         }
-
-        /* Set the PRNG implementation. */
-        c1[i]->prng = nwipe_options.prng;
-        c1[i]->prng_seed.length = 0;
-        c1[i]->prng_seed.s = 0;
-        c1[i]->prng_state = 0;
     }
 
     /* Check for initialization errors. */
@@ -264,9 +258,15 @@ int main( int argc, char** argv )
         }
     }
 
-    /* Count the number of selected contexts. */
     for( i = 0; i < nwipe_enumerated; i++ )
     {
+        /* Set the PRNG implementation, which must always come after the function nwipe_gui_select ! */
+        c1[i]->prng = nwipe_options.prng;
+        c1[i]->prng_seed.length = 0;
+        c1[i]->prng_seed.s = 0;
+        c1[i]->prng_state = 0;
+
+        /* Count the number of selected contexts. */
         if( c1[i]->select == NWIPE_SELECT_TRUE )
         {
             nwipe_selected += 1;
