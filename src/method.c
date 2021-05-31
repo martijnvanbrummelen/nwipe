@@ -1048,7 +1048,9 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
             nwipe_log( NWIPE_LOG_NOTICE, "Verifying that %s is empty.", c->device_name );
 
             /* Verify the final zero pass. */
+            c->pass_type = NWIPE_PASS_VERIFY;
             r = nwipe_static_verify( c, &pattern_zero );
+            c->pass_type = NWIPE_PASS_NONE;
 
             /* Check for a fatal error. */
             if( r < 0 )
