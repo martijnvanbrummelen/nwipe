@@ -601,6 +601,9 @@ int nwipe_log_sysinfo()
 
 void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
 {
+    /* Prints two summary tables, the first is the device pass and verification summary
+     * and the second is the main summary table detaining the drives, status, throughput,
+     * model and serial number */
     int i;
     int idx_src;
     int idx_dest;
@@ -652,6 +655,68 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
         return;
     }
 
+    /* Print the pass and verifications table */
+
+    /* IMPORTANT: Keep maximum columns (line length) to 80 characters for use with 80x30 terminals, Shredos, ALT-F2 etc
+     * --------------------------------01234567890123456789012345678901234567890123456789012345678901234567890123456789-*/
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "" );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP,
+               "******************************** Error Summary *********************************" );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "! Device | Pass Errors | Verifications Errors |" );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP,
+               "--------------------------------------------------------------------------------" );
+
+    for( i = 0; i < nwipe_selected; i++ )
+    {
+        if( c[i]->pass_errors != 0 || c[i]->verify_errors != 0 )
+        {
+            strncpy( exclamation_flag, "!", 1 );
+            exclamation_flag[1] = 0;
+        }
+        else
+        {
+            if( c[i]->wipe_status == 0 )
+            {
+                strncpy( exclamation_flag, " ", 1 );
+                exclamation_flag[1] = 0;
+            }
+        }
+
+        /* Device name, strip any prefixed /dev/.. leaving up to 6 right justified
+         * characters eg "   sda", prefixed with space to 6 characters, note that
+         * we are processing the strings right to left */
+
+        idx_dest = 6;
+        device[idx_dest--] = 0;
+        idx_src = strlen( c[i]->device_name );
+        idx_src--;
+
+        while( idx_dest >= 0 )
+        {
+            /* if the device name contains a / start prefixing spaces */
+            if( c[i]->device_name[idx_src] == '/' )
+            {
+                device[idx_dest--] = ' ';
+                continue;
+            }
+            if( idx_src >= 0 )
+            {
+                device[idx_dest--] = c[i]->device_name[idx_src--];
+            }
+        }
+        nwipe_log( NWIPE_LOG_NOTIMESTAMP,
+                   "%s %s |  %10llu |           %10llu |",
+                   exclamation_flag,
+                   device,
+                   c[i]->pass_errors,
+                   c[i]->verify_errors );
+    }
+
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP,
+               "********************************************************************************" );
+
+    /* Print the main summary table */
+
     /* initialise */
     total_throughput = 0;
 
@@ -662,7 +727,7 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
      * --------------------------------01234567890123456789012345678901234567890123456789012345678901234567890123456789-*/
     nwipe_log( NWIPE_LOG_NOTIMESTAMP, "" );
     nwipe_log( NWIPE_LOG_NOTIMESTAMP,
-               "********************************************************************************" );
+               "********************************* Drive Status *********************************" );
     nwipe_log( NWIPE_LOG_NOTIMESTAMP, "! Device | Status | Thru-put | HH:MM:SS | Model/Serial Number" );
     nwipe_log( NWIPE_LOG_NOTIMESTAMP,
                "--------------------------------------------------------------------------------" );
