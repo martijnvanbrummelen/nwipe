@@ -125,6 +125,13 @@ const char* stats_title = " Statistics ";
 /* Footer labels. */
 const char* main_window_footer = "S=Start m=Method p=PRNG v=Verify r=Rounds b=Blanking Space=Select CTRL+C=Quit";
 const char* main_window_footer_warning_lower_case_s = "  WARNING: To start the wipe press SHIFT+S (uppercase S)  ";
+
+const char* main_window_fotter_warning_no_blanking_with_ops2 =
+    "  WARNING: Zero blanking is not allowed with ops2 method  ";
+
+const char* main_window_fotter_warning_no_blanking_with_verify_only =
+    "  WARNING: Zero blanking is not allowed with verify method  ";
+
 const char* main_window_footer_warning_no_drive_selected =
     "  No drives selected, use spacebar to select a drive, then press S to start  ";
 
@@ -970,6 +977,38 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
 
                     validkeyhit = 1;
 
+                    if( nwipe_options.method == &nwipe_ops2 )
+                    {
+                        /* Warn the user about that zero blanking with the ops2 method is not allowed */
+                        wattron( footer_window, COLOR_PAIR( 10 ) );
+                        nwipe_gui_amend_footer_window( main_window_fotter_warning_no_blanking_with_ops2 );
+                        doupdate();
+                        sleep( 3 );
+                        wattroff( footer_window, COLOR_PAIR( 10 ) );
+
+                        /* After the delay return footer text back to key help */
+                        nwipe_gui_amend_footer_window( main_window_footer );
+                        doupdate();
+
+                        break;
+                    }
+
+                    if( nwipe_options.method == &nwipe_verify )
+                    {
+                        /* Warn the user about that zero blanking with the ops2 method is not allowed */
+                        wattron( footer_window, COLOR_PAIR( 10 ) );
+                        nwipe_gui_amend_footer_window( main_window_fotter_warning_no_blanking_with_verify_only );
+                        doupdate();
+                        sleep( 3 );
+                        wattroff( footer_window, COLOR_PAIR( 10 ) );
+
+                        /* After the delay return footer text back to key help */
+                        nwipe_gui_amend_footer_window( main_window_footer );
+                        doupdate();
+
+                        break;
+                    }
+
                     /* Run the noblank dialog. */
                     nwipe_gui_noblank();
                     break;
@@ -1148,6 +1187,13 @@ void nwipe_gui_options( void )
     } /* switch verify */
 
     mvwprintw( options_window, NWIPE_GUI_OPTIONS_ROUNDS_Y, NWIPE_GUI_OPTIONS_ROUNDS_X, "Rounds:  " );
+
+    /* Disable blanking for ops2 and verify methods */
+    if( nwipe_options.method == &nwipe_ops2 || nwipe_options.method == &nwipe_verify )
+    {
+        nwipe_options.noblank = 1;
+    }
+
     if( nwipe_options.noblank )
     {
         wprintw( options_window, "%i (no final blanking pass)", nwipe_options.rounds );
@@ -1820,10 +1866,6 @@ void nwipe_gui_noblank( void )
                 if( focus >= 0 && focus < count )
                 {
                     nwipe_options.noblank = focus;
-                }
-                if( nwipe_options.noblank )
-                {
-                    nwipe_options.verify = NWIPE_VERIFY_NONE;
                 }
                 return;
 

@@ -34,7 +34,7 @@
  *
  * WARNING: Never change nwipe_options after calling a method.
  *
- * NOTE: The nwipe_runmethod function appends a final pass to all methods.
+ * NOTE: The nwipe_runmethod function appends a user selectable final blanking (zero) pass to all methods.
  *
  */
 
@@ -439,8 +439,6 @@ void* nwipe_gutmann( void* ptr )
 
         /* Mark this element as having been used. */
         book[j].length = 0;
-
-        nwipe_log( NWIPE_LOG_DEBUG, "nwipe_gutmann: Set patterns[%i] = book[%i].", i, j );
     }
 
     /* Ensure that the array is terminated. */
@@ -727,18 +725,6 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
     /* Set the number of bytes that will be written across all passes in one round. */
     c->pass_size = c->pass_count * c->device_size;
 
-    if( nwipe_options.verify == NWIPE_VERIFY_ALL )
-    {
-        /* We must read back all passes, so double the byte count. */
-        c->pass_size *= 2;
-    }
-
-    /* Tell the parent the number of rounds that will be run. */
-    c->round_count = nwipe_options.rounds;
-
-    /* Set the initial number of bytes that will be written across all rounds. */
-    c->round_size = c->pass_size;
-
     /* For the selected method, calculate the correct round_size value (for correct percentage calculation) */
     calculate_round_size( c );
 
@@ -830,6 +816,8 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
                     r = nwipe_static_verify( c, &patterns[i] );
                     c->pass_type = NWIPE_PASS_NONE;
 
+                    nwipe_log( NWIPE_LOG_NOTICE, "%llu bytes read from %s", c->pass_done, c->device_name );
+
                     /* Check for a fatal error. */
                     if( r < 0 )
                     {
@@ -901,6 +889,8 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
                     c->pass_type = NWIPE_PASS_VERIFY;
                     r = nwipe_random_verify( c );
                     c->pass_type = NWIPE_PASS_NONE;
+
+                    nwipe_log( NWIPE_LOG_NOTICE, "%llu bytes read from %s", c->pass_done, c->device_name );
 
                     /* Check for a fatal error. */
                     if( r < 0 )
@@ -976,6 +966,8 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
         /* The final ops2 pass. */
         r = nwipe_random_pass( c );
 
+        nwipe_log( NWIPE_LOG_NOTICE, "%llu bytes written to %s", c->pass_done, c->device_name );
+
         /* Check for a fatal error. */
         if( r < 0 )
         {
@@ -984,10 +976,12 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 
         if( nwipe_options.verify == NWIPE_VERIFY_LAST || nwipe_options.verify == NWIPE_VERIFY_ALL )
         {
-            nwipe_log( NWIPE_LOG_NOTICE, "Verifying the final random pattern on %s is empty.", c->device_name );
+            nwipe_log( NWIPE_LOG_NOTICE, "Verifying final random pattern FRP on %s", c->device_name );
 
             /* Verify the final zero pass. */
             r = nwipe_random_verify( c );
+
+            nwipe_log( NWIPE_LOG_NOTICE, "%llu bytes read from %s", c->pass_done, c->device_name );
 
             /* Check for a fatal error. */
             if( r < 0 )
@@ -995,10 +989,8 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
                 return r;
             }
 
-            nwipe_log( NWIPE_LOG_NOTICE, "Verified the final random pattern on '%s' is empty.", c->device_name );
+            nwipe_log( NWIPE_LOG_NOTICE, "[SUCCESS] Verified FRP on '%s' matches", c->device_name );
         }
-
-        nwipe_log( NWIPE_LOG_NOTICE, "Wrote final random pattern to '%s'.", c->device_name );
 
     } /* final ops2 */
 
@@ -1022,7 +1014,7 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
         }
         else
         {
-            nwipe_log( NWIPE_LOG_ERROR, "[FAILURE] %s IS NOT empty.", c->device_name );
+            nwipe_log( NWIPE_LOG_ERROR, "[FAILURE] %s is not empty .", c->device_name );
         }
 
     } /* verify */
@@ -1036,6 +1028,9 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 
         /* The final zero pass. */
         r = nwipe_static_pass( c, &pattern_zero );
+
+        /* Log number of bytes written to disk */
+        nwipe_log( NWIPE_LOG_NOTICE, "%llu bytes written to %s", c->pass_done, c->device_name );
 
         /* Check for a fatal error. */
         if( r < 0 )
@@ -1051,6 +1046,9 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
             c->pass_type = NWIPE_PASS_VERIFY;
             r = nwipe_static_verify( c, &pattern_zero );
             c->pass_type = NWIPE_PASS_NONE;
+
+            /* Log number of bytes read from disk */
+            nwipe_log( NWIPE_LOG_NOTICE, "%llu bytes read from %s", c->pass_done, c->device_name );
 
             /* Check for a fatal error. */
             if( r < 0 )
@@ -1113,13 +1111,12 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 
 void calculate_round_size( nwipe_context_t* c )
 {
-    /* This is where the round size is adjusted. round_size is used in the running percentage completion
+    /* This is where the round size is calculated. round_size is used in the running percentage completion
      * calculation. round size is calculated based on pass_size, pass_count, number of rounds, blanking
-     * on/off and verification on/off
+     * on/off and verification All/Last/None
      *
-     * To hopefully make this adjustment more understandable, I have presented each calculation
-     * under each method. This should make it easier to add a new method here without breaking the
-     * calculations for other methods.
+     * To hopefully make this calculation more understandable, I have separated the calculations that apply to
+     * all methods and processed first then created a switch statement that contains method specific changes if any
      */
 
     /* Don't change the order of these values as the case statements use their index in the array */
@@ -1150,118 +1147,110 @@ void calculate_round_size( nwipe_context_t* c )
         i++;
     }
 
-    /* Multiple the round_size by the number of rounds (times) the user wants to wipe the drive with this method.
-     */
+    if( nwipe_options.verify == NWIPE_VERIFY_ALL )
+    {
+        /* We must read back all passes, so double the byte count. */
+        c->pass_size *= 2;
+    }
+
+    /* Tell the parent the number of rounds that will be run. */
+    c->round_count = nwipe_options.rounds;
+
+    /* Set the initial number of bytes that will be written across all rounds.
+       c->pass_size includes write AND verification passes if 'verify_all' is selected
+       but does not include the final blanking pass or the verify_last option */
+    c->round_size = c->pass_size;
+
+    /* Multiple the round_size by the number of rounds (times) the user wants to wipe the drive with this method. */
     c->round_size *= c->round_count;
 
-    /* For each method create the correct round_size value */
+    /* Now increase size based on whether blanking is enabled and verification */
+    if( nwipe_options.noblank == 0 )
+    {
+        /* Blanking enabled so increase round size */
+        c->round_size += c->device_size;
+
+        if( nwipe_options.verify == NWIPE_VERIFY_LAST || nwipe_options.verify == NWIPE_VERIFY_ALL )
+        {
+            c->round_size += c->device_size;
+        }
+    }
+    else
+    {
+        /* Blanking not enabled, check for 'Verify_last', increase round size if enabled. */
+        if( nwipe_options.verify == NWIPE_VERIFY_LAST )
+        {
+            c->round_size += c->device_size;
+        }
+    }
+
+    /* Additional method specific round_size adjustments go in this switch statement */
+
     switch( selected_method )
     {
         case 0:
-            /* NWIPE_ZERO
+            /* NWIPE_ZERO - No additional calculation required
              * ---------- */
-
-            if( nwipe_options.verify == NWIPE_VERIFY_ALL )
-            {
-                c->round_size += c->device_size;
-            }
-            if( nwipe_options.verify == NWIPE_VERIFY_LAST )
-            {
-                c->round_size += c->device_size;
-            }
-            if( nwipe_options.noblank == 0 )
-            {
-                c->round_size += c->device_size;
-            }
             break;
 
         case 1:
             /* NWIPE_OPS2
              * ---------- */
 
-            /* Required for the 9th and final random pass */
+            /* Required for mandatory 9th and final random pass */
             c->round_size += c->device_size;
 
-            if( nwipe_options.verify == NWIPE_VERIFY_LAST )
+            /* Required for selectable 9th and final random verification */
+            if( nwipe_options.verify == NWIPE_VERIFY_ALL || nwipe_options.verify == NWIPE_VERIFY_LAST )
             {
                 c->round_size += c->device_size;
             }
-            if( nwipe_options.verify == NWIPE_VERIFY_ALL )
+
+            /* As no final zero blanking pass is permitted by this standard reduce round size if it's seelected */
+            if( nwipe_options.noblank == 0 )
             {
-                c->round_size += c->device_size;
+                /* Reduce for blanking pass */
+                c->round_size -= c->device_size;
+
+                /* Reduce for blanking pass verification */
+                if( nwipe_options.verify == NWIPE_VERIFY_ALL || nwipe_options.verify == NWIPE_VERIFY_LAST )
+                {
+                    c->round_size -= c->device_size;
+                }
             }
+            else
+            {
+                if( nwipe_options.verify == NWIPE_VERIFY_LAST )
+                {
+                    /* If blanking off & verification on reduce round size */
+                    c->round_size -= c->device_size;
+                }
+            }
+
             break;
 
         case 2:
-            /* DoD Short
+            /* DoD Short - No additional calculation required
              * --------- */
 
-            if( nwipe_options.verify == NWIPE_VERIFY_LAST )
-            {
-                c->round_size += c->device_size;
-            }
-            if( nwipe_options.verify == NWIPE_VERIFY_ALL )
-            {
-                c->round_size += c->device_size;
-            }
-            if( nwipe_options.noblank == 0 )
-            {
-                c->round_size += c->device_size;
-            }
             break;
 
         case 3:
-            /* DOD 522022m
+            /* DOD 522022m - No additional calculation required
              * ----------- */
 
-            if( nwipe_options.verify == NWIPE_VERIFY_LAST )
-            {
-                c->round_size += c->device_size;
-            }
-            if( nwipe_options.verify == NWIPE_VERIFY_ALL )
-            {
-                c->round_size += c->device_size;
-            }
-            if( nwipe_options.noblank == 0 )
-            {
-                c->round_size += c->device_size;
-            }
             break;
 
         case 4:
-            /* GutMann
+            /* GutMann - No additional calculation required
              * ------- */
 
-            if( nwipe_options.verify == NWIPE_VERIFY_LAST )
-            {
-                c->round_size += c->device_size;
-            }
-            if( nwipe_options.verify == NWIPE_VERIFY_ALL )
-            {
-                c->round_size += c->device_size;
-            }
-            if( nwipe_options.noblank == 0 )
-            {
-                c->round_size += c->device_size;
-            }
             break;
 
         case 5:
-            /* PRNG (random)
+            /* PRNG (random) - No additional calculation required
              * ------------- */
 
-            if( nwipe_options.verify == NWIPE_VERIFY_LAST )
-            {
-                c->round_size += c->device_size;
-            }
-            if( nwipe_options.verify == NWIPE_VERIFY_ALL )
-            {
-                c->round_size += c->device_size;
-            }
-            if( nwipe_options.noblank == 0 )
-            {
-                c->round_size += c->device_size;
-            }
             break;
 
         case 6:
@@ -1269,25 +1258,20 @@ void calculate_round_size( nwipe_context_t* c )
              * ------------ */
 
             /* This method ALWAYS verifies the 3rd pass so increase by device size,
-             * and does not need to be increased by device size for VERIFY_ALL*/
+             * but NOT if VERIFY_ALL has been selected, but first .. */
 
-            if( nwipe_options.verify == NWIPE_VERIFY_LAST )
+            /* Reduce as Verify_Last already included previously if blanking was off */
+            if( nwipe_options.verify == NWIPE_VERIFY_LAST && nwipe_options.noblank == 1 )
             {
-                c->round_size += c->device_size;
+                c->round_size -= c->device_size;
             }
-            if( nwipe_options.verify == NWIPE_VERIFY_ALL )
+
+            /* Adjusts for verify on every third pass multiplied by number of rounds */
+            if( nwipe_options.verify != NWIPE_VERIFY_ALL )
             {
-                c->round_size += c->device_size;
-            }
-            else
-            {
-                /* Adjusts for verify on every third pass multiplied by number of rounds */
                 c->round_size += ( c->device_size * c->round_count );
             }
-            if( nwipe_options.noblank == 0 )
-            {
-                c->round_size += c->device_size;
-            }
+
             break;
     }
 }
