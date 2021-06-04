@@ -1,6 +1,25 @@
 RELEASE NOTES
 =============
 
+v0.31
+-----------------------
+- Blanking disabled in GUI for OPS2 (mandatory requirement of standard). [#326](https://github.com/martijnvanbrummelen/nwipe/pull/326)
+- Total bytes written/read for ALL passes or verifications are now logged. [#326](https://github.com/martijnvanbrummelen/nwipe/pull/326)
+- Final blanking being enabled is no longer required for verification passes. GUI Fix. [#326](https://github.com/martijnvanbrummelen/nwipe/pull/326)
+- Add a summary table to the log that shows totals for pass & verification errors. [#325](https://github.com/martijnvanbrummelen/nwipe/pull/325)
+- Fix the missing 'Verifying' message on final blanking. [#324](https://github.com/martijnvanbrummelen/nwipe/pull/324)
+- Fix prng selection always using mersenne irrespective of whatever prng the user selected. [#323](https://github.com/martijnvanbrummelen/nwipe/pull/323)
+- Fix a non functional Isaac prng. (May have never worked even in DBAN/dwipe 2.3.0). [#322](https://github.com/martijnvanbrummelen/nwipe/pull/322)
+- Log whether the prng produces a stream, if not log failure message. [#321](https://github.com/martijnvanbrummelen/nwipe/pull/321)
+- Log the specific prng that is initialised. [#320](https://github.com/martijnvanbrummelen/nwipe/pull/320)
+- Log selection details to the log. [#319](https://github.com/martijnvanbrummelen/nwipe/pull/319)
+- Improve log messaging. [#317](https://github.com/martijnvanbrummelen/nwipe/pull/317)
+- Fix auto shutdown option for some distros. [#315](https://github.com/martijnvanbrummelen/nwipe/pull/315)
+- Fix build for musl. [#301](https://github.com/martijnvanbrummelen/nwipe/pull/301)
+- Fixes to summary table & fix final status message. [311](https://github.com/martijnvanbrummelen/nwipe/pull/311/commits/12063ad9549860cd625cb91d047bd304217a9ebf)
+- Updates to --help options [#309](https://github.com/martijnvanbrummelen/nwipe/pull/309/commits/69c9d7d6c5a091c58b3e747078d0022ccdd95a99)
+- Updates to manpage. [#300](https://github.com/martijnvanbrummelen/nwipe/commit/7cc1a68a89236c4b501dde9149be82c208defccd)
+
 v0.30
 -----------------------
 - Add auto power off option on completion of wipe ( --autopoweroff ) (Thanks PartialVolume)
