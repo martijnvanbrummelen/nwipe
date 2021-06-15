@@ -189,6 +189,15 @@ If you want to just try out a bootable version of nwipe you can download the Shr
 ## Which Linux distro uses the latest Nwipe?
 See [Repology](https://repology.org/project/nwipe/versions)
 
+And in addition checkout the following distros that all include nwipe:
+
+- [ShredOS 2020](https://github.com/PartialVolume/shredos.2020.02) Always has the latest nwipe release.
+- [partedmagic](https://partedmagic.com)
+- [SystemRescueCD](https://www.system-rescue.org)
+- [gparted live](https://sourceforge.net/projects/gparted/files/gparted-live-testing/1.2.0-2/)
+
+Know of other distros that include nwipe? Then please let us know or issue a PR on this README.md. Thanks.
+
 ## Bugs
 
 Bugs can be reported on GitHub:
