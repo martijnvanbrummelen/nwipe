@@ -24,7 +24,7 @@ It also includes the following pseudo random number generators:
 
 It is a fork of the dwipe command used by
 Darik's Boot and Nuke (dban).  nwipe is included with [partedmagic](https://partedmagic.com), [SystemRescueCD](https://www.system-rescue.org), [gparted live](https://sourceforge.net/projects/gparted/files/gparted-live-testing/1.2.0-2/) and
-[ShredOS 2020](https://github.com/PartialVolume/shredos.2020.02) ShredOS 2020 was developed in particular to showcase nwipe as a fast to boot standalone method similar to DBAN Available in the following architectures x86_64 and i686 (32 bit), with the following formats .iso for CD-R/DVD-R and .img for USB flash drive version and in both legacy bios and UEFI boot. If you want a bootable version of the very latest nwipe master that you can write to a USB stick, see [quick and easy bootable version of nwipe master](https://github.com/martijnvanbrummelen/nwipe#quick--easy-usb-bootable-version-of-nwipe-master-for-x86_64-systems)
+[ShredOS 2020](https://github.com/PartialVolume/shredos.2020.02) ShredOS 2020 was developed in particular to showcase nwipe as a fast to boot standalone method similar to DBAN Available in the following architectures x86_64 and i686 (32 bit), with the following formats .iso for CD-R/DVD-R and .img for USB flash drive version and in both legacy bios and UEFI boot. If you want a bootable version of the very latest nwipe master that you can write to a USB flash memory or CD/DVD, see [quick and easy bootable version of nwipe master](https://github.com/martijnvanbrummelen/nwipe#quick--easy-usb-bootable-version-of-nwipe-master-for-x86_64-systems)
 
 Nwipe was created out of a need to run the DBAN dwipe command outside
 of DBAN, in order to allow its use with any host distribution, thus
