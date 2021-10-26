@@ -126,10 +126,10 @@ const char* stats_title = " Statistics ";
 const char* main_window_footer = "S=Start m=Method p=PRNG v=Verify r=Rounds b=Blanking Space=Select CTRL+C=Quit";
 const char* main_window_footer_warning_lower_case_s = "  WARNING: To start the wipe press SHIFT+S (uppercase S)  ";
 
-const char* main_window_fotter_warning_no_blanking_with_ops2 =
+const char* main_window_footer_warning_no_blanking_with_ops2 =
     "  WARNING: Zero blanking is not allowed with ops2 method  ";
 
-const char* main_window_fotter_warning_no_blanking_with_verify_only =
+const char* main_window_footer_warning_no_blanking_with_verify_only =
     "  WARNING: Zero blanking is not allowed with verify method  ";
 
 const char* main_window_footer_warning_no_drive_selected =
@@ -137,9 +137,9 @@ const char* main_window_footer_warning_no_drive_selected =
 
 /* Oddly enough, placing extra quotes around the footer strings fixes corruption to the right
  * of the footer message when the terminal is resized, a quirk in ncurses? - DO NOT REMOVE THE \" */
-const char* selection_footer = "\"J=Down K=Up Space=Select Backspace=Cancel Ctrl+C=Quit\"";
-const char* end_wipe_footer = "\"B=Blank screen Ctrl+C=Quit\"";
-const char* rounds_footer = "\"Left=Erase Esc=Cancel Ctrl+C=Quit\"";
+const char* selection_footer = "J=Down K=Up Space=Select Backspace=Cancel Ctrl+C=Quit";
+const char* end_wipe_footer = "B=[Toggle between dark\\blank\\blue screen] Ctrl+C=Quit";
+const char* rounds_footer = "Left=Erase Esc=Cancel Ctrl+C=Quit";
 
 const char* wipes_finished_footer = "Wipe finished - press enter to exit. Logged to STDOUT";
 
@@ -154,6 +154,8 @@ int stdscr_lines_previous;
 
 /* The size of the terminal columns when previously checked */
 int stdscr_cols_previous;
+
+int tft_saver = 0;
 
 void nwipe_gui_title( WINDOW* w, const char* s )
 {
@@ -178,29 +180,19 @@ void nwipe_gui_title( WINDOW* w, const char* s )
         margin = 0;
     }
 
+    /* tft_saver = grey text on black mode */
+    if( tft_saver )
+    {
+        wattron( w, A_BOLD );
+    }
+
     /* Print the title. */
     mvwprintw( w, 0, margin / 2, "%s", s );
 
 } /* nwipe_gui_title */
 
-void nwipe_gui_init( void )
+void nwipe_init_pairs( void )
 {
-    /**
-     * Initializes the ncurses gui.
-     */
-
-    /* Initialize the screen. */
-    initscr();
-
-    /* Disable TTY line buffering. */
-    cbreak();
-
-    /* Disable TTY echo. */
-    noecho();
-
-    /* Enable most special keys. */
-    keypad( stdscr, TRUE );
-
     if( has_colors() )
     {
         /* Initialize color capabilities. */
@@ -212,8 +204,16 @@ void nwipe_gui_init( void )
             init_color( COLOR_CYAN, 128, 128, 128 );
         }
 
-        /* Set white on blue as the emphasis color. */
-        init_pair( 1, COLOR_WHITE, COLOR_BLUE );
+        /* If we are in tft saver mode set grey text on black background else
+         * Set white on blue as the emphasis color */
+        if( tft_saver )
+        {
+            init_pair( 1, COLOR_BLACK, COLOR_BLACK );
+        }
+        else
+        {
+            init_pair( 1, COLOR_WHITE, COLOR_BLUE );
+        }
 
         /* Set gray (or cyan) on blue as the normal color. */
         init_pair( 2, COLOR_CYAN, COLOR_BLUE );
@@ -221,8 +221,16 @@ void nwipe_gui_init( void )
         /* Set red on blue as the hilite color. */
         init_pair( 3, COLOR_RED, COLOR_BLUE );
 
-        /* Set blue on white as the color for the header and footer windows. */
-        init_pair( 4, COLOR_BLUE, COLOR_WHITE );
+        /* If we are in tft saver mode set grey text on black background else
+         * Set white on blue as the emphasis color */
+        if( tft_saver )
+        {
+            init_pair( 4, COLOR_BLACK, COLOR_BLACK );
+        }
+        else
+        {
+            init_pair( 4, COLOR_BLUE, COLOR_WHITE );
+        }
 
         /* Set white on green for success messages. */
         init_pair( 5, COLOR_WHITE, COLOR_GREEN );
@@ -245,6 +253,28 @@ void nwipe_gui_init( void )
         /* Set the background style. */
         wbkgdset( stdscr, COLOR_PAIR( 1 ) | ' ' );
     }
+}
+
+void nwipe_gui_init( void )
+{
+    /**
+     * Initializes the ncurses gui.
+     */
+
+    /* Initialize the screen. */
+    initscr();
+
+    /* Disable TTY line buffering. */
+    cbreak();
+
+    /* Disable TTY echo. */
+    noecho();
+
+    /* Enable most special keys. */
+    keypad( stdscr, TRUE );
+
+    /* Create the text/background color pairs */
+    nwipe_init_pairs();
 
     /* Clear the screen. */
     wclear( stdscr );
@@ -339,6 +369,16 @@ void nwipe_gui_create_main_window()
 
         /* Apply the color change. */
         wattron( main_window, COLOR_PAIR( 1 ) );
+
+        /* In tft saver mode we toggle the intensity bit which gives us grey text */
+        if( tft_saver )
+        {
+            wattron( main_window, A_BOLD );
+        }
+        else
+        {
+            wattroff( main_window, A_BOLD );
+        }
     }
 
     /* Clear the main window. */
@@ -362,6 +402,11 @@ void nwipe_gui_create_header_window()
     {
         /* Set the background style of the header window. */
         wbkgdset( header_window, COLOR_PAIR( 4 ) | ' ' );
+
+        if( tft_saver )
+        {
+            wattron( main_window, A_BOLD );
+        }
     }
 
     /* Clear the header window. */
@@ -424,6 +469,11 @@ void nwipe_gui_create_options_window()
 
         /* Apply the color change to the options window. */
         wattron( options_window, COLOR_PAIR( 1 ) );
+
+        if( tft_saver )
+        {
+            wattron( options_window, A_BOLD );
+        }
     }
 
     /* Clear the options window. */
@@ -447,6 +497,11 @@ void nwipe_gui_create_stats_window()
 
         /* Apply the color change to the stats window. */
         wattron( stats_window, COLOR_PAIR( 1 ) );
+
+        if( tft_saver )
+        {
+            wattron( stats_window, A_BOLD );
+        }
     }
 
     /* Clear the new window. */
@@ -467,13 +522,13 @@ void nwipe_gui_create_stats_window()
 
 } /* nwipe_gui_create_stats_window */
 
-void nwipe_gui_create_all_windows_on_terminal_resize( const char* footer_text )
+void nwipe_gui_create_all_windows_on_terminal_resize( int force_creation, const char* footer_text )
 {
     /* Get the terminal size */
     getmaxyx( stdscr, stdscr_lines, stdscr_cols );
 
     /* If the user has resized the terminal then recreate the windows and panels */
-    if( stdscr_cols_previous != stdscr_cols || stdscr_lines_previous != stdscr_lines )
+    if( stdscr_cols_previous != stdscr_cols || stdscr_lines_previous != stdscr_lines || force_creation == 1 )
     {
         /* Save the revised terminal size so we check whether the user has resized next time */
         stdscr_lines_previous = stdscr_lines;
@@ -567,7 +622,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
     do
     {
 
-        nwipe_gui_create_all_windows_on_terminal_resize( main_window_footer );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, main_window_footer );
 
         /* There is one slot per line. */
         getmaxyx( main_window, wlines, wcols );
@@ -981,7 +1036,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                     {
                         /* Warn the user about that zero blanking with the ops2 method is not allowed */
                         wattron( footer_window, COLOR_PAIR( 10 ) );
-                        nwipe_gui_amend_footer_window( main_window_fotter_warning_no_blanking_with_ops2 );
+                        nwipe_gui_amend_footer_window( main_window_footer_warning_no_blanking_with_ops2 );
                         doupdate();
                         sleep( 3 );
                         wattroff( footer_window, COLOR_PAIR( 10 ) );
@@ -997,7 +1052,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                     {
                         /* Warn the user about that zero blanking with the ops2 method is not allowed */
                         wattron( footer_window, COLOR_PAIR( 10 ) );
-                        nwipe_gui_amend_footer_window( main_window_fotter_warning_no_blanking_with_verify_only );
+                        nwipe_gui_amend_footer_window( main_window_footer_warning_no_blanking_with_verify_only );
                         doupdate();
                         sleep( 3 );
                         wattroff( footer_window, COLOR_PAIR( 10 ) );
@@ -1249,7 +1304,7 @@ void nwipe_gui_rounds( void )
         /* Erase the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( selection_footer );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
 
         /* Add a border. */
         box( main_window, 0, 0 );
@@ -1399,7 +1454,7 @@ void nwipe_gui_prng( void )
         /* Clear the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( selection_footer );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
 
         /* Initialize the working row. */
         yy = 2;
@@ -1574,7 +1629,7 @@ void nwipe_gui_verify( void )
 
     do
     {
-        nwipe_gui_create_all_windows_on_terminal_resize( selection_footer );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
 
         /* Clear the main window. */
         werase( main_window );
@@ -1753,7 +1808,7 @@ void nwipe_gui_noblank( void )
 
     do
     {
-        nwipe_gui_create_all_windows_on_terminal_resize( selection_footer );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
 
         /* Clear the main window. */
         werase( main_window );
@@ -1954,7 +2009,7 @@ void nwipe_gui_method( void )
         /* Clear the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( selection_footer );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
 
         /* Initialize the working row. */
         yy = 2;
@@ -2423,12 +2478,12 @@ void* nwipe_gui_status( void* ptr )
             if( nwipe_active != 0 )
             {
                 /* if resizing the terminal during a wipe a specific footer is required */
-                nwipe_gui_create_all_windows_on_terminal_resize( end_wipe_footer );
+                nwipe_gui_create_all_windows_on_terminal_resize( 0, end_wipe_footer );
             }
             else
             {
                 /* and if the wipes have finished a different footer is required */
-                nwipe_gui_create_all_windows_on_terminal_resize( wipes_finished_footer );
+                nwipe_gui_create_all_windows_on_terminal_resize( 0, wipes_finished_footer );
             }
         }
 
@@ -2459,6 +2514,10 @@ void* nwipe_gui_status( void* ptr )
 
         if( keystroke > 0x0a && keystroke < 0x7e && nwipe_gui_blank == 1 )
         {
+            tft_saver = 0;
+            nwipe_init_pairs();
+            nwipe_gui_create_all_windows_on_terminal_resize( 1, end_wipe_footer );
+
             /* Show screen */
             nwipe_gui_blank = 0;
 
@@ -2492,17 +2551,31 @@ void* nwipe_gui_status( void* ptr )
                 case 'b':
                 case 'B':
 
-                    /* Blank screen. */
-                    nwipe_gui_blank = 1;
-                    hide_panel( header_panel );
-                    hide_panel( footer_panel );
-                    hide_panel( stats_panel );
-                    hide_panel( options_panel );
-                    hide_panel( main_panel );
+                    if( nwipe_gui_blank == 0 && tft_saver != 1 )
+                    {
+                        /* grey text on black background */
+                        tft_saver = 1;
+                        nwipe_init_pairs();
+                        nwipe_gui_create_all_windows_on_terminal_resize( 1, end_wipe_footer );
+                    }
+                    else
+                    {
+                        if( nwipe_gui_blank == 0 && tft_saver == 1 )
+                        {
+                            /* Blank screen. */
+                            tft_saver = 0;
+                            nwipe_gui_blank = 1;
+                            hide_panel( header_panel );
+                            hide_panel( footer_panel );
+                            hide_panel( stats_panel );
+                            hide_panel( options_panel );
+                            hide_panel( main_panel );
+                        }
 
-                    /* Set the background style. */
-                    wbkgdset( stdscr, COLOR_PAIR( 7 ) );
-                    wclear( stdscr );
+                        /* Set the background style. */
+                        wbkgdset( stdscr, COLOR_PAIR( 7 ) );
+                        wclear( stdscr );
+                    }
 
                     break;
 
