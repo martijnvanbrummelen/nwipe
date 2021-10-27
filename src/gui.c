@@ -1320,9 +1320,6 @@ void nwipe_gui_rounds( void )
 
         if( focus > 0 )
         {
-            /* Print the syslinux configuration hint. */
-            mvwprintw( main_window, yy++, tab1, "syslinux.cfg:  nuke=\"nwipe --rounds %i\"", focus );
-
             /* Print this line last so that the cursor is in the right place. */
             mvwprintw( main_window, 2, tab1, "> %i", focus );
         }
@@ -1460,20 +1457,16 @@ void nwipe_gui_prng( void )
         yy = 2;
 
         /* Print the options. */
-        mvwprintw( main_window, yy++, tab1, "" );
-        mvwprintw( main_window, yy++, tab1, "" );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_twister.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_isaac.label );
         mvwprintw( main_window, yy++, tab1, "" );
 
         /* Print the cursor. */
-        mvwaddch( main_window, 4 + focus, tab1, ACS_RARROW );
+        mvwaddch( main_window, 2 + focus, tab1, ACS_RARROW );
 
         switch( focus )
         {
             case 0:
-
-                mvwprintw( main_window, 2, tab2, "syslinux.cfg:  nuke=\"nwipe --prng twister\"" );
 
                 mvwprintw( main_window,
                            yy++,
@@ -1502,8 +1495,6 @@ void nwipe_gui_prng( void )
                 break;
 
             case 1:
-
-                mvwprintw( main_window, 2, tab2, "syslinux.cfg:  nuke=\"nwipe --prng isaac\"" );
 
                 mvwprintw( main_window,
                            yy++,
@@ -1650,8 +1641,6 @@ void nwipe_gui_verify( void )
         {
             case 0:
 
-                mvwprintw( main_window, 2, tab2, "syslinux.cfg:  nuke=\"nwipe --verify off\"" );
-
                 mvwprintw( main_window,
                            yy++,
                            tab1,
@@ -1664,8 +1653,6 @@ void nwipe_gui_verify( void )
 
             case 1:
 
-                mvwprintw( main_window, 2, tab2, "syslinux.cfg:  nuke=\"nwipe --verify last\"" );
-
                 mvwprintw( main_window,
                            yy++,
                            tab1,
@@ -1677,8 +1664,6 @@ void nwipe_gui_verify( void )
                 break;
 
             case 2:
-
-                mvwprintw( main_window, 2, tab2, "syslinux.cfg:  nuke=\"nwipe --verify all\"" );
 
                 mvwprintw( main_window,
                            yy++,
@@ -1828,8 +1813,6 @@ void nwipe_gui_noblank( void )
         {
             case 0:
 
-                mvwprintw( main_window, 2, tab2, "syslinux.cfg:  nuke=\"nwipe\"" );
-
                 mvwprintw( main_window,
                            yy++,
                            tab1,
@@ -1849,8 +1832,6 @@ void nwipe_gui_noblank( void )
                 break;
 
             case 1:
-
-                mvwprintw( main_window, 2, tab2, "syslinux.cfg:  nuke=\"nwipe --noblank\"" );
 
                 mvwprintw( main_window,
                            yy++,
