@@ -129,6 +129,7 @@ typedef struct nwipe_context_t_
     double duration;  // Duration of the wipe in seconds
     time_t start_time;  // Start time of wipe
     time_t end_time;  // End time of wipe
+    u64 fsyncdata_errors;  // The number of fsyncdata errors across all passes.
     /*
      * Identity contains the raw serial number of the drive
      * (where applicable), however, for use within nwipe use the
