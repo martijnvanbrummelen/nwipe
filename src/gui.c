@@ -2032,169 +2032,106 @@ void nwipe_gui_method( void )
         {
             case 0:
 
-                mvwprintw( main_window, 2, tab2, "syslinux.cfg: nuke=\"nwipe --method zero\"" );
-                mvwprintw( main_window, 3, tab2, "Security Level: Low (1 pass)" );
+                mvwprintw( main_window, 2, tab2, "Security Level: high (1 pass)" );
 
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "This method fills the device with zeros. Note that the rounds option does    " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "not apply to this method. This method always runs one round.                 " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "                                                                             " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "Use this method to blank disks before internal redeployment, or before       " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "reinstalling Microsoft Windows to remove the data areas that the format      " );
-                mvwprintw(
-                    main_window, yy++, tab1, "utility preserves.                                                    " );
+                mvwprintw( main_window, 4, tab2, "This method fills the device with zeros. Note that the rounds " );
+                mvwprintw( main_window, 5, tab2, "option does not apply to this method. This method always runs " );
+                mvwprintw( main_window, 6, tab2, "one round.                                                    " );
+                mvwprintw( main_window, 7, tab2, "                                                              " );
+                mvwprintw( main_window, 8, tab2, "Use this method to blank disks before internal     " );
+                mvwprintw( main_window, 9, tab2, "redeployment, or before reinstalling Microsoft Windows to     " );
+                mvwprintw( main_window, 10, tab2, "remove the data areas that the format utility preserves.      " );
+                mvwprintw( main_window, 11, tab2, "                                                              " );
+                mvwprintw( main_window, 12, tab2, "There is no publically available evidence that data can be    " );
+                mvwprintw( main_window, 13, tab2, "recovered from a modern traditional hard drive (HDD) that has " );
+                mvwprintw( main_window, 14, tab2, "been zero wiped." );
                 break;
 
             case 1:
 
-                mvwprintw( main_window, 2, tab2, "syslinux.cfg: nuke=\"nwipe --method ops2\"" );
-                mvwprintw( main_window, 3, tab2, "Security Level: Medium (8 passes)" );
+                mvwprintw( main_window, 2, tab2, "Security Level: higher (8 passes)" );
 
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "The Royal Canadian Mounted Police Technical Security Standard for            " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "Information Technology, Appendix OPS-II: Media Sanitization.                 " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "                                                                             " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "This implementation, with regards to paragraph 2 section A of the standard,  " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "uses a pattern that is one random byte and that is changed each round.       " );
+                mvwprintw( main_window, 4, tab2, "The Royal Canadian Mounted Police Technical Security Standard " );
+                mvwprintw( main_window, 5, tab2, "for Information Technology. Appendix OPS-II: Media            " );
+                mvwprintw( main_window, 6, tab2, "Sanitization.                                                 " );
+                mvwprintw( main_window, 7, tab2, "                                                              " );
+                mvwprintw( main_window, 8, tab2, "This implementation, with regards to paragraph 2 section A of " );
+                mvwprintw( main_window, 9, tab2, "the standard, uses a pattern that is one random byte and that " );
+                mvwprintw( main_window, 10, tab2, "is changed each round.                                        " );
                 break;
 
             case 2:
 
-                mvwprintw( main_window, 2, tab2, "syslinux.cfg: nuke=\"nwipe --method dodshort\"" );
-                mvwprintw( main_window, 3, tab2, "Security Level: Medium (3 passes)" );
+                mvwprintw( main_window, 2, tab2, "Security Level: higher (3 passes)" );
 
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "The American Department of Defense 5220.22-M short wipe.                     " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "This method is composed of passes 1, 2 & 7 from the standard wipe.           " );
+                mvwprintw( main_window, 4, tab2, "The American Department of Defense 5220.22-M short wipe.      " );
+                mvwprintw( main_window, 5, tab2, "This method is composed of passes 1, 2 & 7 from the standard  " );
+                mvwprintw( main_window, 6, tab2, "DoD 5220.22-M wipe.                                           " );
+                mvwprintw( main_window, 7, tab2, "                                                              " );
+                mvwprintw( main_window, 8, tab2, "Pass 1: A random character                                    " );
+                mvwprintw( main_window, 9, tab2, "Pass 2: The bitwise complement of pass 1.                     " );
+                mvwprintw( main_window, 10, tab2, "Pass 3: A random number generated data stream                 " );
                 break;
 
             case 3:
 
-                mvwprintw( main_window, 2, tab2, "syslinux.cfg: nuke=\"nwipe --method dod522022m\"" );
-                mvwprintw( main_window, 3, tab2, "Security Level: Medium (7 passes)" );
+                mvwprintw( main_window, 2, tab2, "Security Level: higher (7 passes)" );
 
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "The American Department of Defense 5220.22-M standard wipe.                  " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "This implementation uses the same algorithm as the Heidi Eraser product.     " );
+                mvwprintw( main_window, 3, tab2, "The American Department of Defense 5220.22-M standard  " );
+                mvwprintw( main_window, 4, tab2, "wipe.                                                  " );
+                mvwprintw( main_window, 5, tab2, "                                                       " );
+                mvwprintw( main_window, 6, tab2, "Pass 1: A Random character                             " );
+                mvwprintw( main_window, 7, tab2, "Pass 2: The bitwise complement of pass 1               " );
+                mvwprintw( main_window, 8, tab2, "Pass 3: A random number generated data stream          " );
+                mvwprintw( main_window, 9, tab2, "Pass 4: A Random character                             " );
+                mvwprintw( main_window, 10, tab2, "Pass 5: A Random character                             " );
+                mvwprintw( main_window, 11, tab2, "Pass 6: The bitwise complement of pass 5               " );
+                mvwprintw( main_window, 12, tab2, "Pass 7: A random number generated data stream          " );
                 break;
 
             case 4:
 
-                mvwprintw( main_window, 2, tab2, "syslinux.cfg: nuke=\"nwipe --method gutmann\"" );
-                mvwprintw( main_window, 3, tab2, "Security Level: High (35 passes)" );
+                mvwprintw( main_window, 2, tab2, "Security Level: Paranoid ! don't waste your time (35 passes)" );
 
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "This is the method described by Peter Gutmann in the paper entitled          " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "\"Secure Deletion of Data from Magnetic and Solid-State Memory\".            " );
+                mvwprintw( main_window, 4, tab2, "This is the method described by Peter Gutmann in the   " );
+                mvwprintw( main_window, 5, tab2, "paper entitled \"Secure Deletion of Data from Magnetic " );
+                mvwprintw( main_window, 6, tab2, "and Solid-State Memory\", however not relevant in      " );
+                mvwprintw( main_window, 7, tab2, "regards to modern hard disk drives.                    " );
                 break;
 
             case 5:
 
-                mvwprintw( main_window, 2, tab2, "syslinux.cfg: nuke=\"nwipe --method random\"" );
-                mvwprintw( main_window, 3, tab2, "Security Level: Depends on Rounds" );
+                mvwprintw( main_window, 2, tab2, "Security Level: Depends on Rounds" );
 
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "This method fills the device with a stream from the PRNG. It is probably the " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "best method to use on modern hard disk drives because encoding schemes vary. " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "                                                                             " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "This method has a medium security level with 4 rounds, and a high security   " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "level with 8 rounds.                                                         " );
+                mvwprintw( main_window, 4, tab2, "This method fills the device with a stream from the    " );
+                mvwprintw( main_window, 5, tab2, "PRNG. It is probably the best method to use on modern  " );
+                mvwprintw( main_window, 6, tab2, "hard disk drives due to variation in encoding methods  " );
+                mvwprintw( main_window, 7, tab2, "                                                       " );
+                mvwprintw( main_window, 8, tab2, "This method has a high security level with 1 round,    " );
+                mvwprintw( main_window, 9, tab2, "and a increasingly higher security level as rounds     " );
+                mvwprintw( main_window, 10, tab2, "are increased." );
                 break;
 
             case 6:
 
-                mvwprintw( main_window, 2, tab2, "syslinux.cfg: nuke=\"nwipe --method verify\"" );
-                mvwprintw( main_window, 3, tab2, "Security Level: None" );
+                mvwprintw( main_window, 2, tab2, "Security Level: Not applicable" );
 
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "This method only reads the device and checks that it is all zero.            " );
+                mvwprintw( main_window, 4, tab2, "This method only reads the device and checks that it is" );
+                mvwprintw( main_window, 5, tab2, "all zero.                                              " );
 
                 break;
 
             case 7:
 
-                mvwprintw( main_window, 2, tab2, "syslinux.cfg: nuke=\"nwipe --method is5enh\"" );
-                mvwprintw( main_window, 3, tab2, "Security Level: Medium (3 passes)" );
+                mvwprintw( main_window, 2, tab2, "Security Level: higher (3 passes)" );
 
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "HMG IA/IS 5 (Infosec Standard 5): Secure Sanitisation of Protectively Marked " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "Information or Sensitive Information                                         " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "                                                                             " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "This method fills the device with 0s, then with 1s, then with a PRNG stream, " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "then reads the device to verify the PRNG stream was successfully written.    " );
+                mvwprintw( main_window, 4, tab2, "HMG IA/IS 5 (Infosec Standard 5): Secure Sanitisation  " );
+                mvwprintw( main_window, 5, tab2, "of Protectively Marked Information or Sensitive        " );
+                mvwprintw( main_window, 6, tab2, "Information                                            " );
+                mvwprintw( main_window, 7, tab2, "                                                       " );
+                mvwprintw( main_window, 8, tab2, "This method fills the device with 0s, then with 1s,    " );
+                mvwprintw( main_window, 9, tab2, "then with a PRNG stream, then reads the device to      " );
+                mvwprintw( main_window, 10, tab2, "verify the PRNG stream was successfully written.       " );
                 break;
 
         } /* switch */
