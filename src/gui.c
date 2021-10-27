@@ -2954,6 +2954,7 @@ int compute_stats( void* ptr )
         /* Accumulate the error count. */
         nwipe_misc_thread_data->errors += c[i]->pass_errors;
         nwipe_misc_thread_data->errors += c[i]->verify_errors;
+        nwipe_misc_thread_data->errors += c[i]->fsyncdata_errors;
 
     } /* for statistics */
 

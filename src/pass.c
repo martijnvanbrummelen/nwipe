@@ -130,6 +130,7 @@ int nwipe_random_verify( nwipe_context_t* c )
         /* FIXME: Is there a better way to handle this? */
         nwipe_perror( errno, __FUNCTION__, "fdatasync" );
         nwipe_log( NWIPE_LOG_WARNING, "Buffer flush failure on '%s'.", c->device_name );
+        c->fsyncdata_errors++;
     }
 
     /* Reseed the PRNG. */
@@ -406,6 +407,7 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
                     nwipe_perror( errno, __FUNCTION__, "fdatasync" );
                     nwipe_log( NWIPE_LOG_WARNING, "Buffer flush failure on '%s'.", c->device_name );
                     nwipe_log( NWIPE_LOG_WARNING, "Wrote %llu bytes on '%s'.", c->pass_done, c->device_name );
+                    c->fsyncdata_errors++;
                     free( b );
                     return -1;
                 }
@@ -435,6 +437,7 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
         /* FIXME: Is there a better way to handle this? */
         nwipe_perror( errno, __FUNCTION__, "fdatasync" );
         nwipe_log( NWIPE_LOG_WARNING, "Buffer flush failure on '%s'.", c->device_name );
+        c->fsyncdata_errors++;
     }
 
     /* We're done. */
@@ -529,6 +532,7 @@ int nwipe_static_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
         /* FIXME: Is there a better way to handle this? */
         nwipe_perror( errno, __FUNCTION__, "fdatasync" );
         nwipe_log( NWIPE_LOG_WARNING, "Buffer flush failure on '%s'.", c->device_name );
+        c->fsyncdata_errors++;
     }
 
     /* Reset the file pointer. */
@@ -823,6 +827,7 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
                     nwipe_perror( errno, __FUNCTION__, "fdatasync" );
                     nwipe_log( NWIPE_LOG_WARNING, "Buffer flush failure on '%s'.", c->device_name );
                     nwipe_log( NWIPE_LOG_WARNING, "Wrote %llu bytes on '%s'.", c->pass_done, c->device_name );
+                    c->fsyncdata_errors++;
                     free( b );
                     return -1;
                 }
@@ -849,6 +854,7 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
         /* FIXME: Is there a better way to handle this? */
         nwipe_perror( errno, __FUNCTION__, "fdatasync" );
         nwipe_log( NWIPE_LOG_WARNING, "Buffer flush failure on '%s'.", c->device_name );
+        c->fsyncdata_errors++;
     }
 
     /* Release the output buffer. */

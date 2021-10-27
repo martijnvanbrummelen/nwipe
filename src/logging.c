@@ -662,13 +662,13 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
     nwipe_log( NWIPE_LOG_NOTIMESTAMP, "" );
     nwipe_log( NWIPE_LOG_NOTIMESTAMP,
                "******************************** Error Summary *********************************" );
-    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "! Device | Pass Errors | Verifications Errors |" );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "! Device | Pass Errors | Verifications Errors | Fdatasync I\\O Errors" );
     nwipe_log( NWIPE_LOG_NOTIMESTAMP,
                "--------------------------------------------------------------------------------" );
 
     for( i = 0; i < nwipe_selected; i++ )
     {
-        if( c[i]->pass_errors != 0 || c[i]->verify_errors != 0 )
+        if( c[i]->pass_errors != 0 || c[i]->verify_errors != 0 || c[i]->fsyncdata_errors != 0 )
         {
             strncpy( exclamation_flag, "!", 1 );
             exclamation_flag[1] = 0;
@@ -705,11 +705,12 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
             }
         }
         nwipe_log( NWIPE_LOG_NOTIMESTAMP,
-                   "%s %s |  %10llu |           %10llu |",
+                   "%s %s |  %10llu |           %10llu |           %10llu",
                    exclamation_flag,
                    device,
                    c[i]->pass_errors,
-                   c[i]->verify_errors );
+                   c[i]->verify_errors,
+                   c[i]->fsyncdata_errors );
     }
 
     nwipe_log( NWIPE_LOG_NOTIMESTAMP,
