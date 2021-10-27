@@ -63,7 +63,8 @@ const char* nwipe_dodshort_label = "DoD Short";
 const char* nwipe_gutmann_label = "Gutmann Wipe";
 const char* nwipe_ops2_label = "RCMP TSSIT OPS-II";
 const char* nwipe_random_label = "PRNG Stream";
-const char* nwipe_zero_label = "Zero Fill";
+const char* nwipe_zero_label = "Fill With Zeros";
+const char* nwipe_one_label = "Fill With Ones";
 const char* nwipe_verify_label = "Verify Blank";
 const char* nwipe_is5enh_label = "HMG IS5 Enhanced";
 
@@ -99,6 +100,10 @@ const char* nwipe_method_label( void* method )
     if( method == &nwipe_zero )
     {
         return nwipe_zero_label;
+    }
+    if( method == &nwipe_one )
+    {
+        return nwipe_one_label;
     }
     if( method == &nwipe_verify )
     {
@@ -146,6 +151,39 @@ void* nwipe_zero( void* ptr )
 
     return NULL;
 } /* nwipe_zero */
+
+void* nwipe_one( void* ptr )
+{
+    /**
+     * Fill the device with ones.
+     */
+
+    nwipe_context_t* c;
+    c = (nwipe_context_t*) ptr;
+
+    /* get current time at the start of the wipe  */
+    time( &c->start_time );
+
+    /* set wipe in progress flag for GUI */
+    c->wipe_status = 1;
+
+    /* setup for a zero-fill. */
+
+    char onefill[1] = { '\xFF' };
+    nwipe_pattern_t patterns[] = { { 1, &onefill[0] },  // pass 1: 1s
+                                   { 0, NULL } };
+
+    /* Run the method. */
+    c->result = nwipe_runmethod( c, patterns );
+
+    /* Finished. Set the wipe_status flag so that the GUI knows */
+    c->wipe_status = 0;
+
+    /* get current time at the end of the wipe  */
+    time( &c->end_time );
+
+    return NULL;
+} /* nwipe_one */
 
 void* nwipe_verify( void* ptr )
 {

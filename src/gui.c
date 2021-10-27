@@ -1956,33 +1956,37 @@ void nwipe_gui_method( void )
     {
         focus = 0;
     }
-    if( nwipe_options.method == &nwipe_ops2 )
+    if( nwipe_options.method == &nwipe_one )
     {
         focus = 1;
     }
-    if( nwipe_options.method == &nwipe_dodshort )
+    if( nwipe_options.method == &nwipe_ops2 )
     {
         focus = 2;
     }
-    if( nwipe_options.method == &nwipe_dod522022m )
+    if( nwipe_options.method == &nwipe_dodshort )
     {
         focus = 3;
     }
-    if( nwipe_options.method == &nwipe_gutmann )
+    if( nwipe_options.method == &nwipe_dod522022m )
     {
         focus = 4;
     }
-    if( nwipe_options.method == &nwipe_random )
+    if( nwipe_options.method == &nwipe_gutmann )
     {
         focus = 5;
     }
-    if( nwipe_options.method == &nwipe_verify )
+    if( nwipe_options.method == &nwipe_random )
     {
         focus = 6;
     }
-    if( nwipe_options.method == &nwipe_is5enh )
+    if( nwipe_options.method == &nwipe_verify )
     {
         focus = 7;
+    }
+    if( nwipe_options.method == &nwipe_is5enh )
+    {
+        focus = 8;
     }
 
     do
@@ -1997,6 +2001,7 @@ void nwipe_gui_method( void )
 
         /* Print the options. */
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_zero ) );
+        mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_one ) );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_ops2 ) );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_dodshort ) );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_dod522022m ) );
@@ -2030,6 +2035,20 @@ void nwipe_gui_method( void )
 
             case 1:
 
+                mvwprintw( main_window, 2, tab2, "Security Level: high (1 pass)" );
+
+                mvwprintw( main_window, 4, tab2, "This method fills the device with ones. Note that the rounds " );
+                mvwprintw( main_window, 5, tab2, "option does not apply to this method. This method always runs " );
+                mvwprintw( main_window, 6, tab2, "one round.                                                    " );
+                mvwprintw( main_window, 7, tab2, "                                                              " );
+                mvwprintw( main_window, 8, tab2, "This method might be used when wiping a solid state drive if  " );
+                mvwprintw( main_window, 9, tab2, "an additional level of security is required beyond using the  " );
+                mvwprintw( main_window, 10, tab2, "drives internal secure erase features. Alternatively PRNG may " );
+                mvwprintw( main_window, 11, tab2, "be preferable.                                                " );
+                break;
+
+            case 2:
+
                 mvwprintw( main_window, 2, tab2, "Security Level: higher (8 passes)" );
 
                 mvwprintw( main_window, 4, tab2, "The Royal Canadian Mounted Police Technical Security Standard " );
@@ -2041,7 +2060,7 @@ void nwipe_gui_method( void )
                 mvwprintw( main_window, 10, tab2, "is changed each round.                                        " );
                 break;
 
-            case 2:
+            case 3:
 
                 mvwprintw( main_window, 2, tab2, "Security Level: higher (3 passes)" );
 
@@ -2054,7 +2073,7 @@ void nwipe_gui_method( void )
                 mvwprintw( main_window, 10, tab2, "Pass 3: A random number generated data stream                 " );
                 break;
 
-            case 3:
+            case 4:
 
                 mvwprintw( main_window, 2, tab2, "Security Level: higher (7 passes)" );
 
@@ -2070,7 +2089,7 @@ void nwipe_gui_method( void )
                 mvwprintw( main_window, 12, tab2, "Pass 7: A random number generated data stream          " );
                 break;
 
-            case 4:
+            case 5:
 
                 mvwprintw( main_window, 2, tab2, "Security Level: Paranoid ! don't waste your time (35 passes)" );
 
@@ -2080,7 +2099,7 @@ void nwipe_gui_method( void )
                 mvwprintw( main_window, 7, tab2, "regards to modern hard disk drives.                    " );
                 break;
 
-            case 5:
+            case 6:
 
                 mvwprintw( main_window, 2, tab2, "Security Level: Depends on Rounds" );
 
@@ -2093,7 +2112,7 @@ void nwipe_gui_method( void )
                 mvwprintw( main_window, 10, tab2, "are increased." );
                 break;
 
-            case 6:
+            case 7:
 
                 mvwprintw( main_window, 2, tab2, "Security Level: Not applicable" );
 
@@ -2102,7 +2121,7 @@ void nwipe_gui_method( void )
 
                 break;
 
-            case 7:
+            case 8:
 
                 mvwprintw( main_window, 2, tab2, "Security Level: higher (3 passes)" );
 
@@ -2175,30 +2194,34 @@ void nwipe_gui_method( void )
             break;
 
         case 1:
-            nwipe_options.method = &nwipe_ops2;
+            nwipe_options.method = &nwipe_one;
             break;
 
         case 2:
-            nwipe_options.method = &nwipe_dodshort;
+            nwipe_options.method = &nwipe_ops2;
             break;
 
         case 3:
-            nwipe_options.method = &nwipe_dod522022m;
+            nwipe_options.method = &nwipe_dodshort;
             break;
 
         case 4:
-            nwipe_options.method = &nwipe_gutmann;
+            nwipe_options.method = &nwipe_dod522022m;
             break;
 
         case 5:
-            nwipe_options.method = &nwipe_random;
+            nwipe_options.method = &nwipe_gutmann;
             break;
 
         case 6:
-            nwipe_options.method = &nwipe_verify;
+            nwipe_options.method = &nwipe_random;
             break;
 
         case 7:
+            nwipe_options.method = &nwipe_verify;
+            break;
+
+        case 8:
             nwipe_options.method = &nwipe_is5enh;
             break;
     }
