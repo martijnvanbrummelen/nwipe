@@ -98,11 +98,13 @@ ops2                   \- RCMP TSSIT OPS\-II
 .IP
 random / prng / stream \- PRNG Stream
 .IP
-zero / quick           \- Overwrite with zeros
+zero / quick           \- Overwrite with zeros 0x00
 .IP
-one                    \- Overwrite with ones
+one                    \- Overwrite with ones 0xFF
 .IP
-verify                 \- Verifies disk is zero filled
+verify_zero            \- Verifies disk is zero filled
+.IP
+verify_one             \- Verifies disk is 0xFF filled
 .IP
 is5enh                 \- HMG IS5 enhanced
 .TP

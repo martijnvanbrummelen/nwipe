@@ -1048,7 +1048,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                         break;
                     }
 
-                    if( nwipe_options.method == &nwipe_verify )
+                    if( nwipe_options.method == &nwipe_verify_zero || nwipe_options.method == &nwipe_verify_one )
                     {
                         /* Warn the user about that zero blanking with the ops2 method is not allowed */
                         wattron( footer_window, COLOR_PAIR( 10 ) );
@@ -1244,7 +1244,8 @@ void nwipe_gui_options( void )
     mvwprintw( options_window, NWIPE_GUI_OPTIONS_ROUNDS_Y, NWIPE_GUI_OPTIONS_ROUNDS_X, "Rounds:  " );
 
     /* Disable blanking for ops2 and verify methods */
-    if( nwipe_options.method == &nwipe_ops2 || nwipe_options.method == &nwipe_verify )
+    if( nwipe_options.method == &nwipe_ops2 || nwipe_options.method == &nwipe_verify_zero
+        || nwipe_options.method == &nwipe_verify_one )
     {
         nwipe_options.noblank = 1;
     }
@@ -1930,7 +1931,7 @@ void nwipe_gui_method( void )
     extern int terminate_signal;
 
     /* The number of implemented methods. */
-    const int count = 9;
+    const int count = 10;
 
     /* The first tabstop. */
     const int tab1 = 2;
@@ -1980,13 +1981,17 @@ void nwipe_gui_method( void )
     {
         focus = 6;
     }
-    if( nwipe_options.method == &nwipe_verify )
+    if( nwipe_options.method == &nwipe_verify_zero )
     {
         focus = 7;
     }
-    if( nwipe_options.method == &nwipe_is5enh )
+    if( nwipe_options.method == &nwipe_verify_one )
     {
         focus = 8;
+    }
+    if( nwipe_options.method == &nwipe_is5enh )
+    {
+        focus = 9;
     }
 
     do
@@ -2007,7 +2012,8 @@ void nwipe_gui_method( void )
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_dod522022m ) );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_gutmann ) );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_random ) );
-        mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_verify ) );
+        mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_verify_zero ) );
+        mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_verify_one ) );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_is5enh ) );
         mvwprintw( main_window, yy++, tab1, "                                             " );
 
@@ -2124,6 +2130,15 @@ void nwipe_gui_method( void )
 
             case 8:
 
+                mvwprintw( main_window, 2, tab2, "Security Level: Not applicable" );
+
+                mvwprintw( main_window, 4, tab2, "This method only reads the device and checks     " );
+                mvwprintw( main_window, 5, tab2, "that it is all ones (0xFF).                             " );
+
+                break;
+
+            case 9:
+
                 mvwprintw( main_window, 2, tab2, "Security Level: higher (3 passes)" );
 
                 mvwprintw( main_window, 4, tab2, "HMG IA/IS 5 (Infosec Standard 5): Secure         " );
@@ -2220,10 +2235,14 @@ void nwipe_gui_method( void )
             break;
 
         case 7:
-            nwipe_options.method = &nwipe_verify;
+            nwipe_options.method = &nwipe_verify_zero;
             break;
 
         case 8:
+            nwipe_options.method = &nwipe_verify_one;
+            break;
+
+        case 9:
             nwipe_options.method = &nwipe_is5enh;
             break;
     }

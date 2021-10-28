@@ -65,7 +65,8 @@ const char* nwipe_ops2_label = "RCMP TSSIT OPS-II";
 const char* nwipe_random_label = "PRNG Stream";
 const char* nwipe_zero_label = "Fill With Zeros";
 const char* nwipe_one_label = "Fill With Ones";
-const char* nwipe_verify_label = "Verify Blank";
+const char* nwipe_verify_zero_label = "Verify Zeros (0x00)";
+const char* nwipe_verify_one_label = "Verify Ones  (0xFF)";
 const char* nwipe_is5enh_label = "HMG IS5 Enhanced";
 
 const char* nwipe_unknown_label = "Unknown Method (FIXME)";
@@ -105,9 +106,13 @@ const char* nwipe_method_label( void* method )
     {
         return nwipe_one_label;
     }
-    if( method == &nwipe_verify )
+    if( method == &nwipe_verify_zero )
     {
-        return nwipe_verify_label;
+        return nwipe_verify_zero_label;
+    }
+    if( method == &nwipe_verify_one )
+    {
+        return nwipe_verify_one_label;
     }
     if( method == &nwipe_is5enh )
     {
@@ -185,10 +190,40 @@ void* nwipe_one( void* ptr )
     return NULL;
 } /* nwipe_one */
 
-void* nwipe_verify( void* ptr )
+void* nwipe_verify_zero( void* ptr )
 {
     /**
-     * Fill the device with zeroes.
+     * Verify the device is full of zeros.
+     */
+
+    nwipe_context_t* c;
+    c = (nwipe_context_t*) ptr;
+
+    /* get current time at the start of the wipe  */
+    time( &c->start_time );
+
+    /* set wipe in progress flag for GUI */
+    c->wipe_status = 1;
+
+    /* Do nothing because nwipe_runmethod appends a zero-fill. */
+    nwipe_pattern_t patterns[] = { { 0, NULL } };
+
+    /* Run the method. */
+    c->result = nwipe_runmethod( c, patterns );
+
+    /* Finished. Set the wipe_status flag so that the GUI knows */
+    c->wipe_status = 0;
+
+    /* get current time at the end of the wipe  */
+    time( &c->end_time );
+
+    return NULL;
+} /* nwipe_verify zeros */
+
+void* nwipe_verify_one( void* ptr )
+{
+    /**
+     * Verify the device is full of ones.
      */
 
     nwipe_context_t* c;
@@ -739,6 +774,9 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
     /* The zero-fill pattern for the final pass of most methods. */
     nwipe_pattern_t pattern_zero = { 1, "\x00" };
 
+    /* The one-fill pattern for verification of the ones fill */
+    nwipe_pattern_t pattern_one = { 1, "\xFF" };
+
     /* Create the PRNG state buffer. */
     c->prng_seed.length = NWIPE_KNOB_PRNG_STATE_LENGTH;
     c->prng_seed.s = malloc( c->prng_seed.length );
@@ -769,7 +807,7 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
     c->result = c->round_size;
 
     /* If only verifing then the round size is the device size */
-    if( nwipe_options.method == &nwipe_verify )
+    if( nwipe_options.method == &nwipe_verify_zero || nwipe_options.method == &nwipe_verify_one )
     {
         c->round_size = c->device_size;
     }
@@ -1032,9 +1070,9 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 
     } /* final ops2 */
 
-    else if( nwipe_options.method == &nwipe_verify )
+    else if( nwipe_options.method == &nwipe_verify_zero )
     {
-        nwipe_log( NWIPE_LOG_NOTICE, "Verifying that %s is empty", c->device_name );
+        nwipe_log( NWIPE_LOG_NOTICE, "Verifying that %s is zeroed", c->device_name );
 
         /* Verify the final zero pass. */
         c->pass_type = NWIPE_PASS_VERIFY;
@@ -1048,11 +1086,36 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
         }
         if( c->verify_errors == 0 )
         {
-            nwipe_log( NWIPE_LOG_NOTICE, "[SUCCESS] Verified that %s is empty.", c->device_name );
+            nwipe_log( NWIPE_LOG_NOTICE, "[SUCCESS] Verified that %s is Zeroed.", c->device_name );
         }
         else
         {
-            nwipe_log( NWIPE_LOG_ERROR, "[FAILURE] %s is not empty .", c->device_name );
+            nwipe_log( NWIPE_LOG_ERROR, "[FAILURE] %s has not been Zeroed .", c->device_name );
+        }
+
+    } /* verify */
+
+    else if( nwipe_options.method == &nwipe_verify_one )
+    {
+        nwipe_log( NWIPE_LOG_NOTICE, "Verifying that %s is Ones (0xFF)", c->device_name );
+
+        /* Verify the final ones pass. */
+        c->pass_type = NWIPE_PASS_VERIFY;
+        r = nwipe_static_verify( c, &pattern_one );
+        c->pass_type = NWIPE_PASS_NONE;
+
+        /* Check for a fatal error. */
+        if( r < 0 )
+        {
+            return r;
+        }
+        if( c->verify_errors == 0 )
+        {
+            nwipe_log( NWIPE_LOG_NOTICE, "[SUCCESS] Verified that %s is full of ones (0xFF).", c->device_name );
+        }
+        else
+        {
+            nwipe_log( NWIPE_LOG_ERROR, "[FAILURE] %s is not full of ones (0xFF).", c->device_name );
         }
 
     } /* verify */

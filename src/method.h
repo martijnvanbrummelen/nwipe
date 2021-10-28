@@ -52,7 +52,8 @@ void* nwipe_is5enh( void* ptr );
 void* nwipe_random( void* ptr );
 void* nwipe_zero( void* ptr );
 void* nwipe_one( void* ptr );
-void* nwipe_verify( void* ptr );
+void* nwipe_verify_zero( void* ptr );
+void* nwipe_verify_one( void* ptr );
 
 void calculate_round_size( nwipe_context_t* );
 
