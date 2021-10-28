@@ -9,13 +9,15 @@ disks simultaneously. Nwipe can be found in many Linux distro repositories and t
 
 The user can select from a variety of recognised secure erase methods which include:
 
-* Zero Fill          - Fills the device with zeros, one round only.
+* Fill With Zeros    - Fills the device with zeros (0x00), one round only.
+* Fill With Ones     - Fills the device with ones  (0xFF), one round only.
 * RCMP TSSIT OPS-II  - Royal Candian Mounted Police Technical Security Standard, OPS-II
 * DoD Short          - The American Department of Defense 5220.22-M short 3 pass wipe (passes 1, 2 & 7).
 * DoD 5220.22M       - The American Department of Defense 5220.22-M full 7 pass wipe.
 * Gutmann Wipe       - Peter Gutmann's method (Secure Deletion of Data from Magnetic and Solid-State Memory).
 * PRNG Stream        - Fills the device with a stream from the PRNG.
-* Verify only        - This method only reads the device and checks that it is all zero.
+* Verify Zeros       - This method only reads the device and checks that it is filled with zeros (0x00).
+* Verify Ones        - This method only reads the device and checks that it is filled with ones (0xFF).
 * HMG IS5 enhanced   - Secure Sanitisation of Protectively Marked Information or Sensitive Information
 
 It also includes the following pseudo random number generators:
