@@ -1,6 +1,15 @@
 RELEASE NOTES
 =============
 
+v0.32
+-----------------------
+- Add ones (0xFF) wipe to the methods. Renamed Zero Fill to Fill with Zeros and the new ones wipe, is called Fill with Ones.
+- Add ones verication to the methods. Renamed Verify Blank to Verify Zeros (0x00) and the new verification is called Verify Ones (0xFF).
+- Move method information from below the list of methods to the right of the method list. This allows better use of the screen space by allowing more methods to be added to the list, especially relevant to nwipe running as a standalone application on small distros such as shredos 2020 in frame buffer mode.
+- Removed the old DBAN syslinux.cfg configuration hints as not relevant to nwipe. See nwipe --help or man nwipe for command line options.
+- Add fdatasync errors to the error summary table.
+- During a wipe, you can now toggle between dark screen, blank screen and default blue screen by repeatedly pressing the b key. Dark screen, which is grey text on black background has been introduced to prevent TFT/LCD image persistence on monitors that are sensitive to that issue. 
+
 v0.31
 -----------------------
 - Blanking disabled in GUI for OPS2 (mandatory requirement of standard). [#326](https://github.com/martijnvanbrummelen/nwipe/pull/326)
