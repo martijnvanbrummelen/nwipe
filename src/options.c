@@ -276,6 +276,12 @@ int nwipe_options_parse( int argc, char** argv )
                     break;
                 }
 
+                if( strcmp( optarg, "one" ) == 0 )
+                {
+                    nwipe_options.method = &nwipe_one;
+                    break;
+                }
+
                 if( strcmp( optarg, "verify" ) == 0 )
                 {
                     nwipe_options.method = &nwipe_verify;
@@ -529,6 +535,7 @@ void display_help()
     puts( "                          ops2                   - RCMP TSSIT OPS-II" );
     puts( "                          random / prng / stream - PRNG Stream" );
     puts( "                          zero / quick           - Overwrite with zeros" );
+    puts( "                          one                    - Overwrite with ones (0xFF)" );
     puts( "                          verify                 - Verifies disk is zero filled\n" );
     puts( "  -l, --logfile=FILE      Filename to log to. Default is STDOUT\n" );
     puts( "  -p, --prng=METHOD       PRNG option (mersenne|twister|isaac)\n" );
