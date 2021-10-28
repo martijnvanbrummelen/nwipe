@@ -282,9 +282,15 @@ int nwipe_options_parse( int argc, char** argv )
                     break;
                 }
 
-                if( strcmp( optarg, "verify" ) == 0 )
+                if( strcmp( optarg, "verify_zero" ) == 0 )
                 {
-                    nwipe_options.method = &nwipe_verify;
+                    nwipe_options.method = &nwipe_verify_zero;
+                    break;
+                }
+
+                if( strcmp( optarg, "verify_one" ) == 0 )
+                {
+                    nwipe_options.method = &nwipe_verify_one;
                     break;
                 }
 
@@ -536,7 +542,8 @@ void display_help()
     puts( "                          random / prng / stream - PRNG Stream" );
     puts( "                          zero / quick           - Overwrite with zeros" );
     puts( "                          one                    - Overwrite with ones (0xFF)" );
-    puts( "                          verify                 - Verifies disk is zero filled\n" );
+    puts( "                          verify_zero            - Verifies disk is zero filled\n" );
+    puts( "                          verify_one             - Verifies disk is 0xFF filled\n" );
     puts( "  -l, --logfile=FILE      Filename to log to. Default is STDOUT\n" );
     puts( "  -p, --prng=METHOD       PRNG option (mersenne|twister|isaac)\n" );
     puts( "  -r, --rounds=NUM        Number of times to wipe the device using the selected" );
