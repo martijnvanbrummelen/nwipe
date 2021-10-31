@@ -2133,7 +2133,7 @@ void nwipe_gui_method( void )
                 mvwprintw( main_window, 2, tab2, "Security Level: Not applicable" );
 
                 mvwprintw( main_window, 4, tab2, "This method only reads the device and checks     " );
-                mvwprintw( main_window, 5, tab2, "that it is all ones (0xFF).                             " );
+                mvwprintw( main_window, 5, tab2, "that it is all ones (0xFF)." );
 
                 break;
 
