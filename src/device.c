@@ -289,6 +289,10 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
         case NWIPE_DEVICE_VIRT:
             strcpy( next_device->device_type_str, "VIRT" );
             break;
+
+        case NWIPE_DEVICE_SAS:
+            strcpy( next_device->device_type_str, " SAS" );
+            break;
     }
 
     if( strlen( (const char*) next_device->device_serial_no ) )
@@ -628,6 +632,19 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
                     trim( &result[15] );
 
                     strncpy( serialnumber, &result[15], 20 );
+                }
+                if( *bus == 0 )
+                {
+                    if( strstr( result, "Transport protocol:" ) != 0 )
+                    {
+                        /* strip any leading or trailing spaces and left justify, +4 is the length of "bus type:" */
+                        trim( &result[19] );
+
+                        if( strncmp( &result[19], "SAS", 3 ) == 0 )
+                        {
+                            *bus = NWIPE_DEVICE_SAS;
+                        }
+                    }
                 }
             }
 
