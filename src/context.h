@@ -34,7 +34,8 @@ typedef enum nwipe_device_t_ {
     NWIPE_DEVICE_IEEE1394,  // Unimplemented.
     NWIPE_DEVICE_ATA,
     NWIPE_DEVICE_NVME,
-    NWIPE_DEVICE_VIRT
+    NWIPE_DEVICE_VIRT,
+    NWIPE_DEVICE_SAS
 } nwipe_device_t;
 
 typedef enum nwipe_pass_t_ {
