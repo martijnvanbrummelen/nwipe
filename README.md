@@ -85,7 +85,7 @@ Note. The following programs are optionally installed although recommended. 1. d
 #### dmidecode
 dmidecode provides SMBIOS/DMI host data to stdout or the log file. If you don't install it you won't see the SMBIOS/DMI host data at the beginning of nwipes log.
 
-#### coreutils (provides readlink) 
+#### coreutils (provides readlink)
 readlink determines the bus type, i.e. ATA, USB etc. Without it the --nousb option won't work and bus type information will be missing from nwipes selection and wipe windows. The coreutils package is often automatically installed as default in most if not all distros.
 
 #### smartmontools
