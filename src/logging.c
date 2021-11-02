@@ -869,7 +869,7 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
     /* Determine the size of throughput so that the correct nomenclature can be used */
     Determine_C_B_nomenclature( total_throughput, total_throughput_string, 13 );
 
-    /* Blank abreviations used in summary table B=blank, NB=no blank */
+    /* Blank abbreviations used in summary table B=blank, NB=no blank */
     if( nwipe_options.noblank )
     {
         strcpy( blank, "NB" );
@@ -879,7 +879,7 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
         strcpy( blank, "B" );
     }
 
-    /* Verify abreviations used in summary table */
+    /* Verify abbreviations used in summary table */
     switch( nwipe_options.verify )
     {
         case NWIPE_VERIFY_NONE:

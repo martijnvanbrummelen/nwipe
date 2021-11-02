@@ -468,7 +468,7 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
                 nwipe_log( NWIPE_LOG_WARNING, "Command not found. Install readlink !" );
                 set_return_value = 2;
 
-                /* Return immediatley if --nousb specified. Readlink is a requirment for this option. */
+                /* Return immediately if --nousb specified. Readlink is a requirement for this option. */
                 if( nwipe_options.nousb )
                 {
                     return set_return_value;

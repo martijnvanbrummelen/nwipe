@@ -91,7 +91,7 @@ int main( int argc, char** argv )
     /* Initialise, flag indicating whether a wipe has actually started or not 0=no, 1=yes */
     global_wipe_status = 0;
 
-    /* Initialise flags that indicates whether a fatal or non fatal error occured on ANY drive */
+    /* Initialise flags that indicate whether a fatal or non fatal error occurred on ANY drive */
     int fatal_errors_flag = 0;
     int non_fatal_errors_flag = 0;
 
@@ -228,7 +228,7 @@ int main( int argc, char** argv )
     /* Check for initialization errors. */
     if( nwipe_error )
     {
-        nwipe_log( NWIPE_LOG_ERROR, "Initialization eror %i\n", nwipe_error );
+        nwipe_log( NWIPE_LOG_ERROR, "Initialization error %i\n", nwipe_error );
         cleanup();
         return -1;
     }
