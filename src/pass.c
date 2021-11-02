@@ -265,7 +265,7 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
     }
 
     /* Create the initialised output buffer. Initialised because we don't want memory leaks
-     * to disk in the event of some future undetected bug in a prng or it's implementation ) */
+     * to disk in the event of some future undetected bug in a prng or its implementation. */
     b = calloc( c->device_stat.st_blksize, sizeof( char ) );
 
     /* Check the memory allocation. */
