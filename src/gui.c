@@ -2030,7 +2030,7 @@ void nwipe_gui_method( void )
                 mvwprintw( main_window, 5, tab2, "that the rounds option does not apply to this    " );
                 mvwprintw( main_window, 6, tab2, "method. This method always runs one round.       " );
                 mvwprintw( main_window, 7, tab2, "                                                 " );
-                mvwprintw( main_window, 8, tab2, "There is no publically available evidence that   " );
+                mvwprintw( main_window, 8, tab2, "There is no publicly available evidence that   " );
                 mvwprintw( main_window, 9, tab2, "data can be recovered from a modern traditional  " );
                 mvwprintw( main_window, 10, tab2, "hard drive (HDD) that has been zero wiped,       " );
                 mvwprintw( main_window, 11, tab2, "however a wipe that includes a prng may be       " );
@@ -2943,7 +2943,7 @@ void nwipe_update_speedring( nwipe_speedring_t* speedring, u64 speedring_bytes, 
     speedring->bytestotal -= speedring->bytes[speedring->position];
     speedring->timestotal -= speedring->times[speedring->position];
 
-    /* Put the lastest bytes-per-second sample into the ring buffer. */
+    /* Put the latest bytes-per-second sample into the ring buffer. */
     speedring->bytes[speedring->position] = speedring_bytes - speedring->byteslast;
     speedring->times[speedring->position] = speedring_now - speedring->timeslast;
 

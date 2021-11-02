@@ -806,7 +806,7 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 
     c->result = c->round_size;
 
-    /* If only verifing then the round size is the device size */
+    /* If only verifying then the round size is the device size */
     if( nwipe_options.method == &nwipe_verify_zero || nwipe_options.method == &nwipe_verify_one )
     {
         c->round_size = c->device_size;
@@ -1307,7 +1307,7 @@ void calculate_round_size( nwipe_context_t* c )
                 c->round_size += c->device_size;
             }
 
-            /* As no final zero blanking pass is permitted by this standard reduce round size if it's seelected */
+            /* As no final zero blanking pass is permitted by this standard reduce round size if it's selected */
             if( nwipe_options.noblank == 0 )
             {
                 /* Reduce for blanking pass */

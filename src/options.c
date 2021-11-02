@@ -96,7 +96,7 @@ int nwipe_options_parse( int argc, char** argv )
         /* Whether to exit after wiping or wait for a keypress. */
         { "nogui", no_argument, 0, 0 },
 
-        /* A flag to indicate whether the devices whould be opened in sync mode. */
+        /* A flag to indicate whether the devices would be opened in sync mode. */
         { "sync", required_argument, 0, 0 },
 
         /* Verify that wipe patterns are being written to the device. */
