@@ -329,7 +329,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     return 1;
 }
 
-/* Remove leading/training whitespace from a string and left justify result */
+/* Remove leading/trailing whitespace from a string and left justify result */
 char* trim( char* str )
 {
     size_t len = 0;
@@ -397,7 +397,7 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
      * 2 = readlink exit code not 0, see nwipe logs
      * 3 = popen failed to create stream for smartctl
      * 4 = smartctl command not found, install smartmontools
-     * 5 = smartctl detected un supported USB to IDE/SATA adapter
+     * 5 = smartctl detected unsupported USB to IDE/SATA adapter
      * 6 = All other errors !
      *
      */
@@ -672,11 +672,11 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
 
                 if( exit_status == 1 )
                 {
-                    nwipe_log( NWIPE_LOG_WARNING, "%s USB bridge, no passthru support", device );
+                    nwipe_log( NWIPE_LOG_WARNING, "%s USB bridge, no pass-through support", device );
 
                     if( *bus == NWIPE_DEVICE_USB )
                     {
-                        strcpy( serialnumber, "(no ATA pass thru)" );
+                        strcpy( serialnumber, "(no ATA pass-through)" );
                         set_return_value = 5;
                     }
                 }
@@ -704,7 +704,7 @@ void strip_CR_LF( char* str )
 
 void remove_ATA_prefix( char* str )
 {
-    /* Remove "ATA " prefix if present in the model no. string, left justifing string */
+    /* Remove "ATA" prefix if present in the model no. string, left justifing string */
 
     int idx_pre = 4;
     int idx_post = 0;
