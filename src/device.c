@@ -633,6 +633,7 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
 
                     strncpy( serialnumber, &result[15], 20 );
                 }
+
                 if( *bus == 0 )
                 {
                     if( strstr( result, "Transport protocol:" ) != 0 )
@@ -643,6 +644,18 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
                         if( strncmp( &result[19], "SAS", 3 ) == 0 )
                         {
                             *bus = NWIPE_DEVICE_SAS;
+                        }
+                    }
+
+                    if( strstr( result, "SATA Version is:" ) != 0 )
+                    {
+
+                        /* strip any leading or trailing spaces and left justify, +4 is the length of "bus type:" */
+                        trim( &result[16] );
+
+                        if( strncmp( &result[16], "SATA", 4 ) == 0 )
+                        {
+                            *bus = NWIPE_DEVICE_ATA;
                         }
                     }
                 }
