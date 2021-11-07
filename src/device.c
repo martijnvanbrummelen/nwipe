@@ -689,7 +689,7 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
 
                     if( *bus == NWIPE_DEVICE_USB )
                     {
-                        strcpy( serialnumber, "(no ATA pass-through)" );
+                        strcpy( serialnumber, "(S/N: unknown)" );
                         set_return_value = 5;
                     }
                 }
