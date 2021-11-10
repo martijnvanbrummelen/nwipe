@@ -47,5 +47,6 @@ int nwipe_log_sysinfo();
 void nwipe_log_summary( nwipe_context_t**, int );  // This produces the wipe status table on exit
 void Determine_C_B_nomenclature( u64, char*, int );
 void convert_seconds_to_hours_minutes_seconds( u64, int*, int*, int* );
+int nwipe_strip_path( char*, char* );
 
 #endif /* LOGGING_H_ */

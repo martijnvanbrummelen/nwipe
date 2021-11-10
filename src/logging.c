@@ -691,19 +691,8 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
         idx_src = strlen( c[i]->device_name );
         idx_src--;
 
-        while( idx_dest >= 0 )
-        {
-            /* if the device name contains a / start prefixing spaces */
-            if( c[i]->device_name[idx_src] == '/' )
-            {
-                device[idx_dest--] = ' ';
-                continue;
-            }
-            if( idx_src >= 0 )
-            {
-                device[idx_dest--] = c[i]->device_name[idx_src--];
-            }
-        }
+        nwipe_strip_path( device, c[i]->device_name );
+
         nwipe_log( NWIPE_LOG_NOTIMESTAMP,
                    "%s %s |  %10llu |           %10llu |           %10llu",
                    exclamation_flag,
@@ -743,24 +732,8 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
          * characters eg "   sda", prefixed with space to 6 characters, note that
          * we are processing the strings right to left */
 
-        idx_dest = 6;
-        device[idx_dest--] = 0;
-        idx_src = strlen( c[i]->device_name );
-        idx_src--;
+        nwipe_strip_path( device, c[i]->device_name );
 
-        while( idx_dest >= 0 )
-        {
-            /* if the device name contains a / start prefixing spaces */
-            if( c[i]->device_name[idx_src] == '/' )
-            {
-                device[idx_dest--] = ' ';
-                continue;
-            }
-            if( idx_src >= 0 )
-            {
-                device[idx_dest--] = c[i]->device_name[idx_src--];
-            }
-        }
         extern int user_abort;
 
         /* Any errors ? if so set the exclamation_flag and fail message,
@@ -983,6 +956,31 @@ void convert_seconds_to_hours_minutes_seconds( u64 total_seconds, int* hours, in
         else
         {
             *minutes = 0;
+        }
+    }
+}
+
+int nwipe_strip_path( char* output, char* input )
+{
+    int idx_dest;
+    int idx_src;
+    idx_dest = 6;
+    output[idx_dest--] = 0;
+    // idx_src = strlen( c[i]->device_name );
+    idx_src = strlen( input );
+    idx_src--;
+
+    while( idx_dest >= 0 )
+    {
+        /* if the device name contains a / start prefixing spaces */
+        if( input[idx_src] == '/' )
+        {
+            output[idx_dest--] = ' ';
+            continue;
+        }
+        if( idx_src >= 0 )
+        {
+            output[idx_dest--] = input[idx_src--];
         }
     }
 }

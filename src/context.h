@@ -72,6 +72,9 @@ typedef struct nwipe_speedring_t_
 #define NWIPE_DEVICE_LABEL_LENGTH 200
 #define NWIPE_DEVICE_SIZE_TXT_LENGTH 7
 
+// Arbitary length, so far most paths don't exceed about 25 characters
+#define MAX_HWMON_PATH_LENGTH 100
+
 typedef struct nwipe_context_t_
 {
     /*
@@ -124,6 +127,21 @@ typedef struct nwipe_context_t_
     pthread_t thread;  // The ID of the thread.
     u64 throughput;  // Average throughput in bytes per second.
     u64 verify_errors;  // The number of verification errors across all passes.
+    char temp1_path[MAX_HWMON_PATH_LENGTH];  // path to temperature variables /sys/class/hwmon/hwmonX/ etc.
+    int temp1_crit;  // Critical high drive temperature, 1000000=unitialised, millidegree celsius.
+    int temp1_highest;  // Historical highest temperature reached, 1000000=unitialised, millidegree celsius.
+    int temp1_input;  // drive temperature, -1=unitialised. 1000000=unitialised, millidegree celsius.
+    int temp1_lcrit;  // Critical low drive temperature, 1000000=unitialised, millidegree celsius.
+    int temp1_lowest;  // Historically lowest temperature, 1000000=unitialised, millidegree celsius.
+    int temp1_max;  // Maximum allowed temperature, 1000000=unitialised, millidegree celsius.
+    int temp1_min;  // Miniumum allowed temperature, 1000000=unitialised, millidegree celsius.
+    int temp1_monitored_wipe_max;
+    int temp1_monitored_wipe_min;
+    int temp1_monitored_wipe_avg;
+    int temp1_flash_rate;  // number relates to one tenth of a second, so 2 means a flash on and off = 0.4s
+    int temp1_flash_rate_counter;  // used by the gui for timing the flash rate
+    int temp1_flash_rate_status;  // 0=blank 1=visible
+    time_t temp1_time;  // The time when temperature was last checked, seconds since epoch
     int wipe_status;  // Wipe finished = 0, wipe in progress = 1, wipe yet to start = -1.
     int spinner_idx;  // Index into the spinner character array
     char spinner_character[1];  // The current spinner character
