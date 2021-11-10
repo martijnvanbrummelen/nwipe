@@ -127,17 +127,18 @@ typedef struct nwipe_context_t_
     pthread_t thread;  // The ID of the thread.
     u64 throughput;  // Average throughput in bytes per second.
     u64 verify_errors;  // The number of verification errors across all passes.
-    char temp1_path[MAX_HWMON_PATH_LENGTH];  // path to temperature variables /sys/class/hwmon/hwmon2/ etc.
-    u64 temp1_crit;  // Critical high drive temperature, -1=unitialised, millidegree celsius.
-    u64 temp1_highest;  // Historical highest temperature reached, -1=unitialised, millidegree celsius.
-    u64 temp1_input;  // drive temperature, -1=unitialised. -1=unitialised, millidegree celsius.
-    u64 temp1_lcrit;  // Critical low drive temperature, -1=unitialised, millidegree celsius.
-    u64 temp1_lowest;  // Historically lowest temperature, -1=unitialised, millidegree celsius.
-    u64 temp1_max;  // Maximum allowed temperature, -1=unitialised, millidegree celsius.
-    u64 temp1_min;  // Miniumum allowed temperature, -1=unitialised, millidegree celsius.
+    char temp1_path[MAX_HWMON_PATH_LENGTH];  // path to temperature variables /sys/class/hwmon/hwmonX/ etc.
+    u64 temp1_crit;  // Critical high drive temperature, 1000000=unitialised, millidegree celsius.
+    u64 temp1_highest;  // Historical highest temperature reached, 1000000=unitialised, millidegree celsius.
+    u64 temp1_input;  // drive temperature, -1=unitialised. 1000000=unitialised, millidegree celsius.
+    u64 temp1_lcrit;  // Critical low drive temperature, 1000000=unitialised, millidegree celsius.
+    u64 temp1_lowest;  // Historically lowest temperature, 1000000=unitialised, millidegree celsius.
+    u64 temp1_max;  // Maximum allowed temperature, 1000000=unitialised, millidegree celsius.
+    u64 temp1_min;  // Miniumum allowed temperature, 1000000=unitialised, millidegree celsius.
     u64 temp1_monitored_wipe_max;
     u64 temp1_monitored_wipe_min;
     u64 temp1_monitored_wipe_avg;
+    time_t temp1_time;  // The time when temperature was last checked, seconds since epoch
     int wipe_status;  // Wipe finished = 0, wipe in progress = 1, wipe yet to start = -1.
     int spinner_idx;  // Index into the spinner character array
     char spinner_character[1];  // The current spinner character

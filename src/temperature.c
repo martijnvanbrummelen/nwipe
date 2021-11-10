@@ -55,7 +55,6 @@ int nwipe_init_temperature( nwipe_context_t* c )
     // const char dirpath[] = "/home/nick/mouse/hwmon1";
     struct dirent* dp;
     struct dirent* dp2;
-    int match;
 
     /* Why Initialise with 1000000? Because the GUI needs to know whether data
      * has been obtained so it can display appropriate information when a
@@ -72,6 +71,7 @@ int nwipe_init_temperature( nwipe_context_t* c )
     c->temp1_monitored_wipe_min = 1000000;
     c->temp1_monitored_wipe_avg = 1000000;
     c->temp1_path[0] = 0;
+    c->temp1_time = 0;
 
     /* Each hwmonX directory is processed in turn and once a hwmonX directory has been
      * found that is a block device and the block device name matches the drive
@@ -211,5 +211,11 @@ void nwipe_update_temperature( nwipe_context_t* c )
                    c->temp1_max,
                    c->temp1_min );
     }
+
+    /* Update the time stamp that records when we checked the temperature,
+     * this is used by the GUI to check temperatures periodically, typically
+     * every 60 seconds */
+    c->temp1_time = time( NULL );
+
     return;
 }

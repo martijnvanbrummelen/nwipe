@@ -42,6 +42,7 @@
 #include "pass.h"
 #include "logging.h"
 #include "version.h"
+#include "temperature.h"
 
 #define NWIPE_GUI_PANE 8
 
@@ -2707,6 +2708,16 @@ void* nwipe_gui_status( void* ptr )
                     }
                 }
 
+                /* Print the current temperature, if available */
+                if( c[i]->temp1_input != 1000000 )
+                {
+                    wprintw( main_window, "(%lluC)", c[i]->temp1_input );
+                }
+                else
+                {
+                    wprintw( main_window, "[ --C ]" );
+                }
+
                 /* Determine throughput nomenclature for this drive and output drives throughput to GUI */
                 Determine_C_B_nomenclature( c[i]->throughput, nomenclature_result_str, NOMENCLATURE_RESULT_STR_SIZE );
 
@@ -2917,6 +2928,12 @@ int compute_stats( void* ptr )
         nwipe_misc_thread_data->errors += c[i]->pass_errors;
         nwipe_misc_thread_data->errors += c[i]->verify_errors;
         nwipe_misc_thread_data->errors += c[i]->fsyncdata_errors;
+
+        /* Read the drive temperature values */
+        if( nwipe_time_now > ( c[i]->temp1_time + 60 ) )
+        {
+            nwipe_update_temperature( c[i] );
+        }
 
     } /* for statistics */
 
