@@ -2711,7 +2711,7 @@ void* nwipe_gui_status( void* ptr )
                 /* Print the current temperature, if available */
                 if( c[i]->temp1_input != 1000000 )
                 {
-                    wprintw( main_window, "[%lluC] ", c[i]->temp1_input );
+                    wprintw( main_window, "[%dC] ", c[i]->temp1_input );
                 }
                 else
                 {

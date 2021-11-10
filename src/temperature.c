@@ -172,11 +172,6 @@ void nwipe_update_temperature( nwipe_context_t* c )
         strcat( path, "/" );
         strcat( path, &( temperature_label[idx][0] ) );
 
-        if( nwipe_options.verbose )
-        {
-            nwipe_log( NWIPE_LOG_NOTICE, "hwmon: path=%s", path );
-        }
-
         /* Open the file */
         if( ( fptr = fopen( path, "r" ) ) != NULL )
         {
@@ -201,8 +196,9 @@ void nwipe_update_temperature( nwipe_context_t* c )
     }
     if( nwipe_options.verbose )
     {
+        nwipe_log( NWIPE_LOG_NOTICE, "hwmon: path=%s", path );
         nwipe_log( NWIPE_LOG_NOTICE,
-                   "hwmon: %lluC, %lluC, %lluC, %lluC, %lluC, %lluC, %lluC",
+                   "hwmon: %dC, %dC, %dC, %dC, %dC, %dC, %dC",
                    c->temp1_crit,
                    c->temp1_highest,
                    c->temp1_input,
