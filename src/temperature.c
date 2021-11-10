@@ -150,7 +150,7 @@ void nwipe_update_temperature( nwipe_context_t* c )
 
     char temperature_label[NUMBER_OF_FILES][20] = {
         "temp1_crit", "temp1_highest", "temp1_input", "temp1_lcrit", "temp1_lowest", "temp1_max", "temp1_min" };
-    u64* temperature_pcontext[NUMBER_OF_FILES] = {
+    int* temperature_pcontext[NUMBER_OF_FILES] = {
 
         &( c->temp1_crit ),
         &( c->temp1_highest ),

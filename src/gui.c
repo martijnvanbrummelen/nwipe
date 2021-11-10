@@ -2711,11 +2711,11 @@ void* nwipe_gui_status( void* ptr )
                 /* Print the current temperature, if available */
                 if( c[i]->temp1_input != 1000000 )
                 {
-                    wprintw( main_window, "(%lluC)", c[i]->temp1_input );
+                    wprintw( main_window, "[%lluC] ", c[i]->temp1_input );
                 }
                 else
                 {
-                    wprintw( main_window, "[ --C ]" );
+                    wprintw( main_window, "[ --C ] " );
                 }
 
                 /* Determine throughput nomenclature for this drive and output drives throughput to GUI */
