@@ -72,6 +72,9 @@ typedef struct nwipe_speedring_t_
 #define NWIPE_DEVICE_LABEL_LENGTH 200
 #define NWIPE_DEVICE_SIZE_TXT_LENGTH 7
 
+// Arbitary length, so far most paths don't exceed about 25 characters
+#define MAX_HWMON_PATH_LENGTH 100
+
 typedef struct nwipe_context_t_
 {
     /*
@@ -124,6 +127,17 @@ typedef struct nwipe_context_t_
     pthread_t thread;  // The ID of the thread.
     u64 throughput;  // Average throughput in bytes per second.
     u64 verify_errors;  // The number of verification errors across all passes.
+    char temp1_path[MAX_HWMON_PATH_LENGTH];  // path to temperature variables /sys/class/hwmon/hwmon2/ etc.
+    u64 temp1_crit;  // Critical high drive temperature, -1=unitialised, millidegree celsius.
+    u64 temp1_highest;  // Historical highest temperature reached, -1=unitialised, millidegree celsius.
+    u64 temp1_input;  // drive temperature, -1=unitialised. -1=unitialised, millidegree celsius.
+    u64 temp1_lcrit;  // Critical low drive temperature, -1=unitialised, millidegree celsius.
+    u64 temp1_lowest;  // Historically lowest temperature, -1=unitialised, millidegree celsius.
+    u64 temp1_max;  // Maximum allowed temperature, -1=unitialised, millidegree celsius.
+    u64 temp1_min;  // Miniumum allowed temperature, -1=unitialised, millidegree celsius.
+    u64 temp1_monitored_wipe_max;
+    u64 temp1_monitored_wipe_min;
+    u64 temp1_monitored_wipe_avg;
     int wipe_status;  // Wipe finished = 0, wipe in progress = 1, wipe yet to start = -1.
     int spinner_idx;  // Index into the spinner character array
     char spinner_character[1];  // The current spinner character

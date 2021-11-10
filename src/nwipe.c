@@ -41,6 +41,7 @@
 #include "device.h"
 #include "logging.h"
 #include "gui.h"
+#include "temperature.h"
 
 #include <sys/ioctl.h> /* FIXME: Twice Included */
 #include <sys/shm.h>
@@ -202,6 +203,16 @@ int main( int argc, char** argv )
         pthread_create( &nwipe_sigint_thread, &pthread_attr, signal_hand, &nwipe_thread_data_ptr );
     }
 
+    /* Makesure the drivetemp module is loaded, else drives hwmon entries won't appear in /sys/class/hwmon */
+    if( system( "modprobe drivetemp" ) != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Unable to load module drivetemp, drive temperatures may not be available" );
+    }
+    else
+    {
+        nwipe_log( NWIPE_LOG_NOTICE, "Module drivetemp loaded, drive temperatures available" );
+    }
+
     /* A context struct for each device has already been created. */
     /* Now set specific nwipe options */
     for( i = 0; i < nwipe_enumerated; i++ )
@@ -223,6 +234,15 @@ int main( int argc, char** argv )
             /* The user must manually select devices. */
             c1[i]->select = NWIPE_SELECT_FALSE;
         }
+
+        /* Initialise temperature variables for device */
+        nwipe_init_temperature( c1[i] );
+        if( nwipe_options.verbose )
+        {
+            nwipe_log( NWIPE_LOG_NOTICE, "Device %s hwmon path = %s", c1[i]->device_name, c1[i]->temp1_path );
+        }
+
+        nwipe_update_temperature( c1[i] );
     }
 
     /* Check for initialization errors. */

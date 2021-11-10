@@ -21,6 +21,8 @@
 #ifndef PRNG_H_
 #define PRNG_H_
 
+#include <sys/types.h>
+
 /* A chunk of random data. */
 typedef struct
 {
