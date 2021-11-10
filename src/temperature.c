@@ -70,6 +70,8 @@ int nwipe_init_temperature( nwipe_context_t* c )
     c->temp1_monitored_wipe_max = 1000000;
     c->temp1_monitored_wipe_min = 1000000;
     c->temp1_monitored_wipe_avg = 1000000;
+    c->temp1_flash_rate = 2;
+    c->temp1_flash_rate_counter = 0;
     c->temp1_path[0] = 0;
     c->temp1_time = 0;
 
@@ -125,7 +127,8 @@ int nwipe_init_temperature( nwipe_context_t* c )
                         {
                             /* Match ! This hwmon device matches this context, so write the hwmonX path to the context
                              */
-                            nwipe_log( NWIPE_LOG_NOTICE, "Device %s has \'hwmon\' temperature monitoring", device );
+                            nwipe_log(
+                                NWIPE_LOG_NOTICE, "hwmon: Device %s has \'hwmon\' temperature monitoring", device );
 
                             /* Copy the hwmon path to the drive context structure */
                             strcpy( c->temp1_path, dirpath_hwmonX );
@@ -164,6 +167,7 @@ void nwipe_update_temperature( nwipe_context_t* c )
     char temperature[256];
     FILE* fptr;
     int idx;
+    int result;
 
     for( idx = 0; idx < NUMBER_OF_FILES; idx++ )
     {
@@ -176,13 +180,18 @@ void nwipe_update_temperature( nwipe_context_t* c )
         if( ( fptr = fopen( path, "r" ) ) != NULL )
         {
             /* Acquire data until we reach a newline */
-            fscanf( fptr, "%[^\n]", temperature );
+            result = fscanf( fptr, "%[^\n]", temperature );
 
             /* Convert numeric ascii to binary integer */
             *( temperature_pcontext[idx] ) = atoi( temperature );
 
             /* Divide by 1000 to get degrees celcius */
             *( temperature_pcontext[idx] ) = *( temperature_pcontext[idx] ) / 1000;
+
+            if( nwipe_options.verbose )
+            {
+                nwipe_log( NWIPE_LOG_NOTICE, "hwmon: %s %dC", path, *( temperature_pcontext[idx] ) );
+            }
 
             fclose( fptr );
         }
@@ -193,19 +202,6 @@ void nwipe_update_temperature( nwipe_context_t* c )
                 nwipe_log( NWIPE_LOG_NOTICE, "hwmon: Unable to  open %s", path );
             }
         }
-    }
-    if( nwipe_options.verbose )
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "hwmon: path=%s", path );
-        nwipe_log( NWIPE_LOG_NOTICE,
-                   "hwmon: %dC, %dC, %dC, %dC, %dC, %dC, %dC",
-                   c->temp1_crit,
-                   c->temp1_highest,
-                   c->temp1_input,
-                   c->temp1_lcrit,
-                   c->temp1_lowest,
-                   c->temp1_max,
-                   c->temp1_min );
     }
 
     /* Update the time stamp that records when we checked the temperature,

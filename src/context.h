@@ -138,6 +138,9 @@ typedef struct nwipe_context_t_
     int temp1_monitored_wipe_max;
     int temp1_monitored_wipe_min;
     int temp1_monitored_wipe_avg;
+    int temp1_flash_rate;  // number relates to one tenth of a second, so 2 means a flash on and off = 0.4s
+    int temp1_flash_rate_counter;  // used by the gui for timing the flash rate
+    int temp1_flash_rate_status;  // 0=blank 1=visible
     time_t temp1_time;  // The time when temperature was last checked, seconds since epoch
     int wipe_status;  // Wipe finished = 0, wipe in progress = 1, wipe yet to start = -1.
     int spinner_idx;  // Index into the spinner character array

@@ -206,11 +206,11 @@ int main( int argc, char** argv )
     /* Makesure the drivetemp module is loaded, else drives hwmon entries won't appear in /sys/class/hwmon */
     if( system( "modprobe drivetemp" ) != 0 )
     {
-        nwipe_log( NWIPE_LOG_ERROR, "Unable to load module drivetemp, drive temperatures may not be available" );
+        nwipe_log( NWIPE_LOG_ERROR, "hwmon: Unable to load module drivetemp, drive temperatures may not be available" );
     }
     else
     {
-        nwipe_log( NWIPE_LOG_NOTICE, "Module drivetemp loaded, drive temperatures available" );
+        nwipe_log( NWIPE_LOG_NOTICE, "hwmon: Module drivetemp loaded, drive temperatures available" );
     }
 
     /* A context struct for each device has already been created. */
@@ -239,7 +239,7 @@ int main( int argc, char** argv )
         nwipe_init_temperature( c1[i] );
         if( nwipe_options.verbose )
         {
-            nwipe_log( NWIPE_LOG_NOTICE, "Device %s hwmon path = %s", c1[i]->device_name, c1[i]->temp1_path );
+            nwipe_log( NWIPE_LOG_NOTICE, "hwmon: Device %s hwmon path = %s", c1[i]->device_name, c1[i]->temp1_path );
         }
 
         nwipe_update_temperature( c1[i] );

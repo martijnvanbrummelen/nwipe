@@ -42,6 +42,7 @@ void nwipe_gui_rounds( void );  // Change the rounds option.
 void nwipe_gui_verify( void );  // Change the verify option.
 void nwipe_gui_noblank( void );  // Change the noblank option.
 int spinner( nwipe_context_t** ptr, int );  // Return the next spinner character
+void temp1_flash( nwipe_context_t* );  // toggles term1_flash_status, which flashes the temperature
 
 int compute_stats( void* ptr );
 void nwipe_update_speedring( nwipe_speedring_t* speedring, u64 speedring_done, time_t speedring_now );
