@@ -299,7 +299,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     {
         snprintf( next_device->device_label,
                   NWIPE_DEVICE_LABEL_LENGTH,
-                  "%s %s (%s) %s/%s",
+                  "%s %s [%s] %s/%s",
                   next_device->device_name,
                   next_device->device_type_str,
                   next_device->device_size_text,
@@ -310,7 +310,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     {
         snprintf( next_device->device_label,
                   NWIPE_DEVICE_LABEL_LENGTH,
-                  "%s %s (%s) %s",
+                  "%s %s [%s] %s",
                   next_device->device_name,
                   next_device->device_type_str,
                   next_device->device_size_text,
