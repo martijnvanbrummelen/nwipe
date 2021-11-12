@@ -727,30 +727,30 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                 {
                     case NWIPE_SELECT_TRUE:
 
-                        wprintw( main_window, " [wipe] %i. %s", ( i + offset + 1 ), c[i + offset]->device_label );
+                        wprintw( main_window, "[wipe] %s ", c[i + offset]->device_label );
                         break;
 
                     case NWIPE_SELECT_FALSE:
                         /* Print an element that is not selected. */
-                        wprintw( main_window, " [    ] %i. %s", ( i + offset + 1 ), c[i + offset]->device_label );
+                        wprintw( main_window, "[    ] %s ", c[i + offset]->device_label );
                         break;
 
                     case NWIPE_SELECT_TRUE_PARENT:
 
                         /* This element will be wiped when its parent is wiped. */
-                        wprintw( main_window, " [****] %i. %s", ( i + offset + 1 ), c[i + offset]->device_label );
+                        wprintw( main_window, "[****] %s ", c[i + offset]->device_label );
                         break;
 
                     case NWIPE_SELECT_FALSE_CHILD:
 
                         /* We can't wipe this element because it has a child that is being wiped. */
-                        wprintw( main_window, " [----] %i. %s", ( i + offset + 1 ), c[i + offset]->device_label );
+                        wprintw( main_window, "[----] %s ", c[i + offset]->device_label );
                         break;
 
                     case NWIPE_SELECT_DISABLED:
 
                         /* We don't know how to wipe this device. (Iomega Zip drives.) */
-                        wprintw( main_window, " [????] %s", "Unrecognized Device" );
+                        wprintw( main_window, "[????] %s ", "Unrecognized Device" );
                         break;
 
                     default:
@@ -759,6 +759,8 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                         break;
 
                 } /* switch select */
+
+                wprintw_temperature( c[i] );
             }
             else
             {
@@ -2714,87 +2716,8 @@ void* nwipe_gui_status( void* ptr )
                     }
                 }
 
-                /* Print the current temperature, if available */
-                if( c[i]->temp1_input != 1000000 )
-                {
-                    /* if drive temperature has exceeded critical continuous running
-                     * temperature && critical value is valid
-                     */
-                    if( c[i]->temp1_input >= c[i]->temp1_crit && c[i]->temp1_crit != 1000000 )
-                    {
-                        temp1_flash( c[i] );
-
-                        if( c[i]->temp1_flash_rate_status == 0 )
-                        {
-                            /* blue on blue */
-                            wattron( main_window, COLOR_PAIR( 12 ) );
-                            wprintw( main_window, "[%dC] ", c[i]->temp1_input );
-                            wattroff( main_window, COLOR_PAIR( 12 ) );
-                        }
-                        else
-                        {
-                            /* red on blue */
-                            wattron( main_window, COLOR_PAIR( 3 ) );
-                            wprintw( main_window, "[%dC] ", c[i]->temp1_input );
-                            wattroff( main_window, COLOR_PAIR( 3 ) );
-                        }
-                    }
-                    else
-                    {
-                        /* if drive temperature has exceeded maximum continuous running temperature && max value is
-                         * valid */
-                        if( c[i]->temp1_input >= c[i]->temp1_max && c[i]->temp1_max != 1000000 )
-                        {
-                            /* red on blue */
-                            wattron( main_window, COLOR_PAIR( 3 ) );
-                            wprintw( main_window, "[%dC] ", c[i]->temp1_input );
-                            wattroff( main_window, COLOR_PAIR( 3 ) );
-                        }
-                        else
-                        {
-                            /* if drive temperature is below the critical temperature && critical value is valid */
-                            if( c[i]->temp1_input <= c[i]->temp1_lcrit && c[i]->temp1_lcrit != 1000000 )
-                            {
-                                temp1_flash( c[i] );
-                                if( c[i]->temp1_flash_rate_status == 0 )
-                                {
-                                    /* blue on blue */
-                                    wattron( main_window, COLOR_PAIR( 12 ) );
-                                    wprintw( main_window, "[%dC] ", c[i]->temp1_input );
-                                    wattroff( main_window, COLOR_PAIR( 12 ) );
-                                }
-                                else
-                                {
-                                    /* black on blue */
-                                    wattron( main_window, COLOR_PAIR( 11 ) );
-                                    wprintw( main_window, "[%dC] ", c[i]->temp1_input );
-                                    wattroff( main_window, COLOR_PAIR( 11 ) );
-                                }
-                            }
-                            else
-                            {
-                                /* if drive temperature is below the minimum continuous running temperature && minimum
-                                 * value is valid */
-                                if( c[i]->temp1_input <= c[i]->temp1_min && c[i]->temp1_min != 1000000 )
-                                {
-                                    /* black on blue */
-                                    wattron( main_window, COLOR_PAIR( 11 ) );
-                                    wprintw( main_window, "[%dC] ", c[i]->temp1_input );
-                                    wattroff( main_window, COLOR_PAIR( 11 ) );
-                                }
-                                else
-                                {
-                                    /* Default white on blue */
-                                    wprintw( main_window, "[%dC] ", c[i]->temp1_input );
-                                }
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    wprintw( main_window, "[--C] " );
-                }
+                /* print the temperature to the screen */
+                wprintw_temperature( c[i] );
 
                 /* Determine throughput nomenclature for this drive and output drives throughput to GUI */
                 Determine_C_B_nomenclature( c[i]->throughput, nomenclature_result_str, NOMENCLATURE_RESULT_STR_SIZE );
@@ -3100,5 +3023,94 @@ void temp1_flash( nwipe_context_t* c )
         {
             c->temp1_flash_rate_status = 0;
         }
+    }
+}
+
+void wprintw_temperature( nwipe_context_t* c )
+{
+    /* If available, print the current temperature. This function determines
+     * whether the temperature should be printed as white, solid red, flashing red
+     * solid black or flashing black and then prints it to the main_window.
+     */
+    if( c->temp1_input != 1000000 )
+    {
+        /* if drive temperature has exceeded critical continuous running
+         * temperature && critical value is valid
+         */
+        if( c->temp1_input >= c->temp1_crit && c->temp1_crit != 1000000 )
+        {
+            temp1_flash( c );
+
+            if( c->temp1_flash_rate_status == 0 )
+            {
+                /* blue on blue */
+                wattron( main_window, COLOR_PAIR( 12 ) );
+                wprintw( main_window, "[%dC] ", c->temp1_input );
+                wattroff( main_window, COLOR_PAIR( 12 ) );
+            }
+            else
+            {
+                /* red on blue */
+                wattron( main_window, COLOR_PAIR( 3 ) );
+                wprintw( main_window, "[%dC] ", c->temp1_input );
+                wattroff( main_window, COLOR_PAIR( 3 ) );
+            }
+        }
+        else
+        {
+            /* if drive temperature has exceeded maximum continuous running
+             * temperature && max value is valid
+             */
+            if( c->temp1_input >= c->temp1_max && c->temp1_max != 1000000 )
+            {
+                /* red on blue */
+                wattron( main_window, COLOR_PAIR( 3 ) );
+                wprintw( main_window, "[%dC] ", c->temp1_input );
+                wattroff( main_window, COLOR_PAIR( 3 ) );
+            }
+            else
+            {
+                /* if drive temperature is below the critical temperature && critical value is valid */
+                if( c->temp1_input <= c->temp1_lcrit && c->temp1_lcrit != 1000000 )
+                {
+                    temp1_flash( c );
+                    if( c->temp1_flash_rate_status == 0 )
+                    {
+                        /* blue on blue */
+                        wattron( main_window, COLOR_PAIR( 12 ) );
+                        wprintw( main_window, "[%dC] ", c->temp1_input );
+                        wattroff( main_window, COLOR_PAIR( 12 ) );
+                    }
+                    else
+                    {
+                        /* black on blue */
+                        wattron( main_window, COLOR_PAIR( 11 ) );
+                        wprintw( main_window, "[%dC] ", c->temp1_input );
+                        wattroff( main_window, COLOR_PAIR( 11 ) );
+                    }
+                }
+                else
+                {
+                    /* if drive temperature is below the minimum continuous running temperature && minimum
+                     * value is valid */
+                    if( c->temp1_input <= c->temp1_min && c->temp1_min != 1000000 )
+                    {
+                        /* black on blue */
+                        wattron( main_window, COLOR_PAIR( 11 ) );
+                        wprintw( main_window, "[%dC] ", c->temp1_input );
+                        wattroff( main_window, COLOR_PAIR( 11 ) );
+                    }
+                    else
+                    {
+                        /* Default white on blue */
+                        wprintw( main_window, "[%dC] ", c->temp1_input );
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        wprintw( main_window, "[--C] " );
     }
 }
