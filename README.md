@@ -194,6 +194,7 @@ See [Repology](https://repology.org/project/nwipe/versions)
 And in addition checkout the following distros that all include nwipe:
 
 - [ShredOS 2020](https://github.com/PartialVolume/shredos.2020.02) Always has the latest nwipe release.
+- [netboot.xyz](https://github.com/netbootxyz/netboot.xyz) Can network-boot ShredOS.
 - [partedmagic](https://partedmagic.com)
 - [SystemRescueCD](https://www.system-rescue.org)
 - [gparted live](https://sourceforge.net/projects/gparted/files/gparted-live-testing/1.2.0-2/)
