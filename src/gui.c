@@ -727,24 +727,40 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                 {
                     case NWIPE_SELECT_TRUE:
 
-                        wprintw( main_window, "[wipe] %s ", c[i + offset]->device_label );
+                        wprintw( main_window,
+                                 "[wipe] %s %s [%s] ",
+                                 c[i + offset]->device_name,
+                                 c[i + offset]->device_type_str,
+                                 c[i + offset]->device_size_text );
                         break;
 
                     case NWIPE_SELECT_FALSE:
                         /* Print an element that is not selected. */
-                        wprintw( main_window, "[    ] %s ", c[i + offset]->device_label );
+                        wprintw( main_window,
+                                 "[    ] %s %s [%s] ",
+                                 c[i + offset]->device_name,
+                                 c[i + offset]->device_type_str,
+                                 c[i + offset]->device_size_text );
                         break;
 
                     case NWIPE_SELECT_TRUE_PARENT:
 
                         /* This element will be wiped when its parent is wiped. */
-                        wprintw( main_window, "[****] %s ", c[i + offset]->device_label );
+                        wprintw( main_window,
+                                 "[****] %s %s [%s] ",
+                                 c[i + offset]->device_name,
+                                 c[i + offset]->device_type_str,
+                                 c[i + offset]->device_size_text );
                         break;
 
                     case NWIPE_SELECT_FALSE_CHILD:
 
                         /* We can't wipe this element because it has a child that is being wiped. */
-                        wprintw( main_window, "[----] %s ", c[i + offset]->device_label );
+                        wprintw( main_window,
+                                 "[----] %s %s [%s] ",
+                                 c[i + offset]->device_name,
+                                 c[i + offset]->device_type_str,
+                                 c[i + offset]->device_size_text );
                         break;
 
                     case NWIPE_SELECT_DISABLED:
@@ -760,7 +776,11 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
 
                 } /* switch select */
 
-                wprintw_temperature( c[i] );
+                /* print the temperature */
+                wprintw_temperature( c[i + offset] );
+
+                /* print the drive model and serial number */
+                wprintw( main_window, "%s/%s", c[i + offset]->device_model, c[i + offset]->device_serial_no );
             }
             else
             {
@@ -2625,8 +2645,16 @@ void* nwipe_gui_status( void* ptr )
             /* Print information for the user. */
             for( i = offset; i < offset + slots && i < count; i++ )
             {
-                /* Print the device label. */
-                mvwprintw( main_window, yy++, 2, "%s", c[i]->device_label );
+                /* Print the device details. */
+                mvwprintw( main_window,
+                           yy++,
+                           2,
+                           "%s %s [%s] ",
+                           c[i]->device_name,
+                           c[i]->device_type_str,
+                           c[i]->device_size_text );
+                wprintw_temperature( c[i] );
+                wprintw( main_window, "%s/%s", c[i]->device_model, c[i]->device_serial_no );
 
                 /* Check whether the child process is still running the wipe. */
                 if( c[i]->wipe_status == 1 )
@@ -2715,9 +2743,6 @@ void* nwipe_gui_status( void* ptr )
                         wprintw( main_window, "[ syncing ] " );
                     }
                 }
-
-                /* print the temperature to the screen */
-                wprintw_temperature( c[i] );
 
                 /* Determine throughput nomenclature for this drive and output drives throughput to GUI */
                 Determine_C_B_nomenclature( c[i]->throughput, nomenclature_result_str, NOMENCLATURE_RESULT_STR_SIZE );
