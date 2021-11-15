@@ -111,7 +111,8 @@ int nwipe_init_temperature( nwipe_context_t* c )
                         }
                         strcpy( device, dp2->d_name );
 
-                        /* Create a copy of the device name from the context but strip the path from it. */
+                        /* Create a copy of the device name from the context but strip the path from it, right justify
+                         * device name, prefix with spaces so length is 8. */
                         nwipe_strip_path( device_context_name, c->device_name );
 
                         /* Remove leading/training whitespace from a string and left justify result */

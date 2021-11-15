@@ -207,7 +207,25 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     /* Get device information */
     next_device->device_model = dev->model;
     remove_ATA_prefix( next_device->device_model );
+
+    /* full device name, i.e. /dev/sda */
     next_device->device_name = dev->path;
+
+    /* remove /dev/ from device, right justify and prefix name so string length is eight characters */
+    nwipe_strip_path( next_device->device_name_without_path, next_device->device_name );
+
+    /* To maintain column alignment in the gui we have to remove /dev/ from device names that
+     * exceed eight characters including the /dev/ path.
+     */
+    if( strlen( next_device->device_name ) > MAX_LENGTH_OF_DEVICE_STRING )
+    {
+        strcpy( next_device->gui_device_name, next_device->device_name_without_path );
+    }
+    else
+    {
+        strcpy( next_device->gui_device_name, next_device->device_name );
+    }
+
     next_device->device_size = dev->length * dev->sector_size;
     Determine_C_B_nomenclature( next_device->device_size, next_device->device_size_txt, NWIPE_DEVICE_SIZE_TXT_LENGTH );
     next_device->device_size_text = next_device->device_size_txt;

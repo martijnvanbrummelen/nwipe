@@ -23,6 +23,8 @@
 #ifndef DEVICE_H_
 #define DEVICE_H_
 
+#define MAX_LENGTH_OF_DEVICE_STRING 8
+
 void nwipe_device_identify( nwipe_context_t* c );  // Get hardware information about the device.
 int nwipe_device_scan( nwipe_context_t*** c );  // Find devices that we can wipe.
 int nwipe_device_get( nwipe_context_t*** c, char** devnamelist, int ndevnames );  // Get info about devices to wipe.
