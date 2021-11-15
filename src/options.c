@@ -53,7 +53,7 @@ int nwipe_options_parse( int argc, char** argv )
     int i;
 
     /* The list of acceptable short options. */
-    char nwipe_options_short[] = "Vvhl:m:p:r:e:";
+    char nwipe_options_short[] = "Vvhl:m:p:qr:e:";
 
     /* The list of acceptable long options. */
     static struct option nwipe_options_long[] = {
@@ -93,8 +93,11 @@ int nwipe_options_parse( int argc, char** argv )
         /* Whether to allow signals to interrupt a wipe. */
         { "nosignals", no_argument, 0, 0 },
 
-        /* Whether to exit after wiping or wait for a keypress. */
+        /* Whether to display the gui. */
         { "nogui", no_argument, 0, 0 },
+
+        /* Whether to anonymize the serial numbers. */
+        { "quiet", no_argument, 0, 'q' },
 
         /* A flag to indicate whether the devices would be opened in sync mode. */
         { "sync", required_argument, 0, 0 },
@@ -122,6 +125,7 @@ int nwipe_options_parse( int argc, char** argv )
     nwipe_options.nowait = 0;
     nwipe_options.nosignals = 0;
     nwipe_options.nogui = 0;
+    nwipe_options.quiet = 0;
     nwipe_options.sync = DEFAULT_SYNC_RATE;
     nwipe_options.verbose = 0;
     nwipe_options.verify = NWIPE_VERIFY_LAST;
@@ -375,6 +379,11 @@ int nwipe_options_parse( int argc, char** argv )
                 fprintf( stderr, "Error: Unknown prng '%s'.\n", optarg );
                 exit( EINVAL );
 
+            case 'q': /* Anonymize serial numbers */
+
+                nwipe_options.quiet = 1;
+                break;
+
             case 'r': /* Rounds option. */
 
                 if( sscanf( optarg, " %i", &nwipe_options.rounds ) != 1 || nwipe_options.rounds < 1 )
@@ -477,6 +486,7 @@ void nwipe_options_log( void )
     }
 
     nwipe_log( NWIPE_LOG_NOTICE, "  method   = %s", nwipe_method_label( nwipe_options.method ) );
+    nwipe_log( NWIPE_LOG_NOTICE, "  quiet    = %i", nwipe_options.quiet );
     nwipe_log( NWIPE_LOG_NOTICE, "  rounds   = %i", nwipe_options.rounds );
     nwipe_log( NWIPE_LOG_NOTICE, "  sync     = %i", nwipe_options.sync );
 
@@ -546,6 +556,8 @@ void display_help()
     puts( "                          verify_one             - Verifies disk is 0xFF filled\n" );
     puts( "  -l, --logfile=FILE      Filename to log to. Default is STDOUT\n" );
     puts( "  -p, --prng=METHOD       PRNG option (mersenne|twister|isaac)\n" );
+    puts( "  -q, --quiet             Anonymize logs/GUI by removing serial numbers" );
+    puts( "                          XXXXXX = S/N exists, ????? = S/N not obtainable \n" );
     puts( "  -r, --rounds=NUM        Number of times to wipe the device using the selected" );
     puts( "                          method (default: 1)\n" );
     puts( "      --noblank           Do NOT blank disk after wipe" );
