@@ -60,6 +60,7 @@ typedef struct
     char logfile[FILENAME_MAX];  // The filename to log the output to.
     char exclude[MAX_NUMBER_EXCLUDED_DRIVES][MAX_DRIVE_PATH_LENGTH];  // Drives excluded from the search.
     nwipe_prng_t* prng;  // The pseudo random number generator implementation.
+    int quiet;  // Anonymize serial numbers
     int rounds;  // The number of times that the wipe method should be called.
     int sync;  // A flag to indicate whether and how often writes should be sync'd.
     int verbose;  // Make log more verbose

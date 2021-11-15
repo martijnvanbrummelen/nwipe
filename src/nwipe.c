@@ -206,7 +206,7 @@ int main( int argc, char** argv )
     /* Makesure the drivetemp module is loaded, else drives hwmon entries won't appear in /sys/class/hwmon */
     if( system( "modprobe drivetemp" ) != 0 )
     {
-        nwipe_log( NWIPE_LOG_ERROR, "hwmon: Unable to load module drivetemp, drive temperatures may not be available" );
+        nwipe_log( NWIPE_LOG_WARNING, "hwmon: Unable to load module drivetemp, drivetemp may be build into kernel?" );
     }
     else
     {

@@ -231,7 +231,10 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     next_device->device_size_text = next_device->device_size_txt;
     next_device->result = -2;
 
-    /* Attempt to get serial number of device. */
+    /* Attempt to get serial number of device.
+     */
+    next_device->device_serial_no[0] = 0; /* initialise the serial number */
+
     if( ( fd = open( next_device->device_name = dev->path, O_RDONLY ) ) == ERR )
     {
         nwipe_log( NWIPE_LOG_WARNING, "Unable to open device %s to obtain serial number", next_device->device_name );
@@ -266,6 +269,19 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
         if( next_device->device_serial_no[0] == 0 )
         {
             strcpy( next_device->device_serial_no, tmp_serial );
+        }
+    }
+
+    /* Does the user want to anonymize serial numbers ? */
+    if( nwipe_options.quiet )
+    {
+        if( next_device->device_serial_no[0] == 0 )
+        {
+            strcpy( next_device->device_serial_no, "???????????????" );
+        }
+        else
+        {
+            strcpy( next_device->device_serial_no, "XXXXXXXXXXXXXXX" );
         }
     }
 
@@ -428,6 +444,7 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
     int device_len;
     int set_return_value;
     int exit_status;
+    int idx;
 
     char readlink_command[] = "readlink /sys/block/%s";
     char readlink_command2[] = "/usr/bin/readlink /sys/block/%s";
@@ -439,6 +456,7 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
     char result[512];
     char final_cmd_readlink[sizeof( readlink_command ) + sizeof( device_shortform )];
     char final_cmd_smartctl[sizeof( smartctl_command ) + 256];
+    char* pResult;
 
     /* Initialise return value */
     set_return_value = 0;
@@ -641,6 +659,37 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
                 if( nwipe_options.verbose && result[0] != 0x0A )
                 {
                     strip_CR_LF( result );
+
+                    /* Remove serial number if -q option specified */
+                    if( nwipe_options.quiet )
+                    {
+                        /* set index to character after end of 'Serial Number:' label */
+                        idx = 14;
+
+                        if( ( pResult = strstr( result, "Serial Number:" ) ) != 0 )
+                        {
+                            /* Ignore spaces, overwrite other characters */
+                            while( *( pResult + idx ) != 0x0A && *( pResult + idx ) != 0x0D && *( pResult + idx ) != 0
+                                   && idx <= sizeof( result ) - 1 )
+                            {
+                                if( *( pResult + idx ) == ' ' )
+                                {
+                                    idx++;
+                                    continue;
+                                }
+                                else
+                                {
+                                    /* ignore if the serial number has been written over with '?' */
+                                    if( *( pResult + idx ) != '?' )
+                                    {
+                                        *( pResult + idx ) = 'X';
+                                    }
+                                    idx++;
+                                }
+                            }
+                        }
+                    }
+
                     nwipe_log( NWIPE_LOG_DEBUG, "smartctl: %s", result );
                 }
 
