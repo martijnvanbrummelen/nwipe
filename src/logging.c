@@ -607,7 +607,7 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
     int i;
     int idx_src;
     int idx_dest;
-    char device[7];
+    char device[18];
     char status[9];
     char throughput[13];
     char total_throughput_string[13];
@@ -662,7 +662,7 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
     nwipe_log( NWIPE_LOG_NOTIMESTAMP, "" );
     nwipe_log( NWIPE_LOG_NOTIMESTAMP,
                "******************************** Error Summary *********************************" );
-    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "! Device | Pass Errors | Verifications Errors | Fdatasync I\\O Errors" );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "!   Device | Pass Errors | Verifications Errors | Fdatasync I\\O Errors" );
     nwipe_log( NWIPE_LOG_NOTIMESTAMP,
                "--------------------------------------------------------------------------------" );
 
@@ -675,11 +675,8 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
         }
         else
         {
-            if( c[i]->wipe_status == 0 )
-            {
-                strncpy( exclamation_flag, " ", 1 );
-                exclamation_flag[1] = 0;
-            }
+            strncpy( exclamation_flag, " ", 1 );
+            exclamation_flag[1] = 0;
         }
 
         /* Device name, strip any prefixed /dev/.. leaving up to 6 right justified
@@ -718,18 +715,18 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
     nwipe_log( NWIPE_LOG_NOTIMESTAMP, "" );
     nwipe_log( NWIPE_LOG_NOTIMESTAMP,
                "********************************* Drive Status *********************************" );
-    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "! Device | Status | Thru-put | HH:MM:SS | Model/Serial Number" );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "!   Device | Status | Thru-put | HH:MM:SS | Model/Serial Number" );
     nwipe_log( NWIPE_LOG_NOTIMESTAMP,
                "--------------------------------------------------------------------------------" );
     /* Example layout:
-     *                                "!    sdv |--FAIL--|  120MB/s | 01:22:01 | WD6788.8488YNHj/ZX677888388-N       "
-     * ); "     sdv | Erased |  120MB/s | 01:25:04 | WD6784.8488JKGG/ZX677888388-N       " ); "     sdv | Erased |
+     *    "!     sdb |--FAIL--|  120MB/s | 01:22:01 | WD6788.8488YNHj/ZX677888388-N       "
+     * ); "      sdc | Erased |  120MB/s | 01:25:04 | WD6784.8488JKGG/ZX677888388-N       " ); "     sdv | Erased |
      * 120MB/s | 01:19:07 | WD6788.848HHDDR/ZX677888388-N       " ); End of Example layout */
 
     for( i = 0; i < nwipe_selected; i++ )
     {
-        /* Device name, strip any prefixed /dev/.. leaving up to 6 right justified
-         * characters eg "   sda", prefixed with space to 6 characters, note that
+        /* Device name, strip any prefixed /dev/.. leaving up to 8 right justified
+         * characters eg "   sda", prefixed with space to 8 characters, note that
          * we are processing the strings right to left */
 
         nwipe_strip_path( device, c[i]->device_name );
@@ -962,11 +959,15 @@ void convert_seconds_to_hours_minutes_seconds( u64 total_seconds, int* hours, in
 
 int nwipe_strip_path( char* output, char* input )
 {
+    /* Take the input string, say "/dev/sda" and remove the "/dev/", prefix the result
+     * with 'length' spaces. So if length=8 and input=/dev/sda, output will
+     * be "     sda", a string 8 characters long right justified with spaces.
+     */
     int idx_dest;
     int idx_src;
-    idx_dest = 6;
+    idx_dest = 8;
+    // idx_dest = length;
     output[idx_dest--] = 0;
-    // idx_src = strlen( c[i]->device_name );
     idx_src = strlen( input );
     idx_src--;
 
