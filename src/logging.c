@@ -498,29 +498,36 @@ int nwipe_log_sysinfo()
      * be logged, making sure the last entry in the array is a NULL string. To remove
      * an entry simply comment out the keyword with //
      */
-    char dmidecode_keywords[][24] = {
-        "bios-version",
-        "bios-release-date",
-        "system-manufacturer",
-        "system-product-name",
-        "system-version",
-        "system-serial-number",
-        "system-uuid",
-        "baseboard-manufacturer",
-        "baseboard-product-name",
-        "baseboard-version",
-        "baseboard-serial-number",
-        "baseboard-asset-tag",
-        "chassis-manufacturer",
-        "chassis-type",
-        "chassis-version",
-        "chassis-serial-number",
-        "chassis-asset-tag",
-        "processor-family",
-        "processor-manufacturer",
-        "processor-version",
-        "processor-frequency",
-        ""  // terminates the keyword array. DO NOT REMOVE
+
+    /* The 0/1 after the keyword determines whether the data for this
+     * keyword is displayed when -q (anonymize) has been specified
+     * by the user. An quick reminder about multi dimensional arrays, the first
+     * []=the keyword (0-21) including the empty string. The second [] is the
+     * 1 or 0 value (0 or 1). The third [] is the index value into either string.
+     */
+    char dmidecode_keywords[][2][24] = {
+        { "bios-version", "1" },
+        { "bios-release-date", "1" },
+        { "system-manufacturer", "1" },
+        { "system-product-name", "1" },
+        { "system-version", "1" },
+        { "system-serial-number", "0" },
+        { "system-uuid", "0" },
+        { "baseboard-manufacturer", "1" },
+        { "baseboard-product-name", "1" },
+        { "baseboard-version", "1" },
+        { "baseboard-serial-number", "0" },
+        { "baseboard-asset-tag", "0" },
+        { "chassis-manufacturer", "1" },
+        { "chassis-type", "1" },
+        { "chassis-version", "1" },
+        { "chassis-serial-number", "0" },
+        { "chassis-asset-tag", "0" },
+        { "processor-family", "1" },
+        { "processor-manufacturer", "1" },
+        { "processor-version", "1" },
+        { "processor-frequency", "1" },
+        { "", "" }  // terminates the keyword array. DO NOT REMOVE
     };
 
     char dmidecode_command[] = "dmidecode -s %s";
@@ -563,9 +570,9 @@ int nwipe_log_sysinfo()
     {
 
         /* Run the dmidecode command to retrieve each dmidecode keyword, one at a time */
-        while( dmidecode_keywords[keywords_idx][0] != 0 )
+        while( dmidecode_keywords[keywords_idx][0][0] != 0 )
         {
-            sprintf( cmd, p_dmidecode_command, &dmidecode_keywords[keywords_idx][0] );
+            sprintf( cmd, p_dmidecode_command, &dmidecode_keywords[keywords_idx][0][0] );
             fp = popen( cmd, "r" );
             if( fp == NULL )
             {
@@ -581,7 +588,22 @@ int nwipe_log_sysinfo()
                 {
                     path[len - 1] = 0;
                 }
-                nwipe_log( NWIPE_LOG_NOTICE, "%s = %s", &dmidecode_keywords[keywords_idx][0], path );
+                if( nwipe_options.quiet )
+                {
+                    if( *( &dmidecode_keywords[keywords_idx][1][0] ) == '0' )
+                    {
+                        nwipe_log(
+                            NWIPE_LOG_NOTICE, "%s = %s", &dmidecode_keywords[keywords_idx][0][0], "XXXXXXXXXXXXXXX" );
+                    }
+                    else
+                    {
+                        nwipe_log( NWIPE_LOG_NOTICE, "%s = %s", &dmidecode_keywords[keywords_idx][0][0], path );
+                    }
+                }
+                else
+                {
+                    nwipe_log( NWIPE_LOG_NOTICE, "%s = %s", &dmidecode_keywords[keywords_idx][0][0], path );
+                }
             }
             /* close */
             r = pclose( fp );
