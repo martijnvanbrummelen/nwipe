@@ -445,6 +445,7 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
     int set_return_value;
     int exit_status;
     int idx;
+    int idx2;
 
     char readlink_command[] = "readlink /sys/block/%s";
     char readlink_command2[] = "/usr/bin/readlink /sys/block/%s";
@@ -457,6 +458,9 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
     char final_cmd_readlink[sizeof( readlink_command ) + sizeof( device_shortform )];
     char final_cmd_smartctl[sizeof( smartctl_command ) + 256];
     char* pResult;
+    char smartctl_labels_to_anonymize[][18] = {
+        "Serial Number:", "LU WWN Device Id:", "" /* Don't remove this empty string !, important */
+    };
 
     /* Initialise return value */
     set_return_value = 0;
@@ -663,30 +667,37 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
                     /* Remove serial number if -q option specified */
                     if( nwipe_options.quiet )
                     {
-                        /* set index to character after end of 'Serial Number:' label */
-                        idx = 14;
+                        /* initialise index into string array */
+                        idx2 = 0;
 
-                        if( ( pResult = strstr( result, "Serial Number:" ) ) != 0 )
+                        while( smartctl_labels_to_anonymize[idx2][0] != 0 )
                         {
-                            /* Ignore spaces, overwrite other characters */
-                            while( *( pResult + idx ) != 0x0A && *( pResult + idx ) != 0x0D && *( pResult + idx ) != 0
-                                   && idx <= sizeof( result ) - 1 )
+                            if( ( pResult = strstr( result, &smartctl_labels_to_anonymize[idx2][0] ) ) != 0 )
                             {
-                                if( *( pResult + idx ) == ' ' )
+                                /* set index to character after end of label string */
+                                idx = strlen( &smartctl_labels_to_anonymize[idx2][0] );
+
+                                /* Ignore spaces, overwrite other characters */
+                                while( *( pResult + idx ) != 0x0A && *( pResult + idx ) != 0x0D
+                                       && *( pResult + idx ) != 0 && idx <= sizeof( result ) - 1 )
                                 {
-                                    idx++;
-                                    continue;
-                                }
-                                else
-                                {
-                                    /* ignore if the serial number has been written over with '?' */
-                                    if( *( pResult + idx ) != '?' )
+                                    if( *( pResult + idx ) == ' ' )
                                     {
-                                        *( pResult + idx ) = 'X';
+                                        idx++;
+                                        continue;
                                     }
-                                    idx++;
+                                    else
+                                    {
+                                        /* ignore if the serial number has been written over with '?' */
+                                        if( *( pResult + idx ) != '?' )
+                                        {
+                                            *( pResult + idx ) = 'X';
+                                        }
+                                        idx++;
+                                    }
                                 }
                             }
+                            idx2++;
                         }
                     }
 
