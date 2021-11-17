@@ -2926,18 +2926,18 @@ int compute_stats( void* ptr )
                 /* Update the current average throughput in bytes-per-second. */
                 c[i]->throughput = c[i]->speedring.bytestotal / c[i]->speedring.timestotal;
 
-                /* Update the estimated remaining runtime. */
-                /* Check that throughput is not zero (sometimes caused during a sync) */
-                if( c[i]->throughput == 0 )
+                /* Only update the estimated remaining runtime if the
+                 * throughput for a given drive is greater than 100,000 bytes per second
+                 * This prevents enormous ETA's being calculated on an unresponsive
+                 * drive */
+                if( c[i]->throughput > 100000 )
                 {
-                    c[i]->throughput = 1;
-                }
+                    c[i]->eta = ( c[i]->round_size - c[i]->round_done ) / c[i]->throughput;
 
-                c[i]->eta = ( c[i]->round_size - c[i]->round_done ) / c[i]->throughput;
-
-                if( c[i]->eta > nwipe_misc_thread_data->maxeta )
-                {
-                    nwipe_misc_thread_data->maxeta = c[i]->eta;
+                    if( c[i]->eta > nwipe_misc_thread_data->maxeta )
+                    {
+                        nwipe_misc_thread_data->maxeta = c[i]->eta;
+                    }
                 }
             }
 
