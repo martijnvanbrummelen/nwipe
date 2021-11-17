@@ -49,6 +49,7 @@ int nwipe_init_temperature( nwipe_context_t* c )
     DIR* dir2;
     const char dirpath[] = "/sys/class/hwmon";
     char dirpath_tmp[256];
+    char dirpath_tmp2[256];
     char dirpath_hwmonX[256];
     char device[256];
     char device_context_name[256];
@@ -94,16 +95,42 @@ int nwipe_init_temperature( nwipe_context_t* c )
                 strcat( dirpath_tmp, "/" );
                 strcat( dirpath_tmp, dp->d_name );
                 strcpy( dirpath_hwmonX, dirpath_tmp );
+                strcpy( dirpath_tmp2, dirpath_tmp );
                 strcat( dirpath_tmp, "/device/block" );
 
                 /* Is this hardware monitor a block device ? i.e. does
                  * /sys/class/hwmon/hwmonX/device/block exist?*/
 
-                if( ( dir2 = opendir( dirpath_tmp ) ) != NULL )
+                if( ( dir2 = opendir( dirpath_tmp ) ) == NULL )
+                {
+                    /* If not then we search the parent directory ../device/
+                     * for the device name rather than ../device/block/ */
+                    strcat( dirpath_tmp2, "/device" );
+                    strcpy( dirpath_tmp, dirpath_tmp2 );
+
+                    if( ( dir2 = opendir( dirpath_tmp ) ) == NULL )
+                    {
+                        nwipe_log( NWIPE_LOG_ERROR, "hwmon: Can't open /sys/class/hwmon/hwmonX/ or ../hwmonX/block" );
+                        continue;
+                    }
+                }
+
+                if( nwipe_options.verbose )
+                {
+                    nwipe_log( NWIPE_LOG_DEBUG, "hwmon: dirpath_tmp=%s", dirpath_tmp );
+                }
+
+                if( dir2 != NULL )
+                // if( ( dir2 = opendir( dirpath_tmp ) ) != NULL )
                 {
                     /* Read the device name */
                     while( ( dp2 = readdir( dir2 ) ) != NULL )
                     {
+                        if( nwipe_options.verbose )
+                        {
+                            nwipe_log( NWIPE_LOG_DEBUG, "hwmon: dirpath_tmp=%s/%s", dirpath_tmp, &dp2->d_name[0] );
+                        }
+
                         /* Skip the '.' and '..' directories */
                         if( dp2->d_name[0] == '.' )
                         {
