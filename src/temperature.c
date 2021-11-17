@@ -103,8 +103,9 @@ int nwipe_init_temperature( nwipe_context_t* c )
 
                 if( ( dir2 = opendir( dirpath_tmp ) ) == NULL )
                 {
-                    /* If not then we search the parent directory ../device/
-                     * for the device name rather than ../device/block/ */
+                    /* If /sys/class/hwmon/hwmonX/device/block does not
+                     * exist, then we search /sys/class/hwmon/hwmonX/device/nvme/nvme0
+                     * for the device name rather than */
                     strcat( dirpath_tmp2, "/device/nvme/nvme0" );
                     strcpy( dirpath_tmp, dirpath_tmp2 );
 
