@@ -105,12 +105,13 @@ int nwipe_init_temperature( nwipe_context_t* c )
                 {
                     /* If not then we search the parent directory ../device/
                      * for the device name rather than ../device/block/ */
-                    strcat( dirpath_tmp2, "/device" );
+                    strcat( dirpath_tmp2, "/device/nvme/nvme0" );
                     strcpy( dirpath_tmp, dirpath_tmp2 );
 
                     if( ( dir2 = opendir( dirpath_tmp ) ) == NULL )
                     {
-                        nwipe_log( NWIPE_LOG_ERROR, "hwmon: Can't open /sys/class/hwmon/hwmonX/ or ../hwmonX/block" );
+                        nwipe_log( NWIPE_LOG_ERROR,
+                                   "hwmon: Can't open /sys/class/hwmon/hwmonX/block or ../hwmonX/device/nvme/nvme0" );
                         continue;
                     }
                 }
