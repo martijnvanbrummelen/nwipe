@@ -758,7 +758,7 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
         /* Any errors ? if so set the exclamation_flag and fail message,
          * All status messages should be eight characters EXACTLY !
          */
-        if( c[i]->result < 0 )
+        if( c[i]->pass_errors != 0 || c[i]->verify_errors != 0 || c[i]->fsyncdata_errors != 0 )
         {
             strncpy( exclamation_flag, "!", 1 );
             exclamation_flag[1] = 0;
@@ -768,44 +768,32 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
         }
         else
         {
-
-            if( c[i]->pass_errors != 0 || c[i]->verify_errors != 0 )
+            if( c[i]->wipe_status == 0 )
             {
-                strncpy( exclamation_flag, "!", 1 );
+                strncpy( exclamation_flag, " ", 1 );
                 exclamation_flag[1] = 0;
 
-                strncpy( status, "-FAILED-", 8 );
+                strncpy( status, " Erased ", 8 );
                 status[8] = 0;
             }
             else
             {
-                if( c[i]->wipe_status == 0 )
+                if( user_abort == 1 )
                 {
-                    strncpy( exclamation_flag, " ", 1 );
+                    strncpy( exclamation_flag, "!", 1 );
                     exclamation_flag[1] = 0;
 
-                    strncpy( status, " Erased ", 8 );
+                    strncpy( status, "UABORTED", 8 );
                     status[8] = 0;
                 }
                 else
                 {
-                    if( user_abort == 1 )
-                    {
-                        strncpy( exclamation_flag, "!", 1 );
-                        exclamation_flag[1] = 0;
+                    /* If this ever happens, there is a bug ! */
+                    strncpy( exclamation_flag, " ", 1 );
+                    exclamation_flag[1] = 0;
 
-                        strncpy( status, "UABORTED", 8 );
-                        status[8] = 0;
-                    }
-                    else
-                    {
-                        /* If this ever happens, there is a bug ! */
-                        strncpy( exclamation_flag, " ", 1 );
-                        exclamation_flag[1] = 0;
-
-                        strncpy( status, "INSANITY", 8 );
-                        status[8] = 0;
-                    }
+                    strncpy( status, "INSANITY", 8 );
+                    status[8] = 0;
                 }
             }
         }

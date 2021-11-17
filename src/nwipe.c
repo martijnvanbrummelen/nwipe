@@ -291,6 +291,9 @@ int main( int argc, char** argv )
         {
             nwipe_selected += 1;
         }
+
+        /* Initialise the wipe result value */
+        c1[i]->result = 0;
     }
 
     /* Pass the number selected to the struct for other threads */
@@ -598,6 +601,19 @@ int main( int argc, char** argv )
             close( c2[i]->device_fd );
         }
     }
+    if( nwipe_options.verbose )
+    {
+        for( i = 0; i < nwipe_selected; i++ )
+        {
+            nwipe_log( NWIPE_LOG_DEBUG,
+                       "Status: %s, result=%d, pass_errors=%llu, verify_errors=%llu, fsync_errors=%llu",
+                       c2[i]->device_name,
+                       c2[i]->result,
+                       c2[i]->pass_errors,
+                       c2[i]->verify_errors,
+                       c2[i]->fsyncdata_errors );
+        }
+    }
 
     /* if no wipe threads started then zero each selected drive result flag,
      * as we don't need to report fatal/non fatal errors if no wipes were ever started ! */
@@ -613,22 +629,21 @@ int main( int argc, char** argv )
         for( i = 0; i < nwipe_selected; i++ )
         {
             /* Check for non-fatal errors. */
-            if( c2[i]->result > 0 )
+            if( c2[i]->result != 0 || c2[i]->pass_errors != 0 || c2[i]->verify_errors != 0
+                || c2[i]->fsyncdata_errors != 0 )
             {
-                nwipe_log( NWIPE_LOG_FATAL, "Nwipe exited with non fatal errors on device = %s\n", c2[i]->device_name );
+                nwipe_log( NWIPE_LOG_FATAL,
+                           "Nwipe exited with errors on device = %s, see log for specific error\n",
+                           c2[i]->device_name );
+                nwipe_log( NWIPE_LOG_DEBUG,
+                           "Status: %s, result=%d, pass_errors=%llu, verify_errors=%llu, fsync_errors=%llu",
+                           c2[i]->device_name,
+                           c2[i]->result,
+                           c2[i]->pass_errors,
+                           c2[i]->verify_errors,
+                           c2[i]->fsyncdata_errors );
                 non_fatal_errors_flag = 1;
                 return_status = 1;
-            }
-        }
-
-        for( i = 0; i < nwipe_selected; i++ )
-        {
-            /* Check for fatal errors. */
-            if( c2[i]->result < 0 )
-            {
-                nwipe_log( NWIPE_LOG_ERROR, "Nwipe exited with fatal errors on device = %s\n", c2[i]->device_name );
-                fatal_errors_flag = 1;
-                return_status = -1;
             }
         }
     }

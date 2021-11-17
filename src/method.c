@@ -804,8 +804,6 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
     /* For the selected method, calculate the correct round_size value (for correct percentage calculation) */
     calculate_round_size( c );
 
-    c->result = c->round_size;
-
     /* If only verifying then the round size is the device size */
     if( nwipe_options.method == &nwipe_verify_zero || nwipe_options.method == &nwipe_verify_one )
     {
