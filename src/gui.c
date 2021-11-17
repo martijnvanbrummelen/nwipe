@@ -2698,11 +2698,11 @@ void* nwipe_gui_status( void* ptr )
 
                 if( c[i]->verify_errors )
                 {
-                    wprintw( main_window, "[verify errors: %llu] ", c[i]->verify_errors );
+                    wprintw( main_window, "[verr:%llu] ", c[i]->verify_errors );
                 }
                 if( c[i]->pass_errors )
                 {
-                    wprintw( main_window, "[pass errors: %llu] ", c[i]->pass_errors );
+                    wprintw( main_window, "[perr:%llu] ", c[i]->pass_errors );
                 }
                 if( c[i]->wipe_status == 1 )
                 {
