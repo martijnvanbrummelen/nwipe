@@ -401,6 +401,9 @@ void nwipe_gui_create_main_window()
 
 void nwipe_gui_create_header_window()
 {
+    char anon_label[] = " (ANONYMIZED)";
+    char bannerplus[80];
+
     /* Create the header window. */
     header_window = newwin( NWIPE_GUI_HEADER_H, NWIPE_GUI_HEADER_W, NWIPE_GUI_HEADER_Y, NWIPE_GUI_HEADER_X );
     header_panel = new_panel( header_window );
@@ -419,8 +422,16 @@ void nwipe_gui_create_header_window()
     /* Clear the header window. */
     werase( header_window );
 
+    /* If in anonymized mode modify the title banner to reflect this */
+    strcpy( bannerplus, banner );
+
+    if( nwipe_options.quiet )
+    {
+        strcat( bannerplus, anon_label );
+    }
+
     /* Print the product banner. */
-    nwipe_gui_title( header_window, banner );
+    nwipe_gui_title( header_window, bannerplus );
 
     /* Refresh the header window */
     wnoutrefresh( header_window );
