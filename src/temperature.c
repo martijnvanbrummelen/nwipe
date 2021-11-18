@@ -85,46 +85,71 @@ int nwipe_init_temperature( nwipe_context_t* c )
 
     if( ( dir = opendir( dirpath ) ) != NULL )
     {
+        /* Process each hwmonX sub directory  in turn */
         while( ( dp = readdir( dir ) ) != NULL )
         {
             /* Does the directory start with 'hwmon' */
-
             if( strstr( dp->d_name, "hwmon" ) != NULL )
             {
+                if( nwipe_options.verbose )
+                {
+                    /* print a empty line to separate the different hwmon sensors */
+                    nwipe_log( NWIPE_LOG_DEBUG, "hwmon:" );
+                }
                 strcpy( dirpath_tmp, dirpath );
                 strcat( dirpath_tmp, "/" );
                 strcat( dirpath_tmp, dp->d_name );
                 strcpy( dirpath_hwmonX, dirpath_tmp );
-                strcpy( dirpath_tmp2, dirpath_tmp );
                 strcat( dirpath_tmp, "/device/block" );
 
-                /* Is this hardware monitor a block device ? i.e. does
-                 * /sys/class/hwmon/hwmonX/device/block exist?*/
+                /* Depending on the class of block device, the device name may
+                 * appear in different sub-directories. So we try to open each
+                 * directory that are known to contain block devices. These are
+                 * /sys/class/hwmon/hwmonX/device/block
+                 * /sys/class/hwmon/hwmonX/device/nvme/nvme0
+                 * /sys/class/hwmon/hwmonX/device/
+                 */
 
                 if( ( dir2 = opendir( dirpath_tmp ) ) == NULL )
                 {
-                    /* If /sys/class/hwmon/hwmonX/device/block does not
-                     * exist, then we search /sys/class/hwmon/hwmonX/device/nvme/nvme0
-                     * for the device name rather than */
+                    if( nwipe_options.verbose )
+                    {
+                        nwipe_log( NWIPE_LOG_DEBUG, "hwmon: %s doesn't exist, trying next path", dirpath_tmp );
+                    }
+                    strcpy( dirpath_tmp2, dirpath_hwmonX );
                     strcat( dirpath_tmp2, "/device/nvme/nvme0" );
                     strcpy( dirpath_tmp, dirpath_tmp2 );
 
                     if( ( dir2 = opendir( dirpath_tmp ) ) == NULL )
                     {
-                        nwipe_log( NWIPE_LOG_ERROR,
-                                   "hwmon: Can't open /sys/class/hwmon/hwmonX/block or ../hwmonX/device/nvme/nvme0" );
-                        continue;
+                        if( nwipe_options.verbose )
+                        {
+                            nwipe_log( NWIPE_LOG_DEBUG, "hwmon: %s doesn't exist, trying next path", dirpath_tmp );
+                        }
+
+                        strcpy( dirpath_tmp2, dirpath_hwmonX );
+                        strcat( dirpath_tmp2, "/device" );
+                        strcpy( dirpath_tmp, dirpath_tmp2 );
+
+                        if( ( dir2 = opendir( dirpath_tmp ) ) == NULL )
+                        {
+                            if( nwipe_options.verbose )
+                            {
+                                nwipe_log(
+                                    NWIPE_LOG_DEBUG, "hwmon: %s doesn't exist, no more paths to try", dirpath_tmp );
+                            }
+                            continue;
+                        }
                     }
                 }
 
-                if( nwipe_options.verbose )
-                {
-                    nwipe_log( NWIPE_LOG_DEBUG, "hwmon: dirpath_tmp=%s", dirpath_tmp );
-                }
-
                 if( dir2 != NULL )
-                // if( ( dir2 = opendir( dirpath_tmp ) ) != NULL )
                 {
+                    if( nwipe_options.verbose )
+                    {
+                        nwipe_log( NWIPE_LOG_DEBUG, "hwmon: Found %s", dirpath_tmp );
+                    }
+
                     /* Read the device name */
                     while( ( dp2 = readdir( dir2 ) ) != NULL )
                     {
@@ -157,9 +182,11 @@ int nwipe_init_temperature( nwipe_context_t* c )
                         {
                             /* Match ! This hwmon device matches this context, so write the hwmonX path to the context
                              */
-                            nwipe_log(
-                                NWIPE_LOG_NOTICE, "hwmon: Device %s has \'hwmon\' temperature monitoring", device );
-
+                            nwipe_log( NWIPE_LOG_NOTICE, "hwmon: %s has temperature monitoring", device, dirpath_tmp );
+                            if( nwipe_options.verbose )
+                            {
+                                nwipe_log( NWIPE_LOG_DEBUG, "hwmon: %s found in %s)", device, dirpath_tmp );
+                            }
                             /* Copy the hwmon path to the drive context structure */
                             strcpy( c->temp1_path, dirpath_hwmonX );
                         }
