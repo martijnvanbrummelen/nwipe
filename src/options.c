@@ -552,12 +552,13 @@ void display_help()
     puts( "                          random / prng / stream - PRNG Stream" );
     puts( "                          zero / quick           - Overwrite with zeros" );
     puts( "                          one                    - Overwrite with ones (0xFF)" );
-    puts( "                          verify_zero            - Verifies disk is zero filled\n" );
+    puts( "                          verify_zero            - Verifies disk is zero filled" );
     puts( "                          verify_one             - Verifies disk is 0xFF filled\n" );
     puts( "  -l, --logfile=FILE      Filename to log to. Default is STDOUT\n" );
     puts( "  -p, --prng=METHOD       PRNG option (mersenne|twister|isaac)\n" );
-    puts( "  -q, --quiet             Anonymize logs/GUI by removing serial numbers" );
-    puts( "                          XXXXXX = S/N exists, ????? = S/N not obtainable \n" );
+    puts( "  -q, --quiet             Anonymize logs and the GUI by removing unique data, i.e." );
+    puts( "                          serial numbers, LU WWN Device ID, and SMBIOS/DMI data" );
+    puts( "                          XXXXXX = S/N exists, ????? = S/N not obtainable\n" );
     puts( "  -r, --rounds=NUM        Number of times to wipe the device using the selected" );
     puts( "                          method (default: 1)\n" );
     puts( "      --noblank           Do NOT blank disk after wipe" );
