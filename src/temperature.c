@@ -185,7 +185,7 @@ int nwipe_init_temperature( nwipe_context_t* c )
                             nwipe_log( NWIPE_LOG_NOTICE, "hwmon: %s has temperature monitoring", device, dirpath_tmp );
                             if( nwipe_options.verbose )
                             {
-                                nwipe_log( NWIPE_LOG_DEBUG, "hwmon: %s found in %s)", device, dirpath_tmp );
+                                nwipe_log( NWIPE_LOG_DEBUG, "hwmon: %s found in %s", device, dirpath_tmp );
                             }
                             /* Copy the hwmon path to the drive context structure */
                             strcpy( c->temp1_path, dirpath_hwmonX );
