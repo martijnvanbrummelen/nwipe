@@ -93,7 +93,7 @@ typedef struct nwipe_context_t_
     char* device_name;  // The device file name.
     char device_name_without_path[100];
     char gui_device_name[100];
-    long long device_size;  // The device size in bytes.
+    unsigned long long device_size;  // The device size in bytes.
     char* device_size_text;  // The device size in a more (human)readable format.
     char device_size_txt[NWIPE_DEVICE_SIZE_TXT_LENGTH];  // The device size in a more (human)readable format.
     char* device_model;  // The model of the device.
