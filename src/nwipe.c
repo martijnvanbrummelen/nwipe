@@ -456,7 +456,7 @@ int main( int argc, char** argv )
             else
             {
                 nwipe_log( NWIPE_LOG_NOTICE,
-                           "%s, sect/blk/dev %llu/%i/%llu",
+                           "%s, sect/blk/dev %i/%i/%llu",
                            c2[i]->device_name,
                            c2[i]->device_sector_size,
                            c2[i]->device_block_size,
