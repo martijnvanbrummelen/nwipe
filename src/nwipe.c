@@ -65,8 +65,8 @@ int main( int argc, char** argv )
     pthread_t nwipe_sigint_thread;  // The thread ID of the sigint handler.
 
     char modprobe_command[] = "modprobe %s";
-    char modprobe_command2[] = "modprobe %s";
-    char modprobe_command3[] = "modprobe %s";
+    char modprobe_command2[] = "/sbin/modprobe %s";
+    char modprobe_command3[] = "/usr/sbin/modprobe %s";
     char module_shortform[50];
     char final_cmd_modprobe[sizeof( modprobe_command ) + sizeof( module_shortform )];
 
