@@ -64,6 +64,12 @@ int main( int argc, char** argv )
     pthread_t nwipe_gui_thread = 0;  // The thread ID of the GUI thread.
     pthread_t nwipe_sigint_thread;  // The thread ID of the sigint handler.
 
+    char modprobe_command[] = "modprobe %s";
+    char modprobe_command2[] = "modprobe %s";
+    char modprobe_command3[] = "modprobe %s";
+    char module_shortform[50];
+    char final_cmd_modprobe[sizeof( modprobe_command ) + sizeof( module_shortform )];
+
     /* The entropy source file handle. */
     int nwipe_entropy;
 
@@ -204,9 +210,46 @@ int main( int argc, char** argv )
     }
 
     /* Makesure the drivetemp module is loaded, else drives hwmon entries won't appear in /sys/class/hwmon */
-    if( system( "modprobe drivetemp" ) != 0 )
+    final_cmd_modprobe[0] = 0;
+
+    /* The kernel module we are going to load */
+    strcpy( module_shortform, "drivetemp" );
+
+    /* Determine whether we can access modprobe, required if the PATH environment is not setup ! (Debian sid 'su' as
+     * opposed to 'su -' */
+
+    if( system( "which modprobe > /dev/null 2>&1" ) )
     {
-        nwipe_log( NWIPE_LOG_WARNING, "hwmon: Unable to load module drivetemp, drivetemp may be build into kernel?" );
+        if( system( "which /sbin/modprobe > /dev/null 2>&1" ) )
+        {
+            if( system( "which /usr/sbin/modprobe > /dev/null 2>&1" ) )
+            {
+                nwipe_log( NWIPE_LOG_WARNING, "modprobe command not found. Install kmod package (modprobe)) !" );
+                nwipe_log( NWIPE_LOG_WARNING, "Most temperature monitoring may be unavailable as module drivetemp" );
+                nwipe_log( NWIPE_LOG_WARNING, "could not be loaded. drivetemp is not available on kernels < v5.5" );
+            }
+            else
+            {
+                sprintf( final_cmd_modprobe, modprobe_command3, module_shortform );
+            }
+        }
+        else
+        {
+            sprintf( final_cmd_modprobe, modprobe_command2, module_shortform );
+        }
+    }
+    else
+    {
+        sprintf( final_cmd_modprobe, modprobe_command, module_shortform );
+    }
+
+    /* load the drivetemp module */
+    if( system( final_cmd_modprobe ) != 0 )
+    {
+        nwipe_log( NWIPE_LOG_WARNING, "hwmon: Unable to load module drivetemp, temperatures may be unavilable." );
+        nwipe_log( NWIPE_LOG_WARNING, "hwmon: It's possible the drivetemp software isn't modular but built-in" );
+        nwipe_log( NWIPE_LOG_WARNING, "hwmon: to the kernel, as is the case with ShredOS.x86_64 in which case" );
+        nwipe_log( NWIPE_LOG_WARNING, "hwmon: the temperatures will actually be available despite this issue." );
     }
     else
     {
