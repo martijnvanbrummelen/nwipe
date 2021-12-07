@@ -76,13 +76,6 @@ extern int errno;
 /* 0=wipe not yet started, 1=wipe has been started by the user */
 extern int global_wipe_status;
 
-/* Global array to hold log values to print when logging to STDOUT */
-/* char **log_lines;
-int log_current_element = 0;
-int log_elements_allocated = 0;
-int log_elements_displayed = 0;
-pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER; */
-
 /* Ncurses headers. */
 #ifdef NCURSES_IN_SUBDIR
 #include <ncurses/ncurses.h>
@@ -112,6 +105,8 @@ typedef unsigned char u8;
 #define BLKBSZGET _IOR( 0x12, 112, size_t )
 #define BLKBSZSET _IOW( 0x12, 113, size_t )
 #define BLKGETSIZE64 _IOR( 0x12, 114, sizeof( u64 ) )
+
+#define THREAD_CANCELLATION_TIMEOUT 10
 
 /* This is required for ioctl FDFLUSH. */
 #include <linux/fd.h>

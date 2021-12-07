@@ -61,6 +61,8 @@ int main( int argc, char** argv )
     int nwipe_enumerated;  // The number of contexts that have been enumerated.
     int nwipe_error = 0;  // An error counter.
     int nwipe_selected = 0;  // The number of contexts that have been selected.
+    int any_threads_still_running;  // used in wipe thread cancellation wait loop
+    int thread_timeout_counter;  // timeout thread cancellation after THREAD_CANCELLATION_TIMEOUT seconds
     pthread_t nwipe_gui_thread = 0;  // The thread ID of the GUI thread.
     pthread_t nwipe_sigint_thread;  // The thread ID of the sigint handler.
 
@@ -587,7 +589,6 @@ int main( int argc, char** argv )
             if( nwipe_options.verbose )
             {
                 nwipe_log( NWIPE_LOG_INFO, "Requesting wipe thread cancellation for %s", c2[i]->device_name );
-                nwipe_log( NWIPE_LOG_INFO, "Please wait.." );
             }
             pthread_cancel( c2[i]->thread );
         }
@@ -622,27 +623,74 @@ int main( int argc, char** argv )
     }
 
     /* Now join the wipe threads and wait until they have terminated */
-    for( i = 0; i < nwipe_selected; i++ )
+    any_threads_still_running = 1;
+    thread_timeout_counter = THREAD_CANCELLATION_TIMEOUT;
+    while( any_threads_still_running )
     {
-
-        if( c2[i]->thread )
+        /* quit waiting if we've tried 'thread_timeout_counter' times */
+        if( thread_timeout_counter == 0 )
         {
-            /* Joins the thread and waits for completion before continuing */
-            r = pthread_join( c2[i]->thread, NULL );
-            if( r != 0 )
-            {
-                nwipe_log( NWIPE_LOG_WARNING, "main()>pthread_join():Error when waiting for wipe thread to cancel." );
-            }
-            c2[i]->thread = 0; /* Zero the thread so we know it's been cancelled */
-
-            if( nwipe_options.verbose )
-            {
-                nwipe_log( NWIPE_LOG_INFO, "Wipe thread for device %s has been cancelled", c2[i]->device_name );
-            }
-
-            /* Close the device file descriptor. */
-            close( c2[i]->device_fd );
+            break;
         }
+
+        any_threads_still_running = 0;
+        for( i = 0; i < nwipe_selected; i++ )
+        {
+            if( c2[i]->thread )
+            {
+                printf( "\nWaiting for wipe thread to cancel for %s\n", c2[i]->device_name );
+
+                /* Joins the thread and waits for completion before continuing */
+                r = pthread_join( c2[i]->thread, NULL );
+                if( r != 0 )
+                {
+                    nwipe_log( NWIPE_LOG_ERROR,
+                               "Error joining the wipe thread when waiting for thread to cancel.",
+                               c2[i]->device_name );
+
+                    if( r == EDEADLK )
+                    {
+                        nwipe_log( NWIPE_LOG_ERROR,
+                                   "Error joining the wipe thread: EDEADLK: Deadlock detected.",
+                                   c2[i]->device_name );
+                    }
+                    else
+                    {
+                        if( r == EINVAL )
+                        {
+                            nwipe_log( NWIPE_LOG_ERROR,
+                                       "Error joining the wipe thread: %s EINVAL: thread is not joinable.",
+                                       c2[i]->device_name );
+                        }
+                        else
+                        {
+                            if( r == ESRCH )
+                            {
+                                nwipe_log( NWIPE_LOG_ERROR,
+                                           "Error joining the wipe thread: %s ESRCH: no matching thread found",
+                                           c2[i]->device_name );
+                            }
+                        }
+                    }
+
+                    any_threads_still_running = 1;
+                }
+                else
+                {
+                    c2[i]->thread = 0; /* Zero the thread so we know it's been cancelled */
+
+                    if( nwipe_options.verbose )
+                    {
+                        nwipe_log( NWIPE_LOG_INFO, "Wipe thread for device %s has terminated", c2[i]->device_name );
+                    }
+
+                    /* Close the device file descriptor. */
+                    close( c2[i]->device_fd );
+                }
+            }
+        }
+        thread_timeout_counter--;
+        sleep( 1 );
     }
     if( nwipe_options.verbose )
     {
