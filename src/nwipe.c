@@ -610,9 +610,12 @@ int main( int argc, char** argv )
         {
             nwipe_log( NWIPE_LOG_WARNING, "main()>pthread_join():Error when waiting for GUI thread to cancel." );
         }
-        if( nwipe_options.verbose )
+        else
         {
-            nwipe_log( NWIPE_LOG_INFO, "GUI compute_stats thread has been cancelled" );
+            if( nwipe_options.verbose )
+            {
+                nwipe_log( NWIPE_LOG_INFO, "GUI compute_stats thread has been cancelled" );
+            }
         }
     }
 
