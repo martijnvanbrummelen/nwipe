@@ -459,7 +459,7 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
     char final_cmd_smartctl[sizeof( smartctl_command ) + 256];
     char* pResult;
     char smartctl_labels_to_anonymize[][18] = {
-        "Serial Number:", "LU WWN Device Id:", "" /* Don't remove this empty string !, important */
+        "serial number:", "lu wwn device id:", "logical unit id:", "" /* Don't remove this empty string !, important */
     };
 
     /* Initialise return value */
@@ -660,6 +660,23 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
             /* Read the output a line at a time - output it. */
             while( fgets( result, sizeof( result ) - 1, fp ) != NULL )
             {
+                /* Convert the label, i.e everything before the ':' to lower case, it's required to
+                 * convert to lower case as smartctl seems to use inconsistent case when labeling
+                 * for serial number, i.e mostly it produces labels "Serial Number:" but occasionaly
+                 * it produces a label "Serial number:" */
+
+                idx = 0;
+                while( result[idx] != 0 && result[idx] != ':' )
+                {
+                    /* If upper case alpha character, change to lower case */
+                    if( result[idx] >= 'A' && result[idx] <= 'Z' )
+                    {
+                        result[idx] += 32;
+                    }
+
+                    idx++;
+                }
+
                 if( nwipe_options.verbose && result[0] != 0x0A )
                 {
                     strip_CR_LF( result );
@@ -704,7 +721,7 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
                     nwipe_log( NWIPE_LOG_DEBUG, "smartctl: %s", result );
                 }
 
-                if( strstr( result, "Serial Number:" ) != 0 )
+                if( strstr( result, "serial number:" ) != 0 )
                 {
                     /* strip any leading or trailing spaces and left justify, +15 is the length of "Serial Number:" */
                     trim( &result[15] );
@@ -714,24 +731,24 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
 
                 if( *bus == 0 )
                 {
-                    if( strstr( result, "Transport protocol:" ) != 0 )
+                    if( strstr( result, "transport protocol:" ) != 0 )
                     {
                         /* strip any leading or trailing spaces and left justify, +4 is the length of "bus type:" */
                         trim( &result[19] );
 
-                        if( strncmp( &result[19], "SAS", 3 ) == 0 )
+                        if( strncmp( &result[19], "sas", 3 ) == 0 )
                         {
                             *bus = NWIPE_DEVICE_SAS;
                         }
                     }
 
-                    if( strstr( result, "SATA Version is:" ) != 0 )
+                    if( strstr( result, "sata version is:" ) != 0 )
                     {
 
                         /* strip any leading or trailing spaces and left justify, +4 is the length of "bus type:" */
                         trim( &result[16] );
 
-                        if( strncmp( &result[16], "SATA", 4 ) == 0 )
+                        if( strncmp( &result[16], "sata", 4 ) == 0 )
                         {
                             *bus = NWIPE_DEVICE_ATA;
                         }
