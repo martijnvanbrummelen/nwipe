@@ -17,6 +17,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <assert.h>
+
 #include "nwipe.h"
 #include "prng.h"
 #include "context.h"
@@ -24,31 +26,33 @@
 
 #include "mt19937ar-cok/mt19937ar-cok.h"
 #include "isaac_rand/isaac_rand.h"
+#include "isaac_rand/isaac64.h"
 
 nwipe_prng_t nwipe_twister = { "Mersenne Twister (mt19937ar-cok)", nwipe_twister_init, nwipe_twister_read };
 
 nwipe_prng_t nwipe_isaac = { "ISAAC (rand.c 20010626)", nwipe_isaac_init, nwipe_isaac_read };
+nwipe_prng_t nwipe_isaac64 = { "ISAAC-64 (isaac64.c)", nwipe_isaac64_init, nwipe_isaac64_read };
 
-int nwipe_u32tobuffer( u8* buffer, u32 rand, int len )
+/* Print given number of bytes from unsigned integer number to a byte stream buffer starting with low-endian. */
+static void nwipe_u32tobuffer( u8* buffer, u32 val, int len )
 {
-    /*
-     * Print given number of bytes from unsigned integer number to a byte stream buffer starting with low-endian.
-     */
+    assert( len <= sizeof(u32) );
     int i;
-    u8 c;  // single char
-    if( len > sizeof( u32 ) )
-    {
-        nwipe_log( NWIPE_LOG_FATAL, "Tried to print longer number than the value passed." );
-        len = sizeof( u32 );
-    }
-
     for( i = 0; i < len; i++ )
     {
-        c = rand & 0xFFUL;
-        rand = rand >> 8;
-        buffer[i] = c;
+        buffer[i] = (u8)(val & 0xFFUL);
+        val = val >> 8;
     }
-    return 0;
+}
+static void nwipe_u64tobuffer( u8* buffer, u64 val, int len )
+{
+    assert ( len <= sizeof(u64) );
+    int i;
+    for( i = 0; i < len; i++ )
+    {
+        buffer[i] = (u8)(val & 0xFFUL);
+        val = val >> 8;
+    }
 }
 
 int nwipe_twister_init( NWIPE_PRNG_INIT_SIGNATURE )
@@ -152,7 +156,6 @@ int nwipe_isaac_read( NWIPE_PRNG_READ_SIGNATURE )
     {
         /* get the next 32bit random number */
         isaac( isaac_state );
-
         nwipe_u32tobuffer( (u8*) ( buffer + i ), isaac_state->randrsl[0], SIZE_OF_ISAAC );
         i = i + SIZE_OF_ISAAC;
     }
@@ -160,10 +163,86 @@ int nwipe_isaac_read( NWIPE_PRNG_READ_SIGNATURE )
     /* If there is some remainder copy only relevant number of bytes to not overflow the buffer. */
     if( remain > 0 )
     {
-        /* get the next 32bit random number */
         isaac( isaac_state );
+        nwipe_u32tobuffer( (u8*) ( buffer + i ), isaac_state->randrsl[0], remain );
+    }
 
-        nwipe_u32tobuffer( (u8*) ( buffer + i ), isaac_state->randrsl[0], SIZE_OF_ISAAC );
+    return 0;
+}
+
+int nwipe_isaac64_init( NWIPE_PRNG_INIT_SIGNATURE )
+{
+    int count;
+    rand64ctx* isaac_state = *state;
+
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising ISAAC-64 prng" );
+
+    if( *state == NULL )
+    {
+        /* This is the first time that we have been called. */
+        *state = malloc( sizeof( rand64ctx ) );
+        isaac_state = *state;
+
+        /* Check the memory allocation. */
+        if( isaac_state == 0 )
+        {
+            nwipe_perror( errno, __FUNCTION__, "malloc" );
+            nwipe_log( NWIPE_LOG_FATAL, "Unable to allocate memory for the isaac state." );
+            return -1;
+        }
+    }
+
+    /* Take the minimum of the isaac seed size and available entropy. */
+    if( sizeof( isaac_state->randrsl ) < seed->length )
+    {
+        count = sizeof( isaac_state->randrsl );
+    }
+    else
+    {
+        memset( isaac_state->randrsl, 0, sizeof( isaac_state->randrsl ) );
+        count = seed->length;
+    }
+
+    if( count == 0 )
+    {
+        /* Start ISACC without a seed. */
+        randinit( isaac_state, 0 );
+    }
+    else
+    {
+        /* Seed the ISAAC state with entropy. */
+        memcpy( isaac_state->randrsl, seed->s, count );
+
+        /* The second parameter indicates that randrsl is non-empty. */
+        randinit( isaac_state, 1 );
+    }
+
+    return 0;
+}
+
+int nwipe_isaac64_read( NWIPE_PRNG_READ_SIGNATURE )
+{
+    u64 i = 0;
+    u64 ii;
+    // the values of ISAAC-64 is strictly 8 bytes
+    u64 words = count / SIZE_OF_ISAAC64;
+    u64 remain = count % SIZE_OF_ISAAC64;
+
+    randctx* isaac_state = *state;
+
+    /* ISAAC-64 returns 8-bytes per call, so progress by 8 bytes. */
+    for( ii = 0; ii < words; ++ii )
+    {
+        isaac64( isaac_state );
+        nwipe_u64tobuffer( (u8*)(buffer + i), isaac_state->randrsl[0], SIZE_OF_ISAAC64 );
+        i += SIZE_OF_ISAAC64;
+    }
+
+    /* If there is some remainder copy only relevant number of bytes to not overflow the buffer. */
+    if( remain > 0 )
+    {
+        isaac64( isaac_state );
+        nwipe_u64tobuffer( (u8*)(buffer + i), isaac_state->randrsl[0], remain );
     }
 
     return 0;

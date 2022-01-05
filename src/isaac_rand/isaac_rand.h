@@ -10,14 +10,10 @@ MODIFIED:
   010626: note this is public domain
 ------------------------------------------------------------------------------
 */
-#ifndef STANDARD
-#include "isaac_standard.h"
-#endif
-
 #ifndef RAND
 #define RAND
-#define RANDSIZL   (4)  /* I recommend 8 for crypto, 4 for simulations */
-#define RANDSIZ    (1<<RANDSIZL)
+
+#include "isaac_standard.h"
 
 /* context of random number generator */
 struct randctx
