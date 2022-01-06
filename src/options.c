@@ -40,6 +40,7 @@ int nwipe_options_parse( int argc, char** argv )
 
     extern nwipe_prng_t nwipe_twister;
     extern nwipe_prng_t nwipe_isaac;
+    extern nwipe_prng_t nwipe_isaac64;
 
     /* The getopt() result holder. */
     int nwipe_opt;
@@ -118,7 +119,7 @@ int nwipe_options_parse( int argc, char** argv )
     nwipe_options.autonuke = 0;
     nwipe_options.autopoweroff = 0;
     nwipe_options.method = &nwipe_dodshort;
-    nwipe_options.prng = &nwipe_twister;
+    nwipe_options.prng = ( sizeof( unsigned long int ) >= 8 ) ? &nwipe_isaac64 : &nwipe_isaac;
     nwipe_options.rounds = 1;
     nwipe_options.noblank = 0;
     nwipe_options.nousb = 0;
