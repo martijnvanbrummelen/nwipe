@@ -1829,10 +1829,6 @@ void nwipe_gui_verify( void )
                 {
                     nwipe_options.verify = focus;
                 }
-                if( nwipe_options.verify != NWIPE_VERIFY_NONE )
-                {
-                    nwipe_options.noblank = 0;
-                }
                 return;
 
             case KEY_BACKSPACE:
