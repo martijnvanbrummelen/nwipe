@@ -54,4 +54,7 @@ typedef                 int  word;  /* fastest type available */
 #define FALSE 0
 #define SUCCESS 0  /* 1 on VAX */
 
+#define RANDSIZL   (8)  /* I recommend 8 for crypto, 4 for simulations */
+#define RANDSIZ    (1<<RANDSIZL)
+
 #endif /* STANDARD */

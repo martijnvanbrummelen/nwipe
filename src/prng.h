@@ -52,11 +52,14 @@ int nwipe_twister_read( NWIPE_PRNG_READ_SIGNATURE );
 /* ISAAC prototypes. */
 int nwipe_isaac_init( NWIPE_PRNG_INIT_SIGNATURE );
 int nwipe_isaac_read( NWIPE_PRNG_READ_SIGNATURE );
+int nwipe_isaac64_init( NWIPE_PRNG_INIT_SIGNATURE );
+int nwipe_isaac64_read( NWIPE_PRNG_READ_SIGNATURE );
 
 /* Size of the twister is not derived from the architecture, but it is strictly 4 bytes */
 #define SIZE_OF_TWISTER 4
 
-/* Size of the isaac is not derived from the architecture, but it is strictly 4 bytes */
+/* Size of the isaac/isaac64 is not derived from the architecture, but it is strictly 4 or 8 bytes */
 #define SIZE_OF_ISAAC 4
+#define SIZE_OF_ISAAC64 8
 
 #endif /* PRNG_H_ */

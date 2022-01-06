@@ -1464,10 +1464,11 @@ void nwipe_gui_prng( void )
 
     extern nwipe_prng_t nwipe_twister;
     extern nwipe_prng_t nwipe_isaac;
+    extern nwipe_prng_t nwipe_isaac64;
     extern int terminate_signal;
 
     /* The number of implemented PRNGs. */
-    const int count = 2;
+    const int count = 3;
 
     /* The first tabstop. */
     const int tab1 = 2;
@@ -1497,6 +1498,10 @@ void nwipe_gui_prng( void )
     {
         focus = 1;
     }
+    if( nwipe_options.prng == &nwipe_isaac64 )
+    {
+        focus = 2;
+    }
 
     do
     {
@@ -1506,15 +1511,16 @@ void nwipe_gui_prng( void )
         nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
 
         /* Initialize the working row. */
-        yy = 2;
+        yy = 3;
 
         /* Print the options. */
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_twister.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_isaac.label );
+        mvwprintw( main_window, yy++, tab1, "  %s", nwipe_isaac64.label );
         mvwprintw( main_window, yy++, tab1, "" );
 
         /* Print the cursor. */
-        mvwaddch( main_window, 2 + focus, tab1, ACS_RARROW );
+        mvwaddch( main_window, 3 + focus, tab1, ACS_RARROW );
 
         switch( focus )
         {
@@ -1564,6 +1570,34 @@ void nwipe_gui_prng( void )
                            yy++,
                            tab1,
                            "                                                                            " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "Performs best on a 32-bit CPU. Use ISAAC-64 if this system has a 64-bit CPU." );
+                break;
+
+            case 2:
+
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "ISAAC-64, by Bob Jenkins, is like 32-bit ISAAC, but with a minimum period of" );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "2^77 and an expected period of 2^16583. It is difficult to recover the      " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "initial PRNG state by cryptanalysis of the ISAAC-64 stream.                 " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "                                                                            " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "Performs best on a 64-bit CPU. Use ISAAC if this system has a 32-bit CPU.   " );
                 break;
 
         } /* switch */
@@ -1621,6 +1655,10 @@ void nwipe_gui_prng( void )
                 if( focus == 1 )
                 {
                     nwipe_options.prng = &nwipe_isaac;
+                }
+                if( focus == 2 )
+                {
+                    nwipe_options.prng = &nwipe_isaac64;
                 }
                 return;
 
@@ -1790,10 +1828,6 @@ void nwipe_gui_verify( void )
                 if( focus >= 0 && focus < count )
                 {
                     nwipe_options.verify = focus;
-                }
-                if( nwipe_options.verify != NWIPE_VERIFY_NONE )
-                {
-                    nwipe_options.noblank = 0;
                 }
                 return;
 
