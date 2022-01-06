@@ -22,9 +22,9 @@ typedef struct rand64ctx rand64ctx;
  If (flag==TRUE), then use the contents of randrsl[0..255] as the seed.
 ------------------------------------------------------------------------------
 */
-void randinit64(/*_ rand64ctx *r, word flag _*/);
+void rand64init(rand64ctx *r, word flag);
 
-void isaac64();
+void isaac64(rand64ctx *ctx);
 
 
 /*

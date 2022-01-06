@@ -21,8 +21,7 @@ By Bob Jenkins, 1996.  Public Domain.
   *(r++) = b = ind(mm,y>>RANDSIZL) + x; \
 }
 
-void isaac64(ctx)
-rand64ctx *ctx;
+void isaac64(rand64ctx *ctx)
 {
   register ub8 a,b,x,y,*m,*mm,*m2,*r,*mend;
   mm=ctx->mm; r=ctx->randrsl;
@@ -56,9 +55,7 @@ rand64ctx *ctx;
    h-=d; e^=g<<14; g+=h; \
 }
 
-void rand64init(ctx, flag)
-rand64ctx *ctx;
-word       flag;
+void rand64init(rand64ctx *ctx, word flag)
 {
    word i;
    ub8 a,b,c,d,e,f,g,h;
@@ -97,7 +94,7 @@ word       flag;
      }
    }
 
-   isaac64();             /* fill in the first set of results */
+   isaac64(ctx);          /* fill in the first set of results */
    ctx->randcnt=RANDSIZ;  /* prepare to use the first set of results */
 }
 

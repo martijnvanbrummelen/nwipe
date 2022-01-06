@@ -34,25 +34,41 @@ nwipe_prng_t nwipe_isaac = { "ISAAC (rand.c 20010626)", nwipe_isaac_init, nwipe_
 nwipe_prng_t nwipe_isaac64 = { "ISAAC-64 (isaac64.c)", nwipe_isaac64_init, nwipe_isaac64_read };
 
 /* Print given number of bytes from unsigned integer number to a byte stream buffer starting with low-endian. */
-static void nwipe_u32tobuffer( u8* buffer, u32 val, int len )
+static inline void u32_to_buffer( u8* restrict buffer, u32 val, const int len )
 {
-    assert( len <= sizeof(u32) );
-    int i;
-    for( i = 0; i < len; i++ )
+    for( int i = 0; i < len; ++i )
     {
-        buffer[i] = (u8)(val & 0xFFUL);
-        val = val >> 8;
+        buffer[i] = (u8) ( val & 0xFFUL );
+        val >>= 8;
     }
 }
-static void nwipe_u64tobuffer( u8* buffer, u64 val, int len )
+static inline void u64_to_buffer( u8* restrict buffer, u64 val, const int len )
 {
-    assert ( len <= sizeof(u64) );
-    int i;
-    for( i = 0; i < len; i++ )
+    for( int i = 0; i < len; ++i )
     {
-        buffer[i] = (u8)(val & 0xFFUL);
-        val = val >> 8;
+        buffer[i] = (u8) ( val & 0xFFULL );
+        val >>= 8;
     }
+}
+static inline u32 isaac_nextval( randctx* restrict ctx )
+{
+    if( ctx->randcnt == 0 )
+    {
+        isaac( ctx );
+        ctx->randcnt = RANDSIZ;
+    }
+    ctx->randcnt--;
+    return ctx->randrsl[ctx->randcnt];
+}
+static inline u64 isaac64_nextval( rand64ctx* restrict ctx )
+{
+    if( ctx->randcnt == 0 )
+    {
+        isaac64( ctx );
+        ctx->randcnt = RANDSIZ;
+    }
+    ctx->randcnt--;
+    return ctx->randrsl[ctx->randcnt];
 }
 
 int nwipe_twister_init( NWIPE_PRNG_INIT_SIGNATURE )
@@ -70,23 +86,23 @@ int nwipe_twister_init( NWIPE_PRNG_INIT_SIGNATURE )
 
 int nwipe_twister_read( NWIPE_PRNG_READ_SIGNATURE )
 {
-    u32 i = 0;
-    u32 ii;
-    u32 words = count / SIZE_OF_TWISTER;  // the values of twister_genrand_int32 is strictly 4 bytes
-    u32 remain = count % SIZE_OF_TWISTER;  // the values of twister_genrand_int32 is strictly 4 bytes
+    u8* restrict bufpos = buffer;
+    size_t words = count / SIZE_OF_TWISTER;  // the values of twister_genrand_int32 is strictly 4 bytes
+    size_t remain = count % SIZE_OF_TWISTER;  // the values of twister_genrand_int32 is strictly 4 bytes
 
     /* Twister returns 4-bytes per call, so progress by 4 bytes. */
-    for( ii = 0; ii < words; ++ii )
+    for( size_t ii = 0; ii < words; ++ii )
     {
-        nwipe_u32tobuffer( (u8*) ( buffer + i ), twister_genrand_int32( (twister_state_t*) *state ), SIZE_OF_TWISTER );
-        i = i + SIZE_OF_TWISTER;
+        u32_to_buffer( bufpos, twister_genrand_int32( (twister_state_t*) *state ), SIZE_OF_TWISTER );
+        bufpos += SIZE_OF_TWISTER;
     }
 
     /* If there is some remainder copy only relevant number of bytes to not
      * overflow the buffer. */
     if( remain > 0 )
     {
-        nwipe_u32tobuffer( (u8*) ( buffer + i ), twister_genrand_int32( (twister_state_t*) *state ), remain );
+        assert( remain < SIZE_OF_TWISTER );
+        u32_to_buffer( bufpos, twister_genrand_int32( (twister_state_t*) *state ), remain );
     }
 
     return 0;
@@ -144,27 +160,24 @@ int nwipe_isaac_init( NWIPE_PRNG_INIT_SIGNATURE )
 
 int nwipe_isaac_read( NWIPE_PRNG_READ_SIGNATURE )
 {
-    u32 i = 0;
-    u32 ii;
-    u32 words = count / SIZE_OF_ISAAC;  // the values of isaac is strictly 4 bytes
-    u32 remain = count % SIZE_OF_ISAAC;  // the values of isaac is strictly 4 bytes
-
     randctx* isaac_state = *state;
+    u8* restrict bufpos = buffer;
+    size_t words = count / SIZE_OF_ISAAC;  // the values of isaac is strictly 4 bytes
+    size_t remain = count % SIZE_OF_ISAAC;  // the values of isaac is strictly 4 bytes
 
     /* Isaac returns 4-bytes per call, so progress by 4 bytes. */
-    for( ii = 0; ii < words; ++ii )
+    for( size_t ii = 0; ii < words; ++ii )
     {
         /* get the next 32bit random number */
-        isaac( isaac_state );
-        nwipe_u32tobuffer( (u8*) ( buffer + i ), isaac_state->randrsl[0], SIZE_OF_ISAAC );
-        i = i + SIZE_OF_ISAAC;
+        u32_to_buffer( bufpos, isaac_nextval( isaac_state ), SIZE_OF_ISAAC );
+        bufpos += SIZE_OF_ISAAC;
     }
 
     /* If there is some remainder copy only relevant number of bytes to not overflow the buffer. */
     if( remain > 0 )
     {
-        isaac( isaac_state );
-        nwipe_u32tobuffer( (u8*) ( buffer + i ), isaac_state->randrsl[0], remain );
+        assert( remain < SIZE_OF_ISAAC );
+        u32_to_buffer( bufpos, isaac_nextval( isaac_state ), remain );
     }
 
     return 0;
@@ -206,7 +219,7 @@ int nwipe_isaac64_init( NWIPE_PRNG_INIT_SIGNATURE )
     if( count == 0 )
     {
         /* Start ISACC without a seed. */
-        randinit( isaac_state, 0 );
+        rand64init( isaac_state, 0 );
     }
     else
     {
@@ -214,7 +227,7 @@ int nwipe_isaac64_init( NWIPE_PRNG_INIT_SIGNATURE )
         memcpy( isaac_state->randrsl, seed->s, count );
 
         /* The second parameter indicates that randrsl is non-empty. */
-        randinit( isaac_state, 1 );
+        rand64init( isaac_state, 1 );
     }
 
     return 0;
@@ -222,27 +235,23 @@ int nwipe_isaac64_init( NWIPE_PRNG_INIT_SIGNATURE )
 
 int nwipe_isaac64_read( NWIPE_PRNG_READ_SIGNATURE )
 {
-    u64 i = 0;
-    u64 ii;
+    rand64ctx* isaac_state = *state;
+    u8* restrict bufpos = buffer;
     // the values of ISAAC-64 is strictly 8 bytes
-    u64 words = count / SIZE_OF_ISAAC64;
-    u64 remain = count % SIZE_OF_ISAAC64;
+    size_t words = count / SIZE_OF_ISAAC64;
+    size_t remain = count % SIZE_OF_ISAAC64;
 
-    randctx* isaac_state = *state;
-
-    /* ISAAC-64 returns 8-bytes per call, so progress by 8 bytes. */
-    for( ii = 0; ii < words; ++ii )
+    for( size_t ii = 0; ii < words; ++ii )
     {
-        isaac64( isaac_state );
-        nwipe_u64tobuffer( (u8*)(buffer + i), isaac_state->randrsl[0], SIZE_OF_ISAAC64 );
-        i += SIZE_OF_ISAAC64;
+        u64_to_buffer( bufpos, isaac64_nextval( isaac_state ), SIZE_OF_ISAAC64 );
+        bufpos += SIZE_OF_ISAAC64;
     }
 
     /* If there is some remainder copy only relevant number of bytes to not overflow the buffer. */
     if( remain > 0 )
     {
-        isaac64( isaac_state );
-        nwipe_u64tobuffer( (u8*)(buffer + i), isaac_state->randrsl[0], remain );
+        assert( remain < SIZE_OF_ISAAC64 );
+        u64_to_buffer( bufpos, isaac64_nextval( isaac_state ), remain );
     }
 
     return 0;
