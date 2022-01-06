@@ -17,8 +17,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <assert.h>
-
 #include "nwipe.h"
 #include "prng.h"
 #include "context.h"
@@ -38,7 +36,7 @@ static inline void u32_to_buffer( u8* restrict buffer, u32 val, const int len )
 {
     for( int i = 0; i < len; ++i )
     {
-        buffer[i] = (u8) ( val & 0xFFUL );
+        buffer[i] = ( u8 )( val & 0xFFUL );
         val >>= 8;
     }
 }
@@ -46,7 +44,7 @@ static inline void u64_to_buffer( u8* restrict buffer, u64 val, const int len )
 {
     for( int i = 0; i < len; ++i )
     {
-        buffer[i] = (u8) ( val & 0xFFULL );
+        buffer[i] = ( u8 )( val & 0xFFULL );
         val >>= 8;
     }
 }
@@ -88,7 +86,6 @@ int nwipe_twister_read( NWIPE_PRNG_READ_SIGNATURE )
 {
     u8* restrict bufpos = buffer;
     size_t words = count / SIZE_OF_TWISTER;  // the values of twister_genrand_int32 is strictly 4 bytes
-    size_t remain = count % SIZE_OF_TWISTER;  // the values of twister_genrand_int32 is strictly 4 bytes
 
     /* Twister returns 4-bytes per call, so progress by 4 bytes. */
     for( size_t ii = 0; ii < words; ++ii )
@@ -99,9 +96,9 @@ int nwipe_twister_read( NWIPE_PRNG_READ_SIGNATURE )
 
     /* If there is some remainder copy only relevant number of bytes to not
      * overflow the buffer. */
+    const size_t remain = count % SIZE_OF_TWISTER;  // SIZE_OF_TWISTER is strictly 4 bytes
     if( remain > 0 )
     {
-        assert( remain < SIZE_OF_TWISTER );
         u32_to_buffer( bufpos, twister_genrand_int32( (twister_state_t*) *state ), remain );
     }
 
@@ -163,7 +160,6 @@ int nwipe_isaac_read( NWIPE_PRNG_READ_SIGNATURE )
     randctx* isaac_state = *state;
     u8* restrict bufpos = buffer;
     size_t words = count / SIZE_OF_ISAAC;  // the values of isaac is strictly 4 bytes
-    size_t remain = count % SIZE_OF_ISAAC;  // the values of isaac is strictly 4 bytes
 
     /* Isaac returns 4-bytes per call, so progress by 4 bytes. */
     for( size_t ii = 0; ii < words; ++ii )
@@ -174,9 +170,9 @@ int nwipe_isaac_read( NWIPE_PRNG_READ_SIGNATURE )
     }
 
     /* If there is some remainder copy only relevant number of bytes to not overflow the buffer. */
+    const size_t remain = count % SIZE_OF_ISAAC;  // SIZE_OF_ISAAC is strictly 4 bytes
     if( remain > 0 )
     {
-        assert( remain < SIZE_OF_ISAAC );
         u32_to_buffer( bufpos, isaac_nextval( isaac_state ), remain );
     }
 
@@ -237,9 +233,7 @@ int nwipe_isaac64_read( NWIPE_PRNG_READ_SIGNATURE )
 {
     rand64ctx* isaac_state = *state;
     u8* restrict bufpos = buffer;
-    // the values of ISAAC-64 is strictly 8 bytes
-    size_t words = count / SIZE_OF_ISAAC64;
-    size_t remain = count % SIZE_OF_ISAAC64;
+    size_t words = count / SIZE_OF_ISAAC64;  // the values of ISAAC-64 is strictly 8 bytes
 
     for( size_t ii = 0; ii < words; ++ii )
     {
@@ -248,9 +242,9 @@ int nwipe_isaac64_read( NWIPE_PRNG_READ_SIGNATURE )
     }
 
     /* If there is some remainder copy only relevant number of bytes to not overflow the buffer. */
+    const size_t remain = count % SIZE_OF_ISAAC64;  // SIZE_OF_ISAAC64 is strictly 8 bytes
     if( remain > 0 )
     {
-        assert( remain < SIZE_OF_ISAAC64 );
         u64_to_buffer( bufpos, isaac64_nextval( isaac_state ), remain );
     }
 
