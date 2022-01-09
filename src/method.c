@@ -408,18 +408,6 @@ void* nwipe_gutmann( void* ptr )
     /* set wipe in progress flag for GUI */
     c->wipe_status = 1;
 
-    /* A result buffer. */
-    int r;
-
-    /* The number of patterns in the Guttman Wipe, also used to index the 'patterns' array. */
-    int i = 35;
-
-    /* An index into the 'book' array. */
-    int j;
-
-    /* The N-th element that has not been used. */
-    int n;
-
     /* Define the Gutmann method. */
     nwipe_pattern_t book[] = { { -1, "" },  // Random pass.
                                { -1, "" },  // Random pass.
@@ -462,11 +450,10 @@ void* nwipe_gutmann( void* ptr )
     nwipe_pattern_t patterns[36];
 
     /* An entropy buffer. */
-    u16 s[i];
+    u16 s[27];
 
     /* Load the array with random characters. */
-    r = read( c->entropy_fd, &s, sizeof( s ) );
-
+    ssize_t r = read( c->entropy_fd, &s, sizeof( s ) );
     if( r != sizeof( s ) )
     {
         r = errno;
@@ -486,14 +473,19 @@ void* nwipe_gutmann( void* ptr )
         }
     }
 
-    while( --i >= 0 )
+    // First 4 random passes
+    for( int i = 0; i <= 3; ++i )
     {
-
+        patterns[i] = book[i];
+    }
+    // Middle 27 passes in random order
+    for( int i = 26; i >= 0; --i )
+    {
         /* Get a random integer that is less than the first index 'i'. */
-        n = (int) ( (double) ( s[i] ) / (double) ( 0x0000FFFF + 1 ) * (double) ( i + 1 ) );
+        int n = (int) ( (double) ( s[i] ) / (double) ( 0x0000FFFF + 1 ) * (double) ( i + 1 ) );
 
         /* Initialize the secondary index. */
-        j = -1;
+        int j = 3;
 
         while( n-- >= 0 )
         {
@@ -508,10 +500,15 @@ void* nwipe_gutmann( void* ptr )
         }
 
         /* Copy the element. */
-        patterns[i] = book[j];
+        patterns[i + 4] = book[j];
 
         /* Mark this element as having been used. */
         book[j].length = 0;
+    }
+    // Last 4 random passes
+    for( int i = 31; i <= 34; ++i )
+    {
+        patterns[i] = book[i];
     }
 
     /* Ensure that the array is terminated. */
