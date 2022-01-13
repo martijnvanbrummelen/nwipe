@@ -376,12 +376,6 @@ int nwipe_options_parse( int argc, char** argv )
                     break;
                 }
 
-                if( strcmp( optarg, "isaac64" ) == 0 )
-                {
-                    nwipe_options.prng = &nwipe_isaac64;
-                    break;
-                }
-
                 /* Else we do not know this PRNG. */
                 fprintf( stderr, "Error: Unknown prng '%s'.\n", optarg );
                 exit( EINVAL );
@@ -429,7 +423,6 @@ void nwipe_options_log( void )
 {
     extern nwipe_prng_t nwipe_twister;
     extern nwipe_prng_t nwipe_isaac;
-    extern nwipe_prng_t nwipe_isaac64;
 
     /**
      *  Prints a manifest of options to the log.
@@ -489,14 +482,7 @@ void nwipe_options_log( void )
         }
         else
         {
-            if( nwipe_options.prng == &nwipe_isaac64 )
-            {
-                nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Isaac64" );
-            }
-            else
-            {
-                nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Undefined" );
-            }
+            nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Undefined" );
         }
     }
 
@@ -570,7 +556,7 @@ void display_help()
     puts( "                          verify_zero            - Verifies disk is zero filled" );
     puts( "                          verify_one             - Verifies disk is 0xFF filled\n" );
     puts( "  -l, --logfile=FILE      Filename to log to. Default is STDOUT\n" );
-    puts( "  -p, --prng=METHOD       PRNG option (mersenne|twister|isaac|isaac64)\n" );
+    puts( "  -p, --prng=METHOD       PRNG option (mersenne|twister|isaac)\n" );
     puts( "  -q, --quiet             Anonymize logs and the GUI by removing unique data, i.e." );
     puts( "                          serial numbers, LU WWN Device ID, and SMBIOS/DMI data" );
     puts( "                          XXXXXX = S/N exists, ????? = S/N not obtainable\n" );
