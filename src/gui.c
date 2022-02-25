@@ -2689,8 +2689,8 @@ void* nwipe_gui_status( void* ptr )
             }
         }
 
-        /* Update screen if not blanked. */
-        if( nwipe_gui_blank == 0 )
+        /* Update data in statistics & main windows only if we're in 'gui' mode and only if a wipe has started */
+        if( nwipe_gui_blank == 0 && global_wipe_status == 1 )
         {
 
             if( terminate_signal != 1 )
