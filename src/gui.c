@@ -637,6 +637,8 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
     stdscr_lines_previous = stdscr_lines;
     stdscr_cols_previous = stdscr_cols;
 
+    time_t temperature_check_time = time( NULL );
+
     do
     {
 
@@ -797,6 +799,9 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                         break;
 
                 } /* switch select */
+
+                /* Read the drive temperature values */
+                nwipe_update_temperature( c[i + offset] );
 
                 /* print the temperature */
                 wprintw_temperature( c[i + offset] );
@@ -1230,6 +1235,13 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
             /* Check the terminal size, if the user has changed it the while loop checks for
              * this change and exits the valid key hit loop so the windows can be updated */
             getmaxyx( stdscr, stdscr_lines, stdscr_cols );
+
+            /* Update the selection window every 60 seconds specifically so that the drive temperatures are updated */
+            if( time( NULL ) > ( temperature_check_time + 60 ) )
+            {
+                temperature_check_time = time( NULL );
+                validkeyhit = 1;
+            }
 
         } /* key hit loop */
         while( validkeyhit == 0 && terminate_signal != 1 && stdscr_cols_previous == stdscr_cols
