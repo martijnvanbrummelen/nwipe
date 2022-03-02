@@ -639,6 +639,18 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
 
     time_t temperature_check_time = time( NULL );
 
+    /* Used in the selection loop to trap a failure of the timeout(), getch() mechanism to block for the designated
+     * period */
+    int iteration_counter;
+
+    /* Used in the selection loop to trap a failure of the timeout(), getch() mechanism to block for the designated
+     * period */
+    int expected_iterations;
+
+    time_t iteration_timestamp;
+
+    time_t previous_iteration_timestamp;
+
     do
     {
 
@@ -847,20 +859,63 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
         /* Output to physical screen */
         doupdate();
 
-        /* Wait 250ms for input from getch, if nothing getch will then continue,
-         * This is necessary so that the while loop can be exited by the
-         * terminate_signal e.g.. the user pressing control-c to exit.
-         * Do not change this value, a higher value means the keys become
-         * sluggish, any slower and more time is spent unnecessarily looping
-         * which wastes CPU cycles.
-         */
+        /* Initialise the iteration counter */
+        iteration_counter = 0;
+
+        previous_iteration_timestamp = time( NULL );
+
+        /* Calculate Maximum allowed iterations per second */
+        expected_iterations = ( 1000 / GETCH_BLOCK_MS ) * 2;
 
         do
         {
+            /* Wait 250ms for input from getch, if nothing getch will then continue,
+             * This is necessary so that the while loop can be exited by the
+             * terminate_signal e.g.. the user pressing control-c to exit.
+             * Do not change this value, a higher value means the keys become
+             * sluggish, any slower and more time is spent unnecessarily looping
+             * which wastes CPU cycles.
+             */
+
             validkeyhit = 0;
-            timeout( 250 );  // block getch() for 250ms.
+            timeout( GETCH_BLOCK_MS );  // block getch() for ideally about 250ms.
             keystroke = getch();  // Get user input.
             timeout( -1 );  // Switch back to blocking mode.
+
+            /* To avoid 100% CPU usage, check for a runaway condition caused by the "keystroke = getch(); (above), from
+             * immediately returning an error condition. We check for an error condition because getch() returns a ERR
+             * value when the timeout value "timeout( 250 );" expires as well as when a real error occurs. We can't
+             * differentiate from normal operation and a failure of the getch function to block for the specified period
+             * of timeout. So here we check the while loop hasn't exceeded the number of expected iterations per second
+             * ie. a timeout(250) block value of 250ms means we should not see any more than (1000/250) = 4 iterations.
+             * We double this to 8 to allow a little tolerance. Why is this necessary? It's been found that in KDE
+             * konsole and other terminals based on the QT terminal engine exiting the terminal without first existing
+             * nwipe results in nwipe remaining running but detached from any interface which causes getch to fail and
+             * its associated timeout. So the CPU or CPU core rises to 100%. Here we detect that failure and exit nwipe
+             * gracefully with the appropriate error. This does not affect use of tmux for attaching or detaching from a
+             * running nwipe session when sitting at the selection screen. All other terminals correctly terminate nwipe
+             * when the terminal itself is exited.
+             */
+
+            iteration_counter++;
+
+            if( previous_iteration_timestamp == time( NULL ) )
+            {
+                if( iteration_counter > expected_iterations )
+                {
+                    nwipe_log( NWIPE_LOG_ERROR,
+                               "GUI.c,nwipe_gui_select(), loop runaway, did you close the terminal without exiting "
+                               "nwipe? Initiating shutdown now." );
+                    /* Issue signal to nwipe to shutdown immediately but gracefully */
+                    terminate_signal = 1;
+                }
+            }
+            else
+            {
+                /* new second, so reset counter */
+                iteration_counter = 0;
+                previous_iteration_timestamp = time( NULL );
+            }
 
             /* We don't necessarily use all of these. For future reference these are some CTRL+key values
              * ^A - 1, ^B - 2, ^D - 4, ^E - 5, ^F - 6, ^G - 7, ^H - 8, ^I - 9, ^K - 11, ^L - 12, ^N - 14,

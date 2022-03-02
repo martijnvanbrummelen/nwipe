@@ -50,4 +50,6 @@ void nwipe_update_speedring( nwipe_speedring_t* speedring, u64 speedring_done, t
 
 #define NOMENCLATURE_RESULT_STR_SIZE 8
 
+#define GETCH_BLOCK_MS 250 /* millisecond block time for getch() */
+
 #endif /* GUI_H_ */
