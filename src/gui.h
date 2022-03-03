@@ -50,6 +50,13 @@ void nwipe_update_speedring( nwipe_speedring_t* speedring, u64 speedring_done, t
 
 #define NOMENCLATURE_RESULT_STR_SIZE 8
 
+/* Note Do not change unless you understand how this value affects keyboard response and screen refresh when
+ * the drive selection screen is displayed. (prior to wipe starting). */
 #define GETCH_BLOCK_MS 250 /* millisecond block time for getch() */
+
+/* Note The value of 1 (100ms) is the ideal speed for screen refresh during a wipe, a value of 2 is noticably slower,
+ * don't change unless you understand how this value affects keyboard responsiveness and speed of screen stats/spinner
+ * updating */
+#define GETCH_GUI_STATS_UPDATE_MS 1 /* 1 * 100 = 1/10/sec = millisecond block time for gui stats screen updates */
 
 #endif /* GUI_H_ */

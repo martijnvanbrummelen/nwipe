@@ -647,8 +647,6 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
      * period */
     int expected_iterations;
 
-    time_t iteration_timestamp;
-
     time_t previous_iteration_timestamp;
 
     do
@@ -2544,6 +2542,20 @@ void* nwipe_gui_status( void* ptr )
     /* Set to 1 initially to start loop.    */
     int nwipe_active = 1;
 
+    /* Used in the gui status loop to trap a failure of the halfdelay(), getch() mechanism to block for the designated
+     * period */
+    int expected_iterations;
+
+    /* Used in the selection loop to trap a failure of the timeout(), getch() mechanism to block for the designated
+     * period, initialise the counter */
+    int iteration_counter = 0;
+
+    time_t previous_iteration_timestamp = time( NULL );
+
+    /* Calculate Maximum allowed iterations per second (typically 20), which is double the expected iterations
+     * (typically 10) */
+    expected_iterations = ( 1000 / GETCH_GUI_STATS_UPDATE_MS ) * 2;
+
     if( nwipe_time_start == 0 )
     {
         /* This is the first time that we have been called. */
@@ -2562,9 +2574,40 @@ void* nwipe_gui_status( void* ptr )
          * 2. By keeping the delay below 0.2 seconds, i.e 0.1, it makes the keypress and resizing
          *    nice and responsive.
          */
-        halfdelay( 1 );  // Important, don't change this unless you know what you are doing ! Related to getch().
+        halfdelay( GETCH_GUI_STATS_UPDATE_MS );  // Important, don't change this unless you know what you are doing !
+                                                 // Related to getch().
 
         keystroke = getch();  // Get user input.
+
+        iteration_counter++;
+
+        /* Much like the same check we perform in the nwipe_gui_select() function, here we check that we are not looping
+         * any faster than as defined by the halfdelay() function above, typically this loop runs at 10 times a second.
+         * This check makes sure that if the loop runs faster than double this value i.e 20 times a second then the
+         * program exits. This check is therefore determining whether the getch() function is returning immediately
+         * rather than blocking for the defined period of 100ms. Why is this necessary? Some terminals (konsole &
+         * deriviatives) that are exited while nwipe is still running fail to terminate nwipe this causes the
+         * halfdelay()/getch() functions to immediately fail causing the loop frequency to drastically increase. We
+         * detect that speed increase here and therefore close down nwipe. This doesn't affect the use of the tmux
+         * terminal by which you can detach and reattach to running nwipe processes. tmux still works correctly.
+         */
+        if( previous_iteration_timestamp == time( NULL ) )
+        {
+            if( iteration_counter > expected_iterations )
+            {
+                nwipe_log( NWIPE_LOG_ERROR,
+                           "GUI.c,nwipe_gui_status(), loop runaway, did you close the terminal without exiting "
+                           "nwipe? Initiating shutdown now." );
+                /* Issue signal to nwipe to shutdown immediately but gracefully */
+                terminate_signal = 1;
+            }
+        }
+        else
+        {
+            /* new second, so reset counter */
+            iteration_counter = 0;
+            previous_iteration_timestamp = time( NULL );
+        }
 
         /* Get the current time. */
         if( nwipe_active && terminate_signal != 1 )
