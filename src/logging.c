@@ -51,6 +51,9 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
      *
      */
 
+    extern int terminate_signal;
+    extern int user_abort;
+
     char** result;
     char* malloc_result;
     char message_buffer[MAX_LOG_LINE_CHARS * sizeof( char )];
@@ -326,57 +329,64 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
         /* Open the log file for appending. */
         fp = fopen( nwipe_options.logfile, "a" );
 
-        if( fp == NULL )
+        if( fp != NULL )
         {
-            fprintf( stderr, "nwipe_log: Unable to open '%s' for logging.\n", nwipe_options.logfile );
+
+            /* Get the file descriptor of the log file. */
+            fd = fileno( fp );
+
+            /* Block and lock. */
+            r = flock( fd, LOCK_EX );
+
+            if( r != 0 )
+            {
+                perror( "nwipe_log: flock:" );
+                fprintf( stderr, "nwipe_log: Unable to lock '%s' for logging.\n", nwipe_options.logfile );
+                r = pthread_mutex_unlock( &mutex1 );
+                if( r != 0 )
+                {
+                    fprintf( stderr, "nwipe_log: pthread_mutex_unlock failed. Code %i \n", r );
+
+                    /* Unlock the file. */
+                    r = flock( fd, LOCK_UN );
+                    fclose( fp );
+                    return;
+                }
+            }
+
+            fprintf( fp, "%s\n", log_lines[log_current_element] );
+
+            /* Unlock the file. */
+            r = flock( fd, LOCK_UN );
+
+            if( r != 0 )
+            {
+                perror( "nwipe_log: flock:" );
+                fprintf( stderr, "Error: Unable to unlock '%s' after logging.\n", nwipe_options.logfile );
+            }
+
+            /* Close the stream. */
+            r = fclose( fp );
+
+            if( r != 0 )
+            {
+                perror( "nwipe_log: fclose:" );
+                fprintf( stderr, "Error: Unable to close '%s' after logging.\n", nwipe_options.logfile );
+            }
+        }
+        else
+        {
+            /* Tell user we can't create/open the log and terminate nwipe */
+            fprintf(
+                stderr, "\nERROR:Unable to create/open '%s' for logging, permissions?\n\n", nwipe_options.logfile );
             r = pthread_mutex_unlock( &mutex1 );
             if( r != 0 )
             {
                 fprintf( stderr, "nwipe_log: pthread_mutex_unlock failed. Code %i \n", r );
-                return;
             }
-        }
-
-        /* Get the file descriptor of the log file. */
-        fd = fileno( fp );
-
-        /* Block and lock. */
-        r = flock( fd, LOCK_EX );
-
-        if( r != 0 )
-        {
-            perror( "nwipe_log: flock:" );
-            fprintf( stderr, "nwipe_log: Unable to lock '%s' for logging.\n", nwipe_options.logfile );
-            r = pthread_mutex_unlock( &mutex1 );
-            if( r != 0 )
-            {
-                fprintf( stderr, "nwipe_log: pthread_mutex_unlock failed. Code %i \n", r );
-
-                /* Unlock the file. */
-                r = flock( fd, LOCK_UN );
-                fclose( fp );
-                return;
-            }
-        }
-
-        fprintf( fp, "%s\n", log_lines[log_current_element] );
-
-        /* Unlock the file. */
-        r = flock( fd, LOCK_UN );
-
-        if( r != 0 )
-        {
-            perror( "nwipe_log: flock:" );
-            fprintf( stderr, "Error: Unable to unlock '%s' after logging.\n", nwipe_options.logfile );
-        }
-
-        /* Close the stream. */
-        r = fclose( fp );
-
-        if( r != 0 )
-        {
-            perror( "nwipe_log: fclose:" );
-            fprintf( stderr, "Error: Unable to close '%s' after logging.\n", nwipe_options.logfile );
+            user_abort = 1;
+            terminate_signal = 1;
+            return;
         }
     }
 

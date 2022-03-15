@@ -116,10 +116,17 @@ int main( int argc, char** argv )
 
     /* Parse command line options. */
     nwipe_optind = nwipe_options_parse( argc, argv );
+
     if( nwipe_optind == argc )
     {
         /* File names were not given by the user.  Scan for devices. */
         nwipe_enumerated = nwipe_device_scan( &c1 );
+
+        if( terminate_signal == 1 )
+        {
+            cleanup();
+            exit( 1 );
+        }
 
         if( nwipe_enumerated == 0 )
         {
