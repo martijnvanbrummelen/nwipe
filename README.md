@@ -7,6 +7,8 @@ nwipe is a fork of the dwipe command originally used by Darik's Boot and Nuke (D
 
 nwipe is a program that will securely erase the entire contents of disks. It can wipe a single drive or multiple disks simultaneously. It can operate as both a command line tool without a GUI or with a ncurses GUI as shown in the example below:
 
+Note! Nwipe does not currently support HDA (hidden disc area) detection. You will need to run hdparm to detect and if necessary correct the reported size of the disc prior to using nwipe.
+
 ![Example wipe](/images/example_wipe.gif)
 
 <i>GIF showing six drives being simultaneously erased. It skips to the completion of all six wipes and shows five drives that were successfully erased and one drive that failed due to an I/O error. The drive that failed would then normally be physically destroyed. The five drives that were successfully wiped with zero errors or failures can then be redeployed.</i>
