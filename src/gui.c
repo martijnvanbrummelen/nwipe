@@ -1433,7 +1433,7 @@ void nwipe_gui_rounds( void )
         yy = 4;
 
         mvwprintw( main_window, yy++, tab1, "This is the number of times to run the wipe method on each device." );
-        mvwprintw( main_window, yy++, tab1, "" );
+        yy++;
 
         if( focus > 0 )
         {
@@ -1582,7 +1582,7 @@ void nwipe_gui_prng( void )
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_twister.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_isaac.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_isaac64.label );
-        mvwprintw( main_window, yy++, tab1, "" );
+        yy++;
 
         /* Print the cursor. */
         mvwaddch( main_window, 3 + focus, tab1, ACS_RARROW );
