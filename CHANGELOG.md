@@ -1,6 +1,11 @@
 RELEASE NOTES
 =============
 
+v0.34
+-----------------------
+- Fix a compiler warning -Wformat-zero-length string 
+
+
 v0.33
 -----------------------
 - Fixes a slight screen corruption on 80 column display. When highlighting the verify ones option the first two digits of DoD 5220.20-M disappear. This patch fixes that issue.@PartialVolume #348 
