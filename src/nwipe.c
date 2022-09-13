@@ -255,7 +255,7 @@ int main( int argc, char** argv )
     /* load the drivetemp module */
     if( system( final_cmd_modprobe ) != 0 )
     {
-        nwipe_log( NWIPE_LOG_WARNING, "hwmon: Unable to load module drivetemp, temperatures may be unavilable." );
+        nwipe_log( NWIPE_LOG_WARNING, "hwmon: Unable to load module drivetemp, temperatures may be unavailable." );
         nwipe_log( NWIPE_LOG_WARNING, "hwmon: It's possible the drivetemp software isn't modular but built-in" );
         nwipe_log( NWIPE_LOG_WARNING, "hwmon: to the kernel, as is the case with ShredOS.x86_64 in which case" );
         nwipe_log( NWIPE_LOG_WARNING, "hwmon: the temperatures will actually be available despite this issue." );

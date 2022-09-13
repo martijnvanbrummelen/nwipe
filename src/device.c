@@ -662,7 +662,7 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
             {
                 /* Convert the label, i.e everything before the ':' to lower case, it's required to
                  * convert to lower case as smartctl seems to use inconsistent case when labeling
-                 * for serial number, i.e mostly it produces labels "Serial Number:" but occasionaly
+                 * for serial number, i.e mostly it produces labels "Serial Number:" but occasionally
                  * it produces a label "Serial number:" */
 
                 idx = 0;
