@@ -195,6 +195,7 @@ And in addition checkout the following distros that all include nwipe:
 - [partedmagic](https://partedmagic.com)
 - [SystemRescueCD](https://www.system-rescue.org)
 - [gparted live](https://sourceforge.net/projects/gparted/files/gparted-live-testing/1.2.0-2/)
+- [grml](https://grml.org/)
 
 Know of other distros that include nwipe? Then please let us know or issue a PR on this README.md. Thanks.
 
