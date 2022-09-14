@@ -242,7 +242,7 @@ void nwipe_update_temperature( nwipe_context_t* c )
             /* Convert numeric ascii to binary integer */
             *( temperature_pcontext[idx] ) = atoi( temperature );
 
-            /* Divide by 1000 to get degrees celcius */
+            /* Divide by 1000 to get degrees celsius */
             *( temperature_pcontext[idx] ) = *( temperature_pcontext[idx] ) / 1000;
 
             if( nwipe_options.verbose )

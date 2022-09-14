@@ -72,7 +72,7 @@ typedef struct nwipe_speedring_t_
 #define NWIPE_DEVICE_LABEL_LENGTH 200
 #define NWIPE_DEVICE_SIZE_TXT_LENGTH 7
 
-// Arbitary length, so far most paths don't exceed about 25 characters
+// Arbitrary length, so far most paths don't exceed about 25 characters
 #define MAX_HWMON_PATH_LENGTH 100
 
 typedef struct nwipe_context_t_
@@ -136,7 +136,7 @@ typedef struct nwipe_context_t_
     int temp1_lcrit;  // Critical low drive temperature, 1000000=unitialised, millidegree celsius.
     int temp1_lowest;  // Historically lowest temperature, 1000000=unitialised, millidegree celsius.
     int temp1_max;  // Maximum allowed temperature, 1000000=unitialised, millidegree celsius.
-    int temp1_min;  // Miniumum allowed temperature, 1000000=unitialised, millidegree celsius.
+    int temp1_min;  // Minimum allowed temperature, 1000000=unitialised, millidegree celsius.
     int temp1_monitored_wipe_max;
     int temp1_monitored_wipe_min;
     int temp1_monitored_wipe_avg;
