@@ -36,7 +36,7 @@ static inline void u32_to_buffer( u8* restrict buffer, u32 val, const int len )
 {
     for( int i = 0; i < len; ++i )
     {
-        buffer[i] = ( u8 )( val & 0xFFUL );
+        buffer[i] = (u8) ( val & 0xFFUL );
         val >>= 8;
     }
 }
@@ -44,7 +44,7 @@ static inline void u64_to_buffer( u8* restrict buffer, u64 val, const int len )
 {
     for( int i = 0; i < len; ++i )
     {
-        buffer[i] = ( u8 )( val & 0xFFULL );
+        buffer[i] = (u8) ( val & 0xFFULL );
         val >>= 8;
     }
 }
