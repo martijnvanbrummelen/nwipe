@@ -21,6 +21,8 @@
 #ifndef CREATE_PDF_H_
 #define CREATE_PDF_H_
 
+#define MAX_PDF_FOOTER_TEXT_LENGTH 50
+
 int create_pdf( void );
 
 #endif /* CREATE_PDF_H_ */
