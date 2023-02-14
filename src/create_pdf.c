@@ -25,10 +25,9 @@
 #include "src/embedded_images/tick_erased.jpg.h"
 //#include "logging.h"
 
-
 int create_pdf( void )
 {
-    char pdf_footer[ MAX_PDF_FOOTER_TEXT_LENGTH ];
+    char pdf_footer[MAX_PDF_FOOTER_TEXT_LENGTH];
 
     struct pdf_info info = { .creator = "https://github.com/PartialVolume/shredos.x86_64",
                              .producer = "https://github.com/martijnvanbrummelen/nwipe",
