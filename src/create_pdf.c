@@ -19,11 +19,17 @@
  */
 #include "create_pdf.h"
 #include "PDFGen/pdfgen.h"
+#include "version.h"
+#include <string.h>
+#include "src/embedded_images/shred_db.jpg.h"
+#include "src/embedded_images/tick_erased.jpg.h"
 //#include "logging.h"
 
-char pdf_footer[] = "Disc Erasure by NWIPE version 0.34";
+
 int create_pdf( void )
 {
+    char pdf_footer[ MAX_PDF_FOOTER_TEXT_LENGTH ];
+
     struct pdf_info info = { .creator = "https://github.com/PartialVolume/shredos.x86_64",
                              .producer = "https://github.com/martijnvanbrummelen/nwipe",
                              .title = "PDF Disk Erasure Certificate",
@@ -32,15 +38,20 @@ int create_pdf( void )
                              .date = "Today" };
     // nwipe_log( NWIPE_LOG_INFO, "Create the PDF erasure certificate" );
     struct pdf_doc* pdf = pdf_create( PDF_A4_WIDTH, PDF_A4_HEIGHT, &info );
-    pdf_set_font( pdf, "Times-Roman" );
+
+    /* Create footer text string and append the version */
+    strcpy( pdf_footer, "Disc Erasure by NWIPE version" );
+    strcat( pdf_footer, version_string );
+
+    pdf_set_font( pdf, "Helvetica" );
     pdf_append_page( pdf );
 
     /* Create header and footer*/
     pdf_add_text( pdf, NULL, pdf_footer, 12, 200, 30, PDF_BLACK );
     pdf_add_line( pdf, NULL, 50, 50, 550, 50, 3, PDF_BLACK );
     pdf_add_line( pdf, NULL, 50, 650, 550, 650, 3, PDF_BLACK );
-    pdf_add_image_file( pdf, NULL, 45, 670, 128, 128, "shred_db.jpg" );
-    pdf_add_image_file( pdf, NULL, 430, 670, 128, 128, "tick_erased.jpg" );
+    pdf_add_image_data( pdf, NULL, 45, 670, 128, 128, bin2c_shred_db_jpg, 27063 );
+    pdf_add_image_data( pdf, NULL, 430, 670, 128, 128, bin2c_te_jpg, 54896 );
     pdf_add_text( pdf, NULL, "Model:Hitachi HDS72105", 14, 215, 720, PDF_BLACK );
     pdf_add_text( pdf, NULL, "S/N:MSK4215T145K8G", 14, 212, 700, PDF_BLACK );
     pdf_add_text( pdf, NULL, "Disk Erasure Report", 24, 195, 670, PDF_BLACK );
