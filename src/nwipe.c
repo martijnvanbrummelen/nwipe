@@ -50,7 +50,6 @@
 #include <parted/parted.h>
 #include <parted/debug.h>
 #include "version.h"
-#include "create_pdf.h"
 
 int terminate_signal;
 int user_abort;
@@ -161,9 +160,6 @@ int main( int argc, char** argv )
         cleanup();
         exit( 1 );
     }
-
-    /* WARNING Temporary call to create_pdf() while in development */
-    create_pdf();
 
     /* Log the System information */
     nwipe_log_sysinfo();
