@@ -34,7 +34,6 @@
 #include "logging.h"
 #include "options.h"
 
-
 int create_pdf( nwipe_context_t* ptr )
 {
     char pdf_footer[MAX_PDF_FOOTER_TEXT_LENGTH];
@@ -46,7 +45,6 @@ int create_pdf( nwipe_context_t* ptr )
     char dimm[50]; /* Disk Information: Model */
     char verify[20]; /* Verify option text */
 
-
     struct pdf_info info = { .creator = "https://github.com/PartialVolume/shredos.x86_64",
                              .producer = "https://github.com/martijnvanbrummelen/nwipe",
                              .title = "PDF Disk Erasure Certificate",
@@ -54,7 +52,7 @@ int create_pdf( nwipe_context_t* ptr )
                              .subject = "Disk Erase Certificate",
                              .date = "Today" };
 
-    //nwipe_log( NWIPE_LOG_NOTICE, "Create the PDF disk erasure certificate" );
+    // nwipe_log( NWIPE_LOG_NOTICE, "Create the PDF disk erasure certificate" );
     struct pdf_doc* pdf = pdf_create( PDF_A4_WIDTH, PDF_A4_HEIGHT, &info );
 
     /* Create footer text string and append the version */
@@ -70,12 +68,12 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_add_line( pdf, NULL, 50, 650, 550, 650, 3, PDF_BLACK );
     pdf_add_image_data( pdf, NULL, 45, 670, 128, 128, bin2c_shred_db_jpg, 27063 );
     pdf_add_image_data( pdf, NULL, 430, 670, 128, 128, bin2c_te_jpg, 54896 );
-    snprintf(model_header, sizeof(model_header), " %s:%s ", "Model", c->device_model );
+    snprintf( model_header, sizeof( model_header ), " %s:%s ", "Model", c->device_model );
     pdf_add_text( pdf, NULL, model_header, 14, 215, 720, PDF_BLACK );
-    snprintf(serial_header, sizeof(serial_header), " %s:%s ", "S/N", c->device_serial_no );
+    snprintf( serial_header, sizeof( serial_header ), " %s:%s ", "S/N", c->device_serial_no );
     pdf_add_text( pdf, NULL, serial_header, 14, 212, 700, PDF_BLACK );
     pdf_add_text( pdf, NULL, "Disk Erasure Report", 24, 195, 670, PDF_BLACK );
-    snprintf(barcode, sizeof(barcode), " %s:%s ", c->device_model, c->device_serial_no );
+    snprintf( barcode, sizeof( barcode ), " %s:%s ", c->device_model, c->device_serial_no );
     pdf_add_barcode( pdf, NULL, PDF_BARCODE_128A, 195, 748, 200, 50, barcode, PDF_BLACK );
 
     /* Organisation Information */
@@ -156,6 +154,6 @@ int create_pdf( nwipe_context_t* ptr )
 
     pdf_save( pdf, "output.pdf" );
     pdf_destroy( pdf );
-    //nwipe_log( NWIPE_LOG_NOTICE, "PDF disk erasure certificate sucessfully created." );
+    // nwipe_log( NWIPE_LOG_NOTICE, "PDF disk erasure certificate sucessfully created." );
     return 0;
 }
