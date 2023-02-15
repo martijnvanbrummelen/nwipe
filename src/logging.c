@@ -36,6 +36,7 @@
 #include "prng.h"
 #include "options.h"
 #include "logging.h"
+#include "create_pdf.h"
 
 /* Global array to hold log values to print when logging to STDOUT */
 char** log_lines;
@@ -635,7 +636,12 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
 {
     /* Prints two summary tables, the first is the device pass and verification summary
      * and the second is the main summary table detaining the drives, status, throughput,
-     * model and serial number */
+     * model and serial number.
+     *
+     * This function also calls the create_pdf() function that creates the PDF erasure
+     * report file. A page report on the success or failure of the erasure operation
+     */
+
     int i;
     int idx_src;
     int idx_dest;
@@ -854,6 +860,9 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
                    seconds,
                    model,
                    serial_no );
+
+        /* Create the PDF certificate */
+        create_pdf( c[i] );
     }
 
     /* Determine the size of throughput so that the correct nomenclature can be used */
@@ -1004,4 +1013,5 @@ int nwipe_strip_path( char* output, char* input )
             output[idx_dest--] = input[idx_src--];
         }
     }
+    return 0;
 }

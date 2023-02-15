@@ -23,6 +23,6 @@
 
 #define MAX_PDF_FOOTER_TEXT_LENGTH 50
 
-int create_pdf( void );
+int create_pdf( nwipe_context_t* ptr );
 
 #endif /* CREATE_PDF_H_ */
