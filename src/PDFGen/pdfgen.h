@@ -264,9 +264,6 @@ struct pdf_path_operation {
 /*! Utility macro to provide white */
 #define PDF_WHITE PDF_RGB(0xff, 0xff, 0xff)
 
-/*! Utility macro to provide gray */
-#define PDF_GRAY PDF_RGB(0x5A, 0x5A, 0x5A)
-
 /*!
  * Utility macro to provide a transparent colour
  * This is used in some places for 'fill' colours, where no fill is required

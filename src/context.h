@@ -145,6 +145,7 @@ typedef struct nwipe_context_t_
     int temp1_flash_rate_status;  // 0=blank 1=visible
     time_t temp1_time;  // The time when temperature was last checked, seconds since epoch
     int wipe_status;  // Wipe finished = 0, wipe in progress = 1, wipe yet to start = -1.
+    char wipe_status_txt[10];  // ERASED, FAILED, ABORTED, INSANITY
     int spinner_idx;  // Index into the spinner character array
     char spinner_character[1];  // The current spinner character
     double duration;  // Duration of the wipe in seconds
