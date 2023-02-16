@@ -23,6 +23,14 @@
 
 #define MAX_PDF_FOOTER_TEXT_LENGTH 50
 
+/* Additional colors that supplement the standard colors in pdfgen.h
+ */
+/*! Utility macro to provide gray */
+#define PDF_DARK_GREEN PDF_RGB( 0, 0x64, 0 )
+
+/*! Utility macro to provide gray */
+#define PDF_GRAY PDF_RGB( 0x5A, 0x5A, 0x5A )
+
 int create_pdf( nwipe_context_t* ptr );
 
 #endif /* CREATE_PDF_H_ */

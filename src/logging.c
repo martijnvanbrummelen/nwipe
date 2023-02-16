@@ -781,6 +781,8 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
 
             strncpy( status, "-FAILED-", 8 );
             status[8] = 0;
+
+            strcpy( c[i]->wipe_status_txt, "FAILED" );  // copy to context for use by certificate
         }
         else
         {
@@ -791,6 +793,8 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
 
                 strncpy( status, " Erased ", 8 );
                 status[8] = 0;
+
+                strcpy( c[i]->wipe_status_txt, "ERASED" );  // copy to context for use by certificate
             }
             else
             {
@@ -801,6 +805,8 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
 
                     strncpy( status, "UABORTED", 8 );
                     status[8] = 0;
+
+                    strcpy( c[i]->wipe_status_txt, "ABORTED" );  // copy to context for use by certificate
                 }
                 else
                 {
@@ -810,6 +816,8 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
 
                     strncpy( status, "INSANITY", 8 );
                     status[8] = 0;
+
+                    strcpy( c[i]->wipe_status_txt, "INSANITY" );  // copy to context for use by certificate
                 }
             }
         }
