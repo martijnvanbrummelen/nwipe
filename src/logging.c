@@ -841,6 +841,9 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
         /* Convert binary seconds into three binary variables, hours, minutes and seconds */
         convert_seconds_to_hours_minutes_seconds( total_duration_seconds, &hours, &minutes, &seconds );
 
+        /* write the duration string to the drive context for later use by create_pdf() */
+        snprintf( c[i]->duration_str, sizeof( c[i]->duration_str ), "%02i:%02i:%02i", hours, minutes, seconds );
+
         /* Device Model */
         strncpy( model, c[i]->device_model, 17 );
         model[17] = 0;

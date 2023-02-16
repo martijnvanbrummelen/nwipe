@@ -148,6 +148,7 @@ typedef struct nwipe_context_t_
     int spinner_idx;  // Index into the spinner character array
     char spinner_character[1];  // The current spinner character
     double duration;  // Duration of the wipe in seconds
+    char duration_str[20];  // The duration string in hh:mm:ss
     time_t start_time;  // Start time of wipe
     time_t end_time;  // End time of wipe
     u64 fsyncdata_errors;  // The number of fsyncdata errors across all passes.

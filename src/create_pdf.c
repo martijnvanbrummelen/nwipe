@@ -33,9 +33,14 @@
 #include "embedded_images/tick_erased.jpg.h"
 #include "logging.h"
 #include "options.h"
+#include "prng.h"
 
 int create_pdf( nwipe_context_t* ptr )
 {
+    extern nwipe_prng_t nwipe_twister;
+    extern nwipe_prng_t nwipe_isaac;
+    extern nwipe_prng_t nwipe_isaac64;
+
     char pdf_footer[MAX_PDF_FOOTER_TEXT_LENGTH];
     nwipe_context_t* c;
     c = ptr;
@@ -44,6 +49,9 @@ int create_pdf( nwipe_context_t* ptr )
     char barcode[80]; /* Contents of the barcode, i.e model:serial */
     char dimm[50]; /* Disk Information: Model */
     char verify[20]; /* Verify option text */
+    char blank[10]; /* blanking pass, none, zeros, ones */
+    char rounds[10]; /* rounds ASCII numeric */
+    char prng_type[20]; /* type of prng, twister, isaac, isaac64 */
 
     struct pdf_info info = { .creator = "https://github.com/PartialVolume/shredos.x86_64",
                              .producer = "https://github.com/martijnvanbrummelen/nwipe",
@@ -56,13 +64,14 @@ int create_pdf( nwipe_context_t* ptr )
     struct pdf_doc* pdf = pdf_create( PDF_A4_WIDTH, PDF_A4_HEIGHT, &info );
 
     /* Create footer text string and append the version */
-    strcpy( pdf_footer, "Disc Erasure by NWIPE version" );
+    strcpy( pdf_footer, "Disc Erasure by NWIPE version " );
     strcat( pdf_footer, version_string );
 
     pdf_set_font( pdf, "Helvetica" );
     pdf_append_page( pdf );
 
-    /* Create header and footer*/
+    /* ------------------------ */
+    /* Create header and footer */
     pdf_add_text( pdf, NULL, pdf_footer, 12, 200, 30, PDF_BLACK );
     pdf_add_line( pdf, NULL, 50, 50, 550, 50, 3, PDF_BLACK );
     pdf_add_line( pdf, NULL, 50, 650, 550, 650, 3, PDF_BLACK );
@@ -76,6 +85,7 @@ int create_pdf( nwipe_context_t* ptr )
     snprintf( barcode, sizeof( barcode ), " %s:%s ", c->device_model, c->device_serial_no );
     pdf_add_barcode( pdf, NULL, PDF_BARCODE_128A, 195, 748, 200, 50, barcode, PDF_BLACK );
 
+    /* ------------------------ */
     /* Organisation Information */
     pdf_add_line( pdf, NULL, 50, 550, 550, 550, 1, PDF_GRAY );
     pdf_add_text( pdf, NULL, "Organisation Performing The Disk Erasure", 12, 50, 630, PDF_BLUE );
@@ -84,6 +94,7 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_add_text( pdf, NULL, "Contact Name:", 12, 60, 570, PDF_GRAY );
     pdf_add_text( pdf, NULL, "Contact Phone:", 12, 300, 570, PDF_GRAY );
 
+    /* -------------------- */
     /* Customer Information */
     pdf_add_line( pdf, NULL, 50, 450, 550, 450, 1, PDF_GRAY );
     pdf_add_text( pdf, NULL, "Customer Details", 12, 50, 530, PDF_BLUE );
@@ -92,12 +103,14 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_add_text( pdf, NULL, "Contact Name:", 12, 60, 470, PDF_GRAY );
     pdf_add_text( pdf, NULL, "Contact Phone:", 12, 300, 470, PDF_GRAY );
 
+    /* ---------------------- */
     /* Technician/Operator ID */
     pdf_add_line( pdf, NULL, 50, 390, 550, 390, 1, PDF_GRAY );
     pdf_add_text( pdf, NULL, "Technician/Operator ID", 12, 50, 430, PDF_BLUE );
     pdf_add_text( pdf, NULL, "Name:", 12, 60, 410, PDF_GRAY );
     pdf_add_text( pdf, NULL, "ID:", 12, 300, 410, PDF_GRAY );
 
+    /* ---------------- */
     /* Disk Information */
     pdf_add_line( pdf, NULL, 50, 270, 550, 270, 1, PDF_GRAY );
     pdf_add_text( pdf, NULL, "Disk Information", 12, 50, 370, PDF_BLUE );
@@ -106,27 +119,73 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_add_text( pdf, NULL, c->device_model, 12, 135, 350, PDF_BLACK );
 
     pdf_add_text( pdf, NULL, "Serial:", 12, 300, 350, PDF_GRAY );
-    pdf_add_text( pdf, NULL, c->device_serial_no, 12, 350, 350, PDF_GRAY );
+    if( c->device_serial_no[0] == 0 )
+    {
+        strcpy( c->device_serial_no, "Unknown" );
+    }
+    pdf_add_text( pdf, NULL, c->device_serial_no, 12, 340, 350, PDF_BLACK );
 
     pdf_add_text( pdf, NULL, "Size:", 12, 60, 330, PDF_GRAY );
     pdf_add_text( pdf, NULL, c->device_size_text, 12, 85, 330, PDF_BLACK );
 
     pdf_add_text( pdf, NULL, "Bus:", 12, 300, 330, PDF_GRAY );
+    pdf_add_text( pdf, NULL, c->device_type_str, 12, 330, 330, PDF_BLACK );
+
     pdf_add_text( pdf, NULL, "Health:", 12, 60, 310, PDF_GRAY );
     pdf_add_text( pdf, NULL, "Remapped Sectors:", 12, 300, 310, PDF_GRAY );
     pdf_add_text( pdf, NULL, "HPA(pre-erase):", 12, 60, 290, PDF_GRAY );
     pdf_add_text( pdf, NULL, "DCO(pre-erase):", 12, 300, 290, PDF_GRAY );
 
+    /* --------------- */
     /* Erasure Details */
     pdf_add_text( pdf, NULL, "Disk Erasure Details", 12, 50, 250, PDF_BLUE );
     pdf_add_text( pdf, NULL, "Start/End Time:", 12, 60, 230, PDF_GRAY );
+
     pdf_add_text( pdf, NULL, "Duration:", 12, 300, 230, PDF_GRAY );
+    pdf_add_text( pdf, NULL, c->duration_str, 12, 355, 230, PDF_BLACK );
+
     pdf_add_text( pdf, NULL, "Method:", 12, 60, 210, PDF_GRAY );
     pdf_add_text( pdf, NULL, nwipe_method_label( nwipe_options.method ), 12, 110, 210, PDF_BLACK );
-    pdf_add_text( pdf, NULL, "PRNG algorithm:", 12, 300, 210, PDF_GRAY );
-    pdf_add_text( pdf, NULL, "Final Pass(Zeros/Ones/None):", 12, 60, 190, PDF_GRAY );
 
-    /* Verify abbreviations used in summary table */
+    /* prng type */
+    pdf_add_text( pdf, NULL, "PRNG algorithm:", 12, 300, 210, PDF_GRAY );
+    if( nwipe_options.prng == &nwipe_twister )
+    {
+        strcpy( prng_type, "Twister" );
+    }
+    else
+    {
+        if( nwipe_options.prng == &nwipe_isaac )
+        {
+            strcpy( prng_type, "Isaac" );
+        }
+        else
+        {
+            if( nwipe_options.prng == &nwipe_isaac64 )
+            {
+                strcpy( prng_type, "Isaac64" );
+            }
+            else
+            {
+                strcpy( prng_type, "Unknown" );
+            }
+        }
+    }
+    pdf_add_text( pdf, NULL, prng_type, 12, 395, 210, PDF_BLACK );
+
+    /* Final blanking pass if selected, none, zeros or ones */
+    if( nwipe_options.noblank )
+    {
+        strcpy( blank, "None" );
+    }
+    else
+    {
+        strcpy( blank, "Zeros" );
+    }
+    pdf_add_text( pdf, NULL, "Final Pass(Zeros/Ones/None):", 12, 60, 190, PDF_GRAY );
+    pdf_add_text( pdf, NULL, blank, 12, 230, 190, PDF_BLACK );
+
+    /* Create suitable text based on the numeric value of type of verification */
     switch( nwipe_options.verify )
     {
         case NWIPE_VERIFY_NONE:
@@ -145,11 +204,16 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_add_text( pdf, NULL, verify, 12, 450, 190, PDF_BLACK );
 
     pdf_add_text( pdf, NULL, "Status:", 12, 60, 170, PDF_GRAY );
+
     pdf_add_text( pdf, NULL, "Rounds:", 12, 300, 170, PDF_GRAY );
+    snprintf( rounds, sizeof( rounds ), "%i", nwipe_options.rounds );
+    pdf_add_text( pdf, NULL, rounds, 12, 350, 170, PDF_BLACK );
+
     pdf_add_text( pdf, NULL, "HPA(post-erase):", 12, 60, 150, PDF_GRAY );
     pdf_add_text( pdf, NULL, "DCO(post-erase):", 12, 300, 150, PDF_GRAY );
     pdf_add_text( pdf, NULL, "Information:", 12, 60, 130, PDF_GRAY );
 
+    /* --------------------- */
     /* Certificate Date/Time */
 
     pdf_save( pdf, "output.pdf" );
