@@ -58,6 +58,7 @@ int create_pdf( nwipe_context_t* ptr )
     char HPA_post_erase[50] = "";
     char DCO_pre_erase[50] = "";
     char DCO_post_erase[50] = "";
+    char PDF_filename[256] = "";
 
     struct pdf_info info = { .creator = "https://github.com/PartialVolume/shredos.x86_64",
                              .producer = "https://github.com/martijnvanbrummelen/nwipe",
@@ -89,10 +90,12 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_add_line( pdf, NULL, 50, 650, 550, 650, 3, PDF_BLACK );
     pdf_add_image_data( pdf, NULL, 45, 665, 100, 100, bin2c_shred_db_jpg, 27063 );
     pdf_add_image_data( pdf, NULL, 450, 665, 100, 100, bin2c_te_jpg, 54896 );
+    pdf_set_font( pdf, "Helvetica-Bold" );
     snprintf( model_header, sizeof( model_header ), " %s: %s ", "Model", c->device_model );
-    pdf_add_text( pdf, NULL, model_header, 14, 215, 755, PDF_BLACK );
+    pdf_add_text( pdf, NULL, model_header, 14, 195, 755, PDF_BLACK );
     snprintf( serial_header, sizeof( serial_header ), " %s: %s ", "S/N", c->device_serial_no );
     pdf_add_text( pdf, NULL, serial_header, 14, 215, 735, PDF_BLACK );
+    pdf_set_font( pdf, "Helvetica" );
     pdf_add_text( pdf, NULL, "Disk Erasure Report", 24, 190, 690, PDF_BLACK );
     snprintf( barcode, sizeof( barcode ), "%s:%s", c->device_model, c->device_serial_no );
     pdf_add_barcode( pdf, NULL, PDF_BARCODE_128A, 100, 790, 400, 25, barcode, PDF_BLACK );
@@ -140,7 +143,7 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_add_text( pdf, NULL, "Size:", 12, 60, 390, PDF_GRAY );
     pdf_set_font( pdf, "Helvetica-Bold" );
     snprintf( device_size, sizeof( device_size ), "%s, %lli bytes", c->device_size_text, c->device_size );
-    pdf_add_text( pdf, NULL, device_size, 12, 85, 390, PDF_BLACK );
+    pdf_add_text( pdf, NULL, device_size, 12, 105, 390, PDF_BLACK );
     pdf_set_font( pdf, "Helvetica" );
 
     pdf_add_text( pdf, NULL, "Bus:", 12, 300, 390, PDF_GRAY );
@@ -334,8 +337,36 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_add_text( pdf, NULL, "Signature:", 12, 300, 100, PDF_BLUE );
     pdf_add_line( pdf, NULL, 360, 65, 550, 66, 1, PDF_GRAY );
 
-    pdf_save( pdf, "output.pdf" );
+    /* --------------------------- */
+    /* Create the reports filename */
+
+    /* Sanitize the strings that we are going to use to create the report filename
+     * by converting any non alphanumeric characters to an underscore or hyphon */
+
+    replace_non_alphanumeric( end_time_text, '-' );
+    replace_non_alphanumeric( c->device_model, '_' );
+    replace_non_alphanumeric( c->device_serial_no, '_' );
+    snprintf( PDF_filename,
+              sizeof( PDF_filename ),
+              "nwipe_report_%s_Model_%s_Serial_%s.pdf",
+              end_time_text,
+              c->device_model,
+              c->device_serial_no );
+
+    pdf_save( pdf, PDF_filename );
     pdf_destroy( pdf );
-    // nwipe_log( NWIPE_LOG_NOTICE, "PDF disk erasure certificate sucessfully created." );
+    nwipe_log( NWIPE_LOG_INFO, "%s", PDF_filename );
     return 0;
+}
+void replace_non_alphanumeric( char* str, char replacement_char )
+{
+    int i = 0;
+    while( str[i] != 0 )
+    {
+        if( str[i] < '0' || ( str[i] > '9' && str[i] < 'A' ) || ( str[i] > 'Z' && str[i] < 'a' ) || str[i] > 'z' )
+        {
+            str[i] = replacement_char;
+        }
+        i++;
+    }
 }
