@@ -46,15 +46,18 @@ int create_pdf( nwipe_context_t* ptr )
     c = ptr;
     char model_header[50] = ""; /* Model text in the header */
     char serial_header[30] = ""; /* Serial number text in the header */
+    char device_size[50] = ""; /* Device size in the form xMB (xxxx bytes) */
     char barcode[100] = ""; /* Contents of the barcode, i.e model:serial */
-    char dimm[50] = ""; /* Disk Information: Model */
     char verify[20] = ""; /* Verify option text */
     char blank[10] = ""; /* blanking pass, none, zeros, ones */
     char rounds[10] = ""; /* rounds ASCII numeric */
     char prng_type[20] = ""; /* type of prng, twister, isaac, isaac64 */
-    char wipe_status[8] = ""; /* Erased or Failed */
     char start_time_text[50] = "";
     char end_time_text[50] = "";
+    char HPA_pre_erase[50] = "";
+    char HPA_post_erase[50] = "";
+    char DCO_pre_erase[50] = "";
+    char DCO_post_erase[50] = "";
 
     struct pdf_info info = { .creator = "https://github.com/PartialVolume/shredos.x86_64",
                              .producer = "https://github.com/martijnvanbrummelen/nwipe",
@@ -117,11 +120,13 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_add_line( pdf, NULL, 50, 330, 550, 330, 1, PDF_GRAY );
     pdf_add_text( pdf, NULL, "Disk Information", 12, 50, 430, PDF_BLUE );
 
+    /* Make/model */
     pdf_add_text( pdf, NULL, "Make/Model:", 12, 60, 410, PDF_GRAY );
     pdf_set_font( pdf, "Helvetica-Bold" );
     pdf_add_text( pdf, NULL, c->device_model, 12, 135, 410, PDF_BLACK );
     pdf_set_font( pdf, "Helvetica" );
 
+    /* Serial no. */
     pdf_add_text( pdf, NULL, "Serial:", 12, 300, 410, PDF_GRAY );
     if( c->device_serial_no[0] == 0 )
     {
@@ -131,9 +136,11 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_add_text( pdf, NULL, c->device_serial_no, 12, 340, 410, PDF_BLACK );
     pdf_set_font( pdf, "Helvetica" );
 
+    /* Capacity (Size) of disk */
     pdf_add_text( pdf, NULL, "Size:", 12, 60, 390, PDF_GRAY );
     pdf_set_font( pdf, "Helvetica-Bold" );
-    pdf_add_text( pdf, NULL, c->device_size_text, 12, 85, 390, PDF_BLACK );
+    snprintf( device_size, sizeof( device_size ), "%s, %lli bytes", c->device_size_text, c->device_size );
+    pdf_add_text( pdf, NULL, device_size, 12, 85, 390, PDF_BLACK );
     pdf_set_font( pdf, "Helvetica" );
 
     pdf_add_text( pdf, NULL, "Bus:", 12, 300, 390, PDF_GRAY );
@@ -143,8 +150,23 @@ int create_pdf( nwipe_context_t* ptr )
 
     pdf_add_text( pdf, NULL, "Health:", 12, 60, 370, PDF_GRAY );
     pdf_add_text( pdf, NULL, "Remapped Sectors:", 12, 300, 370, PDF_GRAY );
+
+    /* HPA, DCO, pre-erase */
+    if( !strcmp( c->device_type_str, "NVME" ) )
+    {
+        snprintf( HPA_pre_erase, sizeof( HPA_pre_erase ), "Not applicable to NVME" );
+        snprintf( HPA_post_erase, sizeof( HPA_post_erase ), "Not applicable to NVME" );
+        snprintf( DCO_pre_erase, sizeof( DCO_pre_erase ), "Not applicable to NVME" );
+        snprintf( DCO_post_erase, sizeof( DCO_post_erase ), "Not applicable to NVME" );
+    }
     pdf_add_text( pdf, NULL, "HPA(pre-erase):", 12, 60, 350, PDF_GRAY );
+    pdf_set_font( pdf, "Helvetica-Bold" );
+    pdf_add_text( pdf, NULL, HPA_pre_erase, 12, 150, 350, PDF_BLACK );
+    pdf_set_font( pdf, "Helvetica" );
     pdf_add_text( pdf, NULL, "DCO(pre-erase):", 12, 300, 350, PDF_GRAY );
+    pdf_set_font( pdf, "Helvetica-Bold" );
+    pdf_add_text( pdf, NULL, DCO_pre_erase, 12, 393, 350, PDF_BLACK );
+    pdf_set_font( pdf, "Helvetica" );
 
     /* --------------- */
     /* Erasure Details */
@@ -191,16 +213,28 @@ int create_pdf( nwipe_context_t* ptr )
     /* Status */
     pdf_add_text( pdf, NULL, "Status:", 12, 300, 270, PDF_GRAY );
     pdf_set_font( pdf, "Helvetica-Bold" );
+
     if( !strcmp( c->wipe_status_txt, "ERASED" ) )
     {
-        pdf_add_text( pdf, NULL, c->wipe_status_txt, 12, 345, 270, PDF_DARK_GREEN );
+        pdf_add_text( pdf, NULL, c->wipe_status_txt, 12, 365, 270, PDF_DARK_GREEN );
+        pdf_add_ellipse( pdf, NULL, 390, 275, 45, 10, 2, PDF_DARK_GREEN, PDF_TRANSPARENT );
     }
     else
     {
-        pdf_add_text( pdf, NULL, c->wipe_status_txt, 12, 345, 270, PDF_RED );
+        if( !strcmp( c->wipe_status_txt, "FAILED" ) )
+        {
+            // text shifted left slightly in ellipse due to extra character
+            pdf_add_text( pdf, NULL, c->wipe_status_txt, 12, 370, 270, PDF_RED );
+        }
+        else
+        {
+            pdf_add_text( pdf, NULL, c->wipe_status_txt, 12, 360, 270, PDF_RED );
+        }
+        pdf_add_ellipse( pdf, NULL, 390, 275, 45, 10, 2, PDF_RED, PDF_TRANSPARENT );
     }
     pdf_set_font( pdf, "Helvetica" );
 
+    /* Method */
     pdf_add_text( pdf, NULL, "Method:", 12, 60, 250, PDF_GRAY );
     pdf_set_font( pdf, "Helvetica-Bold" );
     pdf_add_text( pdf, NULL, nwipe_method_label( nwipe_options.method ), 12, 110, 250, PDF_BLACK );
@@ -268,14 +302,28 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_add_text( pdf, NULL, verify, 12, 450, 230, PDF_BLACK );
     pdf_set_font( pdf, "Helvetica" );
 
+    /* bytes erased */
+    pdf_add_text( pdf, NULL, "Bytes Erased:", 12, 60, 210, PDF_GRAY );
+    pdf_set_font( pdf, "Helvetica-Bold" );
+    pdf_add_text( pdf, NULL, "", 12, 60, 210, PDF_BLACK );
+    pdf_set_font( pdf, "Helvetica" );
+
+    /* rounds */
     pdf_add_text( pdf, NULL, "Rounds:", 12, 300, 210, PDF_GRAY );
     snprintf( rounds, sizeof( rounds ), "%i", nwipe_options.rounds );
     pdf_set_font( pdf, "Helvetica-Bold" );
     pdf_add_text( pdf, NULL, rounds, 12, 350, 210, PDF_BLACK );
     pdf_set_font( pdf, "Helvetica" );
 
+    /* HPA, DCO, post erase */
     pdf_add_text( pdf, NULL, "HPA(post-erase):", 12, 60, 190, PDF_GRAY );
+    pdf_set_font( pdf, "Helvetica-Bold" );
+    pdf_add_text( pdf, NULL, HPA_post_erase, 12, 155, 190, PDF_BLACK );
+    pdf_set_font( pdf, "Helvetica" );
     pdf_add_text( pdf, NULL, "DCO(post-erase):", 12, 300, 190, PDF_GRAY );
+    pdf_set_font( pdf, "Helvetica-Bold" );
+    pdf_add_text( pdf, NULL, DCO_post_erase, 12, 397, 190, PDF_BLACK );
+    pdf_set_font( pdf, "Helvetica" );
     pdf_add_text( pdf, NULL, "Information:", 12, 60, 170, PDF_GRAY );
 
     /* ---------------------- */

@@ -31,6 +31,11 @@
 /*! Utility macro to provide gray */
 #define PDF_GRAY PDF_RGB( 0x5A, 0x5A, 0x5A )
 
+/**
+ * Create the disk erase report in PDF format
+ * @param pointer to a drive context
+ * @return returns 0 on success < 1 on error
+ */
 int create_pdf( nwipe_context_t* ptr );
 
 #endif /* CREATE_PDF_H_ */

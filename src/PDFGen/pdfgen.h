@@ -524,8 +524,8 @@ int pdf_add_custom_path(struct pdf_doc *pdf, struct pdf_object *page,
  * @param y Y offset of the center of the ellipse
  * @param xradius Radius of the ellipse in the X axis
  * @param yradius Radius of the ellipse in the Y axis
- * @param colour Colour to draw the ellipse outline stroke
  * @param width Width of the ellipse outline stroke
+ * @param colour Colour to draw the ellipse outline stroke
  * @param fill_colour Colour to fill the ellipse
  * @return 0 on success, < 0 on failure
  */
