@@ -40,7 +40,22 @@ typedef enum nwipe_log_t_ {
     NWIPE_LOG_NOTIMESTAMP  // logs the message without the timestamp
 } nwipe_log_t;
 
+/**
+ * Writes a string to the log. nwipe_log timestamps the string
+ * @param level the tag to display:
+ * NWIPE_LOG_NONE Don't display a tag
+ * NWIPE_LOG_DEBUG, Very verbose logging.
+ * NWIPE_LOG_INFO,  Verbose logging.
+ * NWIPE_LOG_NOTICE,  Most logging happens at this level.
+ * NWIPE_LOG_WARNING, Things that the user should know about.
+ * NWIPE_LOG_ERROR, Non-fatal errors that result in failure.
+ * NWIPE_LOG_FATAL, Errors that cause the program to exit.
+ * NWIPE_LOG_SANITY, Programming errors.
+ * NWIPE_LOG_NOTIMESTAMP logs the message without the timestamp
+ * @param format the string to be logged
+ */
 void nwipe_log( nwipe_log_t level, const char* format, ... );
+
 void nwipe_perror( int nwipe_errno, const char* f, const char* s );
 void nwipe_log_OSinfo();
 int nwipe_log_sysinfo();
