@@ -320,9 +320,9 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_add_text( pdf, NULL, "*Bytes Erased:", 12, 60, 210, PDF_GRAY );
     snprintf( bytes_erased,
               sizeof( bytes_erased ),
-              "%lli %.1lli%%",
+              "%lli (%.1f%%)",
               c->bytes_erased,
-              ( c->bytes_erased / c->device_size ) * 100 );
+              (double) ( (double) c->bytes_erased / (double) c->device_size ) * 100 );
     pdf_set_font( pdf, "Helvetica-Bold" );
     if( c->bytes_erased == c->device_size )
     {
