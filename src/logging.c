@@ -825,6 +825,9 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
         /* Determine the size of throughput so that the correct nomenclature can be used */
         Determine_C_B_nomenclature( c[i]->throughput, throughput, 13 );
 
+        /* write the duration string to the drive context for later use by create_pdf() */
+        snprintf( c[i]->throughput_txt, sizeof( c[i]->throughput_txt ), "%s", throughput );
+
         /* Add this devices throughput to the total throughput */
         total_throughput += c[i]->throughput;
 

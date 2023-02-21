@@ -94,6 +94,8 @@ typedef struct nwipe_context_t_
     char device_name_without_path[100];
     char gui_device_name[100];
     unsigned long long device_size;  // The device size in bytes.
+    unsigned long long bytes_erased;  // Irrespective of pass, this how much of the drive has been erased, CANNOT be
+                                      // greater than device_size.
     char* device_size_text;  // The device size in a more (human)readable format.
     char device_size_txt[NWIPE_DEVICE_SIZE_TXT_LENGTH];  // The device size in a more (human)readable format.
     char* device_model;  // The model of the device.
@@ -128,6 +130,7 @@ typedef struct nwipe_context_t_
     short sync_status;  // A flag to indicate when the method is syncing.
     pthread_t thread;  // The ID of the thread.
     u64 throughput;  // Average throughput in bytes per second.
+    char throughput_txt[13];  // Human readable throughput.
     u64 verify_errors;  // The number of verification errors across all passes.
     char temp1_path[MAX_HWMON_PATH_LENGTH];  // path to temperature variables /sys/class/hwmon/hwmonX/ etc.
     int temp1_crit;  // Critical high drive temperature, 1000000=unitialised, millidegree celsius.
