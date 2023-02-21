@@ -430,6 +430,9 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
         /* Decrement the bytes remaining in this pass. */
         z -= r;
 
+        /* record the number of bytes so far erased */
+        c->bytes_erased = c->device_size - z;
+
         /* Increment the total progress counters. */
         c->pass_done += r;
         c->round_done += r;
@@ -871,6 +874,9 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
 
         /* Decrement the bytes remaining in this pass. */
         z -= r;
+
+        /* record the number of bytes so far erased */
+        c->bytes_erased = c->device_size - z;
 
         /* Increment the total progress counterr. */
         c->pass_done += r;
