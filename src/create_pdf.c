@@ -59,7 +59,7 @@ int create_pdf( nwipe_context_t* ptr )
     char HPA_post_erase[50] = "";
     char DCO_pre_erase[50] = "";
     char DCO_post_erase[50] = "";
-    char PDF_filename[256] = "";
+    char throughput_txt[50] = "";
 
     struct pdf_info info = { .creator = "https://github.com/PartialVolume/shredos.x86_64",
                              .producer = "https://github.com/martijnvanbrummelen/nwipe",
@@ -310,9 +310,9 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_add_text( pdf, NULL, "*Bytes Erased:", 12, 60, 210, PDF_GRAY );
     snprintf( bytes_erased,
               sizeof( bytes_erased ),
-              "%lli %.1i%%",
+              "%lli %.1lli%%",
               c->bytes_erased,
-              (int) ( c->bytes_erased / c->device_size ) * 100 );
+              ( c->bytes_erased / c->device_size ) * 100 );
     pdf_set_font( pdf, "Helvetica-Bold" );
     if( c->bytes_erased == c->device_size )
     {
@@ -325,10 +325,18 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_set_font( pdf, "Helvetica" );
 
     /* rounds */
-    pdf_add_text( pdf, NULL, "Rounds:", 12, 300, 210, PDF_GRAY );
-    snprintf( rounds, sizeof( rounds ), "%i", nwipe_options.rounds );
+    pdf_add_text( pdf, NULL, "Rounds(completed/requested):", 12, 300, 210, PDF_GRAY );
     pdf_set_font( pdf, "Helvetica-Bold" );
-    pdf_add_text( pdf, NULL, rounds, 12, 350, 210, PDF_BLACK );
+    if( nwipe_options.rounds == c->round_working )
+    {
+        snprintf( rounds, sizeof( rounds ), "%i/%i", c->round_working, nwipe_options.rounds );
+        pdf_add_text( pdf, NULL, rounds, 12, 470, 210, PDF_DARK_GREEN );
+    }
+    else
+    {
+        snprintf( rounds, sizeof( rounds ), "%i/%i", c->round_working - 1, nwipe_options.rounds );
+        pdf_add_text( pdf, NULL, rounds, 12, 470, 210, PDF_RED );
+    }
     pdf_set_font( pdf, "Helvetica" );
 
     /* HPA, DCO, post erase */
@@ -343,8 +351,9 @@ int create_pdf( nwipe_context_t* ptr )
 
     /* Throughput */
     pdf_add_text( pdf, NULL, "Throughput:", 12, 300, 170, PDF_GRAY );
+    snprintf( throughput_txt, sizeof( throughput_txt ), "%s/sec", c->throughput_txt );
     pdf_set_font( pdf, "Helvetica-Bold" );
-    pdf_add_text( pdf, NULL, c->throughput_txt, 12, 370, 170, PDF_BLACK );
+    pdf_add_text( pdf, NULL, throughput_txt, 12, 370, 170, PDF_BLACK );
     pdf_set_font( pdf, "Helvetica" );
 
     /* Information */
@@ -371,16 +380,15 @@ int create_pdf( nwipe_context_t* ptr )
     replace_non_alphanumeric( end_time_text, '-' );
     replace_non_alphanumeric( c->device_model, '_' );
     replace_non_alphanumeric( c->device_serial_no, '_' );
-    snprintf( PDF_filename,
-              sizeof( PDF_filename ),
+    snprintf( c->PDF_filename,
+              sizeof( c->PDF_filename ),
               "nwipe_report_%s_Model_%s_Serial_%s.pdf",
               end_time_text,
               c->device_model,
               c->device_serial_no );
 
-    pdf_save( pdf, PDF_filename );
+    pdf_save( pdf, c->PDF_filename );
     pdf_destroy( pdf );
-    nwipe_log( NWIPE_LOG_INFO, "%s", PDF_filename );
     return 0;
 }
 void replace_non_alphanumeric( char* str, char replacement_char )

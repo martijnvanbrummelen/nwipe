@@ -172,7 +172,7 @@ void* nwipe_one( void* ptr )
     /* set wipe in progress flag for GUI */
     c->wipe_status = 1;
 
-    /* setup for a zero-fill. */
+    /* setup for a one-fill. */
 
     char onefill[1] = { '\xFF' };
     nwipe_pattern_t patterns[] = { { 1, &onefill[0] },  // pass 1: 1s
