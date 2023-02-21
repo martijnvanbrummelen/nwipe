@@ -118,7 +118,7 @@ typedef struct nwipe_context_t_
     nwipe_entropy_t prng_seed;  // The random data that is used to seed the PRNG.
     void* prng_state;  // The private internal state of the PRNG.
     int result;  // The process return value.
-    int round_count;  // The number of rounds performed by the working wipe method.
+    int round_count;  // The number of rounds requested by the user for the working wipe method.
     u64 round_done;  // The number of bytes that have already been i/o'd.
     u64 round_errors;  // The number of errors across all rounds.
     u64 round_size;  // The total number of i/o bytes across all rounds.
@@ -156,6 +156,7 @@ typedef struct nwipe_context_t_
     time_t start_time;  // Start time of wipe
     time_t end_time;  // End time of wipe
     u64 fsyncdata_errors;  // The number of fsyncdata errors across all passes.
+    char PDF_filename[256];  // The filename of the PDF certificate/report.
     /*
      * Identity contains the raw serial number of the drive
      * (where applicable), however, for use within nwipe use the

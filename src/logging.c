@@ -786,7 +786,7 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
         }
         else
         {
-            if( c[i]->wipe_status == 0 )
+            if( c[i]->wipe_status == 0 && user_abort != 1 )
             {
                 strncpy( exclamation_flag, " ", 1 );
                 exclamation_flag[1] = 0;
@@ -842,8 +842,13 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
         {
             if( c[i]->start_time != 0 && c[i]->end_time == 0 )
             {
-                /* For a summary in the event of a system shutdown */
+                /* For a summary in the event of a system shutdown, user abort */
                 c[i]->duration = difftime( t, c[i]->start_time );
+
+                /* If end_time is zero, which may occur if the wipe is aborted, then set
+                 * end_time to current time. Important to do as endtime is used by
+                 * the PDF report function */
+                c[i]->end_time = time( &t );
             }
         }
 
