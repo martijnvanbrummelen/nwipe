@@ -338,6 +338,10 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
             if( idx == 0 )
             {
                 nwipe_log( NWIPE_LOG_FATAL, "ERROR, prng wrote nothing to the buffer" );
+                if( c->bytes_erased < ( c->device_size - z ) )  // How much of the device has been erased?
+                {
+                    c->bytes_erased = c->device_size - z;
+                }
                 return -1;
             }
         }
@@ -350,6 +354,10 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
         {
             nwipe_perror( errno, __FUNCTION__, "write" );
             nwipe_log( NWIPE_LOG_FATAL, "Unable to read from '%s'.", c->device_name );
+            if( c->bytes_erased < ( c->device_size - z ) )  // How much of the device has been erased?
+            {
+                c->bytes_erased = c->device_size - z;
+            }
             return -1;
         }
 
@@ -374,17 +382,14 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
                 nwipe_perror( errno, __FUNCTION__, "lseek" );
                 nwipe_log(
                     NWIPE_LOG_ERROR, "Unable to bump the '%s' file offset after a partial write.", c->device_name );
+                if( c->bytes_erased < ( c->device_size - z ) )  // How much of the device has been erased?
+                {
+                    c->bytes_erased = c->device_size - z;
+                }
                 return -1;
             }
 
         } /* partial write */
-
-        /* Decrement the bytes remaining in this pass. */
-        z -= r;
-
-        /* Increment the total progress counters. */
-        c->pass_done += r;
-        c->round_done += r;
 
         /* Perodic Sync */
         if( syncRate > 0 )
@@ -409,6 +414,10 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
                     nwipe_log( NWIPE_LOG_WARNING, "Wrote %llu bytes on '%s'.", c->pass_done, c->device_name );
                     c->fsyncdata_errors++;
                     free( b );
+                    if( c->bytes_erased < ( c->device_size - z ) )  // How much of the device has been erased?
+                    {
+                        c->bytes_erased = c->device_size - z;
+                    }
                     return -1;
                 }
 
@@ -417,6 +426,13 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
         }
 
         pthread_testcancel();
+
+        /* Decrement the bytes remaining in this pass. */
+        z -= r;
+
+        /* Increment the total progress counters. */
+        c->pass_done += r;
+        c->round_done += r;
 
     } /* remaining bytes */
 
@@ -438,6 +454,16 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
         nwipe_perror( errno, __FUNCTION__, "fdatasync" );
         nwipe_log( NWIPE_LOG_WARNING, "Buffer flush failure on '%s'.", c->device_name );
         c->fsyncdata_errors++;
+        if( c->bytes_erased < ( c->device_size - z - blocksize ) )  // How much of the device has been erased?
+        {
+            c->bytes_erased = c->device_size - z - blocksize;
+        }
+        return -1;
+    }
+
+    if( c->bytes_erased < ( c->device_size - z ) )  // How much of the device has been erased?
+    {
+        c->bytes_erased = c->device_size - z;
     }
 
     /* We're done. */
@@ -761,6 +787,10 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
         {
             nwipe_perror( errno, __FUNCTION__, "write" );
             nwipe_log( NWIPE_LOG_FATAL, "Unable to write to '%s'.", c->device_name );
+            if( c->bytes_erased < ( c->device_size - z ) )  // How much of the device has been erased?
+            {
+                c->bytes_erased = c->device_size - z;
+            }
             return -1;
         }
 
@@ -785,6 +815,10 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
                 nwipe_perror( errno, __FUNCTION__, "lseek" );
                 nwipe_log(
                     NWIPE_LOG_ERROR, "Unable to bump the '%s' file offset after a partial write.", c->device_name );
+                if( c->bytes_erased < ( c->device_size - z ) )  // How much of the device has been erased?
+                {
+                    c->bytes_erased = c->device_size - z;
+                }
                 return -1;
             }
 
@@ -798,13 +832,6 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
          *   If the pattern length evenly divides the block size
          *   then ( w == 0 ) always.
          */
-
-        /* Decrement the bytes remaining in this pass. */
-        z -= r;
-
-        /* Increment the total progress counterr. */
-        c->pass_done += r;
-        c->round_done += r;
 
         /* Perodic Sync */
         if( syncRate > 0 )
@@ -829,6 +856,10 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
                     nwipe_log( NWIPE_LOG_WARNING, "Wrote %llu bytes on '%s'.", c->pass_done, c->device_name );
                     c->fsyncdata_errors++;
                     free( b );
+                    if( c->bytes_erased < ( c->device_size - z ) )  // How much of the device has been erased?
+                    {
+                        c->bytes_erased = c->device_size - z;
+                    }
                     return -1;
                 }
 
@@ -837,6 +868,13 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
         }
 
         pthread_testcancel();
+
+        /* Decrement the bytes remaining in this pass. */
+        z -= r;
+
+        /* Increment the total progress counterr. */
+        c->pass_done += r;
+        c->round_done += r;
 
     } /* remaining bytes */
 
@@ -851,14 +889,23 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
 
     if( r != 0 )
     {
-        /* FIXME: Is there a better way to handle this? */
         nwipe_perror( errno, __FUNCTION__, "fdatasync" );
         nwipe_log( NWIPE_LOG_WARNING, "Buffer flush failure on '%s'.", c->device_name );
         c->fsyncdata_errors++;
+        if( c->bytes_erased < ( c->device_size - z - blocksize ) )  // How much of the device has been erased?
+        {
+            c->bytes_erased = c->device_size - z - blocksize;
+        }
+        return -1;
     }
 
     /* Release the output buffer. */
     free( b );
+
+    if( c->bytes_erased < ( c->device_size - z ) )  // How much of the device has been erased?
+    {
+        c->bytes_erased = c->device_size - z;
+    }
 
     /* We're done. */
     return 0;

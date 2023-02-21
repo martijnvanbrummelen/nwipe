@@ -346,6 +346,9 @@ int main( int argc, char** argv )
 
         /* Initialise the wipe result value */
         c1[i]->result = 0;
+
+        /* Initialise the variable that tracks how much of the drive has been erased */
+        c1[i]->bytes_erased = 0;
     }
 
     /* Pass the number selected to the struct for other threads */

@@ -54,6 +54,7 @@ int create_pdf( nwipe_context_t* ptr )
     char prng_type[20] = ""; /* type of prng, twister, isaac, isaac64 */
     char start_time_text[50] = "";
     char end_time_text[50] = "";
+    char bytes_erased[50] = "";
     char HPA_pre_erase[50] = "";
     char HPA_post_erase[50] = "";
     char DCO_pre_erase[50] = "";
@@ -306,9 +307,21 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_set_font( pdf, "Helvetica" );
 
     /* bytes erased */
-    pdf_add_text( pdf, NULL, "Bytes Erased:", 12, 60, 210, PDF_GRAY );
+    pdf_add_text( pdf, NULL, "*Bytes Erased:", 12, 60, 210, PDF_GRAY );
+    snprintf( bytes_erased,
+              sizeof( bytes_erased ),
+              "%lli %.1i%%",
+              c->bytes_erased,
+              (int) ( c->bytes_erased / c->device_size ) * 100 );
     pdf_set_font( pdf, "Helvetica-Bold" );
-    pdf_add_text( pdf, NULL, "", 12, 60, 210, PDF_BLACK );
+    if( c->bytes_erased == c->device_size )
+    {
+        pdf_add_text( pdf, NULL, bytes_erased, 12, 145, 210, PDF_DARK_GREEN );
+    }
+    else
+    {
+        pdf_add_text( pdf, NULL, bytes_erased, 12, 145, 210, PDF_RED );
+    }
     pdf_set_font( pdf, "Helvetica" );
 
     /* rounds */
@@ -327,7 +340,19 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_set_font( pdf, "Helvetica-Bold" );
     pdf_add_text( pdf, NULL, DCO_post_erase, 12, 397, 190, PDF_BLACK );
     pdf_set_font( pdf, "Helvetica" );
+
+    /* Throughput */
+    pdf_add_text( pdf, NULL, "Throughput:", 12, 300, 170, PDF_GRAY );
+    pdf_set_font( pdf, "Helvetica-Bold" );
+    pdf_add_text( pdf, NULL, c->throughput_txt, 12, 370, 170, PDF_BLACK );
+    pdf_set_font( pdf, "Helvetica" );
+
+    /* Information */
     pdf_add_text( pdf, NULL, "Information:", 12, 60, 170, PDF_GRAY );
+    pdf_set_font( pdf, "Helvetica-Bold" );
+    pdf_add_text(
+        pdf, NULL, "* bytes erased: The amount of drive that's been erased at least once", 12, 60, 130, PDF_BLACK );
+    pdf_set_font( pdf, "Helvetica" );
 
     /* ---------------------- */
     /* Technician/Operator ID */
