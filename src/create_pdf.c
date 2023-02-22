@@ -31,6 +31,7 @@
 #include "method.h"
 #include "embedded_images/shred_db.jpg.h"
 #include "embedded_images/tick_erased.jpg.h"
+#include "embedded_images/redcross.h"
 #include "logging.h"
 #include "options.h"
 #include "prng.h"
@@ -50,7 +51,7 @@ int create_pdf( nwipe_context_t* ptr )
     char barcode[100] = ""; /* Contents of the barcode, i.e model:serial */
     char verify[20] = ""; /* Verify option text */
     char blank[10] = ""; /* blanking pass, none, zeros, ones */
-    char rounds[10] = ""; /* rounds ASCII numeric */
+    char rounds[50] = ""; /* rounds ASCII numeric */
     char prng_type[20] = ""; /* type of prng, twister, isaac, isaac64 */
     char start_time_text[50] = "";
     char end_time_text[50] = "";
@@ -84,13 +85,13 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_set_font( pdf, "Helvetica" );
     pdf_append_page( pdf );
 
-    /* ------------------------ */
-    /* Create header and footer */
+    /* ---------------------------------------------------------- */
+    /* Create header and footer, with the exception of the green  */
+    /* tick/red icon which is set from the 'status' section below */
     pdf_add_text( pdf, NULL, pdf_footer, 12, 200, 30, PDF_BLACK );
     pdf_add_line( pdf, NULL, 50, 50, 550, 50, 3, PDF_BLACK );
     pdf_add_line( pdf, NULL, 50, 650, 550, 650, 3, PDF_BLACK );
     pdf_add_image_data( pdf, NULL, 45, 665, 100, 100, bin2c_shred_db_jpg, 27063 );
-    pdf_add_image_data( pdf, NULL, 450, 665, 100, 100, bin2c_te_jpg, 54896 );
     pdf_set_font( pdf, "Helvetica-Bold" );
     snprintf( model_header, sizeof( model_header ), " %s: %s ", "Model", c->device_model );
     pdf_add_text( pdf, NULL, model_header, 14, 195, 755, PDF_BLACK );
@@ -222,6 +223,9 @@ int create_pdf( nwipe_context_t* ptr )
     {
         pdf_add_text( pdf, NULL, c->wipe_status_txt, 12, 365, 270, PDF_DARK_GREEN );
         pdf_add_ellipse( pdf, NULL, 390, 275, 45, 10, 2, PDF_DARK_GREEN, PDF_TRANSPARENT );
+
+        /* Display the green tick icon in the header */
+        pdf_add_image_data( pdf, NULL, 450, 665, 100, 100, bin2c_te_jpg, 54896 );
     }
     else
     {
@@ -229,10 +233,16 @@ int create_pdf( nwipe_context_t* ptr )
         {
             // text shifted left slightly in ellipse due to extra character
             pdf_add_text( pdf, NULL, c->wipe_status_txt, 12, 370, 270, PDF_RED );
+
+            // Print the red cross
+            pdf_add_image_data( pdf, NULL, 450, 665, 100, 100, bin2c_redcross_jpg, 60331 );
         }
         else
         {
             pdf_add_text( pdf, NULL, c->wipe_status_txt, 12, 360, 270, PDF_RED );
+
+            // Print the red cross
+            pdf_add_image_data( pdf, NULL, 450, 665, 100, 100, bin2c_redcross_jpg, 60331 );
         }
         pdf_add_ellipse( pdf, NULL, 390, 275, 45, 10, 2, PDF_RED, PDF_TRANSPARENT );
     }
@@ -310,9 +320,9 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_add_text( pdf, NULL, "*Bytes Erased:", 12, 60, 210, PDF_GRAY );
     snprintf( bytes_erased,
               sizeof( bytes_erased ),
-              "%lli %.1lli%%",
+              "%lli (%.1f%%)",
               c->bytes_erased,
-              ( c->bytes_erased / c->device_size ) * 100 );
+              (double) ( (double) c->bytes_erased / (double) c->device_size ) * 100 );
     pdf_set_font( pdf, "Helvetica-Bold" );
     if( c->bytes_erased == c->device_size )
     {
@@ -327,7 +337,7 @@ int create_pdf( nwipe_context_t* ptr )
     /* rounds */
     pdf_add_text( pdf, NULL, "Rounds(completed/requested):", 12, 300, 210, PDF_GRAY );
     pdf_set_font( pdf, "Helvetica-Bold" );
-    if( nwipe_options.rounds == c->round_working )
+    if( !strcmp( c->wipe_status_txt, "ERASED" ) )
     {
         snprintf( rounds, sizeof( rounds ), "%i/%i", c->round_working, nwipe_options.rounds );
         pdf_add_text( pdf, NULL, rounds, 12, 470, 210, PDF_DARK_GREEN );

@@ -430,6 +430,12 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
         /* Decrement the bytes remaining in this pass. */
         z -= r;
 
+        /* If statement required so that it does not reset on subsequent passes */
+        if( c->bytes_erased < ( c->device_size - z ) )  // How much of the device has been erased?
+        {
+            c->bytes_erased = c->device_size - z;
+        }
+
         /* Increment the total progress counters. */
         c->pass_done += r;
         c->round_done += r;
@@ -459,11 +465,6 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
             c->bytes_erased = c->device_size - z - blocksize;
         }
         return -1;
-    }
-
-    if( c->bytes_erased < ( c->device_size - z ) )  // How much of the device has been erased?
-    {
-        c->bytes_erased = c->device_size - z;
     }
 
     /* We're done. */
@@ -872,6 +873,11 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
         /* Decrement the bytes remaining in this pass. */
         z -= r;
 
+        if( c->bytes_erased < ( c->device_size - z ) )  // How much of the device has been erased?
+        {
+            c->bytes_erased = c->device_size - z;
+        }
+
         /* Increment the total progress counterr. */
         c->pass_done += r;
         c->round_done += r;
@@ -901,11 +907,6 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
 
     /* Release the output buffer. */
     free( b );
-
-    if( c->bytes_erased < ( c->device_size - z ) )  // How much of the device has been erased?
-    {
-        c->bytes_erased = c->device_size - z;
-    }
 
     /* We're done. */
     return 0;
