@@ -391,6 +391,13 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
 
         } /* partial write */
 
+        /* Decrement the bytes remaining in this pass. */
+        z -= r;
+
+        /* Increment the total progress counters. */
+        c->pass_done += r;
+        c->round_done += r;
+
         /* Perodic Sync */
         if( syncRate > 0 )
         {
@@ -427,18 +434,11 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
 
         pthread_testcancel();
 
-        /* Decrement the bytes remaining in this pass. */
-        z -= r;
-
         /* If statement required so that it does not reset on subsequent passes */
         if( c->bytes_erased < ( c->device_size - z ) )  // How much of the device has been erased?
         {
             c->bytes_erased = c->device_size - z;
         }
-
-        /* Increment the total progress counters. */
-        c->pass_done += r;
-        c->round_done += r;
 
     } /* remaining bytes */
 
@@ -834,6 +834,13 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
          *   then ( w == 0 ) always.
          */
 
+        /* Decrement the bytes remaining in this pass. */
+        z -= r;
+
+        /* Increment the total progress counterr. */
+        c->pass_done += r;
+        c->round_done += r;
+
         /* Perodic Sync */
         if( syncRate > 0 )
         {
@@ -870,17 +877,10 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
 
         pthread_testcancel();
 
-        /* Decrement the bytes remaining in this pass. */
-        z -= r;
-
         if( c->bytes_erased < ( c->device_size - z ) )  // How much of the device has been erased?
         {
             c->bytes_erased = c->device_size - z;
         }
-
-        /* Increment the total progress counterr. */
-        c->pass_done += r;
-        c->round_done += r;
 
     } /* remaining bytes */
 
