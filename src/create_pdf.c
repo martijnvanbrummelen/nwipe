@@ -51,7 +51,7 @@ int create_pdf( nwipe_context_t* ptr )
     char barcode[100] = ""; /* Contents of the barcode, i.e model:serial */
     char verify[20] = ""; /* Verify option text */
     char blank[10] = ""; /* blanking pass, none, zeros, ones */
-    char rounds[10] = ""; /* rounds ASCII numeric */
+    char rounds[50] = ""; /* rounds ASCII numeric */
     char prng_type[20] = ""; /* type of prng, twister, isaac, isaac64 */
     char start_time_text[50] = "";
     char end_time_text[50] = "";
@@ -337,7 +337,7 @@ int create_pdf( nwipe_context_t* ptr )
     /* rounds */
     pdf_add_text( pdf, NULL, "Rounds(completed/requested):", 12, 300, 210, PDF_GRAY );
     pdf_set_font( pdf, "Helvetica-Bold" );
-    if( nwipe_options.rounds == c->round_working )
+    if( !strcmp( c->wipe_status_txt, "ERASED" ) )
     {
         snprintf( rounds, sizeof( rounds ), "%i/%i", c->round_working, nwipe_options.rounds );
         pdf_add_text( pdf, NULL, rounds, 12, 470, 210, PDF_DARK_GREEN );
