@@ -46,9 +46,9 @@ int hpa_dco_status( nwipe_context_t* ptr, int pre_or_post )
     int exit_status;
 
     FILE* fp;
-    char hdparm_command[] = "hdparm -N %s";
-    char hdparm_command2[] = "/sbin/hdparm -N %s";
-    char hdparm_command3[] = "/usr/bin/hdparm -N %s";
+    char hdparm_command[] = "hdparm -N";
+    char hdparm_command2[] = "/sbin/hdparm -N";
+    char hdparm_command3[] = "/usr/bin/hdparm -N";
     char result[512];
     char final_cmd_hdparm[sizeof( hdparm_command3 ) + sizeof( c->device_name )];
 
