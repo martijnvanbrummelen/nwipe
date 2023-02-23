@@ -50,8 +50,7 @@ int hpa_dco_status( nwipe_context_t* ptr, int pre_or_post )
     char hdparm_command2[] = "/sbin/hdparm -N %s";
     char hdparm_command3[] = "/usr/bin/hdparm -N %s";
     char result[512];
-    char device_shortform[50];
-    char final_cmd_hdparm[sizeof( hdparm_command ) + sizeof( device_shortform )];
+    char final_cmd_hdparm[sizeof( hdparm_command3 ) + sizeof( c->device_name )];
 
     /* Initialise return value */
     set_return_value = 0;
@@ -71,17 +70,17 @@ int hpa_dco_status( nwipe_context_t* ptr, int pre_or_post )
             }
             else
             {
-                sprintf( final_cmd_hdparm, hdparm_command3, device_shortform );
+                snprintf( final_cmd_hdparm, sizeof( final_cmd_hdparm ), "%s %s", hdparm_command3, c->device_name );
             }
         }
         else
         {
-            sprintf( final_cmd_hdparm, hdparm_command2, device_shortform );
+            snprintf( final_cmd_hdparm, sizeof( final_cmd_hdparm ), "%s %s", hdparm_command2, c->device_name );
         }
     }
     else
     {
-        sprintf( final_cmd_hdparm, hdparm_command, device_shortform );
+        snprintf( final_cmd_hdparm, sizeof( final_cmd_hdparm ), "%s %s", hdparm_command, c->device_name );
     }
 
     if( final_cmd_hdparm[0] != 0 )
