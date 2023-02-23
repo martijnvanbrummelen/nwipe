@@ -40,6 +40,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <ctype.h>
+#include "hpa_dco.h"
 
 #include <parted/parted.h>
 #include <parted/debug.h>
@@ -136,6 +137,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     int r;
     char tmp_serial[21];
     nwipe_device_t bus;
+    int check_HPA;  // a flag that indicates whether we check for a HPA on this device
 
     bus = 0;
 
@@ -285,19 +287,26 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
         }
     }
 
-    /* All device strings should be 4 characters, prefix with space if under 4 characters */
+    /* All device strings should be 4 characters, prefix with space if under 4 characters
+     * We also set a switch for certain devices to check for the host protected area (HPA)
+     */
+    check_HPA = 0;
+
     switch( next_device->device_type )
     {
         case NWIPE_DEVICE_UNKNOWN:
             strcpy( next_device->device_type_str, " UNK" );
+            check_HPA = 1;
             break;
 
         case NWIPE_DEVICE_IDE:
             strcpy( next_device->device_type_str, " IDE" );
+            check_HPA = 1;
             break;
 
         case NWIPE_DEVICE_SCSI:
             strcpy( next_device->device_type_str, " SCSI" );
+            check_HPA = 1;
             break;
 
         case NWIPE_DEVICE_COMPAQ:
@@ -306,6 +315,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
 
         case NWIPE_DEVICE_USB:
             strcpy( next_device->device_type_str, " USB" );
+            check_HPA = 1;
             break;
 
         case NWIPE_DEVICE_IEEE1394:
@@ -314,6 +324,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
 
         case NWIPE_DEVICE_ATA:
             strcpy( next_device->device_type_str, " ATA" );
+            check_HPA = 1;
             break;
 
         case NWIPE_DEVICE_NVME:
@@ -326,7 +337,13 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
 
         case NWIPE_DEVICE_SAS:
             strcpy( next_device->device_type_str, " SAS" );
+            check_HPA = 1;
             break;
+    }
+
+    if( check_HPA == 1 )
+    {
+        hpa_dco_status( next_device, PRE_WIPE_HPA_CHECK );
     }
 
     if( strlen( (const char*) next_device->device_serial_no ) )
