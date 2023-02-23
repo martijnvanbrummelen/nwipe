@@ -83,6 +83,8 @@ int hpa_dco_status( nwipe_context_t* ptr, int pre_or_post )
         snprintf( final_cmd_hdparm, sizeof( final_cmd_hdparm ), "%s %s", hdparm_command, c->device_name );
     }
 
+    nwipe_log( NWIPE_LOG_DEBUG, "hpa_dco_status: hdparm command %s", final_cmd_hdparm );
+
     if( final_cmd_hdparm[0] != 0 )
     {
 
@@ -90,7 +92,7 @@ int hpa_dco_status( nwipe_context_t* ptr, int pre_or_post )
 
         if( fp == NULL )
         {
-            nwipe_log( NWIPE_LOG_WARNING, "hpa_dco_status: Failed to create stream to %s", hdparm_command );
+            nwipe_log( NWIPE_LOG_WARNING, "hpa_dco_status: Failed to create stream to %s", final_cmd_hdparm );
 
             set_return_value = 1;
         }
