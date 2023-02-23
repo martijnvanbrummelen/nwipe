@@ -406,9 +406,6 @@ void nwipe_perror( int nwipe_errno, const char* f, const char* s )
 {
     /**
      * Wrapper for perror().
-     *
-     * We may wish to tweak or squelch this later.
-     *
      */
 
     nwipe_log( NWIPE_LOG_ERROR, "%s: %s: %s", f, s, strerror( nwipe_errno ) );
