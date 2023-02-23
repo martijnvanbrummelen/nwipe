@@ -157,6 +157,10 @@ typedef struct nwipe_context_t_
     time_t end_time;  // End time of wipe
     u64 fsyncdata_errors;  // The number of fsyncdata errors across all passes.
     char PDF_filename[256];  // The filename of the PDF certificate/report.
+    int HPA_pre_erase_status;  // 0 = No HPA found/disabled, 1 = HPA detected, 2 = Unknown, unable to checked
+    int HPA_post_erase_status;  // 0 = No HPA found/disabled, 1 = HPA detected, 2 = Unknown, unable to checked
+    int DCO_pre_erase_status;  // 0 = No DCO found, 1 = DCO detected, 2 = Unknown, unable to checked
+    int DCO_post_erase_status;  // 0 = No DCO found, 1 = DCO detected, 2 = Unknown, unable to checked
     /*
      * Identity contains the raw serial number of the drive
      * (where applicable), however, for use within nwipe use the
