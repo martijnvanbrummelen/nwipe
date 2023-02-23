@@ -70,7 +70,7 @@ int hpa_dco_status( nwipe_context_t* ptr, int pre_or_post )
             }
             else
             {
-                snprintf( final_cmd_hdparm, sizeof( final_cmd_hdparm ), "%s %s", hdparm_command3, c->device_name );
+                snprintf( final_cmd_hdparm, sizeof( final_cmd_hdparm ), "%s %s\n", hdparm_command3, c->device_name );
             }
         }
         else
@@ -100,11 +100,11 @@ int hpa_dco_status( nwipe_context_t* ptr, int pre_or_post )
         if( fp != NULL )
         {
             /* Read the output a line at a time - output it. */
-            if( fgets( result, sizeof( result ) - 1, fp ) != NULL )
+            while( fgets( result, sizeof( result ) - 1, fp ) != NULL )
             {
                 if( nwipe_options.verbose )
                 {
-                    nwipe_log( NWIPE_LOG_DEBUG, "hdparm -N: %s\n%s", c->device_name, result );
+                    nwipe_log( NWIPE_LOG_DEBUG, "%s \n%s", final_cmd_hdparm, result );
                 }
 
                 /* Scan the hdparm results for HPA is disabled
