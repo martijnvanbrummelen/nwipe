@@ -60,6 +60,7 @@ int create_pdf( nwipe_context_t* ptr )
     char HPA_post_erase[50] = "";
     char DCO_pre_erase[50] = "";
     char DCO_post_erase[50] = "";
+    char errors[50] = "";
     char throughput_txt[50] = "";
 
     struct pdf_info info = { .creator = "https://github.com/PartialVolume/shredos.x86_64",
@@ -366,8 +367,22 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_add_text( pdf, NULL, throughput_txt, 12, 370, 170, PDF_BLACK );
     pdf_set_font( pdf, "Helvetica" );
 
+    /* Errors */
+    pdf_add_text( pdf, NULL, "Errors(pass/sync/verify):", 12, 60, 170, PDF_GRAY );
+    pdf_set_font( pdf, "Helvetica-Bold" );
+    snprintf( errors, sizeof( errors ), "%llu/%llu/%llu", c->pass_errors, c->fsyncdata_errors, c->verify_errors );
+    if( c->pass_errors != 0 || c->fsyncdata_errors != 0 || c->verify_errors != 0 )
+    {
+        pdf_add_text( pdf, NULL, errors, 12, 195, 170, PDF_RED );
+    }
+    else
+    {
+        pdf_add_text( pdf, NULL, errors, 12, 195, 170, PDF_DARK_GREEN );
+    }
+    pdf_set_font( pdf, "Helvetica" );
+
     /* Information */
-    pdf_add_text( pdf, NULL, "Information:", 12, 60, 170, PDF_GRAY );
+    pdf_add_text( pdf, NULL, "Information:", 12, 60, 150, PDF_GRAY );
     pdf_set_font( pdf, "Helvetica-Bold" );
     pdf_add_text(
         pdf, NULL, "* bytes erased: The amount of drive that's been erased at least once", 12, 60, 130, PDF_BLACK );

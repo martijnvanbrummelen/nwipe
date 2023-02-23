@@ -127,7 +127,6 @@ int nwipe_random_verify( nwipe_context_t* c )
 
     if( r != 0 )
     {
-        /* FIXME: Is there a better way to handle this? */
         nwipe_perror( errno, __FUNCTION__, "fdatasync" );
         nwipe_log( NWIPE_LOG_WARNING, "Buffer flush failure on '%s'.", c->device_name );
         c->fsyncdata_errors++;
@@ -440,7 +439,7 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
             c->bytes_erased = c->device_size - z;
         }
 
-    } /* remaining bytes */
+    } /* /remaining bytes */
 
     /* Release the output buffer. */
     free( b );
@@ -456,7 +455,6 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
 
     if( r != 0 )
     {
-        /* FIXME: Is there a better way to handle this? */
         nwipe_perror( errno, __FUNCTION__, "fdatasync" );
         nwipe_log( NWIPE_LOG_WARNING, "Buffer flush failure on '%s'.", c->device_name );
         c->fsyncdata_errors++;
@@ -556,7 +554,6 @@ int nwipe_static_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
 
     if( r != 0 )
     {
-        /* FIXME: Is there a better way to handle this? */
         nwipe_perror( errno, __FUNCTION__, "fdatasync" );
         nwipe_log( NWIPE_LOG_WARNING, "Buffer flush failure on '%s'.", c->device_name );
         c->fsyncdata_errors++;
@@ -882,7 +879,7 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
             c->bytes_erased = c->device_size - z;
         }
 
-    } /* remaining bytes */
+    } /* /remaining bytes */
 
     /* Tell our parent that we are syncing the device. */
     c->sync_status = 1;
