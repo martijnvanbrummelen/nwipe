@@ -159,8 +159,12 @@ typedef struct nwipe_context_t_
     char PDF_filename[256];  // The filename of the PDF certificate/report.
     int HPA_pre_erase_status;  // 0 = No HPA found/disabled, 1 = HPA detected, 2 = Unknown, unable to checked
     int HPA_post_erase_status;  // 0 = No HPA found/disabled, 1 = HPA detected, 2 = Unknown, unable to checked
+    u64 HPA_reported_set;  // the 'HPA set' value reported hdparm -N, i.e the first value of n/n
+    u64 HPA_reported_real;  // the 'HPA real' value reported hdparm -N, i.e the second value of n/n
     int DCO_pre_erase_status;  // 0 = No DCO found, 1 = DCO detected, 2 = Unknown, unable to checked
     int DCO_post_erase_status;  // 0 = No DCO found, 1 = DCO detected, 2 = Unknown, unable to checked
+    u64 DCO_reported_real_max_sectors;  // real max sectors as reported by hdparm --dco-identify
+
     /*
      * Identity contains the raw serial number of the drive
      * (where applicable), however, for use within nwipe use the

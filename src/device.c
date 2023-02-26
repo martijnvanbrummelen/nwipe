@@ -340,7 +340,6 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
             check_HPA = 1;
             break;
     }
-
     if( check_HPA == 1 )
     {
         hpa_dco_status( next_device, PRE_WIPE_HPA_CHECK );
