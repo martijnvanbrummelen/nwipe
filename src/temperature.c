@@ -36,6 +36,7 @@
 #include "device.h"
 #include "logging.h"
 #include "temperature.h"
+#include "miscellaneous.h"
 
 int nwipe_init_temperature( nwipe_context_t* c )
 {
