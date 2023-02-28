@@ -44,6 +44,7 @@
 #include "version.h"
 #include "temperature.h"
 #include "miscellaneous.h"
+#include "hpa_dco.h"
 
 #define NWIPE_GUI_PANE 8
 
@@ -742,48 +743,43 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                         if( nwipe_options.method == &nwipe_verify_zero || nwipe_options.method == &nwipe_verify_one )
                         {
                             wprintw( main_window,
-                                     "[vrfy] %s %s [%s] ",
+                                     "[vrfy] %s %s ",
                                      c[i + offset]->gui_device_name,
-                                     c[i + offset]->device_type_str,
-                                     c[i + offset]->device_size_text );
+                                     c[i + offset]->device_type_str );
                         }
                         else
                         {
                             wprintw( main_window,
-                                     "[wipe] %s %s [%s] ",
+                                     "[wipe] %s %s ",
                                      c[i + offset]->gui_device_name,
-                                     c[i + offset]->device_type_str,
-                                     c[i + offset]->device_size_text );
+                                     c[i + offset]->device_type_str );
                         }
                         break;
 
                     case NWIPE_SELECT_FALSE:
                         /* Print an element that is not selected. */
                         wprintw( main_window,
-                                 "[    ] %s %s [%s] ",
+                                 "[    ] %s %s ",
                                  c[i + offset]->gui_device_name,
-                                 c[i + offset]->device_type_str,
-                                 c[i + offset]->device_size_text );
+                                 c[i + offset]->device_type_str );
                         break;
 
                     case NWIPE_SELECT_TRUE_PARENT:
 
                         /* This element will be wiped when its parent is wiped. */
                         wprintw( main_window,
-                                 "[****] %s %s [%s] ",
+                                 "[****] %s %s ",
                                  c[i + offset]->gui_device_name,
-                                 c[i + offset]->device_type_str,
-                                 c[i + offset]->device_size_text );
+                                 c[i + offset]->device_type_str );
                         break;
 
                     case NWIPE_SELECT_FALSE_CHILD:
 
                         /* We can't wipe this element because it has a child that is being wiped. */
                         wprintw( main_window,
-                                 "[----] %s %s [%s] ",
+                                 "[----] %s %s ",
                                  c[i + offset]->gui_device_name,
-                                 c[i + offset]->device_type_str,
-                                 c[i + offset]->device_size_text );
+                                 c[i + offset]->device_type_str );
                         break;
 
                     case NWIPE_SELECT_DISABLED:
@@ -799,14 +795,72 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
 
                 } /* switch select */
 
-                /* Read the drive temperature values */
-                nwipe_update_temperature( c[i + offset] );
+                /* Toggle the [size][temp C] with [HDA Status]
+                 */
+                switch( c[i + offset]->HPA_display_toggle_state )
+                {
+                    case 0:
+                        wprintw( main_window, "[%s] ", c[i + offset]->device_size_text );
 
-                /* print the temperature */
-                wprintw_temperature( c[i + offset] );
+                        /* Read the drive temperature values */
+                        nwipe_update_temperature( c[i + offset] );
+
+                        /* print the temperature */
+                        wprintw_temperature( c[i + offset] );
+                        break;
+
+                    case 1:
+                        switch( c[i + offset]->HPA_status )
+                        {
+                            case HPA_ENABLED:
+                                wattron( main_window, COLOR_PAIR( 9 ) );
+                                wprintw( main_window, "[HDA ENABLED!]" );
+                                wattroff( main_window, COLOR_PAIR( 9 ) );
+                                break;
+
+                            case HPA_DISABLED:
+                                wprintw( main_window, "[HDA disabled]" );
+                                break;
+
+                            case HPA_UNKNOWN:
+                                wattron( main_window, COLOR_PAIR( 9 ) );
+                                wprintw( main_window, "[HDA unknown ]" );
+                                wattroff( main_window, COLOR_PAIR( 9 ) );
+                                break;
+
+                            case HPA_NOT_APPLICABLE:
+                                wprintw( main_window, "[%s] ", c[i + offset]->device_size_text );
+
+                                /* Read the drive temperature values */
+                                nwipe_update_temperature( c[i + offset] );
+
+                                /* print the temperature */
+                                wprintw_temperature( c[i + offset] );
+                                break;
+
+                            default:
+
+                                break;
+                        }
+                }
+
+                if( c[i + offset]->HPA_toggle_time + 1 < time( NULL ) )
+                {
+                    switch( c[i + offset]->HPA_display_toggle_state )
+                    {
+                        case 0:
+                            c[i + offset]->HPA_display_toggle_state = 1;
+                            break;
+
+                        case 1:
+                            c[i + offset]->HPA_display_toggle_state = 0;
+                            break;
+                    }
+                    c[i + offset]->HPA_toggle_time = time( NULL );
+                }
 
                 /* print the drive model and serial number */
-                wprintw( main_window, "%s/%s", c[i + offset]->device_model, c[i + offset]->device_serial_no );
+                wprintw( main_window, " %s/%s", c[i + offset]->device_model, c[i + offset]->device_serial_no );
             }
             else
             {
@@ -1278,8 +1332,11 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
              * this change and exits the valid key hit loop so the windows can be updated */
             getmaxyx( stdscr, stdscr_lines, stdscr_cols );
 
-            /* Update the selection window every 60 seconds specifically so that the drive temperatures are updated */
-            if( time( NULL ) > ( temperature_check_time + 60 ) )
+            /* Update the selection window every 1 second specifically
+             * so that the drive temperatures are updated and also the line toggle that
+             * occurs with the HPA status and the drive size & temperature.
+             */
+            if( time( NULL ) > ( temperature_check_time + 1 ) )
             {
                 temperature_check_time = time( NULL );
                 validkeyhit = 1;
@@ -3225,14 +3282,14 @@ void wprintw_temperature( nwipe_context_t* c )
             {
                 /* blue on blue */
                 wattron( main_window, COLOR_PAIR( 12 ) );
-                wprintw( main_window, "[%dC] ", c->temp1_input );
+                wprintw( main_window, "[%dC]", c->temp1_input );
                 wattroff( main_window, COLOR_PAIR( 12 ) );
             }
             else
             {
                 /* red on blue */
                 wattron( main_window, COLOR_PAIR( 3 ) );
-                wprintw( main_window, "[%dC] ", c->temp1_input );
+                wprintw( main_window, "[%dC]", c->temp1_input );
                 wattroff( main_window, COLOR_PAIR( 3 ) );
             }
         }
@@ -3245,7 +3302,7 @@ void wprintw_temperature( nwipe_context_t* c )
             {
                 /* red on blue */
                 wattron( main_window, COLOR_PAIR( 3 ) );
-                wprintw( main_window, "[%dC] ", c->temp1_input );
+                wprintw( main_window, "[%dC]", c->temp1_input );
                 wattroff( main_window, COLOR_PAIR( 3 ) );
             }
             else
@@ -3258,14 +3315,14 @@ void wprintw_temperature( nwipe_context_t* c )
                     {
                         /* blue on blue */
                         wattron( main_window, COLOR_PAIR( 12 ) );
-                        wprintw( main_window, "[%dC] ", c->temp1_input );
+                        wprintw( main_window, "[%dC]", c->temp1_input );
                         wattroff( main_window, COLOR_PAIR( 12 ) );
                     }
                     else
                     {
                         /* black on blue */
                         wattron( main_window, COLOR_PAIR( 11 ) );
-                        wprintw( main_window, "[%dC] ", c->temp1_input );
+                        wprintw( main_window, "[%dC]", c->temp1_input );
                         wattroff( main_window, COLOR_PAIR( 11 ) );
                     }
                 }
@@ -3277,13 +3334,13 @@ void wprintw_temperature( nwipe_context_t* c )
                     {
                         /* black on blue */
                         wattron( main_window, COLOR_PAIR( 11 ) );
-                        wprintw( main_window, "[%dC] ", c->temp1_input );
+                        wprintw( main_window, "[%dC]", c->temp1_input );
                         wattroff( main_window, COLOR_PAIR( 11 ) );
                     }
                     else
                     {
                         /* Default white on blue */
-                        wprintw( main_window, "[%dC] ", c->temp1_input );
+                        wprintw( main_window, "[%dC]", c->temp1_input );
                     }
                 }
             }
@@ -3291,6 +3348,6 @@ void wprintw_temperature( nwipe_context_t* c )
     }
     else
     {
-        wprintw( main_window, "[--C] " );
+        wprintw( main_window, "[--C]" );
     }
 }

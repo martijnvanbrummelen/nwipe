@@ -51,6 +51,7 @@
 #include <parted/parted.h>
 #include <parted/debug.h>
 #include "version.h"
+#include "hpa_dco.h"
 
 int terminate_signal;
 int user_abort;
@@ -351,6 +352,8 @@ int main( int argc, char** argv )
         }
     }
 
+    /* Initialise some of the variables in the drive contexts
+     */
     for( i = 0; i < nwipe_enumerated; i++ )
     {
         /* Set the PRNG implementation, which must always come after the function nwipe_gui_select ! */

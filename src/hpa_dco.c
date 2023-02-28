@@ -371,22 +371,30 @@ int hpa_dco_status( nwipe_context_t* ptr )
      * to reset the HPA.
      */
     /* If all three values match then there is no hidden disc area. HPA is disabled. */
-    if( ( c->HPA_reported_set == c->HPA_reported_real ) && c->DCO_reported_real_max_sectors == c->HPA_reported_set )
+    if( c->HPA_reported_set == c->HPA_reported_real && c->DCO_reported_real_max_sectors == c->HPA_reported_set
+        && c->HPA_reported_set != 0 )
     {
         c->HPA_status = HPA_DISABLED;
     }
     else
     {
         /* If HPA set and DCO max sectors are equal it can also be considered that HPA is disabled */
-        if( c->HPA_reported_set == c->DCO_reported_real_max_sectors )
+        if( ( c->HPA_reported_set == c->DCO_reported_real_max_sectors ) && c->HPA_reported_set != 0 )
         {
             c->HPA_status = HPA_DISABLED;
         }
         else
         {
-            if( c->HPA_reported_set != c->DCO_reported_real_max_sectors )
+            if( c->HPA_reported_set != c->DCO_reported_real_max_sectors && c->HPA_reported_set != 0 )
             {
                 c->HPA_status = HPA_ENABLED;
+            }
+            else
+            {
+                if( !strcmp( c->device_type_str, "NVME" ) )
+                {
+                    c->HPA_status = HPA_NOT_APPLICABLE;
+                }
             }
         }
     }

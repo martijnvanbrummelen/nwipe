@@ -288,6 +288,18 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
         }
     }
 
+    /* Initialise the variables that toggle the [size][temp c] with [HPA status]
+     */
+    next_device->HPA_toggle_time = time( NULL );
+    next_device->HPA_display_toggle_state = 0;
+
+    /* Initialise the HPA variables for this device
+     */
+    next_device->HPA_reported_set = 0;
+    next_device->HPA_reported_real = 0;
+    next_device->DCO_reported_real_max_sectors = 0;
+    next_device->HPA_status = HPA_NOT_APPLICABLE;
+
     /* All device strings should be 4 characters, prefix with space if under 4 characters
      * We also set a switch for certain devices to check for the host protected area (HPA)
      */

@@ -376,14 +376,15 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_set_font( pdf, "Helvetica" );
 
     /*********************
-     * Populate HPA status
+     * Populate HPA status (and size if not applicable, NVMe and VIRT)
      */
-    if( !strcmp( c->device_type_str, "NVME" ) )
+    if( !strcmp( c->device_type_str, "NVME" ) || !strcmp( c->device_type_str, "VIRT" ) )
     {
-        snprintf( HPA_status_text, sizeof( HPA_status_text ), "Not applicable to NVME" );
-        snprintf( HPA_size_text, sizeof( HPA_size_text ), "Not applicable to NVME" );
+        snprintf( HPA_status_text, sizeof( HPA_status_text ), "Not applicable to %s", c->device_type_str );
         pdf_set_font( pdf, "Helvetica-Bold" );
         pdf_add_text( pdf, NULL, HPA_status_text, 12, 95, 190, PDF_DARK_GREEN );
+        snprintf( HPA_size_text, sizeof( HPA_size_text ), "Not applicable to %s", c->device_type_str );
+        pdf_add_text( pdf, NULL, HPA_size_text, 12, 360, 190, PDF_DARK_GREEN );
         pdf_set_font( pdf, "Helvetica" );
     }
     else
