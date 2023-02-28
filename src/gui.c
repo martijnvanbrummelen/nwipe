@@ -43,6 +43,7 @@
 #include "logging.h"
 #include "version.h"
 #include "temperature.h"
+#include "miscellaneous.h"
 
 #define NWIPE_GUI_PANE 8
 
@@ -580,18 +581,6 @@ void nwipe_gui_create_all_windows_on_terminal_resize( int force_creation, const 
 
 void nwipe_gui_select( int count, nwipe_context_t** c )
 {
-    /**
-     * The primary user interface.  Allows the user to
-     * change options and specify the devices to be wiped.
-     *
-     * @parameter  count       The number of contexts in the array.
-     * @parameter  c           An array of device contexts.
-     *
-     * @modifies   c[].select  Sets the select flag according to user input.
-     * @modifies   options     Sets program options according to to user input.
-     *
-     */
-
     extern int terminate_signal;
 
     /* Widget labels. */

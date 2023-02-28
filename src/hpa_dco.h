@@ -25,9 +25,6 @@
 #define HPA_ENABLED 1
 #define HPA_UNKNOWN 2
 
-#define PRE_WIPE_HPA_CHECK 0
-#define POST_WIPE_HPA_CHECK 1
-
-int hpa_dco_status( nwipe_context_t*, int );
+int hpa_dco_status( nwipe_context_t* );
 
 #endif /* HPA_DCO_H_ */
