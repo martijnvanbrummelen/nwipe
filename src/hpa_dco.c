@@ -47,7 +47,7 @@
  * ahead and submit a pull request to https://github.com/martijnvanbrummelen/nwipe
  */
 
-int hpa_dco_status( nwipe_context_t* ptr, int pre_or_post )
+int hpa_dco_status( nwipe_context_t* ptr )
 {
     nwipe_context_t* c;
     c = ptr;
@@ -164,14 +164,8 @@ int hpa_dco_status( nwipe_context_t* ptr, int pre_or_post )
                  */
                 if( strstr( result, "hpa is disabled" ) != 0 )
                 {
-                    if( pre_or_post == PRE_WIPE_HPA_CHECK )
-                    {
-                        c->HPA_pre_erase_status = HPA_DISABLED;
-                    }
-                    else
-                    {
-                        c->HPA_post_erase_status = HPA_DISABLED;
-                    }
+                    c->HPA_status = HPA_DISABLED;
+
                     nwipe_log( NWIPE_LOG_INFO, "[GOOD] The host protected area is disabled on %s", c->device_name );
                     hpa_line_found = 1;
                     break;
@@ -180,7 +174,7 @@ int hpa_dco_status( nwipe_context_t* ptr, int pre_or_post )
                 {
                     if( strstr( result, "hpa is enabled" ) != 0 )
                     {
-                        c->HPA_pre_erase_status = HPA_ENABLED;
+                        c->HPA_status = HPA_ENABLED;
                         nwipe_log(
                             NWIPE_LOG_WARNING, "[BAD] The host protected area is enabled on %s", c->device_name );
                         hpa_line_found = 1;
@@ -190,7 +184,7 @@ int hpa_dco_status( nwipe_context_t* ptr, int pre_or_post )
                     {
                         if( strstr( result, "invalid" ) != 0 )
                         {
-                            c->HPA_pre_erase_status = HPA_ENABLED;
+                            c->HPA_status = HPA_ENABLED;
                             nwipe_log( NWIPE_LOG_WARNING,
                                        "[UNSURE] hdparm reports invalid output, buggy drive firmware on %s?",
                                        c->device_name );
@@ -237,7 +231,7 @@ int hpa_dco_status( nwipe_context_t* ptr, int pre_or_post )
             }
             else
             {
-                c->HPA_pre_erase_status = HPA_UNKNOWN;
+                c->HPA_status = HPA_UNKNOWN;
                 nwipe_log( NWIPE_LOG_WARNING,
                            "[UNKNOWN] We can't find the HPA line, has hdparm ouput changed? %s",
                            c->device_name );
@@ -379,37 +373,37 @@ int hpa_dco_status( nwipe_context_t* ptr, int pre_or_post )
     /* If all three values match then there is no hidden disc area. HPA is disabled. */
     if( ( c->HPA_reported_set == c->HPA_reported_real ) && c->DCO_reported_real_max_sectors == c->HPA_reported_set )
     {
-        c->HPA_pre_erase_status = HPA_DISABLED;
+        c->HPA_status = HPA_DISABLED;
     }
     else
     {
         /* If HPA set and DCO max sectors are equal it can also be considered that HPA is disabled */
         if( c->HPA_reported_set == c->DCO_reported_real_max_sectors )
         {
-            c->HPA_pre_erase_status = HPA_DISABLED;
+            c->HPA_status = HPA_DISABLED;
         }
         else
         {
             if( c->HPA_reported_set != c->DCO_reported_real_max_sectors )
             {
-                c->HPA_pre_erase_status = HPA_ENABLED;
+                c->HPA_status = HPA_ENABLED;
             }
         }
     }
 
-    if( c->HPA_pre_erase_status == HPA_DISABLED )
+    if( c->HPA_status == HPA_DISABLED )
     {
         nwipe_log( NWIPE_LOG_INFO, "[GOOD] HPA is disabled on %s", c->device_name );
     }
     else
     {
-        if( c->HPA_pre_erase_status == HPA_ENABLED )
+        if( c->HPA_status == HPA_ENABLED )
         {
             nwipe_log( NWIPE_LOG_WARNING, "[BAD] HPA is enabled on %s", c->device_name );
         }
         else
         {
-            if( c->HPA_pre_erase_status == HPA_UNKNOWN )
+            if( c->HPA_status == HPA_UNKNOWN )
             {
                 nwipe_log(
                     NWIPE_LOG_WARNING, "[UNKNOWN] We can't seem to determine the HPA status on %s", c->device_name );
@@ -417,11 +411,20 @@ int hpa_dco_status( nwipe_context_t* ptr, int pre_or_post )
         }
     }
 
-    /* Determine the size of the HPA and store the results in the
-     * context.
-     */
+    /* Determine the size of the HPA if it's enabled and store the results in the context.*/
+    if( c->HPA_status == HPA_ENABLED )
+    {
+        c->HPA_size = c->DCO_reported_real_max_sectors - c->HPA_reported_set;
 
-    // WARNING Add code here
+        /* Convert the size to a human readable format and save in context */
+        Determine_C_B_nomenclature( c->HPA_size, c->HPA_size_text, NWIPE_DEVICE_SIZE_TXT_LENGTH );
+    }
+    else
+    {
+        /* HPA not enabled so initialise these values */
+        c->HPA_size = 0;
+        c->HPA_size_text[0] = 0;
+    }
 
     return set_return_value;
 }

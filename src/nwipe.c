@@ -42,6 +42,7 @@
 #include "logging.h"
 #include "gui.h"
 #include "temperature.h"
+#include "miscellaneous.h"
 
 #include <sys/ioctl.h> /* FIXME: Twice Included */
 #include <sys/shm.h>

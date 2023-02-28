@@ -111,3 +111,118 @@ u64 str_ascii_number_to_ll( char* str )
     }
     return -2; /* no number found */
 }
+
+void Determine_C_B_nomenclature( u64 qty, char* result, int result_array_size )
+{
+
+    /* C_B ? Determine Capacity or Bandwidth nomenclature
+     *
+     * A pointer to a result character string with a minimum of 13 characters in length
+     * should be provided.
+     *
+     * Outputs a string of the form xxxTB, xxxGB, xxxMB, xxxKB B depending on the value of 'qty'
+     */
+
+    /* Initialise the output array */
+    int idx = 0;
+
+    while( idx < result_array_size )
+    {
+        result[idx++] = 0;
+    }
+
+    /* Determine the size of throughput so that the correct nomenclature can be used */
+    if( qty >= INT64_C( 1000000000000 ) )
+    {
+        snprintf( result, result_array_size, "%3llu TB", qty / INT64_C( 1000000000000 ) );
+    }
+    else if( qty >= INT64_C( 1000000000 ) )
+    {
+        snprintf( result, result_array_size, "%3llu GB", qty / INT64_C( 1000000000 ) );
+    }
+    else if( qty >= INT64_C( 1000000 ) )
+    {
+        snprintf( result, result_array_size, "%3llu MB", qty / INT64_C( 1000000 ) );
+    }
+    else if( qty >= INT64_C( 1000 ) )
+    {
+        snprintf( result, result_array_size, "%3llu KB", qty / INT64_C( 1000 ) );
+    }
+    else
+    {
+        snprintf( result, result_array_size, "%3llu B", qty / INT64_C( 1 ) );
+    }
+}
+
+void convert_seconds_to_hours_minutes_seconds( u64 total_seconds, int* hours, int* minutes, int* seconds )
+{
+    /* Convert binary seconds into binary hours, minutes and seconds */
+
+    if( total_seconds % 60 )
+    {
+        *minutes = total_seconds / 60;
+
+        *seconds = total_seconds - ( *minutes * 60 );
+    }
+    else
+    {
+        *minutes = total_seconds / 60;
+
+        *seconds = 0;
+    }
+    if( *minutes > 59 )
+    {
+        *hours = *minutes / 60;
+        if( *minutes % 60 )
+        {
+            *minutes = *minutes - ( *hours * 60 );
+        }
+        else
+        {
+            *minutes = 0;
+        }
+    }
+}
+
+int nwipe_strip_path( char* output, char* input )
+{
+    /* Take the input string, say "/dev/sda" and remove the "/dev/", prefix the result
+     * with 'length' spaces. So if length=8 and input=/dev/sda, output will
+     * be "     sda", a string 8 characters long right justified with spaces.
+     */
+    int idx_dest;
+    int idx_src;
+    idx_dest = 8;
+    // idx_dest = length;
+    output[idx_dest--] = 0;
+    idx_src = strlen( input );
+    idx_src--;
+
+    while( idx_dest >= 0 )
+    {
+        /* if the device name contains a / start prefixing spaces */
+        if( input[idx_src] == '/' )
+        {
+            output[idx_dest--] = ' ';
+            continue;
+        }
+        if( idx_src >= 0 )
+        {
+            output[idx_dest--] = input[idx_src--];
+        }
+    }
+    return 0;
+}
+
+void replace_non_alphanumeric( char* str, char replacement_char )
+{
+    int i = 0;
+    while( str[i] != 0 )
+    {
+        if( str[i] < '0' || ( str[i] > '9' && str[i] < 'A' ) || ( str[i] > 'Z' && str[i] < 'a' ) || str[i] > 'z' )
+        {
+            str[i] = replacement_char;
+        }
+        i++;
+    }
+}

@@ -41,6 +41,7 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include "hpa_dco.h"
+#include "miscellaneous.h"
 
 #include <parted/parted.h>
 #include <parted/debug.h>
@@ -342,7 +343,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     }
     if( check_HPA == 1 )
     {
-        hpa_dco_status( next_device, PRE_WIPE_HPA_CHECK );
+        hpa_dco_status( next_device );
     }
 
     if( strlen( (const char*) next_device->device_serial_no ) )

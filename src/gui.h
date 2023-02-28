@@ -33,6 +33,18 @@ void nwipe_gui_create_stats_window( void );  // Create the stats window
 void nwipe_gui_create_all_windows_on_terminal_resize(
     int force_creation,
     const char* footer_text );  // If terminal is resized recreate all windows
+
+/**
+ * The primary user interface.  Allows the user to
+ * change options and specify the devices to be wiped.
+ *
+ * @parameter  count       The number of contexts in the array.
+ * @parameter  c           An array of device contexts.
+ *
+ * @modifies   c[].select  Sets the select flag according to user input.
+ * @modifies   options     Sets program options according to to user input.
+ *
+ */
 void nwipe_gui_select( int count, nwipe_context_t** c );  // Select devices to wipe.
 void* nwipe_gui_status( void* ptr );  // Update operation progress.
 void nwipe_gui_method( void );  // Change the method option.

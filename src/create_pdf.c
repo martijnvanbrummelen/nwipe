@@ -35,6 +35,8 @@
 #include "logging.h"
 #include "options.h"
 #include "prng.h"
+#include "hpa_dco.h"
+#include "miscellaneous.h"
 
 int create_pdf( nwipe_context_t* ptr )
 {
@@ -57,11 +59,13 @@ int create_pdf( nwipe_context_t* ptr )
     char end_time_text[50] = "";
     char bytes_erased[50] = "";
     char HPA_pre_erase[50] = "";
-    char HPA_post_erase[50] = "";
-    char DCO_pre_erase[50] = "";
-    char DCO_post_erase[50] = "";
+    char HPA_status_text[50] = "";
+    char HPA_size_text[50] = "";
     char errors[50] = "";
     char throughput_txt[50] = "";
+
+    float height;
+    float page_width;
 
     struct pdf_info info = { .creator = "https://github.com/PartialVolume/shredos.x86_64",
                              .producer = "https://github.com/martijnvanbrummelen/nwipe",
@@ -80,16 +84,18 @@ int create_pdf( nwipe_context_t* ptr )
     struct pdf_doc* pdf = pdf_create( PDF_A4_WIDTH, PDF_A4_HEIGHT, &info );
 
     /* Create footer text string and append the version */
-    strcpy( pdf_footer, "Disc Erasure by NWIPE version " );
-    strcat( pdf_footer, version_string );
+    snprintf( pdf_footer, sizeof( pdf_footer ), "Disc Erasure by NWIPE version %s", version_string );
 
     pdf_set_font( pdf, "Helvetica" );
-    pdf_append_page( pdf );
+    struct pdf_object* page_1 = pdf_append_page( pdf );
+
+    /* Obtain page page_width */
+    page_width = pdf_page_width( page_1 );
 
     /* ---------------------------------------------------------- */
     /* Create header and footer, with the exception of the green  */
     /* tick/red icon which is set from the 'status' section below */
-    pdf_add_text( pdf, NULL, pdf_footer, 12, 200, 30, PDF_BLACK );
+    pdf_add_text_wrap( pdf, NULL, pdf_footer, 12, 0, 30, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
     pdf_add_line( pdf, NULL, 50, 50, 550, 50, 3, PDF_BLACK );
     pdf_add_line( pdf, NULL, 50, 650, 550, 650, 3, PDF_BLACK );
     pdf_add_image_data( pdf, NULL, 45, 665, 100, 100, bin2c_shred_db_jpg, 27063 );
@@ -156,23 +162,6 @@ int create_pdf( nwipe_context_t* ptr )
 
     pdf_add_text( pdf, NULL, "Health:", 12, 60, 370, PDF_GRAY );
     pdf_add_text( pdf, NULL, "Remapped Sectors:", 12, 300, 370, PDF_GRAY );
-
-    /* HPA, DCO, pre-erase */
-    if( !strcmp( c->device_type_str, "NVME" ) )
-    {
-        snprintf( HPA_pre_erase, sizeof( HPA_pre_erase ), "Not applicable to NVME" );
-        snprintf( HPA_post_erase, sizeof( HPA_post_erase ), "Not applicable to NVME" );
-        snprintf( DCO_pre_erase, sizeof( DCO_pre_erase ), "Not applicable to NVME" );
-        snprintf( DCO_post_erase, sizeof( DCO_post_erase ), "Not applicable to NVME" );
-    }
-    pdf_add_text( pdf, NULL, "HPA(pre-erase):", 12, 60, 350, PDF_GRAY );
-    pdf_set_font( pdf, "Helvetica-Bold" );
-    pdf_add_text( pdf, NULL, HPA_pre_erase, 12, 150, 350, PDF_BLACK );
-    pdf_set_font( pdf, "Helvetica" );
-    pdf_add_text( pdf, NULL, "DCO(pre-erase):", 12, 300, 350, PDF_GRAY );
-    pdf_set_font( pdf, "Helvetica-Bold" );
-    pdf_add_text( pdf, NULL, DCO_pre_erase, 12, 393, 350, PDF_BLACK );
-    pdf_set_font( pdf, "Helvetica" );
 
     /* --------------- */
     /* Erasure Details */
@@ -350,24 +339,96 @@ int create_pdf( nwipe_context_t* ptr )
     }
     pdf_set_font( pdf, "Helvetica" );
 
-    /* HPA, DCO, post erase */
-    pdf_add_text( pdf, NULL, "HPA(post-erase):", 12, 60, 190, PDF_GRAY );
+    /*******************************
+     * HPA, DCO, post erase - LABELS
+     */
+    pdf_add_text( pdf, NULL, "HPA:", 12, 60, 190, PDF_GRAY );
     pdf_set_font( pdf, "Helvetica-Bold" );
-    pdf_add_text( pdf, NULL, HPA_post_erase, 12, 155, 190, PDF_BLACK );
+    pdf_add_text( pdf, NULL, HPA_status_text, 12, 155, 190, PDF_BLACK );
     pdf_set_font( pdf, "Helvetica" );
-    pdf_add_text( pdf, NULL, "DCO(post-erase):", 12, 300, 190, PDF_GRAY );
+    pdf_add_text( pdf, NULL, "HPA Size:", 12, 300, 190, PDF_GRAY );
+
+    /*******************
+     * Populate HPA size
+     */
     pdf_set_font( pdf, "Helvetica-Bold" );
-    pdf_add_text( pdf, NULL, DCO_post_erase, 12, 397, 190, PDF_BLACK );
+    if( c->HPA_status == HPA_ENABLED )
+    {
+        snprintf( HPA_size_text, sizeof( HPA_size_text ), "%lli sectors", c->HPA_size );
+        pdf_add_text( pdf, NULL, HPA_size_text, 12, 360, 190, PDF_RED );
+    }
+    else
+    {
+        if( c->HPA_status == HPA_DISABLED )
+        {
+            snprintf( HPA_size_text, sizeof( HPA_size_text ), "Zero sectors" );
+            pdf_add_text( pdf, NULL, HPA_size_text, 12, 360, 190, PDF_DARK_GREEN );
+        }
+        else
+        {
+            if( c->HPA_status == HPA_UNKNOWN )
+            {
+                snprintf( HPA_size_text, sizeof( HPA_size_text ), "UNKNOWN" );
+                pdf_add_text( pdf, NULL, HPA_size_text, 12, 360, 190, PDF_RED );
+            }
+        }
+    }
     pdf_set_font( pdf, "Helvetica" );
 
-    /* Throughput */
+    /*********************
+     * Populate HPA status
+     */
+    if( !strcmp( c->device_type_str, "NVME" ) )
+    {
+        snprintf( HPA_status_text, sizeof( HPA_status_text ), "Not applicable to NVME" );
+        snprintf( HPA_size_text, sizeof( HPA_size_text ), "Not applicable to NVME" );
+        pdf_set_font( pdf, "Helvetica-Bold" );
+        pdf_add_text( pdf, NULL, HPA_status_text, 12, 95, 190, PDF_DARK_GREEN );
+        pdf_set_font( pdf, "Helvetica" );
+    }
+    else
+    {
+        if( c->HPA_status == HPA_ENABLED )
+        {
+            snprintf( HPA_status_text, sizeof( HPA_status_text ), "ENABLED" );
+            pdf_set_font( pdf, "Helvetica-Bold" );
+            pdf_add_text( pdf, NULL, HPA_status_text, 12, 95, 190, PDF_RED );
+            pdf_set_font( pdf, "Helvetica" );
+        }
+        else
+        {
+            if( c->HPA_status == HPA_DISABLED )
+            {
+                snprintf( HPA_status_text, sizeof( HPA_status_text ), "DISABLED" );
+                pdf_set_font( pdf, "Helvetica-Bold" );
+                pdf_add_text( pdf, NULL, HPA_status_text, 12, 95, 190, PDF_DARK_GREEN );
+                pdf_set_font( pdf, "Helvetica" );
+            }
+            else
+            {
+                if( c->HPA_status == HPA_UNKNOWN )
+                {
+                    snprintf( HPA_status_text, sizeof( HPA_status_text ), "UNKNOWN" );
+                    pdf_set_font( pdf, "Helvetica-Bold" );
+                    pdf_add_text( pdf, NULL, HPA_status_text, 12, 95, 190, PDF_RED );
+                    pdf_set_font( pdf, "Helvetica" );
+                }
+            }
+        }
+    }
+
+    /************
+     * Throughput
+     */
     pdf_add_text( pdf, NULL, "Throughput:", 12, 300, 170, PDF_GRAY );
     snprintf( throughput_txt, sizeof( throughput_txt ), "%s/sec", c->throughput_txt );
     pdf_set_font( pdf, "Helvetica-Bold" );
     pdf_add_text( pdf, NULL, throughput_txt, 12, 370, 170, PDF_BLACK );
     pdf_set_font( pdf, "Helvetica" );
 
-    /* Errors */
+    /********
+     * Errors
+     */
     pdf_add_text( pdf, NULL, "Errors(pass/sync/verify):", 12, 60, 170, PDF_GRAY );
     pdf_set_font( pdf, "Helvetica-Bold" );
     snprintf( errors, sizeof( errors ), "%llu/%llu/%llu", c->pass_errors, c->fsyncdata_errors, c->verify_errors );
@@ -381,27 +442,30 @@ int create_pdf( nwipe_context_t* ptr )
     }
     pdf_set_font( pdf, "Helvetica" );
 
-    /* Information */
+    /*************
+     * Information
+     */
     pdf_add_text( pdf, NULL, "Information:", 12, 60, 150, PDF_GRAY );
     pdf_set_font( pdf, "Helvetica-Bold" );
     pdf_add_text(
         pdf, NULL, "* bytes erased: The amount of drive that's been erased at least once", 12, 60, 130, PDF_BLACK );
     pdf_set_font( pdf, "Helvetica" );
 
-    /* ---------------------- */
-    /* Technician/Operator ID */
+    /************************
+     * Technician/Operator ID
+     */
     pdf_add_line( pdf, NULL, 50, 120, 550, 120, 1, PDF_GRAY );
     pdf_add_text( pdf, NULL, "Technician/Operator ID", 12, 50, 100, PDF_BLUE );
     pdf_add_text( pdf, NULL, "Name/ID:", 12, 60, 80, PDF_GRAY );
     pdf_add_text( pdf, NULL, "Signature:", 12, 300, 100, PDF_BLUE );
     pdf_add_line( pdf, NULL, 360, 65, 550, 66, 1, PDF_GRAY );
 
-    /* --------------------------- */
-    /* Create the reports filename */
-
-    /* Sanitize the strings that we are going to use to create the report filename
-     * by converting any non alphanumeric characters to an underscore or hyphon */
-
+    /*****************************
+     * Create the reports filename
+     *
+     * Sanitize the strings that we are going to use to create the report filename
+     * by converting any non alphanumeric characters to an underscore or hyphon
+     */
     replace_non_alphanumeric( end_time_text, '-' );
     replace_non_alphanumeric( c->device_model, '_' );
     replace_non_alphanumeric( c->device_serial_no, '_' );
@@ -415,16 +479,4 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_save( pdf, c->PDF_filename );
     pdf_destroy( pdf );
     return 0;
-}
-void replace_non_alphanumeric( char* str, char replacement_char )
-{
-    int i = 0;
-    while( str[i] != 0 )
-    {
-        if( str[i] < '0' || ( str[i] > '9' && str[i] < 'A' ) || ( str[i] > 'Z' && str[i] < 'a' ) || str[i] > 'z' )
-        {
-            str[i] = replacement_char;
-        }
-        i++;
-    }
 }
