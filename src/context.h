@@ -163,6 +163,9 @@ typedef struct nwipe_context_t_
     u64 HPA_reported_real;  // the 'HPA real' value reported hdparm -N, i.e the second value of n/n
     int DCO_status;  // 0 = No DCO found, 1 = DCO detected, 2 = Unknown, unable to checked
     u64 DCO_reported_real_max_sectors;  // real max sectors as reported by hdparm --dco-identify
+    u64 DCO_reported_real_max_size;  // real max sectors in bytes
+    char DCO_reported_real_max_size_text[NWIPE_DEVICE_SIZE_TXT_LENGTH];  // real max size in human readable form i.e 1TB
+                                                                         // etc
     u64 HPA_size;  // The size of the host protected area in sectors
     char HPA_size_text[NWIPE_DEVICE_SIZE_TXT_LENGTH];  // Human readable size bytes, KB, MB, GB ..
     int HPA_display_toggle_state;  // 0 or 1 Used to toggle between "[1TB] [ 33C]" and [HDA STATUS]

@@ -87,17 +87,6 @@ int nwipe_device_scan( nwipe_context_t*** c )
 
 int nwipe_device_get( nwipe_context_t*** c, char** devnamelist, int ndevnames )
 {
-    /**
-     * Gets information about devices
-     *
-     * @parameter device_names  A reference to a null array pointer.
-     * @parameter devnamelist   An array of string pointers to the device names
-     * @parameter ndevnames     Number of elements in devnamelist
-     * @modifies  device_names  Populates device_names with an array of nwipe_contect_t
-     * @returns                 The number of strings in the device_names array.
-     *
-     */
-
     PedDevice* dev = NULL;
 
     int i;

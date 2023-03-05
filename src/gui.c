@@ -814,17 +814,17 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                         {
                             case HPA_ENABLED:
                                 wattron( main_window, COLOR_PAIR( 9 ) );
-                                wprintw( main_window, "[HDA ENABLED!]" );
+                                wprintw( main_window, "[HPA ENABLED!]" );
                                 wattroff( main_window, COLOR_PAIR( 9 ) );
                                 break;
 
                             case HPA_DISABLED:
-                                wprintw( main_window, "[HDA disabled]" );
+                                wprintw( main_window, "[HPA disabled]" );
                                 break;
 
                             case HPA_UNKNOWN:
                                 wattron( main_window, COLOR_PAIR( 9 ) );
-                                wprintw( main_window, "[HDA unknown ]" );
+                                wprintw( main_window, "[HPA unknown ]" );
                                 wattroff( main_window, COLOR_PAIR( 9 ) );
                                 break;
 

@@ -434,5 +434,76 @@ int hpa_dco_status( nwipe_context_t* ptr )
         c->HPA_size_text[0] = 0;
     }
 
+    /* create two variables for later use  based on real max sectors
+     * DCO_reported_real_max_size = real max sectors * 512 = bytes
+     * DCO_reported_real_max_size_text = human readable string, i.e 1TB etc.
+     */
+    c->DCO_reported_real_max_size = c->DCO_reported_real_max_sectors * 512;
+    Determine_C_B_nomenclature(
+        c->DCO_reported_real_max_size, c->DCO_reported_real_max_size_text, NWIPE_DEVICE_SIZE_TXT_LENGTH );
+
     return set_return_value;
+}
+
+int ascii2binary_array( char* input, unsigned char* output_bin, int bin_size )
+{
+    /* Scans a character string that contains hexadecimal ascii data, ignores spaces
+     * and extracts and converts the hexadecimal ascii data to binary and places in a array.
+     * Typically for dco_identify sense data the bin size will be 512 bytes.
+     */
+    int idx_in;  // Index into ascii input string
+    int idx_out;  // Index into the binary output array
+    int byte_count;  // Counts which 4 bit value we are working on
+    char upper4bits;
+    char lower4bits;
+
+    byte_count = 0;
+    idx_in = 0;
+    idx_out = 0;
+    while( input[idx_in] != 0 )
+    {
+        if( input[idx_in] >= '0' && input[idx_in] <= '9' )
+        {
+            if( byte_count == 0 )
+            {
+                upper4bits = input[idx_in] - 0x30;
+                byte_count++;
+            }
+            else
+            {
+                lower4bits = input[idx_in] - 0x30;
+                output_bin[idx_out++] = ( upper4bits << 4 ) | ( lower4bits );
+                byte_count = 0;
+
+                if( idx_out >= bin_size )
+                {
+                    return 0;  // output array full.
+                }
+            }
+        }
+        else
+        {
+            if( input[idx_in] >= 'a' && input[idx_in] <= 'f' )
+            {
+                if( byte_count == 0 )
+                {
+                    upper4bits = input[idx_in] - 0x57;
+                    byte_count++;
+                }
+                else
+                {
+                    lower4bits = input[idx_in] - 0x57;
+                    output_bin[idx_out++] = ( upper4bits << 4 ) | ( lower4bits );
+                    byte_count = 0;
+
+                    if( idx_out >= bin_size )
+                    {
+                        return 0;  // output array full.
+                    }
+                }
+            }
+        }
+        idx_in++;  // next byte in the input string
+    }
+    return 0;
 }
