@@ -25,6 +25,7 @@
 #define HPA_ENABLED 1
 #define HPA_UNKNOWN 2
 #define HPA_NOT_APPLICABLE 3
+#define HPA_NOT_SUPPORTED_BY_DRIVE 4
 
 int hpa_dco_status( nwipe_context_t* );
 
