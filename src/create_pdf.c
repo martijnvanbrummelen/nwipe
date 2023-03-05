@@ -129,18 +129,23 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_add_text( pdf, NULL, "Contact Name:", 12, 60, 470, PDF_GRAY );
     pdf_add_text( pdf, NULL, "Contact Phone:", 12, 300, 470, PDF_GRAY );
 
-    /* ---------------- */
-    /* Disk Information */
+    /******************
+     * Disk Information
+     */
     pdf_add_line( pdf, NULL, 50, 330, 550, 330, 1, PDF_GRAY );
     pdf_add_text( pdf, NULL, "Disk Information", 12, 50, 430, PDF_BLUE );
 
-    /* Make/model */
+    /************
+     * Make/model
+     */
     pdf_add_text( pdf, NULL, "Make/Model:", 12, 60, 410, PDF_GRAY );
     pdf_set_font( pdf, "Helvetica-Bold" );
     pdf_add_text( pdf, NULL, c->device_model, text_size_data, 135, 410, PDF_BLACK );
     pdf_set_font( pdf, "Helvetica" );
 
-    /* Serial no. */
+    /************
+     * Serial no.
+     */
     pdf_add_text( pdf, NULL, "Serial:", 12, 340, 410, PDF_GRAY );
     if( c->device_serial_no[0] == 0 )
     {
@@ -150,16 +155,28 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_add_text( pdf, NULL, c->device_serial_no, text_size_data, 380, 410, PDF_BLACK );
     pdf_set_font( pdf, "Helvetica" );
 
-    /* Capacity (Size) of disk */
-    pdf_add_text( pdf, NULL, "Size(Apparent): ", 12, 60, 390, PDF_GRAY );
-    pdf_set_font( pdf, "Helvetica-Bold" );
-    snprintf( device_size, sizeof( device_size ), "%s, %lli bytes", c->device_size_text, c->device_size );
-    pdf_add_text( pdf, NULL, device_size, text_size_data, 145, 390, PDF_BLACK );
-    pdf_set_font( pdf, "Helvetica" );
-
+    /******************************
+     * Bus type, ATA, USB, NVME etc
+     */
     pdf_add_text( pdf, NULL, "Bus:", 12, 340, 390, PDF_GRAY );
     pdf_set_font( pdf, "Helvetica-Bold" );
     pdf_add_text( pdf, NULL, c->device_type_str, text_size_data, 370, 390, PDF_BLACK );
+    pdf_set_font( pdf, "Helvetica" );
+
+    /*************************
+     * Capacity (Size) of disk
+     */
+    pdf_add_text( pdf, NULL, "Size(Apparent): ", 12, 60, 390, PDF_GRAY );
+    pdf_set_font( pdf, "Helvetica-Bold" );
+    snprintf( device_size, sizeof( device_size ), "%s, %lli bytes", c->device_size_text, c->device_size );
+    if( c->device_size == c->DCO_reported_real_max_size )
+    {
+        pdf_add_text( pdf, NULL, device_size, text_size_data, 145, 390, PDF_DARK_GREEN );
+    }
+    else
+    {
+        pdf_add_text( pdf, NULL, device_size, text_size_data, 145, 390, PDF_BLACK );
+    }
     pdf_set_font( pdf, "Helvetica" );
 
     pdf_add_text( pdf, NULL, "Size(Real):", 12, 60, 370, PDF_GRAY );
@@ -174,12 +191,13 @@ int create_pdf( nwipe_context_t* ptr )
     {
         if( c->HPA_status == HPA_ENABLED )
         {
+            /* displays the real max size of the disc from the DCO therefore displayed in green */
             snprintf( device_size,
                       sizeof( device_size ),
                       "%s, %lli bytes",
                       c->DCO_reported_real_max_size_text,
                       c->DCO_reported_real_max_size );
-            pdf_add_text( pdf, NULL, device_size, text_size_data, 125, 370, PDF_RED );
+            pdf_add_text( pdf, NULL, device_size, text_size_data, 125, 370, PDF_DARK_GREEN );
         }
         else
         {
@@ -362,6 +380,7 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_add_text( pdf, NULL, "*Bytes Erased:", 12, 60, 210, PDF_GRAY );
 
     /* Use real max sectors taken from DCO if not zero */
+    pdf_set_font( pdf, "Helvetica-Bold" );
     if( c->DCO_reported_real_max_sectors != 0 )
     {
         snprintf( bytes_erased,
@@ -370,6 +389,14 @@ int create_pdf( nwipe_context_t* ptr )
                   c->bytes_erased,
                   (double) ( (double) c->bytes_erased / (double) ( (double) c->DCO_reported_real_max_sectors * 512 ) )
                       * 100 );
+        if( c->bytes_erased == c->DCO_reported_real_max_sectors )
+        {
+            pdf_add_text( pdf, NULL, bytes_erased, text_size_data, 145, 210, PDF_DARK_GREEN );
+        }
+        else
+        {
+            pdf_add_text( pdf, NULL, bytes_erased, text_size_data, 145, 210, PDF_RED );
+        }
     }
     else
     {
@@ -379,15 +406,15 @@ int create_pdf( nwipe_context_t* ptr )
                   "%lli (%.1f%%)",
                   c->bytes_erased,
                   (double) ( (double) c->bytes_erased / (double) c->device_size ) * 100 );
-    }
-    pdf_set_font( pdf, "Helvetica-Bold" );
-    if( c->bytes_erased == c->device_size )
-    {
-        pdf_add_text( pdf, NULL, bytes_erased, text_size_data, 145, 210, PDF_DARK_GREEN );
-    }
-    else
-    {
-        pdf_add_text( pdf, NULL, bytes_erased, text_size_data, 145, 210, PDF_RED );
+
+        if( c->bytes_erased == c->device_size )
+        {
+            pdf_add_text( pdf, NULL, bytes_erased, text_size_data, 145, 210, PDF_DARK_GREEN );
+        }
+        else
+        {
+            pdf_add_text( pdf, NULL, bytes_erased, text_size_data, 145, 210, PDF_RED );
+        }
     }
     pdf_set_font( pdf, "Helvetica" );
 
@@ -411,11 +438,11 @@ int create_pdf( nwipe_context_t* ptr )
     /*******************************
      * HPA, DCO, post erase - LABELS
      */
-    pdf_add_text( pdf, NULL, "HPA:", 12, 60, 190, PDF_GRAY );
+    pdf_add_text( pdf, NULL, "HPA/DCO:", 12, 60, 190, PDF_GRAY );
     pdf_set_font( pdf, "Helvetica-Bold" );
     pdf_add_text( pdf, NULL, HPA_status_text, text_size_data, 155, 190, PDF_BLACK );
     pdf_set_font( pdf, "Helvetica" );
-    pdf_add_text( pdf, NULL, "HPA Size:", 12, 300, 190, PDF_GRAY );
+    pdf_add_text( pdf, NULL, "HPA/DCO Size:", 12, 300, 190, PDF_GRAY );
 
     /*******************
      * Populate HPA size
@@ -424,21 +451,21 @@ int create_pdf( nwipe_context_t* ptr )
     if( c->HPA_status == HPA_ENABLED )
     {
         snprintf( HPA_size_text, sizeof( HPA_size_text ), "%lli sectors", c->HPA_size );
-        pdf_add_text( pdf, NULL, HPA_size_text, text_size_data, 360, 190, PDF_RED );
+        pdf_add_text( pdf, NULL, HPA_size_text, text_size_data, 390, 190, PDF_RED );
     }
     else
     {
         if( c->HPA_status == HPA_DISABLED )
         {
             snprintf( HPA_size_text, sizeof( HPA_size_text ), "Zero sectors" );
-            pdf_add_text( pdf, NULL, HPA_size_text, text_size_data, 360, 190, PDF_DARK_GREEN );
+            pdf_add_text( pdf, NULL, HPA_size_text, text_size_data, 390, 190, PDF_DARK_GREEN );
         }
         else
         {
             if( c->HPA_status == HPA_UNKNOWN )
             {
                 snprintf( HPA_size_text, sizeof( HPA_size_text ), "UNKNOWN" );
-                pdf_add_text( pdf, NULL, HPA_size_text, text_size_data, 360, 190, PDF_RED );
+                pdf_add_text( pdf, NULL, HPA_size_text, text_size_data, 390, 190, PDF_RED );
             }
         }
     }
@@ -451,7 +478,7 @@ int create_pdf( nwipe_context_t* ptr )
     {
         snprintf( HPA_status_text, sizeof( HPA_status_text ), "Not applicable to %s", c->device_type_str );
         pdf_set_font( pdf, "Helvetica-Bold" );
-        pdf_add_text( pdf, NULL, HPA_status_text, text_size_data, 95, 190, PDF_DARK_GREEN );
+        pdf_add_text( pdf, NULL, HPA_status_text, text_size_data, 130, 190, PDF_DARK_GREEN );
         snprintf( HPA_size_text, sizeof( HPA_size_text ), "Not applicable to %s", c->device_type_str );
         pdf_add_text( pdf, NULL, HPA_size_text, text_size_data, 360, 190, PDF_DARK_GREEN );
         pdf_set_font( pdf, "Helvetica" );
@@ -460,28 +487,38 @@ int create_pdf( nwipe_context_t* ptr )
     {
         if( c->HPA_status == HPA_ENABLED )
         {
-            snprintf( HPA_status_text, sizeof( HPA_status_text ), "ENABLED" );
+            snprintf( HPA_status_text, sizeof( HPA_status_text ), "HIDDEN AREA FOUND!" );
             pdf_set_font( pdf, "Helvetica-Bold" );
-            pdf_add_text( pdf, NULL, HPA_status_text, text_size_data, 95, 190, PDF_RED );
+            pdf_add_text( pdf, NULL, HPA_status_text, text_size_data, 130, 190, PDF_RED );
             pdf_set_font( pdf, "Helvetica" );
         }
         else
         {
             if( c->HPA_status == HPA_DISABLED )
             {
-                snprintf( HPA_status_text, sizeof( HPA_status_text ), "DISABLED" );
+                snprintf( HPA_status_text, sizeof( HPA_status_text ), "NO HIDDEN AREA" );
                 pdf_set_font( pdf, "Helvetica-Bold" );
-                pdf_add_text( pdf, NULL, HPA_status_text, text_size_data, 95, 190, PDF_DARK_GREEN );
+                pdf_add_text( pdf, NULL, HPA_status_text, text_size_data, 130, 190, PDF_DARK_GREEN );
                 pdf_set_font( pdf, "Helvetica" );
             }
             else
             {
                 if( c->HPA_status == HPA_UNKNOWN )
                 {
-                    snprintf( HPA_status_text, sizeof( HPA_status_text ), "UNKNOWN" );
+                    snprintf( HPA_status_text, sizeof( HPA_status_text ), "STATUS UNKNOWN" );
                     pdf_set_font( pdf, "Helvetica-Bold" );
-                    pdf_add_text( pdf, NULL, HPA_status_text, text_size_data, 95, 190, PDF_RED );
+                    pdf_add_text( pdf, NULL, HPA_status_text, text_size_data, 130, 190, PDF_RED );
                     pdf_set_font( pdf, "Helvetica" );
+                }
+                else
+                {
+                    if( c->HPA_status == HPA_NOT_SUPPORTED_BY_DRIVE )
+                    {
+                        snprintf( HPA_status_text, sizeof( HPA_status_text ), "NO HIDDEN AREA **DDNSHDA" );
+                        pdf_set_font( pdf, "Helvetica-Bold" );
+                        pdf_add_text( pdf, NULL, HPA_status_text, text_size_data, 130, 190, PDF_DARK_GREEN );
+                        pdf_set_font( pdf, "Helvetica" );
+                    }
                 }
             }
         }
@@ -522,8 +559,13 @@ int create_pdf( nwipe_context_t* ptr )
                   "* bytes erased: The amount of drive that's been erased at least once",
                   text_size_data,
                   60,
-                  130,
+                  137,
                   PDF_BLACK );
+    if( c->HPA_status == HPA_NOT_SUPPORTED_BY_DRIVE )
+    {
+        pdf_add_text(
+            pdf, NULL, "** DDNSHDA = Drive does not support HPA/DCO", text_size_data, 60, 125, PDF_DARK_GREEN );
+    }
     pdf_set_font( pdf, "Helvetica" );
 
     /************************
