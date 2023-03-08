@@ -44,7 +44,8 @@
  * rather than reinvent the wheel. However, I don't like doing it like this as a change in formatted
  * output of hdparm could potentially break HPA/DCO detection requiring a fix. Anybody that wants to
  * re-write this function for a purer nwipe without the use of hdparm then by all means please go
- * ahead and submit a pull request to https://github.com/martijnvanbrummelen/nwipe
+ * ahead and submit a pull request to https://github.com/martijnvanbrummelen/nwipe, however, hopefully
+ * time permitting I will end up doing this myself.
  */
 
 int hpa_dco_status( nwipe_context_t* ptr )
@@ -59,13 +60,13 @@ int hpa_dco_status( nwipe_context_t* ptr )
     int dco_line_found;
 
     FILE* fp;
-    char path_hdparm_cmd1_get_hpa[] = "hdparm -N";
-    char path_hdparm_cmd2_get_hpa[] = "/sbin/hdparm -N";
-    char path_hdparm_cmd3_get_hpa[] = "/usr/bin/hdparm -N";
+    char path_hdparm_cmd1_get_hpa[] = "hdparm --verbose -N";
+    char path_hdparm_cmd2_get_hpa[] = "/sbin/hdparm --verbose -N";
+    char path_hdparm_cmd3_get_hpa[] = "/usr/bin/hdparm --verbose -N";
 
-    char path_hdparm_cmd4_get_dco[] = "hdparm --dco-identify";
-    char path_hdparm_cmd5_get_dco[] = "/sbin/hdparm --dco-identify";
-    char path_hdparm_cmd6_get_dco[] = "/usr/bin/hdparm --dco-identify";
+    char path_hdparm_cmd4_get_dco[] = "hdparm --verbose --dco-identify";
+    char path_hdparm_cmd5_get_dco[] = "/sbin/hdparm --verbose --dco-identify";
+    char path_hdparm_cmd6_get_dco[] = "/usr/bin/hdparm --verbose --dco-identify";
 
     char result[512];
 
@@ -162,36 +163,41 @@ int hpa_dco_status( nwipe_context_t* ptr )
 
                 /* Scan the hdparm results for HPA is disabled
                  */
-                if( strstr( result, "hpa is disabled" ) != 0 )
+                if( strstr( result, "SG_IO: bad/missing sense data" ) != 0 )
                 {
-                    c->HPA_status = HPA_DISABLED;
-
-                    nwipe_log( NWIPE_LOG_INFO, "[GOOD] The host protected area is disabled on %s", c->device_name );
-                    hpa_line_found = 1;
+                    c->HPA_status = HPA_UNKNOWN;
+                    nwipe_log( NWIPE_LOG_INFO, "[ERROR] SG_IO bad/missing sense data %s", hdparm_cmd_get_hpa );
                     break;
                 }
                 else
                 {
-                    if( strstr( result, "hpa is enabled" ) != 0 )
+                    if( strstr( result, "hpa is disabled" ) != 0 )
                     {
-                        c->HPA_status = HPA_ENABLED;
-                        nwipe_log(
-                            NWIPE_LOG_WARNING, "[BAD] The host protected area is enabled on %s", c->device_name );
+                        c->HPA_status = HPA_DISABLED;
+
+                        nwipe_log( NWIPE_LOG_INFO, "[GOOD] The host protected area is disabled on %s", c->device_name );
                         hpa_line_found = 1;
-                        break;
                     }
                     else
                     {
-                        if( strstr( result, "invalid" ) != 0 )
+                        if( strstr( result, "hpa is enabled" ) != 0 )
                         {
                             c->HPA_status = HPA_ENABLED;
-                            nwipe_log( NWIPE_LOG_WARNING,
-                                       "[UNSURE] hdparm reports invalid output, buggy drive firmware on %s?",
-                                       c->device_name );
-                            // We'll assume the HPA values are in the string as we may be able to extract something
-                            // meaningful
+                            nwipe_log( NWIPE_LOG_WARNING, "The host protected area is enabled on %s", c->device_name );
                             hpa_line_found = 1;
-                            break;
+                        }
+                        else
+                        {
+                            if( strstr( result, "invalid" ) != 0 )
+                            {
+                                c->HPA_status = HPA_ENABLED;
+                                nwipe_log( NWIPE_LOG_WARNING,
+                                           "[UNSURE] hdparm reports invalid output, buggy drive firmware on %s?",
+                                           c->device_name );
+                                // We'll assume the HPA values are in the string as we may be able to extract something
+                                // meaningful
+                                hpa_line_found = 1;
+                            }
                         }
                     }
                 }
@@ -361,6 +367,21 @@ int hpa_dco_status( nwipe_context_t* ptr )
      *
      * If 'HPA set' and 'HPA real' are different then it
      * can be considered that HPA is enabled)
+     *
+     * However we also need to consider that more recent drives
+     * no longer support HPA/DCO such as the Seagate ST10000NM0016,
+     * ST4000NM0033 and ST1000DM003. If you try to issue those drives
+     * with the ATA command code 0xB1 (device configuration overlay)
+     * you will get a generic illegal request in the returned sense data.
+     *
+     * One other thing to note, we use HPA enabled/disabled to mean
+     * hidden area detected or not detected, this could be caused by
+     * either the dco-setmax being issued or Np, either way an area
+     * of the disc can be hidden. From the user interface we just call
+     * it a HPA/DCO hidden area detected (or not) which is more
+     * meaningful than just saying HDA enabled or disabled and a user
+     * not familiar with the term HPA or DCO not understanding why a
+     * HDA being detected could be significant.
      */
 
     /* Determine, based on the values of 'HPA set', 'HPA real,
@@ -370,9 +391,9 @@ int hpa_dco_status( nwipe_context_t* ptr )
      * the certificate and is used to determine whether
      * to reset the HPA.
      */
-    /* If all three values match then there is no hidden disc area. HPA is disabled. */
+    /* If all three values match and none are zero then there is NO hidden disc area. HPA is disabled. */
     if( c->HPA_reported_set == c->HPA_reported_real && c->DCO_reported_real_max_sectors == c->HPA_reported_set
-        && c->HPA_reported_set != 0 )
+        && c->HPA_reported_set != 0 && c->HPA_reported_real != 0 && c->DCO_reported_real_max_sectors != 0 )
     {
         c->HPA_status = HPA_DISABLED;
     }
@@ -401,20 +422,19 @@ int hpa_dco_status( nwipe_context_t* ptr )
 
     if( c->HPA_status == HPA_DISABLED )
     {
-        nwipe_log( NWIPE_LOG_INFO, "[GOOD] HPA is disabled on %s", c->device_name );
+        nwipe_log( NWIPE_LOG_INFO, "No hidden areas on %s", c->device_name );
     }
     else
     {
         if( c->HPA_status == HPA_ENABLED )
         {
-            nwipe_log( NWIPE_LOG_WARNING, "[BAD] HPA is enabled on %s", c->device_name );
+            nwipe_log( NWIPE_LOG_WARNING, "HIDDEN AREA DETECTED! on %s", c->device_name );
         }
         else
         {
             if( c->HPA_status == HPA_UNKNOWN )
             {
-                nwipe_log(
-                    NWIPE_LOG_WARNING, "[UNKNOWN] We can't seem to determine the HPA status on %s", c->device_name );
+                nwipe_log( NWIPE_LOG_WARNING, "HIDDEN AREA INDETERMINATE! on %s", c->device_name );
             }
         }
     }
@@ -447,9 +467,11 @@ int hpa_dco_status( nwipe_context_t* ptr )
 
 int ascii2binary_array( char* input, unsigned char* output_bin, int bin_size )
 {
-    /* Scans a character string that contains hexadecimal ascii data, ignores spaces
+    /* Converts ascii sense data output by hdparm to binary.
+     * Scans a character string that contains hexadecimal ascii data, ignores spaces
      * and extracts and converts the hexadecimal ascii data to binary and places in a array.
-     * Typically for dco_identify sense data the bin size will be 512 bytes.
+     * Typically for dco_identify sense data the bin size will be 512 bytes but for error
+     * sense data this would be 32 bytes.
      */
     int idx_in;  // Index into ascii input string
     int idx_out;  // Index into the binary output array
