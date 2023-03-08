@@ -29,6 +29,8 @@
 
 int hpa_dco_status( nwipe_context_t* );
 
+u64 nwipe_read_dco_real_max_sectors( char* );
+
 typedef struct nwipe_sense_dco_identify_t_t_
 {
     /* This struct contains some of the decoded fields from the sense data after a

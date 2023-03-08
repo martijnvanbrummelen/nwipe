@@ -28,6 +28,8 @@
 #include <stdint.h>
 #include <stdarg.h>
 #include <string.h>
+#include <scsi/sg.h>
+#include <scsi/scsi_ioctl.h>
 #include "nwipe.h"
 #include "context.h"
 #include "version.h"
@@ -37,15 +39,12 @@
 #include "hpa_dco.h"
 #include "miscellaneous.h"
 
-/* This function makes use of the hdparm program to determine HPA/DCO status. I would have prefered
- * to write this function using low level access to the hardware however I would have needed
- * to understand fully the various edge cases that would need be be dealt with. As I need to add
- * HPA/detection to nwipe as quickly as possible I decided it would just be quicker to utilise hdparm
- * rather than reinvent the wheel. However, I don't like doing it like this as a change in formatted
- * output of hdparm could potentially break HPA/DCO detection requiring a fix. Anybody that wants to
- * re-write this function for a purer nwipe without the use of hdparm then by all means please go
- * ahead and submit a pull request to https://github.com/martijnvanbrummelen/nwipe, however, hopefully
- * time permitting I will end up doing this myself.
+/* This function makes use of both the hdparm program to determine HPA/DCO status and we also access
+ * the device configuration overlay identify data structure via the sg driver with ioctl calls.
+ * I would prefer to write these functions without any reliance on hdparm however for the time being
+ * we will utilize both methods. However, I don't like doing it like this as a change in formatted
+ * output of hdparm could potentially break HPA/DCO detection requiring a fix. Time permitting I may
+ * come back to this and fully implement it without any reliance on hdparm.
  */
 
 int hpa_dco_status( nwipe_context_t* ptr )
@@ -68,15 +67,19 @@ int hpa_dco_status( nwipe_context_t* ptr )
     char path_hdparm_cmd5_get_dco[] = "/sbin/hdparm --verbose --dco-identify";
     char path_hdparm_cmd6_get_dco[] = "/usr/bin/hdparm --verbose --dco-identify";
 
+    char pipe_std_err[] = "2>&1";
+
     char result[512];
+
+    u64 nwipe_dco_real_max_sectors;
 
     char* p;
 
     /* Use the longest of the 'path_hdparm_cmd.....' strings above to
      *determine size in the strings below
      */
-    char hdparm_cmd_get_hpa[sizeof( path_hdparm_cmd3_get_hpa ) + sizeof( c->device_name )];
-    char hdparm_cmd_get_dco[sizeof( path_hdparm_cmd6_get_dco ) + sizeof( c->device_name )];
+    char hdparm_cmd_get_hpa[sizeof( path_hdparm_cmd3_get_hpa ) + sizeof( c->device_name ) + sizeof( pipe_std_err )];
+    char hdparm_cmd_get_dco[sizeof( path_hdparm_cmd6_get_dco ) + sizeof( c->device_name ) + sizeof( pipe_std_err )];
 
     /* Initialise return value */
     set_return_value = 0;
@@ -104,29 +107,48 @@ int hpa_dco_status( nwipe_context_t* ptr )
             {
                 snprintf( hdparm_cmd_get_hpa,
                           sizeof( hdparm_cmd_get_hpa ),
-                          "%s %s\n",
+                          "%s %s %s\n",
                           path_hdparm_cmd3_get_hpa,
-                          c->device_name );
+                          c->device_name,
+                          pipe_std_err );
                 snprintf( hdparm_cmd_get_dco,
                           sizeof( hdparm_cmd_get_dco ),
-                          "%s %s\n",
+                          "%s %s %s\n",
                           path_hdparm_cmd6_get_dco,
-                          c->device_name );
+                          c->device_name,
+                          pipe_std_err );
             }
         }
         else
         {
-            snprintf(
-                hdparm_cmd_get_hpa, sizeof( hdparm_cmd_get_hpa ), "%s %s", path_hdparm_cmd2_get_hpa, c->device_name );
-            snprintf(
-                hdparm_cmd_get_dco, sizeof( hdparm_cmd_get_dco ), "%s %s\n", path_hdparm_cmd5_get_dco, c->device_name );
+            snprintf( hdparm_cmd_get_hpa,
+                      sizeof( hdparm_cmd_get_hpa ),
+                      "%s %s %s\n",
+                      path_hdparm_cmd2_get_hpa,
+                      c->device_name,
+                      pipe_std_err );
+            snprintf( hdparm_cmd_get_dco,
+                      sizeof( hdparm_cmd_get_dco ),
+                      "%s %s %s\n",
+                      path_hdparm_cmd5_get_dco,
+                      c->device_name,
+                      pipe_std_err );
         }
     }
     else
     {
-        snprintf( hdparm_cmd_get_hpa, sizeof( hdparm_cmd_get_hpa ), "%s %s", path_hdparm_cmd1_get_hpa, c->device_name );
-        snprintf(
-            hdparm_cmd_get_dco, sizeof( hdparm_cmd_get_dco ), "%s %s\n", path_hdparm_cmd4_get_dco, c->device_name );
+        snprintf( hdparm_cmd_get_hpa,
+                  sizeof( hdparm_cmd_get_hpa ),
+                  "%s %s %s\n",
+                  path_hdparm_cmd1_get_hpa,
+                  c->device_name,
+                  pipe_std_err );
+        snprintf( hdparm_cmd_get_dco,
+                  sizeof( hdparm_cmd_get_dco ),
+                  "%s %s %s\n",
+                  path_hdparm_cmd4_get_dco,
+                  c->device_name,
+                  pipe_std_err );
     }
 
     /* Initialise the results buffer, so we don't some how inadvertently process a past result */
@@ -462,7 +484,95 @@ int hpa_dco_status( nwipe_context_t* ptr )
     Determine_C_B_nomenclature(
         c->DCO_reported_real_max_size, c->DCO_reported_real_max_size_text, NWIPE_DEVICE_SIZE_TXT_LENGTH );
 
+    nwipe_dco_real_max_sectors = nwipe_read_dco_real_max_sectors( c->device_name );
+
     return set_return_value;
+}
+
+u64 nwipe_read_dco_real_max_sectors( char* device )
+{
+    /* This function sends a device configuration overlay identify command 0xB1 (dco-identify)
+     * to the drive and extracts the real max sectors. The value is incremented by 1 and
+     * then returned. We rely upon this function to determine real max sectors as there
+     * is a bug in hdparm 9.60, including possibly earlier or later versions but which is
+     * fixed in 9.65, that returns a incorrect (negative) value
+     * for some drives that are possibly over a certain size.
+     */
+
+    /* TODO Add checks in case of failure, especially with recent drives that may not
+     * support drive configuration overlay commands.
+     */
+
+#define LBA_SIZE 512
+#define CMD_LEN 16
+#define BLOCK_MAX 65535
+#define LBA_MAX ( 1 << 30 )
+
+    u64 nwipe_real_max_sectors;
+
+    /* This command issues command 0xb1 (dco-identify) 15th byte */
+    unsigned char cmd_blk[CMD_LEN] = { 0x85, 0x08, 0x0e, 0x00, 0xc2, 0, 0x01, 0, 0, 0, 0, 0, 0, 0x40, 0xb1, 0 };
+
+    sg_io_hdr_t io_hdr;
+    unsigned char buffer[LBA_SIZE];  // Received data block
+    unsigned char sense_buffer[32];  // Sense data
+
+    int i;  // index
+    int fd;  // file descripter
+
+    if( ( fd = open( device, O_RDWR ) ) < 0 )
+    {
+        /* Unable to open device */
+        return -1;
+    }
+
+    /******************************************
+     * Initialise the sg header for reading the
+     * device configuration overlay identify
+     */
+    memset( &io_hdr, 0, sizeof( sg_io_hdr_t ) );
+    io_hdr.interface_id = 'S';
+    io_hdr.cmd_len = sizeof( cmd_blk );
+    io_hdr.mx_sb_len = sizeof( sense_buffer );
+    io_hdr.dxfer_direction = SG_DXFER_FROM_DEV;
+    io_hdr.dxfer_len = LBA_SIZE;
+    io_hdr.dxferp = buffer;
+    io_hdr.cmdp = cmd_blk;
+    io_hdr.sbp = sense_buffer;
+    io_hdr.timeout = 20000;
+
+    if( ioctl( fd, SG_IO, &io_hdr ) < 0 )
+    {
+        printf( "ioctl failed\n" );
+        for( i = 0; i < 32; i++ )
+        {
+            /* IOCTL returned an error */
+            printf( "%02x ", sense_buffer[i] );  // WARNING make this an nwipe_log
+        }
+        return -2;
+    }
+
+    /* Close the device */
+    close( fd );
+
+    /***************************************************************
+     * Extract the real max sectors from the returned 512 byte block.
+     * Assuming the first word/byte is 0. We extract the bytes & switch
+     * the endian. Words 3-6(bytes 6-13) contain the max sector address
+     */
+    nwipe_real_max_sectors = (u64) ( (u64) buffer[13] << 56 ) | ( (u64) buffer[12] << 48 ) | ( (u64) buffer[11] << 40 )
+        | ( (u64) buffer[10] << 32 ) | ( (u64) buffer[9] << 24 ) | ( (u64) buffer[8] << 16 ) | ( (u64) buffer[7] << 8 )
+        | buffer[6];
+
+    /* Don't really understand this but hdparm adds 1 to
+     * the real max sectors too, (starting from 0??)
+     */
+    nwipe_real_max_sectors++;
+
+    nwipe_log(
+        NWIPE_LOG_INFO, "func:nwipe_read_dco_real_max_sectors(), DCO real max sectors = %lli", nwipe_real_max_sectors );
+
+    return nwipe_real_max_sectors;
 }
 
 int ascii2binary_array( char* input, unsigned char* output_bin, int bin_size )
