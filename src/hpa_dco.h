@@ -29,4 +29,13 @@
 
 int hpa_dco_status( nwipe_context_t* );
 
+typedef struct nwipe_sense_dco_identify_t_t_
+{
+    /* This struct contains some of the decoded fields from the sense data after a
+     * ATA 0xB1 device configuration overlay command has been issued. We mainly
+     * use it to decode the real max sectors
+     */
+    u64 dco_real_max_sectors;
+} nwipe_sense_dco_identify_t_t_;
+
 #endif /* HPA_DCO_H_ */

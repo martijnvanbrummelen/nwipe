@@ -795,47 +795,51 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
 
                 } /* switch select */
 
-                /* Toggle the [size][temp C] with [HDA Status]
+                wprintw( main_window, "[%s] ", c[i + offset]->device_size_text );
+
+                /* Read the drive temperature values */
+                nwipe_update_temperature( c[i + offset] );
+
+                /* print the temperature */
+                wprintw_temperature( c[i + offset] );
+
+                /* Toggle the drive/serial with [HDA/DCO Status]
                  */
                 switch( c[i + offset]->HPA_display_toggle_state )
                 {
                     case 0:
-                        wprintw( main_window, "[%s] ", c[i + offset]->device_size_text );
-
-                        /* Read the drive temperature values */
-                        nwipe_update_temperature( c[i + offset] );
-
-                        /* print the temperature */
-                        wprintw_temperature( c[i + offset] );
+                        /* print the drive model and serial number */
+                        wprintw( main_window, " %s/%s", c[i + offset]->device_model, c[i + offset]->device_serial_no );
                         break;
 
                     case 1:
                         switch( c[i + offset]->HPA_status )
                         {
                             case HPA_ENABLED:
+                                wprintw( main_window, " " );
                                 wattron( main_window, COLOR_PAIR( 9 ) );
-                                wprintw( main_window, "[HPA ENABLED!]" );
+                                wprintw( main_window, " HPA/DCO Warning, hidden area detected " );
                                 wattroff( main_window, COLOR_PAIR( 9 ) );
                                 break;
 
                             case HPA_DISABLED:
-                                wprintw( main_window, "[HPA disabled]" );
+                                wprintw( main_window, " " );
+                                wprintw( main_window, " HPA/DCO GOOD, no hidden areas " );
                                 break;
 
                             case HPA_UNKNOWN:
+                                wprintw( main_window, " " );
                                 wattron( main_window, COLOR_PAIR( 9 ) );
-                                wprintw( main_window, "[HPA unknown ]" );
+                                wprintw( main_window, " HPA/DCO hidden area indeterminate " );
                                 wattroff( main_window, COLOR_PAIR( 9 ) );
                                 break;
 
                             case HPA_NOT_APPLICABLE:
-                                wprintw( main_window, "[%s] ", c[i + offset]->device_size_text );
-
-                                /* Read the drive temperature values */
-                                nwipe_update_temperature( c[i + offset] );
-
-                                /* print the temperature */
-                                wprintw_temperature( c[i + offset] );
+                                /* print the drive model and serial number */
+                                wprintw( main_window,
+                                         " %s/%s",
+                                         c[i + offset]->device_model,
+                                         c[i + offset]->device_serial_no );
                                 break;
 
                             default:
@@ -858,9 +862,6 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                     }
                     c[i + offset]->HPA_toggle_time = time( NULL );
                 }
-
-                /* print the drive model and serial number */
-                wprintw( main_window, " %s/%s", c[i + offset]->device_model, c[i + offset]->device_serial_no );
             }
             else
             {
