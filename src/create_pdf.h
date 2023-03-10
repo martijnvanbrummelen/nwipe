@@ -38,4 +38,6 @@
  */
 int create_pdf( nwipe_context_t* ptr );
 
+int nwipe_get_smart_data( char* );
+
 #endif /* CREATE_PDF_H_ */

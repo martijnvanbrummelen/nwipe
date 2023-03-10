@@ -18,6 +18,10 @@
  *
  */
 
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE
+#endif
+
 #include <stdint.h>
 #include "stdarg.h"
 #include "stdio.h"
@@ -40,6 +44,8 @@
 
 #define text_size_data 10
 
+struct pdf_doc* pdf;
+
 int create_pdf( nwipe_context_t* ptr )
 {
     extern nwipe_prng_t nwipe_twister;
@@ -60,7 +66,6 @@ int create_pdf( nwipe_context_t* ptr )
     char start_time_text[50] = "";
     char end_time_text[50] = "";
     char bytes_erased[50] = "";
-    char HPA_pre_erase[50] = "";
     char HPA_status_text[50] = "";
     char HPA_size_text[50] = "";
     char errors[50] = "";
@@ -83,8 +88,8 @@ int create_pdf( nwipe_context_t* ptr )
     /* Initialise Various */
 
     // nwipe_log( NWIPE_LOG_NOTICE, "Create the PDF disk erasure certificate" );
-    struct pdf_doc* pdf = pdf_create( PDF_A4_WIDTH, PDF_A4_HEIGHT, &info );
-
+    // struct pdf_doc* pdf = pdf_create( PDF_A4_WIDTH, PDF_A4_HEIGHT, &info );
+    pdf = pdf_create( PDF_A4_WIDTH, PDF_A4_HEIGHT, &info );
     /* Create footer text string and append the version */
     snprintf( pdf_footer, sizeof( pdf_footer ), "Disc Erasure by NWIPE version %s", version_string );
 
@@ -94,21 +99,25 @@ int create_pdf( nwipe_context_t* ptr )
     /* Obtain page page_width */
     page_width = pdf_page_width( page_1 );
 
-    /* ---------------------------------------------------------- */
-    /* Create header and footer, with the exception of the green  */
-    /* tick/red icon which is set from the 'status' section below */
+    /*********************************************************************
+     * Create header and footer on page 1, with the exception of the green
+     * tick/red icon which is set from the 'status' section below
+     */
     pdf_add_text_wrap( pdf, NULL, pdf_footer, 12, 0, 30, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
     pdf_add_line( pdf, NULL, 50, 50, 550, 50, 3, PDF_BLACK );
     pdf_add_line( pdf, NULL, 50, 650, 550, 650, 3, PDF_BLACK );
     pdf_add_image_data( pdf, NULL, 45, 665, 100, 100, bin2c_shred_db_jpg, 27063 );
     pdf_set_font( pdf, "Helvetica-Bold" );
     snprintf( model_header, sizeof( model_header ), " %s: %s ", "Model", c->device_model );
-    pdf_add_text( pdf, NULL, model_header, 14, 195, 755, PDF_BLACK );
+    pdf_add_text_wrap( pdf, NULL, model_header, 14, 0, 755, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
     snprintf( serial_header, sizeof( serial_header ), " %s: %s ", "S/N", c->device_serial_no );
-    pdf_add_text( pdf, NULL, serial_header, 14, 215, 735, PDF_BLACK );
+    pdf_add_text_wrap( pdf, NULL, serial_header, 14, 0, 735, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
     pdf_set_font( pdf, "Helvetica" );
-    pdf_add_text( pdf, NULL, "Disk Erasure Report", 24, 190, 690, PDF_BLACK );
+
+    pdf_add_text_wrap( pdf, NULL, "Disk Erasure Report", 24, 0, 695, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
     snprintf( barcode, sizeof( barcode ), "%s:%s", c->device_model, c->device_serial_no );
+    pdf_add_text_wrap(
+        pdf, NULL, "Page 1 of 2 - Erasure Status", 14, 0, 670, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
     pdf_add_barcode( pdf, NULL, PDF_BARCODE_128A, 100, 790, 400, 25, barcode, PDF_BLACK );
 
     /* ------------------------ */
@@ -175,7 +184,7 @@ int create_pdf( nwipe_context_t* ptr )
     }
     else
     {
-        pdf_add_text( pdf, NULL, device_size, text_size_data, 145, 390, PDF_BLACK );
+        pdf_add_text( pdf, NULL, device_size, text_size_data, 145, 390, PDF_RED );
     }
     pdf_set_font( pdf, "Helvetica" );
 
@@ -191,20 +200,33 @@ int create_pdf( nwipe_context_t* ptr )
     {
         if( c->HPA_status == HPA_ENABLED )
         {
-            /* displays the real max size of the disc from the DCO therefore displayed in green */
+            /* displays the real max size of the disc from the DCO displayed in red as enabled */
             snprintf( device_size,
                       sizeof( device_size ),
                       "%s, %lli bytes",
                       c->DCO_reported_real_max_size_text,
                       c->DCO_reported_real_max_size );
-            pdf_add_text( pdf, NULL, device_size, text_size_data, 125, 370, PDF_DARK_GREEN );
+            pdf_add_text( pdf, NULL, device_size, text_size_data, 125, 370, PDF_RED );
         }
         else
         {
-            if( c->HPA_status == HPA_UNKNOWN )
+            if( c->HPA_status == HPA_DISABLED )
             {
-                snprintf( device_size, sizeof( device_size ), "Unknown" );
-                pdf_add_text( pdf, NULL, device_size, text_size_data, 125, 370, PDF_RED );
+                /* displays the real max size of the disc from the DCO displayed in green as disabled */
+                snprintf( device_size,
+                          sizeof( device_size ),
+                          "%s, %lli bytes",
+                          c->DCO_reported_real_max_size_text,
+                          c->DCO_reported_real_max_size );
+                pdf_add_text( pdf, NULL, device_size, text_size_data, 125, 370, PDF_DARK_GREEN );
+            }
+            else
+            {
+                if( c->HPA_status == HPA_UNKNOWN )
+                {
+                    snprintf( device_size, sizeof( device_size ), "Unknown" );
+                    pdf_add_text( pdf, NULL, device_size, text_size_data, 125, 370, PDF_RED );
+                }
             }
         }
     }
@@ -577,6 +599,38 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_add_text( pdf, NULL, "Signature:", 12, 300, 100, PDF_BLUE );
     pdf_add_line( pdf, NULL, 360, 65, 550, 66, 1, PDF_GRAY );
 
+    /***************************************************************
+     * Create Page 2 of the report. This shows the drives smart data
+     */
+
+    struct pdf_object* page_2 = pdf_append_page( pdf );
+
+    /*********************************************************************
+     * Create header and footer on page 1, with the exception of the green
+     * tick/red icon which is set from the 'status' section below
+     */
+    pdf_add_text_wrap( pdf, NULL, pdf_footer, 12, 0, 30, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
+    pdf_add_line( pdf, NULL, 50, 50, 550, 50, 3, PDF_BLACK );
+    pdf_add_line( pdf, NULL, 50, 650, 550, 650, 3, PDF_BLACK );
+    pdf_add_image_data( pdf, NULL, 45, 665, 100, 100, bin2c_shred_db_jpg, 27063 );
+    pdf_set_font( pdf, "Helvetica-Bold" );
+    snprintf( model_header, sizeof( model_header ), " %s: %s ", "Model", c->device_model );
+    pdf_add_text_wrap( pdf, NULL, model_header, 14, 0, 755, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
+    snprintf( serial_header, sizeof( serial_header ), " %s: %s ", "S/N", c->device_serial_no );
+    pdf_add_text_wrap( pdf, NULL, serial_header, 14, 0, 735, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
+    pdf_set_font( pdf, "Helvetica" );
+
+    pdf_add_text_wrap( pdf, NULL, "Disk Erasure Report", 24, 0, 695, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
+    snprintf( barcode, sizeof( barcode ), "%s:%s", c->device_model, c->device_serial_no );
+    pdf_add_text_wrap(
+        pdf, NULL, "Page 2 of 2 - Smart Data", 14, 0, 670, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
+    pdf_add_barcode( pdf, NULL, PDF_BARCODE_128A, 100, 790, 400, 25, barcode, PDF_BLACK );
+
+    /*********************************
+     * Populate page 2 with smart data
+     */
+    nwipe_get_smart_data( c->device_name );
+
     /*****************************
      * Create the reports filename
      *
@@ -596,4 +650,126 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_save( pdf, c->PDF_filename );
     pdf_destroy( pdf );
     return 0;
+}
+
+int nwipe_get_smart_data( char* device )
+{
+    FILE* fp;
+
+    char* pdata;
+
+    char smartctl_command[] = "smartctl -a %s";
+    char smartctl_command2[] = "/sbin/smartctl -a %s";
+    char smartctl_command3[] = "/usr/bin/smartctl -a %s";
+    char final_cmd_smartctl[sizeof( smartctl_command3 ) + 256];
+    char result[512];
+    char smartctl_labels_to_anonymize[][18] = {
+        "serial number:", "lu wwn device id:", "logical unit id:", "" /* Don't remove this empty string !, important */
+    };
+
+    int idx, idx2, idx3;
+    int x, y;
+    int set_return_value;
+
+    final_cmd_smartctl[0] = 0;
+
+    /* Determine whether we can access smartctl, required if the PATH environment is not setup ! (Debian sid 'su' as
+     * opposed to 'su -' */
+    if( system( "which smartctl > /dev/null 2>&1" ) )
+    {
+        if( system( "which /sbin/smartctl > /dev/null 2>&1" ) )
+        {
+            if( system( "which /usr/bin/smartctl > /dev/null 2>&1" ) )
+            {
+                nwipe_log( NWIPE_LOG_WARNING, "Command not found. Install smartmontools !" );
+            }
+            else
+            {
+                sprintf( final_cmd_smartctl, smartctl_command3, device );
+            }
+        }
+        else
+        {
+            sprintf( final_cmd_smartctl, smartctl_command2, device );
+        }
+    }
+    else
+    {
+        sprintf( final_cmd_smartctl, smartctl_command, device );
+    }
+
+    if( final_cmd_smartctl[0] != 0 )
+    {
+        fp = popen( final_cmd_smartctl, "r" );
+
+        if( fp == NULL )
+        {
+            nwipe_log( NWIPE_LOG_WARNING, "nwipe_get_smart_data(): Failed to create stream to %s", smartctl_command );
+
+            set_return_value = 3;
+        }
+        else
+        {
+            x = 50;
+            y = 630;
+            /* Read the output a line at a time - output it. */
+            while( fgets( result, sizeof( result ) - 1, fp ) != NULL )
+            {
+                /* Convert the label, i.e everything before the ':' to lower case, it's required to
+                 * convert to lower case as smartctl seems to use inconsistent case when labeling
+                 * for serial number, i.e mostly it produces labels "Serial Number:" but occasionally
+                 * it produces a label "Serial number:" */
+
+                idx = 0;
+
+                while( result[idx] != 0 && result[idx] != ':' )
+                {
+                    /* If upper case alpha character, change to lower case */
+                    if( result[idx] >= 'A' && result[idx] <= 'Z' )
+                    {
+                        result[idx] += 32;
+                    }
+                    idx++;
+                }
+
+                if( !strncmp( "smart attributes", result, 16 ) )
+                {
+                    // move to right column on page, starting at top
+                    x = 270;
+                    y = 630;
+                }
+
+                if( nwipe_options.quiet == 1 )
+                {
+                    for( idx2 = 0; idx2 < 3; idx2++ )
+                    {
+                        if( strstr( result, &smartctl_labels_to_anonymize[idx2][0] ) )
+                        {
+                            if( ( pdata = strstr( result, ":" ) ) )
+                            {
+                                idx3 = 1;
+                                while( pdata[idx3] != 0 )
+                                {
+                                    if( pdata[idx3] != ' ' )
+                                    {
+                                        pdata[idx3] = 'X';
+                                    }
+                                    idx3++;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                pdf_add_text( pdf, NULL, result, 6, x, y, PDF_BLACK );
+                y -= 9;
+            }
+            set_return_value = 0;
+        }
+    }
+    else
+    {
+        set_return_value = 1;
+    }
+    return set_return_value;
 }
