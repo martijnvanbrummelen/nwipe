@@ -86,6 +86,19 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
     /* initialise characters written */
     chars_written = 0;
 
+    /* Only log messages with the debug label if the command line --verbose
+     * options has been specified, otherwise just return
+     */
+    if( level == NWIPE_LOG_DEBUG && nwipe_options.verbose == 0 )
+    {
+        r = pthread_mutex_unlock( &mutex1 );
+        if( r != 0 )
+        {
+            fprintf( stderr, "nwipe_log: pthread_mutex_unlock failed. Code %i \n", r );
+        }
+        return;
+    }
+
     /* Print the date. The rc script uses the same format. */
     if( level != NWIPE_LOG_NOTIMESTAMP )
     {
@@ -602,16 +615,16 @@ int nwipe_log_sysinfo()
                     if( *( &dmidecode_keywords[keywords_idx][1][0] ) == '0' )
                     {
                         nwipe_log(
-                            NWIPE_LOG_NOTICE, "%s = %s", &dmidecode_keywords[keywords_idx][0][0], "XXXXXXXXXXXXXXX" );
+                            NWIPE_LOG_INFO, "%s = %s", &dmidecode_keywords[keywords_idx][0][0], "XXXXXXXXXXXXXXX" );
                     }
                     else
                     {
-                        nwipe_log( NWIPE_LOG_NOTICE, "%s = %s", &dmidecode_keywords[keywords_idx][0][0], path );
+                        nwipe_log( NWIPE_LOG_INFO, "%s = %s", &dmidecode_keywords[keywords_idx][0][0], path );
                     }
                 }
                 else
                 {
-                    nwipe_log( NWIPE_LOG_NOTICE, "%s = %s", &dmidecode_keywords[keywords_idx][0][0], path );
+                    nwipe_log( NWIPE_LOG_INFO, "%s = %s", &dmidecode_keywords[keywords_idx][0][0], path );
                 }
             }
             /* close */

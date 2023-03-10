@@ -22,17 +22,18 @@
 #define LOGGING_H_
 
 /* Maximum size of a log message */
-#define MAX_LOG_LINE_CHARS 512
+#define MAX_LOG_LINE_CHARS 1024
 
-#define MAX_SIZE_OS_STRING 512 /* Maximum size of acceptable OS string */
+#define MAX_SIZE_OS_STRING 1024 /* Maximum size of acceptable OS string */
+
 #define OS_info_Line_offset 31 /* OS_info line offset in log */
 #define OS_info_Line_Length 48 /* OS_info line length */
 
 typedef enum nwipe_log_t_ {
     NWIPE_LOG_NONE = 0,
-    NWIPE_LOG_DEBUG,  // TODO:  Very verbose logging.
-    NWIPE_LOG_INFO,  // TODO:  Verbose logging.
-    NWIPE_LOG_NOTICE,  // Most logging happens at this level.
+    NWIPE_LOG_DEBUG,  // Output only when --verbose option used on cmd line.
+    NWIPE_LOG_INFO,  // General Info not specifically relevant to the wipe.
+    NWIPE_LOG_NOTICE,  // Most logging happens at this level related to wiping.
     NWIPE_LOG_WARNING,  // Things that the user should know about.
     NWIPE_LOG_ERROR,  // Non-fatal errors that result in failure.
     NWIPE_LOG_FATAL,  // Errors that cause the program to exit.
