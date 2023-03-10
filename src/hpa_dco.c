@@ -188,7 +188,7 @@ int hpa_dco_status( nwipe_context_t* ptr )
                 if( strstr( result, "SG_IO: bad/missing sense data" ) != 0 )
                 {
                     c->HPA_status = HPA_UNKNOWN;
-                    nwipe_log( NWIPE_LOG_INFO, "[ERROR] SG_IO bad/missing sense data %s", hdparm_cmd_get_hpa );
+                    nwipe_log( NWIPE_LOG_ERROR, "SG_IO bad/missing sense data %s", hdparm_cmd_get_hpa );
                     break;
                 }
                 else
@@ -197,7 +197,11 @@ int hpa_dco_status( nwipe_context_t* ptr )
                     {
                         c->HPA_status = HPA_DISABLED;
 
-                        nwipe_log( NWIPE_LOG_INFO, "[GOOD] The host protected area is disabled on %s", c->device_name );
+                        nwipe_log( NWIPE_LOG_DEBUG,
+                                   "hdparm says the host protected area is disabled on %s but this information may or "
+                                   "may not be correct, as occurs when you get a SG_IO error and 0/1 sectors and it "
+                                   "says HPA is enabled. Further checks are conducted below..",
+                                   c->device_name );
                         hpa_line_found = 1;
                     }
                     else
@@ -205,7 +209,11 @@ int hpa_dco_status( nwipe_context_t* ptr )
                         if( strstr( result, "hpa is enabled" ) != 0 )
                         {
                             c->HPA_status = HPA_ENABLED;
-                            nwipe_log( NWIPE_LOG_WARNING, "The host protected area is enabled on %s", c->device_name );
+                            nwipe_log( NWIPE_LOG_DEBUG,
+                                       "hdparm says the host protected area is enabled on %s but this information may "
+                                       "or may not be correct, as occurs when you get a SG_IO error and 0/1 sectors "
+                                       "and it says HPA is enabled. Further checks are conducted below..",
+                                       c->device_name );
                             hpa_line_found = 1;
                         }
                         else
@@ -214,7 +222,8 @@ int hpa_dco_status( nwipe_context_t* ptr )
                             {
                                 c->HPA_status = HPA_ENABLED;
                                 nwipe_log( NWIPE_LOG_WARNING,
-                                           "[UNSURE] hdparm reports invalid output, buggy drive firmware on %s?",
+                                           "hdparm reports invalid output, sector information may be invalid, buggy "
+                                           "drive firmware on %s?",
                                            c->device_name );
                                 // We'll assume the HPA values are in the string as we may be able to extract something
                                 // meaningful
@@ -342,9 +351,41 @@ int hpa_dco_status( nwipe_context_t* ptr )
             {
                 c->DCO_reported_real_max_sectors = str_ascii_number_to_ll( result );
                 nwipe_log( NWIPE_LOG_INFO,
-                           "DCO Real max sectors reported as %lli on %s",
+                           "hdparm:DCO Real max sectors reported as %lli on %s",
                            c->DCO_reported_real_max_sectors,
                            c->device_name );
+
+                /* Validate the real max sectors to detect extreme or impossible
+                 * values, so the size must be greater than zero but less than
+                 * 200TB (429496729600 sectors). As its 2023 and the largest drive
+                 * available is 20TB I wonder if somebody in the future will be looking
+                 * at this and thinking, yep we need to increase that value... and I'm
+                 * wondering what year that will be. This validation is necessary all
+                 * because of a bug in hdparm v9.60 (and maybe other versions) which
+                 * produced wildly inaccurate values, often negative.
+                 */
+                if( c->DCO_reported_real_max_sectors > 0 && c->DCO_reported_real_max_sectors < 429496729600 )
+                {
+                    /* Call nwipe's own low level function to retrieve the drive configuration
+                     * overlay and retrieve the real max sectors. We may remove reliance on hdparm
+                     * if nwipes own low level drive access code works well.
+                     */
+                    c->DCO_reported_real_max_sectors = nwipe_read_dco_real_max_sectors( c->device_name );
+
+                    /* Check our real max sectors function is returning sensible data too */
+                    if( c->DCO_reported_real_max_sectors > 0 && c->DCO_reported_real_max_sectors < 429496729600 )
+                    {
+                        nwipe_log( NWIPE_LOG_INFO,
+                                   "NWipe:DCO Real max sectors reported as %lli on %s",
+                                   c->DCO_reported_real_max_sectors,
+                                   c->device_name );
+                    }
+                    else
+                    {
+                        c->DCO_reported_real_max_sectors = 0;
+                        nwipe_log( NWIPE_LOG_INFO, "DCO Real max sectors not found" );
+                    }
+                }
             }
             else
             {
@@ -388,7 +429,10 @@ int hpa_dco_status( nwipe_context_t* ptr )
      * HPA is disabled.
      *
      * If 'HPA set' and 'HPA real' are different then it
-     * can be considered that HPA is enabled)
+     * can be considered that HPA is enabled, assuming 'HPA set'
+     * and 'HPA real' are not 0/1 which occurs when a SG_IO error
+     * occurs. That also is checked for as it often indicates a
+     * poor USB device that does not have ATA pass through support.
      *
      * However we also need to consider that more recent drives
      * no longer support HPA/DCO such as the Seagate ST10000NM0016,
@@ -434,9 +478,17 @@ int hpa_dco_status( nwipe_context_t* ptr )
             }
             else
             {
-                if( !strcmp( c->device_type_str, "NVME" ) )
+                /* This occurs when a SG_IO error occurs with USB devices that don't support ATA pass through */
+                if( c->HPA_reported_set == 0 && c->HPA_reported_real == 1 )
                 {
-                    c->HPA_status = HPA_NOT_APPLICABLE;
+                    c->HPA_status = HPA_UNKNOWN;
+                }
+                else
+                {
+                    if( !strcmp( c->device_type_str, "NVME" ) )
+                    {
+                        c->HPA_status = HPA_NOT_APPLICABLE;
+                    }
                 }
             }
         }
@@ -456,7 +508,9 @@ int hpa_dco_status( nwipe_context_t* ptr )
         {
             if( c->HPA_status == HPA_UNKNOWN )
             {
-                nwipe_log( NWIPE_LOG_WARNING, "HIDDEN AREA INDETERMINATE! on %s", c->device_name );
+                nwipe_log( NWIPE_LOG_WARNING,
+                           "HIDDEN AREA INDETERMINATE! on %s, are you using a USB bridge or memory stick?",
+                           c->device_name );
             }
         }
     }
@@ -507,6 +561,7 @@ u64 nwipe_read_dco_real_max_sectors( char* device )
 #define CMD_LEN 16
 #define BLOCK_MAX 65535
 #define LBA_MAX ( 1 << 30 )
+#define SENSE_BUFFER_SIZE 32
 
     u64 nwipe_real_max_sectors;
 
@@ -515,9 +570,14 @@ u64 nwipe_read_dco_real_max_sectors( char* device )
 
     sg_io_hdr_t io_hdr;
     unsigned char buffer[LBA_SIZE];  // Received data block
-    unsigned char sense_buffer[32];  // Sense data
+    unsigned char sense_buffer[SENSE_BUFFER_SIZE];  // Sense data
 
-    int i;  // index
+    /* three characters represent one byte of sense data, i.e
+     * two characters and a space "01 AE 67"
+     */
+    char sense_buffer_hex[( SENSE_BUFFER_SIZE * 3 ) + 1];
+
+    int i, i2;  // index
     int fd;  // file descripter
 
     if( ( fd = open( device, O_RDWR ) ) < 0 )
@@ -528,7 +588,7 @@ u64 nwipe_read_dco_real_max_sectors( char* device )
 
     /******************************************
      * Initialise the sg header for reading the
-     * device configuration overlay identify
+     * device configuration overlay identify data
      */
     memset( &io_hdr, 0, sizeof( sg_io_hdr_t ) );
     io_hdr.interface_id = 'S';
@@ -543,12 +603,15 @@ u64 nwipe_read_dco_real_max_sectors( char* device )
 
     if( ioctl( fd, SG_IO, &io_hdr ) < 0 )
     {
-        printf( "ioctl failed\n" );
-        for( i = 0; i < 32; i++ )
+        nwipe_log( NWIPE_LOG_ERROR, "IOCTL command failed retrieving DCO" );
+        i2 = 0;
+        for( i = 0, i2 = 0; i < SENSE_BUFFER_SIZE; i++, i2 += 3 )
         {
             /* IOCTL returned an error */
-            printf( "%02x ", sense_buffer[i] );  // WARNING make this an nwipe_log
+            snprintf( &sense_buffer_hex[i2], sizeof( sense_buffer_hex ), "%02x ", sense_buffer[i] );
         }
+        sense_buffer_hex[i2] = 0;  // terminate string
+        nwipe_log( NWIPE_LOG_DEBUG, "Sense buffer from failed DCO identify cmd:%s", sense_buffer_hex );
         return -2;
     }
 
@@ -565,9 +628,13 @@ u64 nwipe_read_dco_real_max_sectors( char* device )
         | buffer[6];
 
     /* Don't really understand this but hdparm adds 1 to
-     * the real max sectors too, (starting from 0??)
+     * the real max sectors too, counting zero as sector?
+     * but only increment if it's already greater than zero
      */
-    nwipe_real_max_sectors++;
+    if( nwipe_real_max_sectors > 0 )
+    {
+        nwipe_real_max_sectors++;
+    }
 
     nwipe_log(
         NWIPE_LOG_INFO, "func:nwipe_read_dco_real_max_sectors(), DCO real max sectors = %lli", nwipe_real_max_sectors );
