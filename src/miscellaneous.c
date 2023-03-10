@@ -59,6 +59,21 @@ void strlower( char* str )
     }
 }
 
+void strip_CR_LF( char* str )
+{
+    /* In the specified string, replace any CR or LF with a space */
+    int idx = 0;
+    int len = strlen( str );
+    while( idx < len )
+    {
+        if( str[idx] == 0x0A || str[idx] == 0x0D )
+        {
+            str[idx] = ' ';
+        }
+        idx++;
+    }
+}
+
 /* Search a string for a positive number, convert the first
  * number found to binary and return the binary number.
  * returns the number or -1 if number too large or -2 if

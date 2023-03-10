@@ -366,6 +366,13 @@ int hpa_dco_status( nwipe_context_t* ptr )
                  */
                 if( c->DCO_reported_real_max_sectors > 0 && c->DCO_reported_real_max_sectors < 429496729600 )
                 {
+                    nwipe_log( NWIPE_LOG_INFO,
+                               "NWipe: DCO Real max sectors reported as %lli on %s",
+                               c->DCO_reported_real_max_sectors,
+                               c->device_name );
+                }
+                else
+                {
                     /* Call nwipe's own low level function to retrieve the drive configuration
                      * overlay and retrieve the real max sectors. We may remove reliance on hdparm
                      * if nwipes own low level drive access code works well.
@@ -376,7 +383,7 @@ int hpa_dco_status( nwipe_context_t* ptr )
                     if( c->DCO_reported_real_max_sectors > 0 && c->DCO_reported_real_max_sectors < 429496729600 )
                     {
                         nwipe_log( NWIPE_LOG_INFO,
-                                   "NWipe:DCO Real max sectors reported as %lli on %s",
+                                   "NWipe: DCO Real max sectors reported as %lli on %s",
                                    c->DCO_reported_real_max_sectors,
                                    c->device_name );
                     }

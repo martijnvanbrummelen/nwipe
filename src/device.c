@@ -342,10 +342,6 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
             check_HPA = 1;
             break;
     }
-    if( check_HPA == 1 )
-    {
-        hpa_dco_status( next_device );
-    }
 
     if( strlen( (const char*) next_device->device_serial_no ) )
     {
@@ -376,6 +372,17 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
                next_device->device_model,
                next_device->device_size_text,
                next_device->device_serial_no );
+
+    /******************************
+     * Check for hidden sector_size
+     */
+    if( check_HPA == 1 )
+    {
+        hpa_dco_status( next_device );
+    }
+
+    /* print an empty line to separate the drives in the log */
+    nwipe_log( NWIPE_LOG_INFO, " " );
 
     ( *c )[dcount] = next_device;
     return 1;
@@ -736,7 +743,7 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
                         }
                     }
 
-                    nwipe_log( NWIPE_LOG_DEBUG, "smartctl: %s", result );
+                    nwipe_log( NWIPE_LOG_INFO, "smartctl: %s", result );
                 }
 
                 if( strstr( result, "serial number:" ) != 0 )
@@ -811,21 +818,6 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
     }
 
     return set_return_value;
-}
-
-void strip_CR_LF( char* str )
-{
-    /* In the specified string, replace any CR or LF with a space */
-    int idx = 0;
-    int len = strlen( str );
-    while( idx < len )
-    {
-        if( str[idx] == 0x0A || str[idx] == 0x0D )
-        {
-            str[idx] = ' ';
-        }
-        idx++;
-    }
 }
 
 void remove_ATA_prefix( char* str )
