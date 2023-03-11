@@ -23,6 +23,10 @@
 
 #define MAX_PDF_FOOTER_TEXT_LENGTH 100
 
+#define STATUS_ICON_GREEN_TICK 1
+#define STATUS_ICON_YELLOW_EXCLAMATION 2
+#define STATUS_ICON_RED_CROSS 3
+
 /* Additional colors that supplement the standard colors in pdfgen.h
  */
 /*! Utility macro to provide gray */
@@ -30,6 +34,9 @@
 
 /*! Utility macro to provide gray */
 #define PDF_GRAY PDF_RGB( 0x5A, 0x5A, 0x5A )
+
+/*! Utility macro to provide gray */
+#define PDF_YELLOW PDF_RGB( 0xFF, 0xFF, 0x5A )
 
 /**
  * Create the disk erase report in PDF format

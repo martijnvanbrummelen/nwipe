@@ -4,7 +4,7 @@
  * used by configure to dynamically assign those values
  * to documentation files.
  */
-const char* version_string = "0.34.4 Development code, not for production use!";
+const char* version_string = "0.34.5 Development code, not for production use!";
 const char* program_name = "nwipe";
 const char* author_name = "Martijn van Brummelen";
 const char* email_address = "git@brumit.nl";
@@ -14,4 +14,4 @@ Modifications to original dwipe Copyright Andy Beverley <andy@andybev.com>\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty; not even for MERCHANTABILITY or FITNESS\n\
 FOR A PARTICULAR PURPOSE.\n";
-const char* banner = "nwipe 0.34.4 Development code, not for production use!";
+const char* banner = "nwipe 0.34.5 Development code, not for production use!";
