@@ -457,12 +457,11 @@ int hpa_dco_status( nwipe_context_t* ptr )
      * HDA being detected could be significant.
      */
 
-    /* Determine, based on the values of 'HPA set', 'HPA real,
-     * and 'real max sectors' whether we set the HPA
-     * flag as HPA_DISABLED, HPA_ENABLED or HPA_UNKNOWN.
-     * The HPA flag will be displayed in the GUI and on
-     * the certificate and is used to determine whether
-     * to reset the HPA.
+    /* Determine, based on the values of 'HPA set', 'HPA real and
+     * 'real max sectors' whether we set the HPA flag as HPA_DISABLED,
+     * HPA_ENABLED, HPA_UNKNOWN or HPA_NOT_APPLICABLE. The HPA flag
+     * will be displayed in the GUI and on the certificate and is
+     * used to determine whether to reset the HPA.
      */
     /* If all three values match and none are zero then there is NO hidden disc area. HPA is disabled. */
     if( c->HPA_reported_set == c->HPA_reported_real && c->DCO_reported_real_max_sectors == c->HPA_reported_set
@@ -492,7 +491,8 @@ int hpa_dco_status( nwipe_context_t* ptr )
                 }
                 else
                 {
-                    if( !strcmp( c->device_type_str, "NVME" ) )
+                    if( !strcmp( c->device_type_str, "NVME" )
+                        || ( c->HPA_reported_set > 1 && c->DCO_reported_real_max_sectors < 2 ) )
                     {
                         c->HPA_status = HPA_NOT_APPLICABLE;
                     }
