@@ -305,7 +305,7 @@ int create_pdf( nwipe_context_t* ptr )
             pdf_add_text( pdf, NULL, "See Warning !", 12, 450, 290, PDF_RED );
 
             /* Display the yellow exclamation icon in the header */
-            pdf_add_image_data( pdf, NULL, 450, 665, 100, 100, bin2c_nwipe_exclamation_jpg, 74292 );
+            pdf_add_image_data( pdf, NULL, 450, 665, 100, 100, bin2c_nwipe_exclamation_jpg, 65791 );
             status_icon = STATUS_ICON_YELLOW_EXCLAMATION;  // used later on page 2
         }
         else
@@ -690,7 +690,7 @@ int create_pdf( nwipe_context_t* ptr )
         case STATUS_ICON_YELLOW_EXCLAMATION:
 
             /* Display the yellow exclamation icon in the header */
-            pdf_add_image_data( pdf, NULL, 450, 665, 100, 100, bin2c_nwipe_exclamation_jpg, 74292 );
+            pdf_add_image_data( pdf, NULL, 450, 665, 100, 100, bin2c_nwipe_exclamation_jpg, 65791 );
             break;
 
         case STATUS_ICON_RED_CROSS:
