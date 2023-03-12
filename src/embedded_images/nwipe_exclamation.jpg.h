@@ -6,7 +6,7 @@
 extern "C" {
 #endif
 
-extern const unsigned char bin2c_nwipe_exclamation_jpg[74292];
+extern const unsigned char bin2c_nwipe_exclamation_jpg[63304];
 
 #ifdef __cplusplus
 } /* extern "C" */
