@@ -40,11 +40,7 @@
 
 int nwipe_init_temperature( nwipe_context_t* c )
 {
-    /* This function is called after each nwipe_context_t has been created.
-     * It initialises the temperature variables in each context and then
-     * constructs a path that is placed in the context that points to the
-     * appropriate /sys/class/hwmon/hwmonX directory that corresponds with
-     * the particular drive represented in the context structure.
+    /* See header definition for description of function
      */
     DIR* dir;
     DIR* dir2;
@@ -266,6 +262,83 @@ void nwipe_update_temperature( nwipe_context_t* c )
      * this is used by the GUI to check temperatures periodically, typically
      * every 60 seconds */
     c->temp1_time = time( NULL );
+
+    return;
+}
+
+void nwipe_log_drives_temperature_limits( nwipe_context_t* c )
+{
+    /* See header for description of function
+     */
+
+    char temperature_limits_txt[500];
+
+    int idx = 0;
+
+    /*
+     * Initialise the character string, as we are building it a few
+     * characters at a time and it's important there it is populated
+     * with all zeros as we are using strlen() as we build the line up.
+     */
+    memset( &temperature_limits_txt, 0, sizeof( temperature_limits_txt ) );
+
+    if( c->temp1_crit != 1000000 )
+    {
+        snprintf( temperature_limits_txt,
+                  sizeof( temperature_limits_txt ),
+                  "Temperature limits for %s, critical=%ic, ",
+                  c->device_name,
+                  c->temp1_crit );
+    }
+    else
+    {
+        snprintf( temperature_limits_txt,
+                  sizeof( temperature_limits_txt ),
+                  "Temperature limits for %s, critical=N/A, ",
+                  c->device_name );
+    }
+
+    idx = strlen( temperature_limits_txt );
+
+    if( c->temp1_highest != 1000000 )
+    {
+        snprintf( &temperature_limits_txt[idx],
+                  ( sizeof( temperature_limits_txt ) - idx ),
+                  "highest=%ic, ",
+                  c->temp1_highest );
+    }
+    else
+    {
+        snprintf( &temperature_limits_txt[idx], ( sizeof( temperature_limits_txt ) - idx ), "highest=N/A, " );
+    }
+
+    idx = strlen( temperature_limits_txt );
+
+    if( c->temp1_lowest != 1000000 )
+    {
+        snprintf(
+            &temperature_limits_txt[idx], ( sizeof( temperature_limits_txt ) - idx ), "lowest=%ic, ", c->temp1_lowest );
+    }
+    else
+    {
+        snprintf( &temperature_limits_txt[idx], ( sizeof( temperature_limits_txt ) - idx ), "lowest=N/A, " );
+    }
+
+    idx = strlen( temperature_limits_txt );
+
+    if( c->temp1_lcrit != 1000000 )
+    {
+        snprintf( &temperature_limits_txt[idx],
+                  ( sizeof( temperature_limits_txt ) - idx ),
+                  "low critical=%ic.",
+                  c->temp1_lcrit );
+    }
+    else
+    {
+        snprintf( &temperature_limits_txt[idx], ( sizeof( temperature_limits_txt ) - idx ), "low critical=N/A. " );
+    }
+
+    nwipe_log( NWIPE_LOG_INFO, "%s", temperature_limits_txt );
 
     return;
 }

@@ -317,6 +317,12 @@ int main( int argc, char** argv )
         }
 
         nwipe_update_temperature( c1[i] );
+
+        /* Log the temperature crtical, highest, lowest and lowest critical temperature
+         * limits to nwipes log file using the INFO catagory
+         */
+
+        nwipe_log_drives_temperature_limits( c1[i] );
     }
 
     /* Check for initialization errors. */
