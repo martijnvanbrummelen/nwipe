@@ -55,6 +55,16 @@ void nwipe_gui_verify( void );  // Change the verify option.
 void nwipe_gui_noblank( void );  // Change the noblank option.
 int spinner( nwipe_context_t** ptr, int );  // Return the next spinner character
 void temp1_flash( nwipe_context_t* );  // toggles term1_flash_status, which flashes the temperature
+
+/**
+ * If the current drive temperature is available, print it to the GUI.
+ * This function determines if the drive temperature limits are specified &
+ * if so, whether the temperature should be printed as white text on blue if the
+ * drive is operating within it's temperature specification or red text on
+ * blue if the drive has exceeded the critical high temperature or black on
+ * blue if the drive has dropped below the drives minimum temperature specification.
+ * @param pointer to the drive context
+ */
 void wprintw_temperature( nwipe_context_t* );
 
 int compute_stats( void* ptr );
