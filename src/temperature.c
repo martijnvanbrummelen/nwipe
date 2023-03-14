@@ -300,6 +300,17 @@ void nwipe_log_drives_temperature_limits( nwipe_context_t* c )
 
     idx = strlen( temperature_limits_txt );
 
+    if( c->temp1_max != 1000000 )
+    {
+        snprintf( &temperature_limits_txt[idx], ( sizeof( temperature_limits_txt ) - idx ), "max=%ic, ", c->temp1_max );
+    }
+    else
+    {
+        snprintf( &temperature_limits_txt[idx], ( sizeof( temperature_limits_txt ) - idx ), "max=N/A, " );
+    }
+
+    idx = strlen( temperature_limits_txt );
+
     if( c->temp1_highest != 1000000 )
     {
         snprintf( &temperature_limits_txt[idx],
@@ -322,6 +333,17 @@ void nwipe_log_drives_temperature_limits( nwipe_context_t* c )
     else
     {
         snprintf( &temperature_limits_txt[idx], ( sizeof( temperature_limits_txt ) - idx ), "lowest=N/A, " );
+    }
+
+    idx = strlen( temperature_limits_txt );
+
+    if( c->temp1_min != 1000000 )
+    {
+        snprintf( &temperature_limits_txt[idx], ( sizeof( temperature_limits_txt ) - idx ), "min=%ic, ", c->temp1_min );
+    }
+    else
+    {
+        snprintf( &temperature_limits_txt[idx], ( sizeof( temperature_limits_txt ) - idx ), "min=N/A, " );
     }
 
     idx = strlen( temperature_limits_txt );
