@@ -46,4 +46,6 @@ void nwipe_log_drives_temperature_limits( nwipe_context_t* );
 
 #define NUMBER_OF_FILES 7
 
+#define NO_TEMPERATURE_DATA 1000000
+
 #endif /* TEMPERATURE_H_ */

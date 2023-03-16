@@ -54,21 +54,22 @@ int nwipe_init_temperature( nwipe_context_t* c )
     struct dirent* dp;
     struct dirent* dp2;
 
-    /* Why Initialise with 1000000? Because the GUI needs to know whether data
-     * has been obtained so it can display appropriate information when a
+    /* Why Initialise with 1000000 (defined as NO_TEMPERATURE_DATA)?
+     * Because the GUI needs to know whether data has been obtained
+     * so it can display appropriate information when a
      * device is unable to provide temperature data */
 
-    c->temp1_crit = 1000000;
-    c->temp1_highest = 1000000;
-    c->temp1_input = 1000000;
-    c->temp1_lcrit = 1000000;
-    c->temp1_lowest = 1000000;
-    c->temp1_max = 1000000;
-    c->temp1_min = 1000000;
-    c->temp1_monitored_wipe_max = 1000000;
-    c->temp1_monitored_wipe_min = 1000000;
-    c->temp1_monitored_wipe_avg = 1000000;
-    c->temp1_flash_rate = 2;
+    c->temp1_crit = NO_TEMPERATURE_DATA;
+    c->temp1_highest = NO_TEMPERATURE_DATA;
+    c->temp1_input = NO_TEMPERATURE_DATA;
+    c->temp1_lcrit = NO_TEMPERATURE_DATA;
+    c->temp1_lowest = NO_TEMPERATURE_DATA;
+    c->temp1_max = NO_TEMPERATURE_DATA;
+    c->temp1_min = NO_TEMPERATURE_DATA;
+    c->temp1_monitored_wipe_max = NO_TEMPERATURE_DATA;
+    c->temp1_monitored_wipe_min = NO_TEMPERATURE_DATA;
+    c->temp1_monitored_wipe_avg = NO_TEMPERATURE_DATA;
+    c->temp1_flash_rate = 0;
     c->temp1_flash_rate_counter = 0;
     c->temp1_path[0] = 0;
     c->temp1_time = 0;
@@ -282,7 +283,7 @@ void nwipe_log_drives_temperature_limits( nwipe_context_t* c )
      */
     memset( &temperature_limits_txt, 0, sizeof( temperature_limits_txt ) );
 
-    if( c->temp1_crit != 1000000 )
+    if( c->temp1_crit != NO_TEMPERATURE_DATA )
     {
         snprintf( temperature_limits_txt,
                   sizeof( temperature_limits_txt ),
@@ -300,7 +301,7 @@ void nwipe_log_drives_temperature_limits( nwipe_context_t* c )
 
     idx = strlen( temperature_limits_txt );
 
-    if( c->temp1_max != 1000000 )
+    if( c->temp1_max != NO_TEMPERATURE_DATA )
     {
         snprintf( &temperature_limits_txt[idx], ( sizeof( temperature_limits_txt ) - idx ), "max=%ic, ", c->temp1_max );
     }
@@ -311,7 +312,7 @@ void nwipe_log_drives_temperature_limits( nwipe_context_t* c )
 
     idx = strlen( temperature_limits_txt );
 
-    if( c->temp1_highest != 1000000 )
+    if( c->temp1_highest != NO_TEMPERATURE_DATA )
     {
         snprintf( &temperature_limits_txt[idx],
                   ( sizeof( temperature_limits_txt ) - idx ),
@@ -325,7 +326,7 @@ void nwipe_log_drives_temperature_limits( nwipe_context_t* c )
 
     idx = strlen( temperature_limits_txt );
 
-    if( c->temp1_lowest != 1000000 )
+    if( c->temp1_lowest != NO_TEMPERATURE_DATA )
     {
         snprintf(
             &temperature_limits_txt[idx], ( sizeof( temperature_limits_txt ) - idx ), "lowest=%ic, ", c->temp1_lowest );
@@ -337,7 +338,7 @@ void nwipe_log_drives_temperature_limits( nwipe_context_t* c )
 
     idx = strlen( temperature_limits_txt );
 
-    if( c->temp1_min != 1000000 )
+    if( c->temp1_min != NO_TEMPERATURE_DATA )
     {
         snprintf( &temperature_limits_txt[idx], ( sizeof( temperature_limits_txt ) - idx ), "min=%ic, ", c->temp1_min );
     }
@@ -348,7 +349,7 @@ void nwipe_log_drives_temperature_limits( nwipe_context_t* c )
 
     idx = strlen( temperature_limits_txt );
 
-    if( c->temp1_lcrit != 1000000 )
+    if( c->temp1_lcrit != NO_TEMPERATURE_DATA )
     {
         snprintf( &temperature_limits_txt[idx],
                   ( sizeof( temperature_limits_txt ) - idx ),
