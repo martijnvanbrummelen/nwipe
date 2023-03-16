@@ -170,6 +170,8 @@ typedef struct nwipe_context_t_
     char HPA_size_text[NWIPE_DEVICE_SIZE_TXT_LENGTH];  // Human readable size bytes, KB, MB, GB ..
     int HPA_display_toggle_state;  // 0 or 1 Used to toggle between "[1TB] [ 33C]" and [HDA STATUS]
     time_t HPA_toggle_time;  // records a time, then if for instance 3 seconds has elapsed the display changes
+    int test_use1;
+    int test_use2;
 
     /*
      * Identity contains the raw serial number of the drive

@@ -259,6 +259,12 @@ void nwipe_init_pairs( void )
         /* Set blue on blue to make temperature invisible */
         init_pair( 12, COLOR_BLUE, COLOR_BLUE );
 
+        /* Set magenta on blue  */
+        init_pair( 13, COLOR_MAGENTA, COLOR_BLUE );
+
+        /* Set white on black for low critical temperature */
+        init_pair( 14, COLOR_WHITE, COLOR_BLACK );
+
         /* Set the background style. */
         wbkgdset( stdscr, COLOR_PAIR( 1 ) | ' ' );
     }
@@ -3269,38 +3275,264 @@ void wprintw_temperature( nwipe_context_t* c )
     /* See header for description of function
      */
 
-    if( c->temp1_input != 1000000 )
+    int temp_highest_limit;
+    int temp_high_limit;
+    int temp_low_limit;
+    int temp_lowest_limit;
+
+    int local_temp1_input = c->temp1_input;
+    int local_temp1_crit = c->temp1_crit;
+    int local_temp1_max = c->temp1_max;
+    int local_temp1_min = c->temp1_min;
+    int local_temp1_lcrit = c->temp1_lcrit;
+
+    /* Initialise */
+    temp_highest_limit = NO_TEMPERATURE_DATA;
+    temp_high_limit = NO_TEMPERATURE_DATA;
+    temp_low_limit = NO_TEMPERATURE_DATA;
+    temp_lowest_limit = NO_TEMPERATURE_DATA;
+
+#if 0
+    /* NOTE TEST Function, TEST Function #if 0 when not testing
+     * Should increment temperature back and forth between +10 to -10
+     * while changing the color based on the settings such as
+     * c->temp1_crit and others below
+     */
+    if( c->test_use1 > 12 || c->test_use1 < -12 )
     {
-        /* if drive temperature has exceeded critical continuous running
-         * temperature && critical value is valid
-         */
-        if( c->temp1_input >= c->temp1_crit && c->temp1_crit != 1000000 )
+        c->test_use1 = 0; // the value
+        c->test_use2 = 0; // direction 0 = -- or 1 = ++
+    }
+    if( c->test_use1 >= 10 )
+    {
+        c->test_use2 = 0;
+    }
+    else
+    {
+        if( c->test_use1 <= -10 )
         {
-            /* red on blue */
-            wattron( main_window, COLOR_PAIR( 3 ) );
-            wprintw( main_window, "[%dC]", c->temp1_input );
-            wattroff( main_window, COLOR_PAIR( 3 ) );
+            c->test_use2 = 1;
+        }
+    }
+    if( c->test_use2 == 0 )
+    {
+        c->test_use1--;
+    }
+    else
+    {
+        c->test_use1++;
+    }
+
+    /* Five test cases to test temperature color logic
+     * test only with temperatures in the range -8 to +8
+     * test with each set of five for expected result if
+     * changes are made.
+     *
+     * Uncomment only one group in turn to be tested.
+     */
+    local_temp1_input = c->test_use1;
+    //
+    // Expected result - white on blue between +5 & -5, white on red above 5
+    // white on black below -5
+    local_temp1_crit = NO_TEMPERATURE_DATA;
+    local_temp1_max = 5;
+    local_temp1_min = -5;
+    local_temp1_lcrit = NO_TEMPERATURE_DATA;
+    //
+    // Expected result - white on blue between +5 & -5, white on red above 5
+    // white on black below -5
+    //local_temp1_crit = 5;
+    //local_temp1_max = NO_TEMPERATURE_DATA;
+    //local_temp1_min = NO_TEMPERATURE_DATA;
+    //local_temp1_lcrit = -5;
+    //
+    // Expected result - white on blue 5 to -5, 5-7 red on blue,
+    // 8+ white on red, -5 to-7 black on blue, less than -7 white on black
+    //local_temp1_crit = 8;
+    //local_temp1_max = 5;
+    //local_temp1_min = -5;
+    //local_temp1_lcrit = -8;
+    //
+    // Expected result - white on blue 5 to -5, 5-7 red on blue,
+    // 8+ white on red, -5 to-7 black on blue, less than -7 white on black
+    //local_temp1_crit = 5;
+    //local_temp1_max = 8;
+    //local_temp1_min = -8;
+    //local_temp1_lcrit = -5;
+    //
+    // Expected result - always white text on blue background
+    //local_temp1_crit = NO_TEMPERATURE_DATA;
+    //local_temp1_max = NO_TEMPERATURE_DATA;
+    //local_temp1_min = NO_TEMPERATURE_DATA;
+    //local_temp1_lcrit = NO_TEMPERATURE_DATA;
+#endif
+
+    /* Depending upon the drive firmware, the meaning of 'high critical' & 'max'
+     * and 'low critical' & 'low' can be interchanged. First validate for 'no data'
+     * (1000000) and also a 0 in 'high critical' and 'max', then  assign the values
+     * to our four variables in the appropriate order.
+     */
+
+    /* Validate critical high value & max for 0, if 0 it's invalid, change to 1000000
+     */
+
+    /* Assign temp1_crit & temp1_max to local variables as we are going to alter
+     * them if 0, as they may be updated elsewhere we don't want them changed back half
+     * way through our processing. This is only necessary for the high temperatures and
+     * not the low temperatures as low temperatures may well be 0.
+     */
+
+    if( local_temp1_crit == 0 )
+    {
+        local_temp1_crit = NO_TEMPERATURE_DATA;
+    }
+    if( local_temp1_max == 0 )
+    {
+        local_temp1_max = NO_TEMPERATURE_DATA;
+    }
+
+    /* Check which way around they are */
+    if( local_temp1_crit != NO_TEMPERATURE_DATA && local_temp1_max != NO_TEMPERATURE_DATA )
+    {
+        if( local_temp1_crit > local_temp1_max )
+        {
+            temp_highest_limit = local_temp1_crit;
+            temp_high_limit = local_temp1_max;
         }
         else
         {
-
-            /* if drive temperature is below the critical temperature && critical value is valid */
-            if( c->temp1_input <= c->temp1_lcrit && c->temp1_lcrit != 1000000 )
-            {
-                /* black on blue */
-                wattron( main_window, COLOR_PAIR( 11 ) );
-                wprintw( main_window, "[%dC]", c->temp1_input );
-                wattroff( main_window, COLOR_PAIR( 11 ) );
-            }
-            else
-            {
-                /* Default white on blue */
-                wprintw( main_window, "[%dC]", c->temp1_input );
-            }
+            temp_highest_limit = local_temp1_max;
+            temp_high_limit = local_temp1_crit;
         }
     }
     else
     {
-        wprintw( main_window, "[--C]" );
+        /* If only one or the other is present then assign that value to both high critical and max
+         */
+        if( local_temp1_crit == NO_TEMPERATURE_DATA && local_temp1_max != NO_TEMPERATURE_DATA )
+        {
+            temp_highest_limit = local_temp1_max;
+            temp_high_limit = local_temp1_max;
+        }
+        else
+        {
+            /* If high critical is present but max is not, assign high critical to both */
+            if( local_temp1_crit != NO_TEMPERATURE_DATA && local_temp1_max == NO_TEMPERATURE_DATA )
+            {
+                temp_highest_limit = local_temp1_crit;
+                temp_high_limit = local_temp1_crit;
+            }
+            else
+            {
+                /* neither is present so mark both locals as not present */
+                temp_highest_limit = NO_TEMPERATURE_DATA;
+                temp_high_limit = NO_TEMPERATURE_DATA;
+            }
+        }
+    }
+
+    /* Now do the same for the low critical limit and low limit. */
+
+    /* Check which way around they are */
+    if( local_temp1_lcrit != NO_TEMPERATURE_DATA && local_temp1_min != NO_TEMPERATURE_DATA )
+    {
+        if( local_temp1_lcrit < local_temp1_min )
+        {
+            temp_lowest_limit = local_temp1_lcrit;
+            temp_low_limit = local_temp1_min;
+        }
+        else
+        {
+            temp_lowest_limit = local_temp1_min;
+            temp_low_limit = local_temp1_lcrit;
+        }
+    }
+    else
+    {
+        /* If only one or the other is present then assign that value to both high critical and max
+         */
+        if( local_temp1_lcrit == NO_TEMPERATURE_DATA && local_temp1_min != NO_TEMPERATURE_DATA )
+        {
+            temp_lowest_limit = local_temp1_min;
+            temp_low_limit = local_temp1_min;
+        }
+        else
+        {
+            /* If high critical is present but max is not, assign high critical to both */
+            if( local_temp1_lcrit != NO_TEMPERATURE_DATA && local_temp1_min == NO_TEMPERATURE_DATA )
+            {
+                temp_lowest_limit = local_temp1_lcrit;
+                temp_low_limit = local_temp1_lcrit;
+            }
+            else
+            {
+                /* neither is present so mark both locals as not present */
+                temp_lowest_limit = NO_TEMPERATURE_DATA;
+                temp_low_limit = NO_TEMPERATURE_DATA;
+            }
+        }
+    }
+
+    /* if drive temperature has exceeded the critical temperature if available
+     */
+    if( ( local_temp1_input >= temp_highest_limit ) && ( local_temp1_input != NO_TEMPERATURE_DATA )
+        && ( temp_highest_limit != NO_TEMPERATURE_DATA ) )
+    {
+        /* white on red */
+        wattron( main_window, COLOR_PAIR( 6 ) );
+        wprintw( main_window, "[%dC]", local_temp1_input );
+        wattroff( main_window, COLOR_PAIR( 6 ) );
+    }
+    else
+    {
+        /* if drive temperature has exceeded the max temperature if available
+         */
+        if( ( local_temp1_input >= temp_high_limit ) && ( local_temp1_input <= temp_highest_limit )
+            && ( local_temp1_input != NO_TEMPERATURE_DATA ) && ( temp_high_limit != NO_TEMPERATURE_DATA ) )
+        {
+            /* red on blue */
+            wattron( main_window, COLOR_PAIR( 3 ) );
+            wprintw( main_window, "[%dC]", local_temp1_input );
+            wattroff( main_window, COLOR_PAIR( 3 ) );
+        }
+        else
+        {
+            /* if drive temperature is below the lowest critical temperature and the critical value is present
+             */
+            if( ( local_temp1_input <= temp_lowest_limit ) && ( temp_lowest_limit != NO_TEMPERATURE_DATA )
+                && ( local_temp1_input != NO_TEMPERATURE_DATA ) )
+            {
+                /* white on black */
+                wattron( main_window, COLOR_PAIR( 14 ) );
+                wprintw( main_window, "[%dC]", local_temp1_input );
+                wattroff( main_window, COLOR_PAIR( 14 ) );
+            }
+            else
+            {
+                /* if drive temperature is below the minimum but above the lowest temperature and the value is present
+                 */
+                if( ( ( local_temp1_input <= temp_low_limit ) && ( local_temp1_input >= temp_lowest_limit )
+                      && ( local_temp1_input != NO_TEMPERATURE_DATA ) && ( temp_low_limit != NO_TEMPERATURE_DATA ) ) )
+                {
+                    /* black on blue */
+                    wattron( main_window, COLOR_PAIR( 11 ) );
+                    wprintw( main_window, "[%dC]", local_temp1_input );
+                    wattroff( main_window, COLOR_PAIR( 11 ) );
+                }
+                else
+                {
+                    if( local_temp1_input != NO_TEMPERATURE_DATA )
+                    {
+                        /* Default white on blue */
+                        wprintw( main_window, "[%dC]", local_temp1_input );
+                    }
+                    else
+                    {
+                        /* Default white on blue */
+                        wprintw( main_window, "[--C]" );
+                    }
+                }
+            }
+        }
     }
 }
