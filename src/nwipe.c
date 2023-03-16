@@ -84,32 +84,6 @@ int main( int argc, char** argv )
     /* The generic result buffer. */
     int r;
 
-    /* Log nwipes version */
-    nwipe_log( NWIPE_LOG_INFO, "%s", banner );
-
-    /* Check that hdparm exists, we use hdparm for HPA/DCO detection etc, if not exit nwipe
-     * required if the PATH environment is not setup ! (Debian sid 'su' as
-     * opposed to 'su -'
-     */
-    if( system( "which hdparm > /dev/null 2>&1" ) )
-    {
-        if( system( "which /sbin/hdparm > /dev/null 2>&1" ) )
-        {
-            if( system( "which /usr/bin/hdparm > /dev/null 2>&1" ) )
-            {
-                nwipe_log( NWIPE_LOG_WARNING, "hdparm command not found." );
-                nwipe_log( NWIPE_LOG_WARNING,
-                           "Required by nwipe for HPA/DCO detection & correction and ATA secure erase." );
-                nwipe_log( NWIPE_LOG_WARNING, "** Please install hdparm **\n" );
-                cleanup();
-                exit( 1 );
-            }
-        }
-    }
-
-    /* Log OS info */
-    nwipe_log_OSinfo();
-
     /* Initialise the termintaion signal, 1=terminate nwipe */
     terminate_signal = 0;
 
@@ -136,8 +110,43 @@ int main( int argc, char** argv )
 
     int wipe_threads_started = 0;
 
-    /* Parse command line options. */
+    /** NOTE ** NOTE ** NOTE ** NOTE ** NOTE ** NOTE ** NOTE ** NOTE ** NOTE **
+     * Important Note: if you want nwipe_log messages to go into the logfile
+     * they must after after the options are parsed here, else they will
+     * appear in the console but not in the logfile, that is, assuming you
+     * specified a log file on the command line as an nwipe option.
+     */
+
+    /*****************************
+     * Parse command line options.
+     */
     nwipe_optind = nwipe_options_parse( argc, argv );
+
+    /* Log nwipes version */
+    nwipe_log( NWIPE_LOG_INFO, "%s", banner );
+
+    /* Log OS info */
+    nwipe_log_OSinfo();
+
+    /* Check that hdparm exists, we use hdparm for HPA/DCO detection etc, if not exit nwipe
+     * required if the PATH environment is not setup ! (Debian sid 'su' as
+     * opposed to 'su -'
+     */
+    if( system( "which hdparm > /dev/null 2>&1" ) )
+    {
+        if( system( "which /sbin/hdparm > /dev/null 2>&1" ) )
+        {
+            if( system( "which /usr/bin/hdparm > /dev/null 2>&1" ) )
+            {
+                nwipe_log( NWIPE_LOG_WARNING, "hdparm command not found." );
+                nwipe_log( NWIPE_LOG_WARNING,
+                           "Required by nwipe for HPA/DCO detection & correction and ATA secure erase." );
+                nwipe_log( NWIPE_LOG_WARNING, "** Please install hdparm **\n" );
+                cleanup();
+                exit( 1 );
+            }
+        }
+    }
 
     if( nwipe_optind == argc )
     {
@@ -973,7 +982,7 @@ int cleanup()
     extern int log_elements_allocated;  // initialised and found in logging.c
     extern char** log_lines;
 
-    /* Print the logs held in memory. */
+    /* Print the logs held in memory to the console */
     for( i = log_elements_displayed; i < log_elements_allocated; i++ )
     {
         printf( "%s\n", log_lines[i] );

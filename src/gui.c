@@ -824,19 +824,19 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                             case HPA_ENABLED:
                                 wprintw( main_window, " " );
                                 wattron( main_window, COLOR_PAIR( 9 ) );
-                                wprintw( main_window, " HPA/DCO Hidden area detected !!   " );
+                                wprintw( main_window, " HPA/DCO Hidden sectors detected !!" );
                                 wattroff( main_window, COLOR_PAIR( 9 ) );
                                 break;
 
                             case HPA_DISABLED:
                                 wprintw( main_window, " " );
-                                wprintw( main_window, " HPA/DCO No hidden areas detected " );
+                                wprintw( main_window, "HPA/DCO No hidden sectors detected " );
                                 break;
 
                             case HPA_UNKNOWN:
                                 wprintw( main_window, " " );
                                 wattron( main_window, COLOR_PAIR( 9 ) );
-                                wprintw( main_window, " HPA/DCO hidden area indeterminate " );
+                                wprintw( main_window, " HPA/DCO hidden sectors indeterminate " );
                                 wattroff( main_window, COLOR_PAIR( 9 ) );
                                 break;
 

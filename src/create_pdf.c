@@ -205,7 +205,7 @@ int create_pdf( nwipe_context_t* ptr )
     if( !strcmp( c->device_type_str, "NVME" ) || !strcmp( c->device_type_str, "VIRT" )
         || c->HPA_status == HPA_NOT_APPLICABLE )
     {
-        snprintf( device_size, sizeof( device_size ), "Not applicable to %s", c->device_type_str );
+        snprintf( device_size, sizeof( device_size ), "%s, %lli bytes", c->device_size_text, c->device_size );
         pdf_add_text( pdf, NULL, device_size, text_size_data, 125, 370, PDF_DARK_GREEN );
     }
     else
@@ -213,7 +213,7 @@ int create_pdf( nwipe_context_t* ptr )
         /* If there is a real max size always show in green, if the drive doesn't
          * support HPA show device size as that is the real size.
          */
-        if( c->DCO_reported_real_max_size > 1 || c->HPA_status == HPA_NOT_APPLICABLE )
+        if( c->DCO_reported_real_max_size > 1 )
         {
             /* displays the real max size of the disc from the DCO displayed in Green */
             snprintf( device_size,

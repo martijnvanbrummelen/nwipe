@@ -491,10 +491,20 @@ int hpa_dco_status( nwipe_context_t* ptr )
                 }
                 else
                 {
+                    /* NVMe drives don't support HPA/DCO */
                     if( !strcmp( c->device_type_str, "NVME" )
                         || ( c->HPA_reported_set > 1 && c->DCO_reported_real_max_sectors < 2 ) )
                     {
                         c->HPA_status = HPA_NOT_APPLICABLE;
+                    }
+                    else
+                    {
+                        /* For recent enterprise and new drives that don't provide HPA/DCO anymore */
+                        if( c->HPA_reported_set > 0 && c->HPA_reported_real == 1
+                            && c->DCO_reported_real_max_sectors < 2 )
+                        {
+                            c->HPA_status = HPA_NOT_APPLICABLE;
+                        }
                     }
                 }
             }
@@ -503,21 +513,37 @@ int hpa_dco_status( nwipe_context_t* ptr )
 
     if( c->HPA_status == HPA_DISABLED )
     {
-        nwipe_log( NWIPE_LOG_INFO, "No hidden areas on %s", c->device_name );
+        nwipe_log( NWIPE_LOG_INFO, "No hidden sectors on %s", c->device_name );
     }
     else
     {
         if( c->HPA_status == HPA_ENABLED )
         {
-            nwipe_log( NWIPE_LOG_WARNING, "HIDDEN AREA DETECTED! on %s", c->device_name );
+            nwipe_log( NWIPE_LOG_WARNING, " *********************************" );
+            nwipe_log( NWIPE_LOG_WARNING, " *** HIDDEN SECTORS DETECTED ! *** on %s", c->device_name );
+            nwipe_log( NWIPE_LOG_WARNING, " *********************************" );
         }
         else
         {
             if( c->HPA_status == HPA_UNKNOWN )
             {
-                nwipe_log( NWIPE_LOG_WARNING,
-                           "HIDDEN AREA INDETERMINATE! on %s, are you using a USB bridge or memory stick?",
-                           c->device_name );
+                if( c->device_bus == NWIPE_DEVICE_USB )
+                    nwipe_log( NWIPE_LOG_WARNING,
+                               "HIDDEN SECTORS INDETERMINATE! on %s, Some USB adapters & memory sticks don't support "
+                               "ATA pass through",
+                               c->device_name );
+                else
+                {
+                    if( c->HPA_status == HPA_NOT_APPLICABLE )
+                    {
+                        nwipe_log( NWIPE_LOG_WARNING, "%s may not support HPA/DCO", c->device_name );
+                    }
+                    else
+                    {
+                        nwipe_log(
+                            NWIPE_LOG_SANITY, "Unrecognised HPA_status, should not be possible %s", c->device_name );
+                    }
+                }
             }
         }
     }
