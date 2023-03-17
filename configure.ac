@@ -49,13 +49,30 @@ PKG_CHECK_MODULES(
 	)]
 )
 
+PKG_CHECK_MODULES(
+	[LIBCONFIG],
+	[libconfig],
+	[
+		CFLAGS="${CFLAGS} ${LIBCONFIG_CFLAGS}"
+		LIBS="${LIBS} ${LIBCONFIG_LIBS}"
+	],
+	[AC_CHECK_LIB([libconfig], [main], [
+		LIBS="-llibconfig $LIBS"
+		AC_CHECK_HEADERS(libconfig.h,, [
+		    AC_CHECK_HEADERS(libconfig.h, [
+			AC_DEFINE([LIBCONFIG_IN_SUBDIR], [libconfig/], [Look for libconfig headers in subdir])
+			], [AC_MSG_ERROR([libconfig headers not found])])
+		])
+	    ], [AC_MSG_ERROR([libconfig library not found])])]
+)
+
 AC_CHECK_LIB([intl], [libintl_dgettext]) # needed to statically link libparted, but not given in its pkgconfig file
 AC_CHECK_LIB([uuid], [uuid_generate])    # needed to statically link libparted, but not given in its pkgconfig file
-PKG_CHECK_MODULES([PARTED], [libparted])
+PKG_CHECK_MODULES([PARTED], [libparted], [libconfig])
 AC_CHECK_LIB([pthread], [main], ,[AC_MSG_ERROR([pthread development library not found])])
 
 # Checks for header files.
-AC_CHECK_HEADERS([fcntl.h inttypes.h netinet/in.h stddef.h stdint.h stdlib.h string.h sys/file.h sys/ioctl.h unistd.h])
+AC_CHECK_HEADERS([libconfig.h fcntl.h inttypes.h netinet/in.h stddef.h stdint.h stdlib.h string.h sys/file.h sys/ioctl.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T

@@ -8,7 +8,7 @@ nwipe is a fork of the dwipe command originally used by Darik's Boot and Nuke (D
 nwipe is a program that will securely erase the entire contents of disks. It can wipe a single drive or multiple disks simultaneously. It can operate as both a command line tool without a GUI or with a ncurses GUI as shown in the example below:
 
 > **Warning**
->  Nwipe does not currently support HDA (hidden disc area) detection. You will need to run hdparm to detect and if necessary correct the reported size of the disc prior to using nwipe.
+>  Nwipe does not currently support HDA (hidden disc area) detection but will be available in the next release v0.35. For versions prior to this, you will need to run hdparm to detect and if necessary correct the reported size of the disc prior to using nwipe. `sudo hdparm -N /dev/sdx` and `sudo hdparm --dco-identify /dev/sdx`. The three sector values returned should all be identical for there to be no hidden sectors on the disc. xxxxxxxxxx / yyyyyyyyyy as returned by hdparm -N and Real max sectors = zzzzzzzzzz as returned by hdparm --dco-identify.
 
 ![Example wipe](/images/example_wipe.gif)
 
@@ -46,6 +46,11 @@ For a development setup, see the [Hacking section](#hacking) below. For a bootab
 * ncurses
 * pthreads
 * parted
+* libconfig
+
+`nwipe` also requires the following program to be installed, it will abort with a warning if not found:
+
+* hdparm (as of current master and v0.35+)
 
 and optionally, but recommended, the following programs:
 
@@ -65,9 +70,12 @@ sudo apt install \
   libncurses5-dev \
   autotools-dev \
   libparted-dev \
+  libconfig-dev \
+  libconfig++-dev \
   dmidecode \
   coreutils \
-  smartmontools
+  smartmontools \
+  hdparm
 ```
 
 ### Fedora prerequisites
@@ -79,19 +87,25 @@ dnf groupinstall "Development Tools"
 dnf groupinstall "C Development Tools and Libraries"
 yum install ncurses-devel
 yum install parted-devel
+yum install libconfig-devel
+yum install libconfig++-devel
 yum install dmidecode
 yum install coreutils
 yum install smartmontools
+yum install hdparm
 ```
 Note. The following programs are optionally installed although recommended. 1. dmidecode 2. readlink 3. smartmontools.
 
-#### dmidecode
+#### hdparm [REQUIRED]
+hdparm provides some of the information regarding disk size in sectors as related to the host protected area (HPA) and device configuration overlay (DCO). We do however have our own function that directly access the DCO to obtain the 'real max sectors' so reliance on hdparm may be removed at a future date.
+
+#### dmidecode [RECOMMENDED]
 dmidecode provides SMBIOS/DMI host data to stdout or the log file. If you don't install it you won't see the SMBIOS/DMI host data at the beginning of nwipes log.
 
-#### coreutils (provides readlink)
+#### coreutils (provides readlink) [RECOMMENDED]
 readlink determines the bus type, i.e. ATA, USB etc. Without it the --nousb option won't work and bus type information will be missing from nwipes selection and wipe windows. The coreutils package is often automatically installed as default in most if not all distros.
 
-#### smartmontools
+#### smartmontools [RECOMMENDED]
 smartmontools obtains serial number information for supported USB to IDE/SATA adapters. Without it, drives plugged into USB ports will not show serial number information.
 
 If you want a quick and easy way to keep your copy of nwipe running the latest master release of nwipe see the [automating the download and compilation](#automating-the-download-and-compilation-process-for-debian-based-distros) section.
