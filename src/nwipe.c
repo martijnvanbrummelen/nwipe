@@ -50,6 +50,7 @@
 
 #include <parted/parted.h>
 #include <parted/debug.h>
+#include "conf.h"
 #include "version.h"
 #include "hpa_dco.h"
 
@@ -128,9 +129,12 @@ int main( int argc, char** argv )
     /* Log OS info */
     nwipe_log_OSinfo();
 
-    /* Check that hdparm exists, we use hdparm for HPA/DCO detection etc, if not exit nwipe
-     * required if the PATH environment is not setup ! (Debian sid 'su' as
-     * opposed to 'su -'
+    /* Initialise the libconfig code that handles nwipe.conf */
+    nwipe_conf_init();
+
+    /* Check that hdparm exists, we use hdparm for some HPA/DCO detection etc, if not
+     * exit nwipe. These checks are required if the PATH environment is not setup !
+     * Example: Debian sid 'su' as opposed to 'su -'
      */
     if( system( "which hdparm > /dev/null 2>&1" ) )
     {
