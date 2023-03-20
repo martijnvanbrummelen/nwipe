@@ -1215,7 +1215,11 @@ void calculate_round_size( nwipe_context_t* c )
      * all methods and processed first then created a switch statement that contains method specific changes if any
      */
 
-    /* Don't change the order of these values as the case statements use their index in the array */
+    /* Don't change the order of these values as the case statements use their index in the array, New methods
+     * don't need to be added to this array unless they have complicated calculations like Ops2 and IS5. If you do
+     * add a method, just add it to the bottom of the array_methods array and also to the bottom of the switch
+     * statement.
+     */
     void* array_methods[] = { &nwipe_zero,
                               &nwipe_ops2,
                               &nwipe_dodshort,
@@ -1226,13 +1230,17 @@ void calculate_round_size( nwipe_context_t* c )
                               NULL };
     int i;
 
-    /* This while loop allows us to effectively create a const so we can use a case statement rather than if statements.
-     * This is probably more readable as more methods may get added in the future. The code could be condensed as some
-     * methods have identical adjustments, however as there are only a few methods I felt it was easier to understand as
-     * it is, however this could be changed if necessary.
+    /* This while loop allows us to effectively create a const that represents a method so we can use a case statement
+     * rather than if statements.
+     *
+     * Using a switch statement looks better than if statments as more methods may get added in the future expanding the
+     * list. The code could be condensed as some methods have identical adjustments, however as there are only a few
+     * methods I felt it was easier to understand as it is, however this could be changed if necessary.
      */
 
-    int selected_method;
+    /* Initialise, -1 = no additional calculation required */
+    int selected_method = -1;
+
     i = 0;
     while( array_methods[i] != NULL )
     {
@@ -1242,6 +1250,10 @@ void calculate_round_size( nwipe_context_t* c )
         }
         i++;
     }
+
+    /* On exit from the while loop the selected method either equals an index to a method
+     * or it equals -1 which means no extra calculations are required that are method specific
+     */
 
     if( nwipe_options.verify == NWIPE_VERIFY_ALL )
     {
@@ -1368,6 +1380,11 @@ void calculate_round_size( nwipe_context_t* c )
                 c->round_size += ( c->device_size * c->round_count );
             }
 
+            break;
+
+        case -1:
+            /* Method not listed so don't do any extra calculations
+             * ---------------------------------------------------- */
             break;
     }
 }
