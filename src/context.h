@@ -164,9 +164,12 @@ typedef struct nwipe_context_t_
     int DCO_status;  // 0 = No DCO found, 1 = DCO detected, 2 = Unknown, unable to checked
     u64 DCO_reported_real_max_sectors;  // real max sectors as reported by hdparm --dco-identify
     u64 DCO_reported_real_max_size;  // real max sectors in bytes
+    u64 Calculated_real_max_size_in_bytes;  // This value is determined from all the possible variations for drives that
+                                            // don't support DCO/HPA and those that do. Also drives that can't provide
+                                            // HPA/DCO due to the chips they use (USB adapters)
     char DCO_reported_real_max_size_text[NWIPE_DEVICE_SIZE_TXT_LENGTH];  // real max size in human readable form i.e 1TB
                                                                          // etc
-    u64 HPA_size;  // The size of the host protected area in sectors
+    u64 HPA_sectors;  // The size of the host protected area in sectors
     char HPA_size_text[NWIPE_DEVICE_SIZE_TXT_LENGTH];  // Human readable size bytes, KB, MB, GB ..
     int HPA_display_toggle_state;  // 0 or 1 Used to toggle between "[1TB] [ 33C]" and [HDA STATUS]
     time_t HPA_toggle_time;  // records a time, then if for instance 3 seconds has elapsed the display changes

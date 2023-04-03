@@ -188,8 +188,8 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_add_text( pdf, NULL, "Size(Apparent): ", 12, 60, 390, PDF_GRAY );
     pdf_set_font( pdf, "Helvetica-Bold" );
     snprintf( device_size, sizeof( device_size ), "%s, %lli bytes", c->device_size_text, c->device_size );
-    if( c->device_size == c->DCO_reported_real_max_size || !strcmp( c->device_type_str, "NVME" )
-        || !strcmp( c->device_type_str, "VIRT" ) )
+    if( ( c->device_size == c->DCO_reported_real_max_size ) || c->device_type == NWIPE_DEVICE_NVME
+        || c->device_type == NWIPE_DEVICE_VIRT || c->HPA_status == HPA_NOT_APPLICABLE )
     {
         pdf_add_text( pdf, NULL, device_size, text_size_data, 145, 390, PDF_DARK_GREEN );
     }
@@ -202,7 +202,7 @@ int create_pdf( nwipe_context_t* ptr )
     /* Size (Real) */
     pdf_add_text( pdf, NULL, "Size(Real):", 12, 60, 370, PDF_GRAY );
     pdf_set_font( pdf, "Helvetica-Bold" );
-    if( !strcmp( c->device_type_str, "NVME" ) || !strcmp( c->device_type_str, "VIRT" )
+    if( c->device_type == NWIPE_DEVICE_NVME || c->device_type == NWIPE_DEVICE_VIRT
         || c->HPA_status == HPA_NOT_APPLICABLE )
     {
         snprintf( device_size, sizeof( device_size ), "%s, %lli bytes", c->device_size_text, c->device_size );
@@ -230,6 +230,26 @@ int create_pdf( nwipe_context_t* ptr )
             {
                 snprintf( device_size, sizeof( device_size ), "Unknown" );
                 pdf_add_text( pdf, NULL, device_size, text_size_data, 125, 370, PDF_RED );
+            }
+            else
+            {
+                /* we are already here because c->DCO_reported_real_max_size < 1 so if HPA enabled then use the
+                 * value we determine from whether HPA set, HPA real exist and if not assume libata's value*/
+                if( c->HPA_status == HPA_ENABLED )
+                {
+                    snprintf( device_size,
+                              sizeof( device_size ),
+                              "%s, %lli bytes",
+                              c->device_size_text,
+                              c->Calculated_real_max_size_in_bytes );
+                    pdf_add_text( pdf, NULL, device_size, text_size_data, 125, 370, PDF_DARK_GREEN );
+                }
+                else
+                {
+                    /* Sanity check, should never get here! */
+                    snprintf( device_size, sizeof( device_size ), "Sanity: HPA_status = %i", c->HPA_status );
+                    pdf_add_text( pdf, NULL, device_size, text_size_data, 125, 370, PDF_RED );
+                }
             }
         }
     }
@@ -285,8 +305,8 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_set_font( pdf, "Helvetica-Bold" );
 
     if( !strcmp( c->wipe_status_txt, "ERASED" )
-        && ( c->HPA_status == HPA_DISABLED || !strcmp( c->device_type_str, "NVME" )
-             || !strcmp( c->device_type_str, "VIRT" ) ) )
+        && ( c->HPA_status == HPA_DISABLED || c->HPA_status == HPA_NOT_APPLICABLE || c->device_type == NWIPE_DEVICE_NVME
+             || c->device_type == NWIPE_DEVICE_VIRT ) )
     {
         pdf_add_text( pdf, NULL, c->wipe_status_txt, 12, 365, 290, PDF_DARK_GREEN );
         pdf_add_ellipse( pdf, NULL, 390, 295, 45, 10, 2, PDF_DARK_GREEN, PDF_TRANSPARENT );
@@ -327,7 +347,7 @@ int create_pdf( nwipe_context_t* ptr )
                 pdf_add_image_data( pdf, NULL, 450, 665, 100, 100, bin2c_redcross_jpg, 60331 );
                 status_icon = STATUS_ICON_RED_CROSS;  // used later on page 2
             }
-            pdf_add_ellipse( pdf, NULL, 390, 275, 45, 10, 2, PDF_RED, PDF_TRANSPARENT );
+            pdf_add_ellipse( pdf, NULL, 390, 295, 45, 10, 2, PDF_RED, PDF_TRANSPARENT );
         }
     }
     pdf_set_font( pdf, "Helvetica" );
@@ -430,6 +450,43 @@ int create_pdf( nwipe_context_t* ptr )
     }
     else
     {
+        if( c->device_type == NWIPE_DEVICE_NVME || c->device_type == NWIPE_DEVICE_VIRT
+            || c->HPA_status == HPA_NOT_APPLICABLE )
+        {
+            snprintf( bytes_erased,
+                      sizeof( bytes_erased ),
+                      "%lli, (%.1f%%)",
+                      c->bytes_erased,
+                      (float) ( (float) c->bytes_erased / (float) ( (float) c->device_size ) ) * 100 );
+            if( c->bytes_erased == c->device_size )
+            {
+                pdf_add_text( pdf, NULL, bytes_erased, text_size_data, 145, 230, PDF_DARK_GREEN );
+            }
+            else
+            {
+                pdf_add_text( pdf, NULL, bytes_erased, text_size_data, 145, 230, PDF_RED );
+            }
+        }
+        else
+        {
+            snprintf( bytes_erased,
+                      sizeof( bytes_erased ),
+                      "%lli, %lli, (%.1f%%)",
+                      c->bytes_erased,
+                      c->Calculated_real_max_size_in_bytes,
+                      (double) ( (double) c->bytes_erased / (double) ( (double) c->Calculated_real_max_size_in_bytes ) )
+                          * 100 );
+            if( c->bytes_erased == c->Calculated_real_max_size_in_bytes )
+            {
+                pdf_add_text( pdf, NULL, bytes_erased, text_size_data, 145, 230, PDF_DARK_GREEN );
+            }
+            else
+            {
+                pdf_add_text( pdf, NULL, bytes_erased, text_size_data, 145, 230, PDF_RED );
+            }
+        }
+
+#if 0
         /* Use real max sectors taken from DCO if not zero */
         if( c->DCO_reported_real_max_sectors != 0 )
         {
@@ -438,9 +495,9 @@ int create_pdf( nwipe_context_t* ptr )
                 sizeof( bytes_erased ),
                 "%lli (%.1f%%)",
                 c->bytes_erased,
-                (double) ( (double) c->bytes_erased / (double) ( (double) c->DCO_reported_real_max_sectors * 512 ) )
+                (double) ( (double) c->bytes_erased / (double) ( (double) c->DCO_reported_real_max_sectors * c->device_sector_size ) )
                     * 100 );
-            if( c->bytes_erased == ( c->DCO_reported_real_max_sectors * 512 ) )
+            if( c->bytes_erased == ( c->DCO_reported_real_max_sectors * c->device_sector_size ) )
             {
                 pdf_add_text( pdf, NULL, bytes_erased, text_size_data, 145, 230, PDF_DARK_GREEN );
             }
@@ -467,6 +524,7 @@ int create_pdf( nwipe_context_t* ptr )
                 pdf_add_text( pdf, NULL, bytes_erased, text_size_data, 145, 230, PDF_RED );
             }
         }
+#endif
     }
     pdf_set_font( pdf, "Helvetica" );
 
@@ -499,40 +557,49 @@ int create_pdf( nwipe_context_t* ptr )
     /*******************
      * Populate HPA size
      */
+
     pdf_set_font( pdf, "Helvetica-Bold" );
     if( c->HPA_status == HPA_ENABLED )
     {
-        snprintf( HPA_size_text, sizeof( HPA_size_text ), "%lli sectors", c->HPA_size );
+        snprintf( HPA_size_text, sizeof( HPA_size_text ), "%lli sectors", c->HPA_sectors );
         pdf_add_text( pdf, NULL, HPA_size_text, text_size_data, 390, 210, PDF_RED );
     }
     else
     {
         if( c->HPA_status == HPA_DISABLED )
         {
-            snprintf( HPA_size_text, sizeof( HPA_size_text ), "Zero sectors" );
+            snprintf( HPA_size_text, sizeof( HPA_size_text ), "No hidden sectors" );
             pdf_add_text( pdf, NULL, HPA_size_text, text_size_data, 390, 210, PDF_DARK_GREEN );
         }
         else
         {
-            if( c->HPA_status == HPA_UNKNOWN )
+            if( c->HPA_status == HPA_NOT_APPLICABLE )
             {
-                snprintf( HPA_size_text, sizeof( HPA_size_text ), "UNKNOWN" );
-                pdf_add_text( pdf, NULL, HPA_size_text, text_size_data, 390, 210, PDF_RED );
+                snprintf( HPA_size_text, sizeof( HPA_size_text ), "Not Applicable" );
+                pdf_add_text( pdf, NULL, HPA_size_text, text_size_data, 390, 210, PDF_DARK_GREEN );
+            }
+            else
+            {
+                if( c->HPA_status == HPA_UNKNOWN )
+                {
+                    snprintf( HPA_size_text, sizeof( HPA_size_text ), "UNKNOWN" );
+                    pdf_add_text( pdf, NULL, HPA_size_text, text_size_data, 390, 210, PDF_RED );
+                }
             }
         }
     }
+
     pdf_set_font( pdf, "Helvetica" );
 
     /*********************
      * Populate HPA status (and size if not applicable, NVMe and VIRT)
      */
-    if( !strcmp( c->device_type_str, "NVME" ) || !strcmp( c->device_type_str, "VIRT" ) )
+    if( c->device_type == NWIPE_DEVICE_NVME || c->device_type == NWIPE_DEVICE_VIRT
+        || c->HPA_status == HPA_NOT_APPLICABLE )
     {
-        snprintf( HPA_status_text, sizeof( HPA_status_text ), "Not applicable to %s", c->device_type_str );
+        snprintf( HPA_status_text, sizeof( HPA_status_text ), "Not applicable" );
         pdf_set_font( pdf, "Helvetica-Bold" );
         pdf_add_text( pdf, NULL, HPA_status_text, text_size_data, 130, 210, PDF_DARK_GREEN );
-        snprintf( HPA_size_text, sizeof( HPA_size_text ), "Not applicable to %s", c->device_type_str );
-        pdf_add_text( pdf, NULL, HPA_size_text, text_size_data, 400, 210, PDF_DARK_GREEN );
         pdf_set_font( pdf, "Helvetica" );
     }
     else
