@@ -462,7 +462,27 @@ int hpa_dco_status( nwipe_context_t* ptr )
      * HPA_ENABLED, HPA_UNKNOWN or HPA_NOT_APPLICABLE. The HPA flag
      * will be displayed in the GUI and on the certificate and is
      * used to determine whether to reset the HPA.
+     *
      */
+
+    /* WARNING temp assignments WARNING
+     * s=28,r=28,rm=0
+     *
+     */
+#if 0
+    c->HPA_reported_set = 10;
+    c->HPA_reported_real = 28;
+    c->DCO_reported_real_max_sectors = 0;
+
+    c->HPA_reported_set = 28;
+    c->HPA_reported_real = 28;
+    c->DCO_reported_real_max_sectors = 0;
+
+    c->HPA_reported_set = 1000;
+    c->HPA_reported_real = 2048;
+    c->DCO_reported_real_max_sectors = 2048;
+#endif
+
     /* If all three values match and none are zero then there is NO hidden disc area. HPA is disabled. */
     if( c->HPA_reported_set == c->HPA_reported_real && c->DCO_reported_real_max_sectors == c->HPA_reported_set
         && c->HPA_reported_set != 0 && c->HPA_reported_real != 0 && c->DCO_reported_real_max_sectors != 0 )
@@ -472,38 +492,46 @@ int hpa_dco_status( nwipe_context_t* ptr )
     else
     {
         /* If HPA set and DCO max sectors are equal it can also be considered that HPA is disabled */
-        if( ( c->HPA_reported_set == c->DCO_reported_real_max_sectors ) && c->HPA_reported_set != 0 )
+        if( ( c->HPA_reported_set == c->DCO_reported_real_max_sectors ) && c->HPA_reported_set != 0
+            && c->DCO_reported_real_max_sectors != 0 )
         {
             c->HPA_status = HPA_DISABLED;
         }
         else
         {
-            if( c->HPA_reported_set != c->DCO_reported_real_max_sectors && c->HPA_reported_set != 0 )
+            if( c->HPA_reported_set == c->HPA_reported_real && c->DCO_reported_real_max_sectors == 0 )
             {
-                c->HPA_status = HPA_ENABLED;
+                c->HPA_status = HPA_NOT_APPLICABLE;
             }
             else
             {
-                /* This occurs when a SG_IO error occurs with USB devices that don't support ATA pass through */
-                if( c->HPA_reported_set == 0 && c->HPA_reported_real == 1 )
+                if( c->HPA_reported_set != c->DCO_reported_real_max_sectors && c->HPA_reported_set != 0 )
                 {
-                    c->HPA_status = HPA_UNKNOWN;
+                    c->HPA_status = HPA_ENABLED;
                 }
                 else
                 {
-                    /* NVMe drives don't support HPA/DCO */
-                    if( !strcmp( c->device_type_str, "NVME" )
-                        || ( c->HPA_reported_set > 1 && c->DCO_reported_real_max_sectors < 2 ) )
+                    /* This occurs when a SG_IO error occurs with USB devices that don't support ATA pass through */
+                    if( c->HPA_reported_set == 0 && c->HPA_reported_real == 1 )
                     {
-                        c->HPA_status = HPA_NOT_APPLICABLE;
+                        c->HPA_status = HPA_UNKNOWN;
                     }
                     else
                     {
-                        /* For recent enterprise and new drives that don't provide HPA/DCO anymore */
-                        if( c->HPA_reported_set > 0 && c->HPA_reported_real == 1
-                            && c->DCO_reported_real_max_sectors < 2 )
+                        /* NVMe drives don't support HPA/DCO */
+                        if( c->device_type == NWIPE_DEVICE_NVME || c->device_type == NWIPE_DEVICE_VIRT
+                            || ( c->HPA_reported_set > 1 && c->DCO_reported_real_max_sectors < 2 ) )
                         {
                             c->HPA_status = HPA_NOT_APPLICABLE;
+                        }
+                        else
+                        {
+                            /* For recent enterprise and new drives that don't provide HPA/DCO anymore */
+                            if( c->HPA_reported_set > 0 && c->HPA_reported_real == 1
+                                && c->DCO_reported_real_max_sectors < 2 )
+                            {
+                                c->HPA_status = HPA_NOT_APPLICABLE;
+                            }
                         }
                     }
                 }
@@ -548,30 +576,94 @@ int hpa_dco_status( nwipe_context_t* ptr )
         }
     }
 
-    /* Determine the size of the HPA if it's enabled and store the results in the context.*/
-    if( c->HPA_status == HPA_ENABLED )
-    {
-        c->HPA_size = c->DCO_reported_real_max_sectors - c->HPA_reported_set;
-
-        /* Convert the size to a human readable format and save in context */
-        Determine_C_B_nomenclature( c->HPA_size, c->HPA_size_text, NWIPE_DEVICE_SIZE_TXT_LENGTH );
-    }
-    else
-    {
-        /* HPA not enabled so initialise these values */
-        c->HPA_size = 0;
-        c->HPA_size_text[0] = 0;
-    }
-
-    /* create two variables for later use  based on real max sectors
-     * DCO_reported_real_max_size = real max sectors * 512 = bytes
+    /* -------------------------------------------------------------------
+     * create two variables for later use  based on real max sectors
+     * DCO_reported_real_max_size = real max sectors * sector size = bytes
      * DCO_reported_real_max_size_text = human readable string, i.e 1TB etc.
      */
-    c->DCO_reported_real_max_size = c->DCO_reported_real_max_sectors * 512;
+    c->DCO_reported_real_max_size = c->DCO_reported_real_max_sectors * c->device_sector_size;
     Determine_C_B_nomenclature(
         c->DCO_reported_real_max_size, c->DCO_reported_real_max_size_text, NWIPE_DEVICE_SIZE_TXT_LENGTH );
 
     nwipe_dco_real_max_sectors = nwipe_read_dco_real_max_sectors( c->device_name );
+
+    /* Analyse all the variations to produce the final real max bytes which takes into
+     * account drives that don't support DCO or HPA. This result is used in the PDF
+     * creation functions.
+     */
+
+    if( c->device_type == NWIPE_DEVICE_NVME || c->device_type == NWIPE_DEVICE_VIRT
+        || c->HPA_status == HPA_NOT_APPLICABLE )
+    {
+        c->Calculated_real_max_size_in_bytes = c->device_size;
+    }
+    else
+    {
+        /* If the DCO is reporting a real max sectors > 1 then that is what we will use as the real disc size
+         */
+        if( c->DCO_reported_real_max_size > 1 )
+        {
+            c->Calculated_real_max_size_in_bytes = c->DCO_reported_real_max_sectors * c->device_sector_size;
+        }
+        else
+        {
+            /* If HPA is enabled and DCO real max sectors did not exist, then we have to assume - c->HPA_reported_real
+             * is the value we need, however if that is zero, then c->HPA_reported_set and if that is zero then
+             * c->device_size as reported by libata
+             */
+            if( c->HPA_reported_real > 0 )
+            {
+                c->Calculated_real_max_size_in_bytes = c->HPA_reported_real * c->device_sector_size;
+            }
+            else
+            {
+                if( c->HPA_reported_set > 0 )
+                {
+                    c->Calculated_real_max_size_in_bytes = c->HPA_reported_set * c->device_sector_size;
+                }
+                else
+                {
+                    c->Calculated_real_max_size_in_bytes = c->device_size;
+                }
+            }
+        }
+    }
+
+    /* ----------------------------------------------------------------------------------
+     * Determine the size of the HPA if it's enabled and store the results in the context
+     */
+
+    if( c->HPA_status == HPA_ENABLED )
+    {
+        if( c->Calculated_real_max_size_in_bytes != c->device_size )
+        {
+            c->HPA_sectors =
+                ( (u64) ( c->Calculated_real_max_size_in_bytes - c->device_size ) / c->device_sector_size );
+        }
+        else
+        {
+            c->HPA_sectors = 0;
+        }
+
+        /* Convert the size to a human readable format and save in context */
+        Determine_C_B_nomenclature( c->HPA_sectors, c->HPA_size_text, NWIPE_DEVICE_SIZE_TXT_LENGTH );
+    }
+    else
+    {
+        /* HPA not enabled so initialise these values */
+        c->HPA_sectors = 0;
+        c->HPA_size_text[0] = 0;
+    }
+
+    nwipe_log( NWIPE_LOG_INFO,
+               "c->Calculated_real_max_size_in_bytes=%lli, c->device_size=%lli, c->device_sector_size=%lli, "
+               "c->DCO_reported_real_max_size=%lli, c->HPA_sectors=%lli c->device_type=%i ",
+               c->Calculated_real_max_size_in_bytes,
+               c->device_size,
+               c->device_sector_size,
+               c->DCO_reported_real_max_size,
+               c->HPA_sectors,
+               c->device_type );
 
     return set_return_value;
 }
