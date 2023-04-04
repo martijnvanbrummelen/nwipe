@@ -72,6 +72,7 @@ int create_pdf( nwipe_context_t* ptr )
     char HPA_size_text[50] = "";
     char errors[50] = "";
     char throughput_txt[50] = "";
+    char bytes_percent_str[7] = "";
 
     int status_icon;
 
@@ -453,11 +454,11 @@ int create_pdf( nwipe_context_t* ptr )
         if( c->device_type == NWIPE_DEVICE_NVME || c->device_type == NWIPE_DEVICE_VIRT
             || c->HPA_status == HPA_NOT_APPLICABLE )
         {
-            snprintf( bytes_erased,
-                      sizeof( bytes_erased ),
-                      "%lli, (%.1f%%)",
-                      c->bytes_erased,
-                      (float) ( (float) c->bytes_erased / (float) ( (float) c->device_size ) ) * 100 );
+            convert_double_to_string( bytes_percent_str,
+                                      (double) ( (double) c->bytes_erased / (double) c->device_size ) * 100 );
+
+            snprintf( bytes_erased, sizeof( bytes_erased ), "%lli, (%s%%)", c->bytes_erased, bytes_percent_str );
+
             if( c->bytes_erased == c->device_size )
             {
                 pdf_add_text( pdf, NULL, bytes_erased, text_size_data, 145, 230, PDF_DARK_GREEN );
@@ -469,13 +470,13 @@ int create_pdf( nwipe_context_t* ptr )
         }
         else
         {
-            snprintf( bytes_erased,
-                      sizeof( bytes_erased ),
-                      "%lli, %lli, (%.1f%%)",
-                      c->bytes_erased,
-                      c->Calculated_real_max_size_in_bytes,
-                      (double) ( (double) c->bytes_erased / (double) ( (double) c->Calculated_real_max_size_in_bytes ) )
-                          * 100 );
+
+            convert_double_to_string(
+                bytes_percent_str,
+                (double) ( (double) c->bytes_erased / (double) c->Calculated_real_max_size_in_bytes ) * 100 );
+
+            snprintf( bytes_erased, sizeof( bytes_erased ), "%lli, (%s%%)", c->bytes_erased, bytes_percent_str );
+
             if( c->bytes_erased == c->Calculated_real_max_size_in_bytes )
             {
                 pdf_add_text( pdf, NULL, bytes_erased, text_size_data, 145, 230, PDF_DARK_GREEN );
@@ -485,46 +486,6 @@ int create_pdf( nwipe_context_t* ptr )
                 pdf_add_text( pdf, NULL, bytes_erased, text_size_data, 145, 230, PDF_RED );
             }
         }
-
-#if 0
-        /* Use real max sectors taken from DCO if not zero */
-        if( c->DCO_reported_real_max_sectors != 0 )
-        {
-            snprintf(
-                bytes_erased,
-                sizeof( bytes_erased ),
-                "%lli (%.1f%%)",
-                c->bytes_erased,
-                (double) ( (double) c->bytes_erased / (double) ( (double) c->DCO_reported_real_max_sectors * c->device_sector_size ) )
-                    * 100 );
-            if( c->bytes_erased == ( c->DCO_reported_real_max_sectors * c->device_sector_size ) )
-            {
-                pdf_add_text( pdf, NULL, bytes_erased, text_size_data, 145, 230, PDF_DARK_GREEN );
-            }
-            else
-            {
-                pdf_add_text( pdf, NULL, bytes_erased, text_size_data, 145, 230, PDF_RED );
-            }
-        }
-        else
-        {
-            /* else use the reported size which will be less if there is a enabled HPA */
-            snprintf( bytes_erased,
-                      sizeof( bytes_erased ),
-                      "%lli (%.1f%%)",
-                      c->bytes_erased,
-                      (double) ( (double) c->bytes_erased / (double) c->device_size ) * 100 );
-
-            if( c->bytes_erased == c->device_size )
-            {
-                pdf_add_text( pdf, NULL, bytes_erased, text_size_data, 145, 230, PDF_DARK_GREEN );
-            }
-            else
-            {
-                pdf_add_text( pdf, NULL, bytes_erased, text_size_data, 145, 230, PDF_RED );
-            }
-        }
-#endif
     }
     pdf_set_font( pdf, "Helvetica" );
 
