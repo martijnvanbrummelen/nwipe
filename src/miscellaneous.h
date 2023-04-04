@@ -63,10 +63,28 @@ int nwipe_strip_path( char*, char* );
  * char str[] = 18:21:56;
  * calling the function replace_non_alphanumeric( &str, '_' )
  * would result in str changing from 18:21:56 to 18_21_56
- * @param character pointer to the string to be processed
- * @param replacement_char the character used to replace non alpha-numeric characters
+ * @param char* pointer to the string to be processed
+ * @param char the character used to replace non alpha-numeric characters
  * @return void
  */
-void replace_non_alphanumeric( char* str, char replacement_char );
+void replace_non_alphanumeric( char*, char );
+
+/**
+ * I found this function necessary when converting a double of say
+ * 99.999999999999999999 to text using printf. I only wanted 99.99
+ * printed but if you specified a precision of %.2f in printf i.e 2 digits
+ * after the decimal point you get 100.00 and not 99.99 If you increase
+ * the precision to %.10f then you get 99.9999999999 but I only want
+ * two significant digits displayed.i.e 99.99% not 100%
+ * So this function converts to double retaining sufficient precision
+ * so that a 30TB disc with one hidden sector will display as 99.99% erased
+ * As an example if the double value to be converted is 99.999999999999999987
+ * this function will always output 99.99 unlike printf which outputs 100.00
+ * @param char* pointer to the string we write our percentage to. Needs to be
+ * a minimum of 7 bytes, i.e 100.00 plus null terminator.
+ * @param double the floating point value to be converted to a string.
+ * @return void
+ */
+void convert_double_to_string( char*, double );
 
 #endif /* HPA_DCO_H_ */

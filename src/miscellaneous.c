@@ -241,3 +241,29 @@ void replace_non_alphanumeric( char* str, char replacement_char )
         i++;
     }
 }
+
+void convert_double_to_string( char* output_str, double value )
+{
+    int idx = 0;
+    int idx2;
+    int idx3 = 0;
+
+    char percstr[512] = "";
+
+    snprintf( percstr, sizeof( percstr ), "%5.32lf", value );
+    printf( "percstr=%s%%", percstr );
+
+    while( percstr[idx] != 0 )
+    {
+        if( percstr[idx] == '.' )
+        {
+            for( idx2 = 0; idx2 < 3; idx2++ )
+            {
+                output_str[idx3++] = percstr[idx++];
+            }
+            break;
+        }
+        output_str[idx3++] = percstr[idx++];
+    }
+    output_str[idx3] = 0;
+}
