@@ -185,7 +185,7 @@ int hpa_dco_status( nwipe_context_t* ptr )
 
                 /* Scan the hdparm results for HPA is disabled
                  */
-                if( strstr( result, "SG_IO: bad/missing sense data" ) != 0 )
+                if( strstr( result, "sg_io: bad/missing sense data" ) != 0 )
                 {
                     c->HPA_status = HPA_UNKNOWN;
                     nwipe_log( NWIPE_LOG_ERROR, "SG_IO bad/missing sense data %s", hdparm_cmd_get_hpa );
@@ -203,6 +203,7 @@ int hpa_dco_status( nwipe_context_t* ptr )
                                    "says HPA is enabled. Further checks are conducted below..",
                                    c->device_name );
                         hpa_line_found = 1;
+                        break;
                     }
                     else
                     {
@@ -215,32 +216,65 @@ int hpa_dco_status( nwipe_context_t* ptr )
                                        "and it says HPA is enabled. Further checks are conducted below..",
                                        c->device_name );
                             hpa_line_found = 1;
+                            break;
                         }
                         else
                         {
-                            if( strstr( result, "invalid" ) != 0 )
+                            if( strstr( result, "accessible max address disabled" ) != 0 )
                             {
-                                c->HPA_status = HPA_ENABLED;
-                                nwipe_log( NWIPE_LOG_WARNING,
-                                           "hdparm reports invalid output, sector information may be invalid, buggy "
-                                           "drive firmware on %s?",
+                                c->HPA_status = HPA_DISABLED;
+                                nwipe_log( NWIPE_LOG_DEBUG,
+                                           "hdparm says the accessible max address disabled on %s"
+                                           "this means that there are no hidden sectors,  "
+                                           "",
                                            c->device_name );
-                                // We'll assume the HPA values are in the string as we may be able to extract something
-                                // meaningful
                                 hpa_line_found = 1;
+                                break;
+                            }
+                            else
+                            {
+                                if( strstr( result, "accessible max address enabled" ) != 0 )
+                                {
+                                    c->HPA_status = HPA_ENABLED;
+                                    nwipe_log( NWIPE_LOG_DEBUG,
+                                               "hdparm says the accessible max address enabled on %s"
+                                               "this means that there are hidden sectors",
+                                               c->device_name );
+                                    hpa_line_found = 1;
+                                    break;
+                                }
+                                else
+                                {
+                                    if( strstr( result, "invalid" ) != 0 )
+                                    {
+                                        c->HPA_status = HPA_ENABLED;
+                                        nwipe_log(
+                                            NWIPE_LOG_WARNING,
+                                            "hdparm reports invalid output, sector information may be invalid, buggy "
+                                            "drive firmware on %s?",
+                                            c->device_name );
+                                        // We'll assume the HPA values are in the string as we may be able to extract
+                                        // something meaningful
+                                        hpa_line_found = 1;
+                                        break;
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
 
-            /* if the line was found that contains hpa is enabled or disabled message
-             * then process the line, extracting the 'hpa set' and 'hpa real' values.
+            /* if the HPA line was found then process the line,
+             * extracting the 'hpa set' and 'hpa real' values.
              */
             if( hpa_line_found == 1 )
             {
                 /* Extract the 'HPA set' value, the first value in the line and convert
                  * to binary and save in context */
+
+                nwipe_log( NWIPE_LOG_INFO, "HPA: %s on %s", result, c->device_name );
+
                 c->HPA_reported_set = str_ascii_number_to_ll( result );
 
                 /* Extract the 'HPA real' value, the second value in the line and convert
@@ -270,7 +304,7 @@ int hpa_dco_status( nwipe_context_t* ptr )
             {
                 c->HPA_status = HPA_UNKNOWN;
                 nwipe_log( NWIPE_LOG_WARNING,
-                           "[UNKNOWN] We can't find the HPA line, has hdparm ouput changed? %s",
+                           "[UNKNOWN] We can't find the HPA line, has hdparm ouput unknown/changed? %s",
                            c->device_name );
             }
 
@@ -655,7 +689,7 @@ int hpa_dco_status( nwipe_context_t* ptr )
         c->HPA_size_text[0] = 0;
     }
 
-    nwipe_log( NWIPE_LOG_INFO,
+    nwipe_log( NWIPE_LOG_DEBUG,
                "c->Calculated_real_max_size_in_bytes=%lli, c->device_size=%lli, c->device_sector_size=%lli, "
                "c->DCO_reported_real_max_size=%lli, c->HPA_sectors=%lli c->device_type=%i ",
                c->Calculated_real_max_size_in_bytes,
