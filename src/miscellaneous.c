@@ -251,7 +251,6 @@ void convert_double_to_string( char* output_str, double value )
     char percstr[512] = "";
 
     snprintf( percstr, sizeof( percstr ), "%5.32lf", value );
-    printf( "percstr=%s%%", percstr );
 
     while( percstr[idx] != 0 )
     {
