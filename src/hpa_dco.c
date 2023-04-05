@@ -533,38 +533,54 @@ int hpa_dco_status( nwipe_context_t* ptr )
         }
         else
         {
-            if( c->HPA_reported_set == c->HPA_reported_real && c->DCO_reported_real_max_sectors == 0 )
+            if( c->DCO_reported_real_max_sectors > 0 && c->DCO_reported_real_max_sectors == ( c->device_size / 512 ) )
             {
-                c->HPA_status = HPA_NOT_APPLICABLE;
+                c->HPA_status = HPA_DISABLED;
             }
             else
             {
-                if( c->HPA_reported_set != c->DCO_reported_real_max_sectors && c->HPA_reported_set != 0 )
+                if( c->DCO_reported_real_max_sectors > 0
+                    && c->DCO_reported_real_max_sectors != ( c->device_size / 512 ) )
                 {
                     c->HPA_status = HPA_ENABLED;
                 }
                 else
                 {
-                    /* This occurs when a SG_IO error occurs with USB devices that don't support ATA pass through */
-                    if( c->HPA_reported_set == 0 && c->HPA_reported_real == 1 )
+                    if( c->HPA_reported_set == c->HPA_reported_real && c->DCO_reported_real_max_sectors == 0 )
                     {
-                        c->HPA_status = HPA_UNKNOWN;
+                        c->HPA_status = HPA_NOT_APPLICABLE;
                     }
                     else
                     {
-                        /* NVMe drives don't support HPA/DCO */
-                        if( c->device_type == NWIPE_DEVICE_NVME || c->device_type == NWIPE_DEVICE_VIRT
-                            || ( c->HPA_reported_set > 1 && c->DCO_reported_real_max_sectors < 2 ) )
+                        if( c->HPA_reported_set != c->DCO_reported_real_max_sectors && c->HPA_reported_set != 0 )
                         {
-                            c->HPA_status = HPA_NOT_APPLICABLE;
+                            c->HPA_status = HPA_ENABLED;
                         }
                         else
                         {
-                            /* For recent enterprise and new drives that don't provide HPA/DCO anymore */
-                            if( c->HPA_reported_set > 0 && c->HPA_reported_real == 1
-                                && c->DCO_reported_real_max_sectors < 2 )
+                            /* This occurs when a SG_IO error occurs with USB devices that don't support ATA pass
+                             * through */
+                            if( c->HPA_reported_set == 0 && c->HPA_reported_real == 1 )
                             {
-                                c->HPA_status = HPA_NOT_APPLICABLE;
+                                c->HPA_status = HPA_UNKNOWN;
+                            }
+                            else
+                            {
+                                /* NVMe drives don't support HPA/DCO */
+                                if( c->device_type == NWIPE_DEVICE_NVME || c->device_type == NWIPE_DEVICE_VIRT
+                                    || ( c->HPA_reported_set > 1 && c->DCO_reported_real_max_sectors < 2 ) )
+                                {
+                                    c->HPA_status = HPA_NOT_APPLICABLE;
+                                }
+                                else
+                                {
+                                    /* For recent enterprise and new drives that don't provide HPA/DCO anymore */
+                                    if( c->HPA_reported_set > 0 && c->HPA_reported_real == 1
+                                        && c->DCO_reported_real_max_sectors < 2 )
+                                    {
+                                        c->HPA_status = HPA_NOT_APPLICABLE;
+                                    }
+                                }
                             }
                         }
                     }
