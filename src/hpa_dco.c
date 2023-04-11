@@ -247,7 +247,6 @@ int hpa_dco_status( nwipe_context_t* ptr )
                                 {
                                     if( strstr( result, "invalid" ) != 0 )
                                     {
-                                        c->HPA_status = HPA_ENABLED;
                                         nwipe_log(
                                             NWIPE_LOG_WARNING,
                                             "hdparm reports invalid output, sector information may be invalid, buggy "
@@ -277,6 +276,21 @@ int hpa_dco_status( nwipe_context_t* ptr )
 
                 c->HPA_reported_set = str_ascii_number_to_ll( result );
 
+                /* Check whether the number was too large or no number found & log */
+                if( c->HPA_reported_set == -1 )
+                {
+                    nwipe_log( NWIPE_LOG_INFO, "HPA_set_value: HPA set value too large on %s", c->device_name );
+                    c->HPA_reported_set = 0;
+                }
+                else
+                {
+                    if( c->HPA_reported_set == -2 )
+                    {
+                        nwipe_log( NWIPE_LOG_INFO, "HPA_set_value: No HPA set value found %s", c->device_name );
+                        c->HPA_reported_set = 0;
+                    }
+                }
+
                 /* Extract the 'HPA real' value, the second value in the line and convert
                  * to binary and save in context, this is a little more difficult as sometimes
                  * a odd value is returned so instead of nnnnn/nnnnn you get nnnnnn/1(nnnnnn).
@@ -294,6 +308,22 @@ int hpa_dco_status( nwipe_context_t* ptr )
                         c->HPA_reported_real = str_ascii_number_to_ll( p + 1 );
                     }
                 }
+
+                /* Check whether the number was too large or no number found & log */
+                if( c->HPA_reported_real == -1 )
+                {
+                    nwipe_log( NWIPE_LOG_INFO, "HPA_set_value: HPA real value too large on %s", c->device_name );
+                    c->HPA_reported_real = 0;
+                }
+                else
+                {
+                    if( c->HPA_reported_real == -2 )
+                    {
+                        nwipe_log( NWIPE_LOG_INFO, "HPA_set_value: No HPA real value found %s", c->device_name );
+                        c->HPA_reported_real = 0;
+                    }
+                }
+
                 nwipe_log( NWIPE_LOG_INFO,
                            "HPA values %lli / %lli on %s",
                            c->HPA_reported_set,
@@ -434,6 +464,11 @@ int hpa_dco_status( nwipe_context_t* ptr )
                 nwipe_log( NWIPE_LOG_INFO, "DCO Real max sectors not found" );
             }
 
+            nwipe_log( NWIPE_LOG_INFO,
+                       "libata: apparent max sectors reported as %lli on %s",
+                       c->device_size_in_sectors,
+                       c->device_name );
+
             /* close */
             r = pclose( fp );
             if( r > 0 )
@@ -517,112 +552,34 @@ int hpa_dco_status( nwipe_context_t* ptr )
     c->DCO_reported_real_max_sectors = 2048;
 #endif
 
-    /* If all three values match and none are zero then there is NO hidden disc area. HPA is disabled. */
-    if( c->HPA_reported_set == c->HPA_reported_real && c->DCO_reported_real_max_sectors == c->HPA_reported_set
-        && c->HPA_reported_set != 0 && c->HPA_reported_real != 0 && c->DCO_reported_real_max_sectors != 0 )
+    /* If any of the HPA or DCO values are larger than the apparent size then HPA is enabled. */
+    if( /*c->HPA_reported_set > c->device_size_in_sectors || */ c->HPA_reported_real > c->device_size_in_sectors
+        || c->DCO_reported_real_max_sectors > c->device_size_in_sectors )
     {
-        c->HPA_status = HPA_DISABLED;
+        c->HPA_status = HPA_ENABLED;
+        nwipe_log( NWIPE_LOG_WARNING, " *********************************" );
+        nwipe_log( NWIPE_LOG_WARNING, " *** HIDDEN SECTORS DETECTED ! *** on %s", c->device_name );
+        nwipe_log( NWIPE_LOG_WARNING, " *********************************" );
     }
     else
     {
-        /* If HPA set and DCO max sectors are equal it can also be considered that HPA is disabled */
-        if( ( c->HPA_reported_set == c->DCO_reported_real_max_sectors ) && c->HPA_reported_set != 0
-            && c->DCO_reported_real_max_sectors != 0 )
+        /* This occurs when a SG_IO error occurs with USB devices that don't support ATA pass
+         * through */
+        if( c->HPA_reported_set == 0 && c->HPA_reported_real == 1 && c->DCO_reported_real_max_sectors <= 1 )
+        {
+            c->HPA_status = HPA_UNKNOWN;
+            if( c->device_bus == NWIPE_DEVICE_USB )
+            {
+                nwipe_log( NWIPE_LOG_WARNING,
+                           "HIDDEN SECTORS INDETERMINATE! on %s, Some USB adapters & memory sticks don't support "
+                           "ATA pass through",
+                           c->device_name );
+            }
+        }
+        else
         {
             c->HPA_status = HPA_DISABLED;
-        }
-        else
-        {
-            if( c->DCO_reported_real_max_sectors > 0 && c->DCO_reported_real_max_sectors == ( c->device_size / 512 ) )
-            {
-                c->HPA_status = HPA_DISABLED;
-            }
-            else
-            {
-                if( c->DCO_reported_real_max_sectors > 0
-                    && c->DCO_reported_real_max_sectors != ( c->device_size / 512 ) )
-                {
-                    c->HPA_status = HPA_ENABLED;
-                }
-                else
-                {
-                    if( c->HPA_reported_set == c->HPA_reported_real && c->DCO_reported_real_max_sectors == 0 )
-                    {
-                        c->HPA_status = HPA_NOT_APPLICABLE;
-                    }
-                    else
-                    {
-                        if( c->HPA_reported_set != c->DCO_reported_real_max_sectors && c->HPA_reported_set != 0 )
-                        {
-                            c->HPA_status = HPA_ENABLED;
-                        }
-                        else
-                        {
-                            /* This occurs when a SG_IO error occurs with USB devices that don't support ATA pass
-                             * through */
-                            if( c->HPA_reported_set == 0 && c->HPA_reported_real == 1 )
-                            {
-                                c->HPA_status = HPA_UNKNOWN;
-                            }
-                            else
-                            {
-                                /* NVMe drives don't support HPA/DCO */
-                                if( c->device_type == NWIPE_DEVICE_NVME || c->device_type == NWIPE_DEVICE_VIRT
-                                    || ( c->HPA_reported_set > 1 && c->DCO_reported_real_max_sectors < 2 ) )
-                                {
-                                    c->HPA_status = HPA_NOT_APPLICABLE;
-                                }
-                                else
-                                {
-                                    /* For recent enterprise and new drives that don't provide HPA/DCO anymore */
-                                    if( c->HPA_reported_set > 0 && c->HPA_reported_real == 1
-                                        && c->DCO_reported_real_max_sectors < 2 )
-                                    {
-                                        c->HPA_status = HPA_NOT_APPLICABLE;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    if( c->HPA_status == HPA_DISABLED )
-    {
-        nwipe_log( NWIPE_LOG_INFO, "No hidden sectors on %s", c->device_name );
-    }
-    else
-    {
-        if( c->HPA_status == HPA_ENABLED )
-        {
-            nwipe_log( NWIPE_LOG_WARNING, " *********************************" );
-            nwipe_log( NWIPE_LOG_WARNING, " *** HIDDEN SECTORS DETECTED ! *** on %s", c->device_name );
-            nwipe_log( NWIPE_LOG_WARNING, " *********************************" );
-        }
-        else
-        {
-            if( c->HPA_status == HPA_UNKNOWN )
-            {
-                if( c->device_bus == NWIPE_DEVICE_USB )
-                    nwipe_log( NWIPE_LOG_WARNING,
-                               "HIDDEN SECTORS INDETERMINATE! on %s, Some USB adapters & memory sticks don't support "
-                               "ATA pass through",
-                               c->device_name );
-                else
-                {
-                    if( c->HPA_status == HPA_NOT_APPLICABLE )
-                    {
-                        nwipe_log( NWIPE_LOG_WARNING, "%s may not support HPA/DCO", c->device_name );
-                    }
-                    else
-                    {
-                        nwipe_log(
-                            NWIPE_LOG_SANITY, "Unrecognised HPA_status, should not be possible %s", c->device_name );
-                    }
-                }
-            }
+            nwipe_log( NWIPE_LOG_INFO, "No hidden sectors on %s", c->device_name );
         }
     }
 
@@ -649,9 +606,10 @@ int hpa_dco_status( nwipe_context_t* ptr )
     }
     else
     {
-        /* If the DCO is reporting a real max sectors > 1 then that is what we will use as the real disc size
+        /* If the DCO is reporting a real max sectors > the apparent size
+         * as reported by libata then that is what we will use as the real disc size
          */
-        if( c->DCO_reported_real_max_size > 1 )
+        if( c->DCO_reported_real_max_size > c->device_size_in_sectors )
         {
             c->Calculated_real_max_size_in_bytes = c->DCO_reported_real_max_sectors * c->device_sector_size;
         }
@@ -661,13 +619,13 @@ int hpa_dco_status( nwipe_context_t* ptr )
              * is the value we need, however if that is zero, then c->HPA_reported_set and if that is zero then
              * c->device_size as reported by libata
              */
-            if( c->HPA_reported_real > 0 )
+            if( c->HPA_reported_real > c->device_size_in_sectors )
             {
                 c->Calculated_real_max_size_in_bytes = c->HPA_reported_real * c->device_sector_size;
             }
             else
             {
-                if( c->HPA_reported_set > 0 )
+                if( c->HPA_reported_set > c->device_size_in_sectors )
                 {
                     c->Calculated_real_max_size_in_bytes = c->HPA_reported_set * c->device_sector_size;
                 }
@@ -707,13 +665,19 @@ int hpa_dco_status( nwipe_context_t* ptr )
 
     nwipe_log( NWIPE_LOG_DEBUG,
                "c->Calculated_real_max_size_in_bytes=%lli, c->device_size=%lli, c->device_sector_size=%lli, "
-               "c->DCO_reported_real_max_size=%lli, c->HPA_sectors=%lli c->device_type=%i ",
+               "c->DCO_reported_real_max_size=%lli, c->DCO_reported_real_max_sectors=%lli, c->HPA_sectors=%lli, "
+               "c->HPA_reported_set=%lli, c->HPA_reported_real=%lli, c->device_type=%i, "
+               "libata:c->device_size_in_sectors=%lli ",
                c->Calculated_real_max_size_in_bytes,
                c->device_size,
                c->device_sector_size,
                c->DCO_reported_real_max_size,
+               c->DCO_reported_real_max_sectors,
                c->HPA_sectors,
-               c->device_type );
+               c->HPA_reported_set,
+               c->HPA_reported_real,
+               c->device_type,
+               c->device_size_in_sectors );
 
     return set_return_value;
 }

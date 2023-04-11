@@ -567,7 +567,7 @@ int create_pdf( nwipe_context_t* ptr )
     {
         if( c->HPA_status == HPA_ENABLED )
         {
-            snprintf( HPA_status_text, sizeof( HPA_status_text ), "HIDDEN AREA FOUND!" );
+            snprintf( HPA_status_text, sizeof( HPA_status_text ), "Hidden sectors found!" );
             pdf_set_font( pdf, "Helvetica-Bold" );
             pdf_add_text( pdf, NULL, HPA_status_text, text_size_data, 130, 210, PDF_RED );
             pdf_set_font( pdf, "Helvetica" );
@@ -576,7 +576,7 @@ int create_pdf( nwipe_context_t* ptr )
         {
             if( c->HPA_status == HPA_DISABLED )
             {
-                snprintf( HPA_status_text, sizeof( HPA_status_text ), "NO HIDDEN AREA" );
+                snprintf( HPA_status_text, sizeof( HPA_status_text ), "No hidden sectors" );
                 pdf_set_font( pdf, "Helvetica-Bold" );
                 pdf_add_text( pdf, NULL, HPA_status_text, text_size_data, 130, 210, PDF_DARK_GREEN );
                 pdf_set_font( pdf, "Helvetica" );
@@ -585,7 +585,7 @@ int create_pdf( nwipe_context_t* ptr )
             {
                 if( c->HPA_status == HPA_UNKNOWN )
                 {
-                    snprintf( HPA_status_text, sizeof( HPA_status_text ), "STATUS UNKNOWN" );
+                    snprintf( HPA_status_text, sizeof( HPA_status_text ), "Status unknown" );
                     pdf_set_font( pdf, "Helvetica-Bold" );
                     pdf_add_text( pdf, NULL, HPA_status_text, text_size_data, 130, 210, PDF_RED );
                     pdf_set_font( pdf, "Helvetica" );
@@ -594,7 +594,7 @@ int create_pdf( nwipe_context_t* ptr )
                 {
                     if( c->HPA_status == HPA_NOT_SUPPORTED_BY_DRIVE )
                     {
-                        snprintf( HPA_status_text, sizeof( HPA_status_text ), "NO HIDDEN AREA **DDNSHDA" );
+                        snprintf( HPA_status_text, sizeof( HPA_status_text ), "No hidden sectors **DDNSHDA" );
                         pdf_set_font( pdf, "Helvetica-Bold" );
                         pdf_add_text( pdf, NULL, HPA_status_text, text_size_data, 130, 210, PDF_DARK_GREEN );
                         pdf_set_font( pdf, "Helvetica" );
