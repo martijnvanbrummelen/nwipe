@@ -220,6 +220,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
 
     next_device->device_size = dev->length * dev->sector_size;
     next_device->device_sector_size = dev->sector_size;
+    next_device->device_size_in_sectors = next_device->device_size / next_device->device_sector_size;
     Determine_C_B_nomenclature( next_device->device_size, next_device->device_size_txt, NWIPE_DEVICE_SIZE_TXT_LENGTH );
     next_device->device_size_text = next_device->device_size_txt;
     next_device->result = -2;
