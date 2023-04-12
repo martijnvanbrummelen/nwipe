@@ -2905,7 +2905,7 @@ void* nwipe_gui_status( void* ptr )
                     else
                     {
                         wattron( main_window, COLOR_PAIR( 9 ) );
-                        mvwprintw( main_window, yy++, 4, "(>>>FAILURE!<<<, code %i) ", c[i]->result );
+                        mvwprintw( main_window, yy++, 4, "(>>> IOERROR! <<<, code %i) ", c[i]->result );
                         wattroff( main_window, COLOR_PAIR( 9 ) );
                     }
 

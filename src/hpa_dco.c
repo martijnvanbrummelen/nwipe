@@ -565,7 +565,7 @@ int hpa_dco_status( nwipe_context_t* ptr )
     {
         /* This occurs when a SG_IO error occurs with USB devices that don't support ATA pass
          * through */
-        if( c->HPA_reported_set == 0 && c->HPA_reported_real == 1 && c->DCO_reported_real_max_sectors <= 1 )
+        if( c->HPA_reported_set == 0 && c->HPA_reported_real == 0 && c->DCO_reported_real_max_sectors <= 1 )
         {
             c->HPA_status = HPA_UNKNOWN;
             if( c->device_bus == NWIPE_DEVICE_USB )
@@ -583,14 +583,7 @@ int hpa_dco_status( nwipe_context_t* ptr )
         }
     }
 
-    /* -------------------------------------------------------------------
-     * create two variables for later use  based on real max sectors
-     * DCO_reported_real_max_size = real max sectors * sector size = bytes
-     * DCO_reported_real_max_size_text = human readable string, i.e 1TB etc.
-     */
     c->DCO_reported_real_max_size = c->DCO_reported_real_max_sectors * c->device_sector_size;
-    Determine_C_B_nomenclature(
-        c->DCO_reported_real_max_size, c->DCO_reported_real_max_size_text, NWIPE_DEVICE_SIZE_TXT_LENGTH );
 
     nwipe_dco_real_max_sectors = nwipe_read_dco_real_max_sectors( c->device_name );
 
@@ -636,6 +629,19 @@ int hpa_dco_status( nwipe_context_t* ptr )
             }
         }
     }
+
+    /* -------------------------------------------------------------------
+     * create two variables for later use by the PDF creation function
+     * based on real max sectors and calculated real max size in bytes.
+     *
+     * DCO_reported_real_max_size = real max sectors * sector size = bytes
+     * DCO_reported_real_max_size_text = human readable string, i.e 1TB etc.
+     */
+
+    Determine_C_B_nomenclature(
+        c->DCO_reported_real_max_size, c->DCO_reported_real_max_size_text, NWIPE_DEVICE_SIZE_TXT_LENGTH );
+    Determine_C_B_nomenclature(
+        c->Calculated_real_max_size_in_bytes, c->Calculated_real_max_size_in_bytes_text, NWIPE_DEVICE_SIZE_TXT_LENGTH );
 
     /* ----------------------------------------------------------------------------------
      * Determine the size of the HPA if it's enabled and store the results in the context
