@@ -169,7 +169,7 @@ typedef struct nwipe_context_t_
                                             // don't support DCO/HPA and those that do. Also drives that can't provide
                                             // HPA/DCO due to the chips they use (USB adapters)
     char DCO_reported_real_max_size_text[NWIPE_DEVICE_SIZE_TXT_LENGTH];  // real max size in human readable form i.e 1TB
-                                                                         // etc
+    char Calculated_real_max_size_in_bytes_text[NWIPE_DEVICE_SIZE_TXT_LENGTH];  // calculated real max human readable
     u64 HPA_sectors;  // The size of the host protected area in sectors
     char HPA_size_text[NWIPE_DEVICE_SIZE_TXT_LENGTH];  // Human readable size bytes, KB, MB, GB ..
     int HPA_display_toggle_state;  // 0 or 1 Used to toggle between "[1TB] [ 33C]" and [HDA STATUS]

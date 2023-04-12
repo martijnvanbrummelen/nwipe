@@ -797,7 +797,7 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
         }
         else
         {
-            if( c[i]->wipe_status == 0 && user_abort != 1 )
+            if( c[i]->wipe_status == 0 /* && user_abort != 1 */ )
             {
                 strncpy( exclamation_flag, " ", 1 );
                 exclamation_flag[1] = 0;
@@ -809,7 +809,7 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
             }
             else
             {
-                if( user_abort == 1 )
+                if( c[i]->wipe_status == 1 && user_abort == 1 )
                 {
                     strncpy( exclamation_flag, "!", 1 );
                     exclamation_flag[1] = 0;

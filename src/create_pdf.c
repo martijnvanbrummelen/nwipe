@@ -189,8 +189,8 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_add_text( pdf, NULL, "Size(Apparent): ", 12, 60, 390, PDF_GRAY );
     pdf_set_font( pdf, "Helvetica-Bold" );
     snprintf( device_size, sizeof( device_size ), "%s, %lli bytes", c->device_size_text, c->device_size );
-    if( ( c->device_size == c->DCO_reported_real_max_size ) || c->device_type == NWIPE_DEVICE_NVME
-        || c->device_type == NWIPE_DEVICE_VIRT || c->HPA_status == HPA_NOT_APPLICABLE )
+    if( ( c->device_size == c->Calculated_real_max_size_in_bytes ) || c->device_type == NWIPE_DEVICE_NVME
+        || c->device_type == NWIPE_DEVICE_VIRT || c->HPA_status == HPA_NOT_APPLICABLE || c->HPA_status != HPA_UNKNOWN )
     {
         pdf_add_text( pdf, NULL, device_size, text_size_data, 145, 390, PDF_DARK_GREEN );
     }
@@ -211,17 +211,17 @@ int create_pdf( nwipe_context_t* ptr )
     }
     else
     {
-        /* If there is a real max size always show in green, if the drive doesn't
-         * support HPA show device size as that is the real size.
+        /* If the calculared real max size as determined from HPA/DCO and libata data is larger than
+         * or equal to the apparent device size then display that value in green.
          */
-        if( c->DCO_reported_real_max_size > 1 )
+        if( c->Calculated_real_max_size_in_bytes >= c->device_size )
         {
             /* displays the real max size of the disc from the DCO displayed in Green */
             snprintf( device_size,
                       sizeof( device_size ),
                       "%s, %lli bytes",
-                      c->DCO_reported_real_max_size_text,
-                      c->DCO_reported_real_max_size );
+                      c->Calculated_real_max_size_in_bytes_text,
+                      c->Calculated_real_max_size_in_bytes );
             pdf_add_text( pdf, NULL, device_size, text_size_data, 125, 370, PDF_DARK_GREEN );
         }
         else
@@ -543,7 +543,7 @@ int create_pdf( nwipe_context_t* ptr )
             {
                 if( c->HPA_status == HPA_UNKNOWN )
                 {
-                    snprintf( HPA_size_text, sizeof( HPA_size_text ), "UNKNOWN" );
+                    snprintf( HPA_size_text, sizeof( HPA_size_text ), "Unknown" );
                     pdf_add_text( pdf, NULL, HPA_size_text, text_size_data, 390, 210, PDF_RED );
                 }
             }
@@ -585,7 +585,7 @@ int create_pdf( nwipe_context_t* ptr )
             {
                 if( c->HPA_status == HPA_UNKNOWN )
                 {
-                    snprintf( HPA_status_text, sizeof( HPA_status_text ), "Status unknown" );
+                    snprintf( HPA_status_text, sizeof( HPA_status_text ), "Unknown" );
                     pdf_set_font( pdf, "Helvetica-Bold" );
                     pdf_add_text( pdf, NULL, HPA_status_text, text_size_data, 130, 210, PDF_RED );
                     pdf_set_font( pdf, "Helvetica" );
@@ -648,6 +648,22 @@ int create_pdf( nwipe_context_t* ptr )
                       170,
                       PDF_RED );
     }
+    else
+    {
+        if( c->HPA_status == HPA_UNKNOWN )
+        {
+            pdf_add_ellipse( pdf, NULL, 160, 173, 30, 9, 2, PDF_RED, PDF_BLACK );
+            pdf_add_text( pdf, NULL, "Warning", text_size_data, 140, 170, PDF_YELLOW );
+
+            pdf_add_text( pdf,
+                          NULL,
+                          "HPA/DCO data unavailable, can not determine hidden sector status.",
+                          text_size_data,
+                          200,
+                          170,
+                          PDF_RED );
+        }
+    }
 
     /* info descripting what bytes erased actually means */
     pdf_add_text( pdf,
@@ -658,11 +674,11 @@ int create_pdf( nwipe_context_t* ptr )
                   137,
                   PDF_BLACK );
 
-    /* meaning of abreviation DDNSHDA */
+    /* meaning of abreviation DDNSHPA */
     if( c->HPA_status == HPA_NOT_SUPPORTED_BY_DRIVE )
     {
         pdf_add_text(
-            pdf, NULL, "** DDNSHDA = Drive does not support HPA/DCO", text_size_data, 60, 125, PDF_DARK_GREEN );
+            pdf, NULL, "** DDNSHPA = Drive does not support HPA/DCO", text_size_data, 60, 125, PDF_DARK_GREEN );
     }
     pdf_set_font( pdf, "Helvetica" );
 
