@@ -913,7 +913,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
         previous_iteration_timestamp = time( NULL );
 
         /* Calculate Maximum allowed iterations per second */
-        expected_iterations = ( 1000 / GETCH_BLOCK_MS ) * 2;
+        expected_iterations = ( 1000 / GETCH_BLOCK_MS ) * 8;
 
         do
         {
@@ -936,13 +936,13 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
              * differentiate from normal operation and a failure of the getch function to block for the specified period
              * of timeout. So here we check the while loop hasn't exceeded the number of expected iterations per second
              * ie. a timeout(250) block value of 250ms means we should not see any more than (1000/250) = 4 iterations.
-             * We double this to 8 to allow a little tolerance. Why is this necessary? It's been found that in KDE
-             * konsole and other terminals based on the QT terminal engine exiting the terminal without first existing
-             * nwipe results in nwipe remaining running but detached from any interface which causes getch to fail and
-             * its associated timeout. So the CPU or CPU core rises to 100%. Here we detect that failure and exit nwipe
-             * gracefully with the appropriate error. This does not affect use of tmux for attaching or detaching from a
-             * running nwipe session when sitting at the selection screen. All other terminals correctly terminate nwipe
-             * when the terminal itself is exited.
+             * We increase this to 32 iterations to allow a little tolerance. Why is this necessary? It's been found
+             * that in KDE konsole and other terminals based on the QT terminal engine exiting the terminal without
+             * first exiting nwipe results in nwipe remaining running but detached from any interface which causes
+             * getch to fail and its associated timeout. So the CPU or CPU core rises to 100%. Here we detect that
+             * failure and exit nwipe gracefully with the appropriate error. This does not affect use of tmux for
+             * attaching or detaching from a running nwipe session when sitting at the selection screen. All other
+             * terminals correctly terminate nwipe when the terminal itself is exited.
              */
 
             iteration_counter++;
@@ -953,8 +953,8 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                 {
                     nwipe_log( NWIPE_LOG_ERROR,
                                "GUI.c,nwipe_gui_select(), loop runaway, did you close the terminal without exiting "
-                               "nwipe? Initiating shutdown now." );
-                    /* Issue signal to nwipe to shutdown immediately but gracefully */
+                               "nwipe? Exiting nwipe now." );
+                    /* Issue signal to nwipe to exit immediately but gracefully */
                     terminate_signal = 1;
                 }
             }
