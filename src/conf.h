@@ -6,9 +6,11 @@
  * start of nwipe, prior to any attempts to access
  * nwipe's config file /etc/nwipe/nwipe.conf
  * @param none
- * @return void
+ * @return int
+ *   0  = success
+ *   -1 = error
  */
-void nwipe_conf_init();
+int nwipe_conf_init();
 
 /**
  * Before exiting nwipe, this function should be called
