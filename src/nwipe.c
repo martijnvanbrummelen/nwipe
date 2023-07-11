@@ -113,9 +113,9 @@ int main( int argc, char** argv )
 
     /** NOTE ** NOTE ** NOTE ** NOTE ** NOTE ** NOTE ** NOTE ** NOTE ** NOTE **
      * Important Note: if you want nwipe_log messages to go into the logfile
-     * they must after after the options are parsed here, else they will
-     * appear in the console but not in the logfile, that is, assuming you
-     * specified a log file on the command line as an nwipe option.
+     * any 'nwipe_log()' commands must appear after the options are parsed here,
+     * else they will appear in the console but not in the logfile, that is,
+     * assuming you specified a log file on the command line as an nwipe option.
      */
 
     /*****************************
