@@ -53,6 +53,8 @@
 #include "conf.h"
 #include "version.h"
 #include "hpa_dco.h"
+#include "conf.h"
+#include <libconfig.h>
 
 int terminate_signal;
 int user_abort;
@@ -985,6 +987,7 @@ int cleanup()
     extern int log_elements_displayed;  // initialised and found in logging.c
     extern int log_elements_allocated;  // initialised and found in logging.c
     extern char** log_lines;
+    extern config_t nwipe_cfg;
 
     /* Print the logs held in memory to the console */
     for( i = log_elements_displayed; i < log_elements_allocated; i++ )
@@ -1004,7 +1007,10 @@ int cleanup()
         free( log_lines );
     }
 
-    /* TODO: All other cleanup required */
+    /* Deallocate libconfig resources */
+    config_destroy( &nwipe_cfg );
+
+    /* TODO: Any other cleanup required ? */
 
     return 0;
 }
