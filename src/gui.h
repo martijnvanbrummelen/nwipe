@@ -53,6 +53,9 @@ void nwipe_gui_prng( void );  // Change the prng option.
 void nwipe_gui_rounds( void );  // Change the rounds option.
 void nwipe_gui_verify( void );  // Change the verify option.
 void nwipe_gui_noblank( void );  // Change the noblank option.
+void nwipe_gui_config( void );  // Change the nwipe settings
+void nwipe_gui_edit_organisation( void );  // Edit organisation details
+void nwipe_gui_organisation_business_name( void );  // Edit organisation business name
 int spinner( nwipe_context_t** ptr, int );  // Return the next spinner character
 void temp1_flash( nwipe_context_t* );  // toggles term1_flash_status, which flashes the temperature
 
