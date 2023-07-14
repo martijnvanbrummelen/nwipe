@@ -54,8 +54,12 @@ void nwipe_gui_rounds( void );  // Change the rounds option.
 void nwipe_gui_verify( void );  // Change the verify option.
 void nwipe_gui_noblank( void );  // Change the noblank option.
 void nwipe_gui_config( void );  // Change the nwipe settings
-void nwipe_gui_edit_organisation( void );  // Edit organisation details
-void nwipe_gui_organisation_business_name( void );  // Edit organisation business name
+void nwipe_gui_edit_organisation( void );  // Edit organisation performing the erasure
+void nwipe_gui_organisation_business_name( const char* );  // Edit business name performing erase
+void nwipe_gui_organisation_business_address( const char* );  // Edit business address performing erase
+void nwipe_gui_organisation_contact_name( const char* );  // Edit business contact name
+void nwipe_gui_organisation_contact_phone( const char* );  // Edit business contact phone
+void nwipe_gui_organisation_op_tech_name( const char* );  // Edit the name of the operator/technician
 int spinner( nwipe_context_t** ptr, int );  // Return the next spinner character
 void temp1_flash( nwipe_context_t* );  // toggles term1_flash_status, which flashes the temperature
 

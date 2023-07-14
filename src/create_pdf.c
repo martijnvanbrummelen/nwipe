@@ -97,8 +97,8 @@ int create_pdf( nwipe_context_t* ptr )
 
     /* variables used by libconfig */
     config_setting_t* setting;
-    const char *business_name, *business_address, *contact_name, *contact_phone, *customer_name, *customer_address,
-        *customer_contact_name, *customer_contact_phone;
+    const char *business_name, *business_address, *contact_name, *contact_phone, *op_tech_name, *customer_name,
+        *customer_address, *customer_contact_name, *customer_contact_phone;
 
     /* ------------------ */
     /* Initialise Various */
@@ -758,6 +758,15 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_add_text( pdf, NULL, "Name/ID:", 12, 60, 80, PDF_GRAY );
     pdf_add_text( pdf, NULL, "Signature:", 12, 300, 100, PDF_BLUE );
     pdf_add_line( pdf, NULL, 360, 65, 550, 66, 1, PDF_GRAY );
+
+    pdf_set_font( pdf, "Helvetica-Bold" );
+    /* Obtain organisational details from nwipe.conf - See conf.c */
+    setting = config_lookup( &nwipe_cfg, "Organisation_Details" );
+    if( config_setting_lookup_string( setting, "Op_Tech_Name", &op_tech_name ) )
+    {
+        pdf_add_text( pdf, NULL, op_tech_name, text_size_data, 120, 80, PDF_BLACK );
+    }
+    pdf_set_font( pdf, "Helvetica" );
 
     /***************************************************************
      * Create Page 2 of the report. This shows the drives smart data

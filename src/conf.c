@@ -85,7 +85,7 @@ int nwipe_conf_init()
 
             /* Populate with some basic structure */
 
-            /* Add some settings to the configuration. */
+            /* Add information about the business performing the erasure  */
             group_organisation = config_setting_add( root, "Organisation_Details", CONFIG_TYPE_GROUP );
 
             setting = config_setting_add( group_organisation, "Business_Name", CONFIG_TYPE_STRING );
@@ -99,6 +99,13 @@ int nwipe_conf_init()
 
             setting = config_setting_add( group_organisation, "Contact_Phone", CONFIG_TYPE_STRING );
             config_setting_set_string( setting, "Not Applicable (BCP)" );
+
+            setting = config_setting_add( group_organisation, "Op_Tech_Name", CONFIG_TYPE_STRING );
+            config_setting_set_string( setting, "Not Applicable (OTN)" );
+
+            /**
+             * The currently selected customer that will be printed on the report
+             */
 
             group_selected_customer = config_setting_add( root, "Selected_Customer", CONFIG_TYPE_GROUP );
 
