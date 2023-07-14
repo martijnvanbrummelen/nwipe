@@ -128,7 +128,7 @@ const char* stats_title = " Statistics ";
 
 /* Footer labels. */
 const char* main_window_footer =
-    "S=Start m=Method p=PRNG v=Verify r=Rounds b=Blanking Space=Select c=config CTRL+C=Quit";
+    "S=Start m=Method p=PRNG v=Verify r=Rounds b=Blanking Space=Select c=Config CTRL+C=Quit";
 const char* main_window_footer_warning_lower_case_s = "  WARNING: To start the wipe press SHIFT+S (uppercase S)  ";
 
 const char* main_window_footer_warning_no_blanking_with_ops2 =
@@ -2602,6 +2602,7 @@ void nwipe_gui_config( void )
 
             case KEY_BACKSPACE:
             case KEY_BREAK:
+            case 27: /* ESC */
 
                 return;
 
@@ -2636,13 +2637,13 @@ void nwipe_gui_edit_organisation( void )
     extern int terminate_signal;
 
     /* Number of entries in the configuration menu. */
-    const int count = 4;
+    const int count = 5;
 
     /* The first tabstop. */
     const int tab1 = 2;
 
     /* The second tabstop. */
-    const int tab2 = 40;
+    const int tab2 = 27;
 
     /* The currently selected method. */
     int focus = 0;
@@ -2655,7 +2656,7 @@ void nwipe_gui_edit_organisation( void )
 
     /* variables used by libconfig for extracting data from nwipe.conf */
     config_setting_t* setting;
-    const char *business_name, *business_address, *contact_name, *contact_phone;
+    const char *business_name, *business_address, *contact_name, *contact_phone, *op_tech_name;
     extern config_t nwipe_cfg;
 
     /* Update the footer window. */
@@ -2665,137 +2666,168 @@ void nwipe_gui_edit_organisation( void )
 
     do
     {
-        /* Clear the main window. */
-        werase( main_window );
-
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
-
-        /* Initialize the working row. */
-        yy = 2;
-
-        /* Print the options. */
-        mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Edit Business Name" );
-        mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Edit Business Address" );
-        mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Edit Contact Name" );
-        mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Edit Contact Phone" );
-        mvwprintw( main_window, yy++, tab1, "                                      " );
-
-        /* Print the cursor. */
-        mvwaddch( main_window, 2 + focus, tab1, ACS_RARROW );
-
-        /* libconfig: Locate the Organisation Details section in nwipe.conf */
-        setting = config_lookup( &nwipe_cfg, "Organisation_Details" );
-
-        /* Retrieve data from nwipe.conf */
-        if( config_setting_lookup_string( setting, "Business_Name", &business_name ) )
+        do
         {
-            mvwprintw( main_window, 2, tab2, ": %s", business_name );
+            /* Clear the main window. */
+            werase( main_window );
+
+            nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+
+            /* Initialize the working row. */
+            yy = 2;
+
+            /* Print the options. */
+            mvwprintw( main_window, yy++, tab1, "  %s", "Edit Business Name" );
+            mvwprintw( main_window, yy++, tab1, "  %s", "Edit Business Address" );
+            mvwprintw( main_window, yy++, tab1, "  %s", "Edit Contact Name" );
+            mvwprintw( main_window, yy++, tab1, "  %s", "Edit Contact Phone" );
+            mvwprintw( main_window, yy++, tab1, "  %s", "Edit Tech/Operator" );
+            mvwprintw( main_window, yy++, tab1, "                             " );
+
+            /* Print the cursor. */
+            mvwaddch( main_window, 2 + focus, tab1, ACS_RARROW );
+
+            /* libconfig: Locate the Organisation Details section in nwipe.conf */
+            setting = config_lookup( &nwipe_cfg, "Organisation_Details" );
+
+            /* Retrieve data from nwipe.conf */
+            if( config_setting_lookup_string( setting, "Business_Name", &business_name ) )
+            {
+                mvwprintw( main_window, 2, tab2, ": %s", business_name );
+            }
+            else
+            {
+                mvwprintw( main_window, 2, tab2, ": Cannot retrieve business_name, nwipe.conf" );
+            }
+
+            /* Retrieve data from nwipe.conf */
+            if( config_setting_lookup_string( setting, "Business_Address", &business_address ) )
+            {
+                mvwprintw( main_window, 3, tab2, ": %s", business_address );
+            }
+            else
+            {
+                mvwprintw( main_window, 3, tab2, ": Cannot retrieve business address, nwipe.conf" );
+            }
+
+            /* Retrieve data from nwipe.conf */
+            if( config_setting_lookup_string( setting, "Contact_Name", &contact_name ) )
+            {
+                mvwprintw( main_window, 4, tab2, ": %s", contact_name );
+            }
+            else
+            {
+                mvwprintw( main_window, 4, tab2, ": Cannot retrieve contact name, nwipe.conf" );
+            }
+
+            /* Retrieve data from nwipe.conf */
+            if( config_setting_lookup_string( setting, "Contact_Phone", &contact_phone ) )
+            {
+                mvwprintw( main_window, 5, tab2, ": %s", contact_phone );
+            }
+            else
+            {
+                mvwprintw( main_window, 5, tab2, ": Cannot retrieve contact phone, nwipe.conf" );
+            }
+
+            /* Retrieve data from nwipe.conf */
+            if( config_setting_lookup_string( setting, "Op_Tech_Name", &op_tech_name ) )
+            {
+                mvwprintw( main_window, 6, tab2, ": %s", op_tech_name );
+            }
+            else
+            {
+                mvwprintw( main_window, 6, tab2, ": Cannot retrieve op_tech_name, nwipe.conf" );
+            }
+
+            /* Add a border. */
+            box( main_window, 0, 0 );
+
+            /* Add a title. */
+            nwipe_gui_title( main_window, " PDF Report - Edit Organisation " );
+
+            /* Refresh the window. */
+            wrefresh( main_window );
+
+            /* Wait 250ms for input from getch, if nothing getch will then continue,
+             * This is necessary so that the while loop can be exited by the
+             * terminate_signal e.g.. the user pressing control-c to exit.
+             * Do not change this value, a higher value means the keys become
+             * sluggish, any slower and more time is spent unnecessarily looping
+             * which wastes CPU cycles.
+             */
+            timeout( 250 ); /* block getch() for 250ms */
+            keystroke = getch(); /* Get a keystroke. */
+            timeout( -1 ); /* Switch back to blocking mode */
+
+            switch( keystroke )
+            {
+                case KEY_DOWN:
+                case 'j':
+                case 'J':
+
+                    if( focus < count - 1 )
+                    {
+                        focus += 1;
+                    }
+                    break;
+
+                case KEY_UP:
+                case 'k':
+                case 'K':
+
+                    if( focus > 0 )
+                    {
+                        focus -= 1;
+                    }
+                    break;
+
+                case KEY_BACKSPACE:
+                case KEY_BREAK:
+                case 27: /* ESC */
+
+                    return;
+
+            } /* switch */
+
+        } while( keystroke != KEY_ENTER && keystroke != ' ' && keystroke != 10 && terminate_signal != 1 );
+
+        if( keystroke == KEY_ENTER || keystroke == 10 )
+        {
+            switch( focus )
+            {
+                case 0:
+                    nwipe_gui_organisation_business_name( business_name );
+                    keystroke = 0;
+                    break;
+
+                case 1:
+                    nwipe_gui_organisation_business_address( business_address );
+                    keystroke = 0;
+                    break;
+
+                case 2:
+                    nwipe_gui_organisation_contact_name( contact_name );
+                    keystroke = 0;
+                    break;
+
+                case 3:
+                    nwipe_gui_organisation_contact_phone( contact_phone );
+                    keystroke = 0;
+                    break;
+
+                case 4:
+                    nwipe_gui_organisation_op_tech_name( op_tech_name );
+                    keystroke = 0;
+                    break;
+            }
         }
-        else
-        {
-            mvwprintw( main_window, 2, tab2, ": [Error] Cannot retrieve from nwipe.conf" );
-        }
-
-        /* Retrieve data from nwipe.conf */
-        if( config_setting_lookup_string( setting, "Business_Address", &business_address ) )
-        {
-            mvwprintw( main_window, 3, tab2, ": %s", business_address );
-        }
-        else
-        {
-            mvwprintw( main_window, 3, tab2, ": [Error] Cannot retrieve from nwipe.conf" );
-        }
-
-        /* Retrieve data from nwipe.conf */
-        if( config_setting_lookup_string( setting, "Contact_Name", &contact_name ) )
-        {
-            mvwprintw( main_window, 4, tab2, ": %s", contact_name );
-        }
-        else
-        {
-            mvwprintw( main_window, 4, tab2, ": [Error] Cannot retrieve from nwipe.conf" );
-        }
-
-        /* Retrieve data from nwipe.conf */
-        if( config_setting_lookup_string( setting, "Contact_Phone", &contact_phone ) )
-        {
-            mvwprintw( main_window, 5, tab2, ": %s", contact_phone );
-        }
-        else
-        {
-            mvwprintw( main_window, 5, tab2, ": [Error] Cannot retrieve from nwipe.conf" );
-        }
-
-        /* Add a border. */
-        box( main_window, 0, 0 );
-
-        /* Add a title. */
-        nwipe_gui_title( main_window, " PDF Report - Edit Organisation " );
-
-        /* Refresh the window. */
-        wrefresh( main_window );
-
-        /* Wait 250ms for input from getch, if nothing getch will then continue,
-         * This is necessary so that the while loop can be exited by the
-         * terminate_signal e.g.. the user pressing control-c to exit.
-         * Do not change this value, a higher value means the keys become
-         * sluggish, any slower and more time is spent unnecessarily looping
-         * which wastes CPU cycles.
-         */
-        timeout( 250 ); /* block getch() for 250ms */
-        keystroke = getch(); /* Get a keystroke. */
-        timeout( -1 ); /* Switch back to blocking mode */
-
-        switch( keystroke )
-        {
-            case KEY_DOWN:
-            case 'j':
-            case 'J':
-
-                if( focus < count - 1 )
-                {
-                    focus += 1;
-                }
-                break;
-
-            case KEY_UP:
-            case 'k':
-            case 'K':
-
-                if( focus > 0 )
-                {
-                    focus -= 1;
-                }
-                break;
-
-            case KEY_BACKSPACE:
-            case KEY_BREAK:
-
-                return;
-
-        } /* switch */
 
     } while( keystroke != KEY_ENTER && keystroke != ' ' && keystroke != 10 && terminate_signal != 1 );
 
-    switch( focus )
-    {
-        case 0:
-            nwipe_gui_organisation_business_name();
-            // nwipe_options.method = &nwipe_zero;
-            break;
-
-        case 1:
-            nwipe_options.method = &nwipe_one;
-            break;
-
-        case 2:
-            nwipe_options.method = &nwipe_ops2;
-            break;
-    }
-
 } /* end of nwipe_gui_edit_organisation( void ) */
 
-void nwipe_gui_organisation_business_name( void )
+void nwipe_gui_organisation_business_name( const char* business_name )
 {
     /**
      * Allows the user to change the organisation business name as displayed on the PDF report.
@@ -2824,7 +2856,7 @@ void nwipe_gui_organisation_business_name( void )
 
     /* variables used by libconfig for inserting data into nwipe.conf */
     config_setting_t* setting;
-    const char* business_name;
+    // const char* business_name;
     extern config_t nwipe_cfg;
     extern char nwipe_config_file[];
 
@@ -2832,6 +2864,12 @@ void nwipe_gui_organisation_business_name( void )
     werase( footer_window );
     nwipe_gui_title( footer_window, rounds_footer );
     wrefresh( footer_window );
+
+    /* Copy the current business name to the buffer */
+    strcpy( buffer, business_name );
+
+    /* Set the buffer index to point to the end of the string, i.e the NULL */
+    idx = strlen( buffer );
 
     do
     {
@@ -2928,6 +2966,567 @@ void nwipe_gui_organisation_business_name( void )
     }
 
 } /* End of nwipe_gui_organisation_business_name() */
+
+void nwipe_gui_organisation_business_address( const char* business_address )
+{
+    /**
+     * Allows the user to change the organisation business address as displayed on the PDF report.
+     *
+     * @modifies  business_address in nwipe.conf
+     * @modifies  main_window
+     *
+     */
+
+    /* The first tabstop. */
+    const int tab1 = 2;
+
+    /* The current working row. */
+    int yy;
+
+    /* Input buffer. */
+    int keystroke;
+
+    /* buffer */
+    char buffer[256] = "";
+
+    /* buffer index */
+    int idx = 0;
+
+    extern int terminate_signal;
+
+    /* variables used by libconfig for inserting data into nwipe.conf */
+    config_setting_t* setting;
+    // const char* business_name;
+    extern config_t nwipe_cfg;
+    extern char nwipe_config_file[];
+
+    /* Update the footer window. */
+    werase( footer_window );
+    nwipe_gui_title( footer_window, rounds_footer );
+    wrefresh( footer_window );
+
+    /* Copy the current business address to the buffer */
+    strcpy( buffer, business_address );
+
+    /* Set the buffer index to point to the end of the string, i.e the NULL */
+    idx = strlen( buffer );
+
+    do
+    {
+        /* Erase the main window. */
+        werase( main_window );
+
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+
+        /* Add a border. */
+        box( main_window, 0, 0 );
+
+        /* Add a title. */
+        nwipe_gui_title( main_window, " Edit Organisation Business Address " );
+
+        /* Initialize the working row. */
+        yy = 4;
+
+        mvwprintw( main_window, yy++, tab1, "Enter the business address of the organisation performing the erasure" );
+
+        /* Print this line last so that the cursor is in the right place. */
+        mvwprintw( main_window, 2, tab1, ">%s", buffer );
+
+        /* Reveal the cursor. */
+        curs_set( 1 );
+
+        /* Refresh the window. */
+        wrefresh( main_window );
+
+        /* Wait 250ms for input from getch, if nothing getch will then continue,
+         * This is necessary so that the while loop can be exited by the
+         * terminate_signal e.g.. the user pressing control-c to exit.
+         * Do not change this value, a higher value means the keys become
+         * sluggish, any slower and more time is spent unnecessarily looping
+         * which wastes CPU cycles.
+         */
+        timeout( 250 );  // block getch() for 250ms.
+        keystroke = getch();  // Get a keystroke.
+        timeout( -1 );  // Switch back to blocking mode.
+
+        switch( keystroke )
+        {
+            /* Escape key. */
+            case 27:
+                return;
+
+            case KEY_BACKSPACE:
+            case KEY_LEFT:
+            case 127:
+
+                if( idx > 0 )
+                {
+                    buffer[--idx] = 0;
+                }
+
+                break;
+
+        } /* switch keystroke */
+
+        if( ( keystroke >= ' ' && keystroke <= '~' ) && keystroke != '\"' && idx < 255 )
+        {
+            buffer[idx++] = keystroke;
+            buffer[idx] = 0;
+            mvwprintw( main_window, 2, tab1, ">%s", buffer );
+        }
+
+        /* Hide the cursor. */
+        curs_set( 0 );
+
+    } while( keystroke != 10 && terminate_signal != 1 );
+
+    /* libconfig: Locate the Organisation Details section in nwipe.conf */
+    if( !( setting = config_lookup( &nwipe_cfg, "Organisation_Details.Business_Address" ) ) )
+    {
+        nwipe_log(
+            NWIPE_LOG_ERROR, "Failed to locate [Organisation_Details.Business_Address] in %s", nwipe_config_file );
+    }
+
+    /* libconfig: Write the new business name */
+    if( config_setting_set_string( setting, buffer ) == CONFIG_FALSE )
+    {
+        nwipe_log( NWIPE_LOG_ERROR,
+                   "Failed to write [%s] to [Organisation_Details.Business_Address] in %s",
+                   buffer,
+                   nwipe_config_file );
+    }
+
+    /* Write out the new configuration. */
+    if( config_write_file( &nwipe_cfg, nwipe_config_file ) == CONFIG_FALSE )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to write organisation business address to %s", nwipe_config_file );
+    }
+    else
+    {
+        nwipe_log( NWIPE_LOG_INFO, "[Success] Business address written to %s", nwipe_config_file );
+    }
+
+} /* End of nwipe_gui_organisation_business_address() */
+
+void nwipe_gui_organisation_contact_name( const char* contact_name )
+{
+    /**
+     * Allows the user to change the organisation business address as displayed on the PDF report.
+     *
+     * @modifies  business_address in nwipe.conf
+     * @modifies  main_window
+     *
+     */
+
+    /* The first tabstop. */
+    const int tab1 = 2;
+
+    /* The current working row. */
+    int yy;
+
+    /* Input buffer. */
+    int keystroke;
+
+    /* buffer */
+    char buffer[256] = "";
+
+    /* buffer index */
+    int idx = 0;
+
+    extern int terminate_signal;
+
+    /* variables used by libconfig for inserting data into nwipe.conf */
+    config_setting_t* setting;
+    // const char* business_name;
+    extern config_t nwipe_cfg;
+    extern char nwipe_config_file[];
+
+    /* Update the footer window. */
+    werase( footer_window );
+    nwipe_gui_title( footer_window, rounds_footer );
+    wrefresh( footer_window );
+
+    /* Copy the current business address to the buffer */
+    strcpy( buffer, contact_name );
+
+    /* Set the buffer index to point to the end of the string, i.e the NULL */
+    idx = strlen( buffer );
+
+    do
+    {
+        /* Erase the main window. */
+        werase( main_window );
+
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+
+        /* Add a border. */
+        box( main_window, 0, 0 );
+
+        /* Add a title. */
+        nwipe_gui_title( main_window, " Edit Organisation Contact Name " );
+
+        /* Initialize the working row. */
+        yy = 4;
+
+        mvwprintw( main_window, yy++, tab1, "Enter the contact name for the organisation performing the erasure" );
+
+        /* Print this line last so that the cursor is in the right place. */
+        mvwprintw( main_window, 2, tab1, ">%s", buffer );
+
+        /* Reveal the cursor. */
+        curs_set( 1 );
+
+        /* Refresh the window. */
+        wrefresh( main_window );
+
+        /* Wait 250ms for input from getch, if nothing getch will then continue,
+         * This is necessary so that the while loop can be exited by the
+         * terminate_signal e.g.. the user pressing control-c to exit.
+         * Do not change this value, a higher value means the keys become
+         * sluggish, any slower and more time is spent unnecessarily looping
+         * which wastes CPU cycles.
+         */
+        timeout( 250 );  // block getch() for 250ms.
+        keystroke = getch();  // Get a keystroke.
+        timeout( -1 );  // Switch back to blocking mode.
+
+        switch( keystroke )
+        {
+            /* Escape key. */
+            case 27:
+                return;
+
+            case KEY_BACKSPACE:
+            case KEY_LEFT:
+            case 127:
+
+                if( idx > 0 )
+                {
+                    buffer[--idx] = 0;
+                }
+
+                break;
+
+        } /* switch keystroke */
+
+        if( ( keystroke >= ' ' && keystroke <= '~' ) && keystroke != '\"' && idx < 255 )
+        {
+            buffer[idx++] = keystroke;
+            buffer[idx] = 0;
+            mvwprintw( main_window, 2, tab1, ">%s", buffer );
+        }
+
+        /* Hide the cursor. */
+        curs_set( 0 );
+
+    } while( keystroke != 10 && terminate_signal != 1 );
+
+    /* libconfig: Locate the Organisation Details section in nwipe.conf */
+    if( !( setting = config_lookup( &nwipe_cfg, "Organisation_Details.Contact_Name" ) ) )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to locate [Organisation_Details.Contact_Name] in %s", nwipe_config_file );
+    }
+
+    /* libconfig: Write the new organisation contact name */
+    if( config_setting_set_string( setting, buffer ) == CONFIG_FALSE )
+    {
+        nwipe_log( NWIPE_LOG_ERROR,
+                   "Failed to write [%s] to [Organisation_Details.Contact_Name] in %s",
+                   buffer,
+                   nwipe_config_file );
+    }
+
+    /* Write out the new configuration. */
+    if( config_write_file( &nwipe_cfg, nwipe_config_file ) == CONFIG_FALSE )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to write organisation contact name to %s", nwipe_config_file );
+    }
+    else
+    {
+        nwipe_log( NWIPE_LOG_INFO, "[Success] Business contact name written to %s", nwipe_config_file );
+    }
+
+} /* End of nwipe_gui_organisation_contact_name() */
+
+void nwipe_gui_organisation_contact_phone( const char* contact_phone )
+{
+    /**
+     * Allows the user to change the organisation contact name as displayed on the PDF report.
+     *
+     * @modifies  organisation contact name in nwipe.conf
+     * @modifies  main_window
+     *
+     */
+
+    /* The first tabstop. */
+    const int tab1 = 2;
+
+    /* The current working row. */
+    int yy;
+
+    /* Input buffer. */
+    int keystroke;
+
+    /* buffer */
+    char buffer[256] = "";
+
+    /* buffer index */
+    int idx = 0;
+
+    extern int terminate_signal;
+
+    /* variables used by libconfig for inserting data into nwipe.conf */
+    config_setting_t* setting;
+    // const char* contact_name;
+    extern config_t nwipe_cfg;
+    extern char nwipe_config_file[];
+
+    /* Update the footer window. */
+    werase( footer_window );
+    nwipe_gui_title( footer_window, rounds_footer );
+    wrefresh( footer_window );
+
+    /* Copy the current business address to the buffer */
+    strcpy( buffer, contact_phone );
+
+    /* Set the buffer index to point to the end of the string, i.e the NULL */
+    idx = strlen( buffer );
+
+    do
+    {
+        /* Erase the main window. */
+        werase( main_window );
+
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+
+        /* Add a border. */
+        box( main_window, 0, 0 );
+
+        /* Add a title. */
+        nwipe_gui_title( main_window, " Edit Organisation Contact Phone " );
+
+        /* Initialize the working row. */
+        yy = 4;
+
+        mvwprintw( main_window, yy++, tab1, "Enter the contact phone for the organisation performing the erasure" );
+
+        /* Print this line last so that the cursor is in the right place. */
+        mvwprintw( main_window, 2, tab1, ">%s", buffer );
+
+        /* Reveal the cursor. */
+        curs_set( 1 );
+
+        /* Refresh the window. */
+        wrefresh( main_window );
+
+        /* Wait 250ms for input from getch, if nothing getch will then continue,
+         * This is necessary so that the while loop can be exited by the
+         * terminate_signal e.g.. the user pressing control-c to exit.
+         * Do not change this value, a higher value means the keys become
+         * sluggish, any slower and more time is spent unnecessarily looping
+         * which wastes CPU cycles.
+         */
+        timeout( 250 );  // block getch() for 250ms.
+        keystroke = getch();  // Get a keystroke.
+        timeout( -1 );  // Switch back to blocking mode.
+
+        switch( keystroke )
+        {
+            /* Escape key. */
+            case 27:
+                return;
+
+            case KEY_BACKSPACE:
+            case KEY_LEFT:
+            case 127:
+
+                if( idx > 0 )
+                {
+                    buffer[--idx] = 0;
+                }
+
+                break;
+
+        } /* switch keystroke */
+
+        if( ( keystroke >= ' ' && keystroke <= '~' ) && keystroke != '\"' && idx < 255 )
+        {
+            buffer[idx++] = keystroke;
+            buffer[idx] = 0;
+            mvwprintw( main_window, 2, tab1, ">%s", buffer );
+        }
+
+        /* Hide the cursor. */
+        curs_set( 0 );
+
+    } while( keystroke != 10 && terminate_signal != 1 );
+
+    /* libconfig: Locate the Organisation Details section in nwipe.conf */
+    if( !( setting = config_lookup( &nwipe_cfg, "Organisation_Details.Contact_Phone" ) ) )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to locate [Organisation_Details.Contact_Phone] in %s", nwipe_config_file );
+    }
+
+    /* libconfig: Write the organistion contact phone */
+    if( config_setting_set_string( setting, buffer ) == CONFIG_FALSE )
+    {
+        nwipe_log( NWIPE_LOG_ERROR,
+                   "Failed to write [%s] to [Organisation_Details.Contact_Phone] in %s",
+                   buffer,
+                   nwipe_config_file );
+    }
+
+    /* Write out the new configuration. */
+    if( config_write_file( &nwipe_cfg, nwipe_config_file ) == CONFIG_FALSE )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to write organisation contact phone to %s", nwipe_config_file );
+    }
+    else
+    {
+        nwipe_log( NWIPE_LOG_INFO, "[Success] Business contact phone written to %s", nwipe_config_file );
+    }
+
+} /* End of nwipe_gui_organisation_contact_phone() */
+
+void nwipe_gui_organisation_op_tech_name( const char* op_tech_name )
+{
+    /**
+     * Allows the user to change the organisation contact name as displayed on the PDF report.
+     *
+     * @modifies  organisation contact name in nwipe.conf
+     * @modifies  main_window
+     *
+     */
+
+    /* The first tabstop. */
+    const int tab1 = 2;
+
+    /* The current working row. */
+    int yy;
+
+    /* Input buffer. */
+    int keystroke;
+
+    /* buffer */
+    char buffer[256] = "";
+
+    /* buffer index */
+    int idx = 0;
+
+    extern int terminate_signal;
+
+    /* variables used by libconfig for inserting data into nwipe.conf */
+    config_setting_t* setting;
+    // const char* contact_name;
+    extern config_t nwipe_cfg;
+    extern char nwipe_config_file[];
+
+    /* Update the footer window. */
+    werase( footer_window );
+    nwipe_gui_title( footer_window, rounds_footer );
+    wrefresh( footer_window );
+
+    /* Copy the current op_tech_name to the buffer */
+    strcpy( buffer, op_tech_name );
+
+    /* Set the buffer index to point to the end of the string, i.e the NULL */
+    idx = strlen( buffer );
+
+    do
+    {
+        /* Erase the main window. */
+        werase( main_window );
+
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+
+        /* Add a border. */
+        box( main_window, 0, 0 );
+
+        /* Add a title. */
+        nwipe_gui_title( main_window, " Edit Operator/Technician Name " );
+
+        /* Initialize the working row. */
+        yy = 4;
+
+        mvwprintw( main_window, yy++, tab1, "Enter the operator/technician's name that is performing the erasure" );
+
+        /* Print this line last so that the cursor is in the right place. */
+        mvwprintw( main_window, 2, tab1, ">%s", buffer );
+
+        /* Reveal the cursor. */
+        curs_set( 1 );
+
+        /* Refresh the window. */
+        wrefresh( main_window );
+
+        /* Wait 250ms for input from getch, if nothing getch will then continue,
+         * This is necessary so that the while loop can be exited by the
+         * terminate_signal e.g.. the user pressing control-c to exit.
+         * Do not change this value, a higher value means the keys become
+         * sluggish, any slower and more time is spent unnecessarily looping
+         * which wastes CPU cycles.
+         */
+        timeout( 250 );  // block getch() for 250ms.
+        keystroke = getch();  // Get a keystroke.
+        timeout( -1 );  // Switch back to blocking mode.
+
+        switch( keystroke )
+        {
+            /* Escape key. */
+            case 27:
+                return;
+
+            case KEY_BACKSPACE:
+            case KEY_LEFT:
+            case 127:
+
+                if( idx > 0 )
+                {
+                    buffer[--idx] = 0;
+                }
+
+                break;
+
+        } /* switch keystroke */
+
+        if( ( keystroke >= ' ' && keystroke <= '~' ) && keystroke != '\"' && idx < 255 )
+        {
+            buffer[idx++] = keystroke;
+            buffer[idx] = 0;
+            mvwprintw( main_window, 2, tab1, ">%s", buffer );
+        }
+
+        /* Hide the cursor. */
+        curs_set( 0 );
+
+    } while( keystroke != 10 && terminate_signal != 1 );
+
+    /* libconfig: Locate the Organisation Details section in nwipe.conf */
+    if( !( setting = config_lookup( &nwipe_cfg, "Organisation_Details.Op_Tech_Name" ) ) )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to locate [Organisation_Details.Op_Tech_Name] in %s", nwipe_config_file );
+    }
+
+    /* libconfig: Write the organistion operator/technician name */
+    if( config_setting_set_string( setting, buffer ) == CONFIG_FALSE )
+    {
+        nwipe_log( NWIPE_LOG_ERROR,
+                   "Failed to write [%s] to [Organisation_Details.Op_Tech_Name] in %s",
+                   buffer,
+                   nwipe_config_file );
+    }
+
+    /* Write out the new configuration. */
+    if( config_write_file( &nwipe_cfg, nwipe_config_file ) == CONFIG_FALSE )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to write organisation operator/technician to %s", nwipe_config_file );
+    }
+    else
+    {
+        nwipe_log( NWIPE_LOG_INFO, "[Success] operator/technician name written to %s", nwipe_config_file );
+    }
+
+} /* End of nwipe_gui_organisation_op_tech_name() */
 
 void nwipe_gui_load( void )
 {
