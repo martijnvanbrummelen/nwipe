@@ -60,6 +60,7 @@ void nwipe_gui_organisation_business_address( const char* );  // Edit business a
 void nwipe_gui_organisation_contact_name( const char* );  // Edit business contact name
 void nwipe_gui_organisation_contact_phone( const char* );  // Edit business contact phone
 void nwipe_gui_organisation_op_tech_name( const char* );  // Edit the name of the operator/technician
+void nwipe_gui_list( int count, char* window_title, char**, int* selected_entry );
 int spinner( nwipe_context_t** ptr, int );  // Return the next spinner character
 void temp1_flash( nwipe_context_t* );  // toggles term1_flash_status, which flashes the temperature
 

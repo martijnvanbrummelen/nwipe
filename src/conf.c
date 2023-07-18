@@ -112,11 +112,11 @@ int nwipe_conf_init()
             setting = config_setting_add( group_selected_customer, "Customer_Name", CONFIG_TYPE_STRING );
             config_setting_set_string( setting, "Not Applicable (CN)" );
 
-            setting = config_setting_add( group_selected_customer, "Contact_Name", CONFIG_TYPE_STRING );
-            config_setting_set_string( setting, "Not Applicable (CN)" );
-
             setting = config_setting_add( group_selected_customer, "Customer_Address", CONFIG_TYPE_STRING );
             config_setting_set_string( setting, "Not Applicable (CA)" );
+
+            setting = config_setting_add( group_selected_customer, "Contact_Name", CONFIG_TYPE_STRING );
+            config_setting_set_string( setting, "Not Applicable (CN)" );
 
             setting = config_setting_add( group_selected_customer, "Contact_Phone", CONFIG_TYPE_STRING );
             config_setting_set_string( setting, "Not Applicable (CP)" );
