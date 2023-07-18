@@ -46,6 +46,7 @@
 #include "temperature.h"
 #include "miscellaneous.h"
 #include "hpa_dco.h"
+#include "customers.h"
 
 #define NWIPE_GUI_PANE 8
 
@@ -2472,7 +2473,7 @@ void nwipe_gui_config( void )
     extern int terminate_signal;
 
     /* Number of entries in the configuration menu. */
-    const int count = 3;
+    const int count = 4;
 
     /* The first tabstop. */
     const int tab1 = 2;
@@ -2506,6 +2507,7 @@ void nwipe_gui_config( void )
 
         /* Print the options. */
         mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Edit Organisation" );
+        mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Select Customer  " );
         mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Add Customer     " );
         mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Delete Customer  " );
         mvwprintw( main_window, yy++, tab1, "                                      " );
@@ -2527,6 +2529,19 @@ void nwipe_gui_config( void )
                 break;
 
             case 1:
+                mvwprintw( main_window, 2, tab2, "PDF Report - Select Customer" );
+
+                mvwprintw( main_window, 4, tab2, "Allows selection of a customer as     " );
+                mvwprintw( main_window, 5, tab2, "displayed on the PDF report. Customer " );
+                mvwprintw( main_window, 6, tab2, "information includes Name (This can be" );
+                mvwprintw( main_window, 7, tab2, "a personal or business name), address " );
+                mvwprintw( main_window, 8, tab2, "contact name and contact phone.       " );
+                mvwprintw( main_window, 9, tab2, "                                      " );
+                mvwprintw( main_window, 10, tab2, "Customer data is located in:         " );
+                mvwprintw( main_window, 11, tab2, "/etc/nwipe/nwipe_customers.csv       " );
+                break;
+
+            case 2:
 
                 mvwprintw( main_window, 2, tab2, "PDF Report - Add Customer     " );
 
@@ -2541,7 +2556,7 @@ void nwipe_gui_config( void )
                 mvwprintw( main_window, 12, tab2, "/etc/nwipe/nwipe_customers.csv        " );
                 break;
 
-            case 2:
+            case 3:
 
                 mvwprintw( main_window, 2, tab2, "PDF Report - Delete Customer  " );
 
@@ -2617,11 +2632,16 @@ void nwipe_gui_config( void )
             break;
 
         case 1:
-            // nwipe_options.method = &nwipe_one;
+            customer_processes( SELECT_CUSTOMER );
+            // select_customers();
             break;
 
         case 2:
-            // nwipe_options.method = &nwipe_ops2;
+            add_customer();
+            break;
+
+        case 3:
+            customer_processes( DELETE_CUSTOMER );
             break;
     }
 
@@ -2792,7 +2812,7 @@ void nwipe_gui_edit_organisation( void )
 
         } while( keystroke != KEY_ENTER && keystroke != ' ' && keystroke != 10 && terminate_signal != 1 );
 
-        if( keystroke == KEY_ENTER || keystroke == 10 )
+        if( keystroke == KEY_ENTER || keystroke == 10 || keystroke == ' ' )
         {
             switch( focus )
             {
@@ -3527,6 +3547,350 @@ void nwipe_gui_organisation_op_tech_name( const char* op_tech_name )
     }
 
 } /* End of nwipe_gui_organisation_op_tech_name() */
+
+void nwipe_gui_list( int count, char* window_title, char** list, int* selected_entry )
+{
+    /**
+     * Displays a selectable list in a window, return 1 -n in selected entry.
+     * If selected entry = 0, then user cancelled selection.
+     */
+
+    extern int terminate_signal;
+
+    /* The number of lines available in the window. */
+    int wlines;
+
+    /* The number of columns available in the window. */
+    int wcols;
+
+    /* The number of selection elements that we can show in the window. */
+    int slots;
+
+    /* The index of the element that is visible in the first slot. */
+    int offset = 0;
+
+    /* The selection focus. */
+    int focus = 0;
+
+    /* A generic loop variable. */
+    int i = 0;
+
+    /* User input buffer. */
+    int keystroke;
+
+    /* The current working line. */
+    int yy;
+
+    /* Flag, Valid key hit = 1, anything else = 0 */
+    int validkeyhit;
+
+    /* Get the terminal size */
+    getmaxyx( stdscr, stdscr_lines, stdscr_cols );
+
+    /* Save the terminal size so we check whether the user has resized */
+    stdscr_lines_previous = stdscr_lines;
+    stdscr_cols_previous = stdscr_cols;
+
+    /* Used to refresh the window every second */
+    time_t check_time = time( NULL );
+
+    /* Used in the selection loop to trap a failure of the timeout(), getch() mechanism to block for the designated
+     * period */
+    int iteration_counter;
+
+    /* Used in the selection loop to trap a failure of the timeout(), getch() mechanism to block for the designated
+     * period */
+    int expected_iterations;
+
+    time_t previous_iteration_timestamp;
+
+    do
+    {
+
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, main_window_footer );
+
+        /* There is one slot per line. */
+        getmaxyx( main_window, wlines, wcols );
+
+        /* Less two lines for the box and two lines for padding. */
+        slots = wlines - 4;
+        if( slots < 0 )
+        {
+            slots = 0;
+        }
+
+        /* The code here adjusts the offset value, required when the terminal is resized vertically */
+        if( slots > count )
+        {
+            offset = 0;
+        }
+        else
+        {
+            if( focus >= count )
+            {
+                /* The focus is already at the last element. */
+                focus = count - 1;
+            }
+            if( focus < 0 )
+            {
+                /* The focus is already at the last element. */
+                focus = 0;
+            }
+        }
+
+        if( count >= slots && slots > 0 )
+        {
+            offset = focus + 1 - slots;
+            if( offset < 0 )
+            {
+                offset = 0;
+            }
+        }
+
+        /* Clear the main window, necessary when switching selections such as method etc */
+        werase( main_window );
+
+        /* Refresh main window */
+        wnoutrefresh( main_window );
+
+        /* Set footer help text */
+        /* Update the footer window. */
+        werase( footer_window );
+        nwipe_gui_title( footer_window, selection_footer );
+        wrefresh( footer_window );
+
+        /* Refresh the stats window */
+        wnoutrefresh( stats_window );
+
+        /* Refresh the options window */
+        wnoutrefresh( options_window );
+
+        /* Update the options window. */
+        nwipe_gui_options();
+
+        /* Initialize the line offset. */
+        yy = 2;
+
+        for( i = 0; i < slots && i < count; i++ )
+        {
+            /* Move to the next line. */
+            mvwprintw( main_window, yy++, 1, " " );
+
+            if( i + offset == focus )
+            {
+                /* Print the 'enabled' cursor. */
+                waddch( main_window, ACS_RARROW );
+            }
+
+            else
+            {
+                /* Print whitespace. */
+                waddch( main_window, ' ' );
+            }
+
+            /* In the event for the offset value somehow becoming invalid, this if statement will prevent a segfault
+             * and the else part will log the out of bounds values for debugging */
+            if( i + offset >= 0 && i + offset < count )
+            {
+                /* print a entry from the list */
+                wprintw( main_window, "%s ", list[i + offset] );
+            }
+            else
+            {
+                nwipe_log( NWIPE_LOG_DEBUG,
+                           "GUI.c,nwipe_gui_select(), scroll, array index out of bounds, i=%u, count=%u, slots=%u, "
+                           "focus=%u, offset=%u",
+                           i,
+                           count,
+                           slots,
+                           focus,
+                           offset );
+            }
+
+        } /* for */
+
+        if( offset > 0 )
+        {
+            mvwprintw( main_window, 1, wcols - 8, " More " );
+            waddch( main_window, ACS_UARROW );
+        }
+
+        if( count - offset > slots )
+        {
+            mvwprintw( main_window, wlines - 2, wcols - 8, " More " );
+            waddch( main_window, ACS_DARROW );
+        }
+
+        /* Draw a border around the menu window. */
+        box( main_window, 0, 0 );
+
+        /* Print a title. */
+        nwipe_gui_title( main_window, window_title );
+
+        /* Refresh the window. */
+        wnoutrefresh( main_window );
+
+        /* Output to physical screen */
+        doupdate();
+
+        /* Initialise the iteration counter */
+        iteration_counter = 0;
+
+        previous_iteration_timestamp = time( NULL );
+
+        /* Calculate Maximum allowed iterations per second */
+        expected_iterations = ( 1000 / GETCH_BLOCK_MS ) * 8;
+
+        do
+        {
+            /* Wait 250ms for input from getch, if nothing getch will then continue,
+             * This is necessary so that the while loop can be exited by the
+             * terminate_signal e.g.. the user pressing control-c to exit.
+             * Do not change this value, a higher value means the keys become
+             * sluggish, any slower and more time is spent unnecessarily looping
+             * which wastes CPU cycles.
+             */
+
+            validkeyhit = 0;
+            timeout( GETCH_BLOCK_MS );  // block getch() for ideally about 250ms.
+            keystroke = getch();  // Get user input.
+            timeout( -1 );  // Switch back to blocking mode.
+
+            /* To avoid 100% CPU usage, check for a runaway condition caused by the "keystroke = getch(); (above), from
+             * immediately returning an error condition. We check for an error condition because getch() returns a ERR
+             * value when the timeout value "timeout( 250 );" expires as well as when a real error occurs. We can't
+             * differentiate from normal operation and a failure of the getch function to block for the specified period
+             * of timeout. So here we check the while loop hasn't exceeded the number of expected iterations per second
+             * ie. a timeout(250) block value of 250ms means we should not see any more than (1000/250) = 4 iterations.
+             * We increase this to 32 iterations to allow a little tolerance. Why is this necessary? It's been found
+             * that in KDE konsole and other terminals based on the QT terminal engine exiting the terminal without
+             * first exiting nwipe results in nwipe remaining running but detached from any interface which causes
+             * getch to fail and its associated timeout. So the CPU or CPU core rises to 100%. Here we detect that
+             * failure and exit nwipe gracefully with the appropriate error. This does not affect use of tmux for
+             * attaching or detaching from a running nwipe session when sitting at the selection screen. All other
+             * terminals correctly terminate nwipe when the terminal itself is exited.
+             */
+
+            iteration_counter++;
+
+            if( previous_iteration_timestamp == time( NULL ) )
+            {
+                if( iteration_counter > expected_iterations )
+                {
+                    nwipe_log( NWIPE_LOG_ERROR,
+                               "GUI.c,nwipe_gui_select(), loop runaway, did you close the terminal without exiting "
+                               "nwipe? Exiting nwipe now." );
+                    /* Issue signal to nwipe to exit immediately but gracefully */
+                    terminate_signal = 1;
+                }
+            }
+            else
+            {
+                /* new second, so reset counter */
+                iteration_counter = 0;
+                previous_iteration_timestamp = time( NULL );
+            }
+
+            /* We don't necessarily use all of these. For future reference these are some CTRL+key values
+             * ^A - 1, ^B - 2, ^D - 4, ^E - 5, ^F - 6, ^G - 7, ^H - 8, ^I - 9, ^K - 11, ^L - 12, ^N - 14,
+             * ^O - 15, ^P - 16, ^R - 18, ^T - 20, ^U - 21, ^V - 22, ^W - 23, ^X - 24, ^Y - 25
+             * Use nwipe_log( NWIPE_LOG_DEBUG, "Key Name: %s - %u", keyname(keystroke),keystroke) to
+             * figure out what code is returned by what ever key combination */
+
+            switch( keystroke )
+            {
+                case KEY_DOWN:
+                case 'j':
+                case 'J':
+
+                    validkeyhit = 1;
+
+                    /* Increment the focus. */
+                    focus += 1;
+
+                    if( focus >= count )
+                    {
+                        /* The focus is already at the last element. */
+                        focus = count - 1;
+                        break;
+                    }
+
+                    if( focus - offset >= slots )
+                    {
+                        /* The next element is offscreen. Scroll down. */
+                        offset += 1;
+                        break;
+                    }
+
+                    break;
+
+                case KEY_UP:
+                case 'k':
+                case 'K':
+
+                    validkeyhit = 1;
+
+                    /* Decrement the focus. */
+                    focus -= 1;
+
+                    if( focus < 0 )
+                    {
+                        /* The focus is already at the last element. */
+                        focus = 0;
+                        break;
+                    }
+
+                    if( focus < offset )
+                    {
+                        /* The next element is offscreen. Scroll up. */
+                        offset -= 1;
+                        break;
+                    }
+
+                    break;
+
+                case KEY_BACKSPACE:
+                case KEY_LEFT:
+                case 127:
+
+                    return;
+                    break;
+
+                case KEY_ENTER:
+                case 10:
+                case ' ':
+
+                    validkeyhit = 1;
+
+                    /* Return the index of the selected item in the list. Values start at 1 not zero */
+                    *selected_entry = focus + 1;
+                    return;
+
+                    break;
+
+            } /* keystroke switch */
+
+            /* Check the terminal size, if the user has changed it the while loop checks for
+             * this change and exits the valid key hit loop so the windows can be updated */
+            getmaxyx( stdscr, stdscr_lines, stdscr_cols );
+
+            /* Update the selection window every 1 second specifically
+             * so that the drive temperatures are updated and also the line toggle that
+             * occurs with the HPA status and the drive size & temperature.
+             */
+            if( time( NULL ) > ( check_time + 1 ) )
+            {
+                check_time = time( NULL );
+                validkeyhit = 1;
+            }
+
+        } /* key hit loop */
+        while( validkeyhit == 0 && terminate_signal != 1 && stdscr_cols_previous == stdscr_cols
+               && stdscr_lines_previous == stdscr_lines );
+
+    } while( terminate_signal != 1 );
+
+} /* nwipe_gui_list */
 
 void nwipe_gui_load( void )
 {
