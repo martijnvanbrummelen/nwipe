@@ -26,6 +26,7 @@
 #include "context.h"
 #include "gui.h"
 #include "logging.h"
+#include "conf.h"
 #include "customers.h"
 #include <sys/stat.h>
 
@@ -87,12 +88,15 @@ void customer_processes( int mode )
      * to a secondary buffer.
      */
     idx = 0;
-    idx2 = 0;
     while( idx < size )
     {
         if( ( raw_buffer[idx] > 0x20 && raw_buffer[idx] < 0x7F ) || raw_buffer[idx] == 0x0A )
         {
-            buffer[idx2++] = raw_buffer[idx];
+            buffer[idx] = raw_buffer[idx];
+        }
+        else
+        {
+            buffer[idx] = ' ';
         }
         idx++;
     }
@@ -140,14 +144,6 @@ void customer_processes( int mode )
             {
                 buffer[idx] = ',';
             }
-            else
-            {
-                /* Replace quotes with spaces */
-                if( buffer[idx] == '\"' )
-                {
-                    buffer[idx] = ' ';
-                }
-            }
         }
         idx++;
     }
@@ -181,14 +177,17 @@ void select_customers( int count, char** customer_list_array )
     int selected_entry = 0;
     char window_title[] = " Select Customer For PDF Report ";
 
+    /* Display the customer selection window */
     nwipe_gui_list( count, window_title, customer_list_array, &selected_entry );
 
     nwipe_log( NWIPE_LOG_INFO, "Line selected = %d", selected_entry );
+
+    /* Save the selected customer details to nwipe's config file /etc/nwipe/nwipe.conf */
+    save_selected_customer( &customer_list_array[selected_entry - 1] );
 }
 
 void add_customer()
 {
-    int count = 8;
     char window_title[] = " Add Customer ";
     int selected_entry = 0;
 

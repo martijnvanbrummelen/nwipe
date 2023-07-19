@@ -20,4 +20,9 @@ int nwipe_conf_init();
  */
 void nwipe_conf_close();
 
+void save_selected_customer( char** );
+
+#define FIELD_LENGTH 256
+#define NUMBER_OF_FIELDS 4
+
 #endif /* CONF_H_ */
