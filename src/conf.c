@@ -183,6 +183,161 @@ int nwipe_conf_init()
     return ( 0 );
 }
 
+void save_selected_customer( char** customer )
+{
+    /* This function saves the user selected customer
+     * to nwipe's config file /etc/nwipe/nwipe.conf
+     * for later use by the PDF creation functions.
+     */
+
+    int idx;
+    int field_count;
+    int field_idx;
+
+    char field_1[FIELD_LENGTH];
+    char field_2[FIELD_LENGTH];
+    char field_3[FIELD_LENGTH];
+    char field_4[FIELD_LENGTH];
+
+    /* zero the field strings */
+    for( idx = 0; idx < FIELD_LENGTH; idx++ )
+        field_1[idx] = 0;
+    for( idx = 0; idx < FIELD_LENGTH; idx++ )
+        field_2[idx] = 0;
+    for( idx = 0; idx < FIELD_LENGTH; idx++ )
+        field_3[idx] = 0;
+    for( idx = 0; idx < FIELD_LENGTH; idx++ )
+        field_4[idx] = 0;
+
+    /* Extract the field contents from the csv string
+     */
+    idx = 0;
+    field_idx = 0;
+    field_count = 1;
+
+    while( *( *customer + idx ) != 0 && field_count < NUMBER_OF_FIELDS + 1 )
+    {
+        /* Start of a field? */
+        if( *( *customer + idx ) == '\"' )
+        {
+            idx++;
+
+            while( *( *customer + idx ) != '\"' && *( *customer + idx ) != 0 )
+            {
+                if( field_count == 1 && field_idx < ( FIELD_LENGTH - 1 ) )
+                {
+                    field_1[field_idx++] = *( *customer + idx );
+                }
+                else
+                {
+                    if( field_count == 2 && field_idx < ( FIELD_LENGTH - 1 ) )
+                    {
+                        field_2[field_idx++] = *( *customer + idx );
+                    }
+                    else
+                    {
+                        if( field_count == 3 && field_idx < ( FIELD_LENGTH - 1 ) )
+                        {
+                            field_3[field_idx++] = *( *customer + idx );
+                        }
+                        else
+                        {
+                            if( field_count == 4 && field_idx < ( FIELD_LENGTH - 1 ) )
+                            {
+                                field_4[field_idx++] = *( *customer + idx );
+                            }
+                        }
+                    }
+                }
+                idx++;
+            }
+            if( *( *customer + idx ) == '\"' )
+            {
+                /* Makesure the field string is terminated */
+                switch( field_count )
+                {
+                    case 1:
+                        field_1[field_idx] = 0;
+                        break;
+                    case 2:
+                        field_2[field_idx] = 0;
+                        break;
+                    case 3:
+                        field_3[field_idx] = 0;
+                        break;
+                    case 4:
+                        field_4[field_idx] = 0;
+                        break;
+                }
+
+                field_count++;
+                field_idx = 0;
+            }
+        }
+        idx++;
+    }
+
+    /* All 4 fields present? */
+    if( field_count != NUMBER_OF_FIELDS + 1 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR,
+                   "Insuffient fields in customer entry, expected %i, actual(field_count) %i, idx=%i",
+                   NUMBER_OF_FIELDS,
+                   field_count,
+                   idx );
+        return;
+    }
+
+    /* -------------------------------------------------------------
+     * Write the fields to nwipe's config file /etc/nwipe/nwipe.conf
+     */
+    if( ( setting = config_lookup( &nwipe_cfg, "Selected_Customer.Customer_Name" ) ) )
+    {
+        config_setting_set_string( setting, field_1 );
+    }
+    else
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Can't find \"Selected Customers.Customer_Name\" in %s", nwipe_config_file );
+    }
+
+    if( ( setting = config_lookup( &nwipe_cfg, "Selected_Customer.Customer_Address" ) ) )
+    {
+        config_setting_set_string( setting, field_2 );
+    }
+    else
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Can't find \"Selected Customers.Customer_Address\" in %s", nwipe_config_file );
+    }
+
+    if( ( setting = config_lookup( &nwipe_cfg, "Selected_Customer.Contact_Name" ) ) )
+    {
+        config_setting_set_string( setting, field_3 );
+    }
+    else
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Can't find \"Selected Customers.Contact_Name\" in %s", nwipe_config_file );
+    }
+
+    if( ( setting = config_lookup( &nwipe_cfg, "Selected_Customer.Contact_Phone" ) ) )
+    {
+        config_setting_set_string( setting, field_4 );
+    }
+    else
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Can't find \"Selected Customers.Contact_Phone\" in %s", nwipe_config_file );
+    }
+
+    /* Write out the new configuration. */
+    if( !config_write_file( &nwipe_cfg, nwipe_config_file ) )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to write user selected customer to %s", nwipe_config_file );
+    }
+    else
+    {
+        nwipe_log( NWIPE_LOG_INFO, "Populated %s with user selected customer", nwipe_config_file );
+    }
+}
+
 void nwipe_conf_close()
 {
     config_destroy( &nwipe_cfg );
