@@ -61,6 +61,12 @@ void nwipe_gui_organisation_contact_name( const char* );  // Edit business conta
 void nwipe_gui_organisation_contact_phone( const char* );  // Edit business contact phone
 void nwipe_gui_organisation_op_tech_name( const char* );  // Edit the name of the operator/technician
 void nwipe_gui_list( int count, char* window_title, char**, int* selected_entry );
+void nwipe_gui_add_customer( void );  // Add new customer
+void nwipe_gui_add_customer_name( char* );  // Add new customer name
+void nwipe_gui_add_customer_address( char* );  // Add new customer address
+void nwipe_gui_add_customer_contact_name( char* );  // Add new customer contact name
+void nwipe_gui_add_customer_contact_phone( char* );  // Add new customer contact phone
+int nwipe_gui_yes_no_footer( void );  // Change footer to yes no
 int spinner( nwipe_context_t** ptr, int );  // Return the next spinner character
 void temp1_flash( nwipe_context_t* );  // toggles term1_flash_status, which flashes the temperature
 
@@ -88,5 +94,10 @@ void nwipe_update_speedring( nwipe_speedring_t* speedring, u64 speedring_done, t
  * don't change unless you understand how this value affects keyboard responsiveness and speed of screen stats/spinner
  * updating */
 #define GETCH_GUI_STATS_UPDATE_MS 1 /* 1 * 100 = 1/10/sec = millisecond block time for gui stats screen updates */
+
+#define FIELD_LENGTH 256
+
+#define YES 1
+#define NO 0
 
 #endif /* GUI_H_ */

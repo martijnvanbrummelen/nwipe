@@ -84,19 +84,15 @@ void customer_processes( int mode )
     result_size = fread( raw_buffer, size, 1, fptr );
 
     /* Validate csv contents. With the exception of line feeds,
-     * replace non printable characters with spaces and move
-     * to a secondary buffer.
+     * remove non printable characters and move to a secondary buffer.
      */
     idx = 0;
+    idx2 = 0;
     while( idx < size )
     {
         if( ( raw_buffer[idx] > 0x20 && raw_buffer[idx] < 0x7F ) || raw_buffer[idx] == 0x0A )
         {
-            buffer[idx] = raw_buffer[idx];
-        }
-        else
-        {
-            buffer[idx] = ' ';
+            buffer[idx2++] = raw_buffer[idx];
         }
         idx++;
     }
@@ -170,6 +166,9 @@ void customer_processes( int mode )
             delete_customer( lines, list );
             break;
     }
+
+    free( raw_buffer );
+    free( buffer );
 }
 
 void select_customers( int count, char** customer_list_array )

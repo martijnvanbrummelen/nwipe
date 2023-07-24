@@ -144,6 +144,8 @@ const char* main_window_footer_warning_no_drive_selected =
 /* Oddly enough, placing extra quotes around the footer strings fixes corruption to the right
  * of the footer message when the terminal is resized, a quirk in ncurses? - DO NOT REMOVE THE \" */
 const char* selection_footer = "J=Down K=Up Space=Select Backspace=Cancel Ctrl+C=Quit";
+const char* selection_footer_add_customer = "S=Save J=Down K=Up Space=Select Backspace=Cancel Ctrl+C=Quit";
+const char* selection_footer_add_customer_yes_no = "Save Customer Details Y/N";
 const char* end_wipe_footer = "B=[Toggle between dark\\blank\\blue screen] Ctrl+C=Quit";
 const char* rounds_footer = "Left=Erase Esc=Cancel Ctrl+C=Quit";
 
@@ -2633,11 +2635,11 @@ void nwipe_gui_config( void )
 
         case 1:
             customer_processes( SELECT_CUSTOMER );
-            // select_customers();
+
             break;
 
         case 2:
-            add_customer();
+            nwipe_gui_add_customer();
             break;
 
         case 3:
@@ -3891,6 +3893,636 @@ void nwipe_gui_list( int count, char* window_title, char** list, int* selected_e
     } while( terminate_signal != 1 );
 
 } /* nwipe_gui_list */
+
+void nwipe_gui_add_customer( void )
+{
+    /**
+     * Add new customer top level menu
+     *
+     */
+
+    extern int terminate_signal;
+
+    /* Number of entries in the configuration menu. */
+    const int count = 4;
+
+    /* The first tabstop. */
+    const int tab1 = 2;
+
+    /* The second tabstop. */
+    const int tab2 = 27;
+
+    /* The currently selected method. */
+    int focus = 0;
+
+    /* The current working row. */
+    int yy;
+
+    /* Input buffer. */
+    int keystroke;
+
+    char customer_name[FIELD_LENGTH] = "";
+    char customer_address[FIELD_LENGTH] = "";
+    char customer_contact_name[FIELD_LENGTH] = "";
+    char customer_contact_phone[FIELD_LENGTH] = "";
+
+    /* 0 = NO = don't save, 1 = YES = save customer */
+    int save = NO;
+
+    /* 0 = Display standard dialog footer, 1 = YES = display "Save Y/N" footer */
+    int yes_no = NO;
+
+    /* variables used by libconfig for extracting data from nwipe.conf */
+    config_setting_t* setting;
+    // const char *business_name, *business_address, *contact_name, *contact_phone, *op_tech_name;
+    extern config_t nwipe_cfg;
+
+    /* Update the footer window. */
+    werase( footer_window );
+    nwipe_gui_title( footer_window, selection_footer_add_customer );
+    wrefresh( footer_window );
+
+    do
+    {
+        do
+        {
+            /* Clear the main window. */
+            werase( main_window );
+
+            /* Change footer based on whether we are waiting for a Y/N response */
+            if( yes_no == YES )
+            {
+                /* Update the footer window. */
+                werase( footer_window );
+                nwipe_gui_title( footer_window, selection_footer_add_customer_yes_no );
+                wrefresh( footer_window );
+
+                nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_add_customer_yes_no );
+            }
+            else
+            {
+                /* Update the footer window. */
+                werase( footer_window );
+                nwipe_gui_title( footer_window, selection_footer_add_customer );
+                wrefresh( footer_window );
+
+                nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_add_customer );
+            }
+            /* Initialize the working row. */
+            yy = 2;
+
+            /* Print the options. */
+            mvwprintw( main_window, yy++, tab1, "  %s : %s", "Add Customer Name         ", customer_name );
+            mvwprintw( main_window, yy++, tab1, "  %s : %s", "Add Customer Address      ", customer_address );
+            mvwprintw( main_window, yy++, tab1, "  %s : %s", "Add Customer Contact Name ", customer_contact_name );
+            mvwprintw( main_window, yy++, tab1, "  %s : %s", "Add Customer Contact Phone", customer_contact_phone );
+            mvwprintw( main_window, yy++, tab1, "                             " );
+
+            /* Print the cursor. */
+            mvwaddch( main_window, 2 + focus, tab1, ACS_RARROW );
+
+            /* Add a border. */
+            box( main_window, 0, 0 );
+
+            /* Add a title. */
+            nwipe_gui_title( main_window, " PDF Report - Add New Customer " );
+
+            /* Refresh the window. */
+            wrefresh( main_window );
+
+            /* Wait 250ms for input from getch, if nothing getch will then continue,
+             * This is necessary so that the while loop can be exited by the
+             * terminate_signal e.g.. the user pressing control-c to exit.
+             * Do not change this value, a higher value means the keys become
+             * sluggish, any slower and more time is spent unnecessarily looping
+             * which wastes CPU cycles.
+             */
+            timeout( 250 ); /* block getch() for 250ms */
+            keystroke = getch(); /* Get a keystroke. */
+            timeout( -1 ); /* Switch back to blocking mode */
+
+            if( yes_no == NO )
+            {
+                switch( keystroke )
+                {
+                    // Save customer
+                    case 's':
+                    case 'S':
+                        break;
+
+                    case KEY_DOWN:
+                    case 'j':
+                    case 'J':
+
+                        if( focus < count - 1 )
+                        {
+                            focus += 1;
+                        }
+                        break;
+
+                    case KEY_UP:
+                    case 'k':
+                    case 'K':
+
+                        if( focus > 0 )
+                        {
+                            focus -= 1;
+                        }
+                        break;
+
+                    case KEY_BACKSPACE:
+                    case KEY_BREAK:
+                    case 27: /* ESC */
+
+                        /* If the user has entered any text then ask if the customer entries should be saved */
+                        if( customer_name[0] != 0 || customer_address[0] != 0 || customer_contact_name[0] != 0
+                            || customer_contact_phone[0] != 0 )
+                        {
+                            /* Set the footer yes/no flag */
+                            yes_no = YES;
+                        }
+                        else
+                        {
+                            return;
+                        }
+                        break;
+
+                } /* switch */
+            }
+            else
+            {
+                /* Waiting for a Y/N response */
+                switch( keystroke )
+                {
+                    case 'y':
+                    case 'Y':
+                        save = 1;
+                        break;
+
+                    case 'n':
+                    case 'N':
+                        return;
+                        break;
+                }
+            }
+
+        } while( save != YES && keystroke != 's' && keystroke != KEY_ENTER && keystroke != ' ' && keystroke != 10
+                 && terminate_signal != 1 );
+
+        if( keystroke == KEY_ENTER || keystroke == 10 || keystroke == ' ' )
+        {
+            switch( focus )
+            {
+                case 0:
+                    nwipe_gui_add_customer_name( customer_name );
+                    keystroke = 0;
+                    break;
+
+                case 1:
+                    nwipe_gui_add_customer_address( customer_address );
+                    keystroke = 0;
+                    break;
+
+                case 2:
+                    nwipe_gui_add_customer_contact_name( customer_contact_name );
+                    keystroke = 0;
+                    break;
+
+                case 3:
+                    nwipe_gui_add_customer_contact_phone( customer_contact_phone );
+                    keystroke = 0;
+                    break;
+            }
+        }
+
+    } while( save != YES && keystroke != 's' && keystroke != KEY_ENTER && keystroke != ' ' && keystroke != 10
+             && terminate_signal != 1 );
+
+    /* If save customer details selected */
+    if( keystroke == 's' || keystroke == 'S' || save == 1 )
+    {
+        /* NOTE Append a csv line to /etc/nwipe/customers.csv */
+
+        /* NOTE ADD CODE HERE NOTE */
+    }
+
+} /* end of nwipe_gui_add_customer( void ) */
+
+void nwipe_gui_add_customer_name( char* customer_name )
+{
+    /**
+     * Allows the user to change the customer's contact name as displayed on the PDF report.
+     *
+     * @modifies  customer's contact name
+     * @modifies  main_window
+     *
+     */
+
+    /* The first tabstop. */
+    const int tab1 = 2;
+
+    /* The current working row. */
+    int yy;
+
+    /* Input buffer. */
+    int keystroke;
+
+    /* buffer index */
+    int idx = 0;
+
+    extern int terminate_signal;
+
+    // const char* contact_name;
+    extern config_t nwipe_cfg;
+    extern char nwipe_config_file[];
+
+    /* Update the footer window. */
+    werase( footer_window );
+    nwipe_gui_title( footer_window, rounds_footer );
+    wrefresh( footer_window );
+
+    do
+    {
+        /* Erase the main window. */
+        werase( main_window );
+
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+
+        /* Add a border. */
+        box( main_window, 0, 0 );
+
+        /* Add a title. */
+        nwipe_gui_title( main_window, " Add New Customer Name " );
+
+        /* Initialize the working row. */
+        yy = 4;
+
+        mvwprintw( main_window, yy++, tab1, "Enter the customer's name (business or personal name)" );
+
+        /* Print this line last so that the cursor is in the right place. */
+        mvwprintw( main_window, 2, tab1, ">%s", customer_name );
+
+        /* Reveal the cursor. */
+        curs_set( 1 );
+
+        /* Refresh the window. */
+        wrefresh( main_window );
+
+        /* Wait 250ms for input from getch, if nothing getch will then continue,
+         * This is necessary so that the while loop can be exited by the
+         * terminate_signal e.g.. the user pressing control-c to exit.
+         * Do not change this value, a higher value means the keys become
+         * sluggish, any slower and more time is spent unnecessarily looping
+         * which wastes CPU cycles.
+         */
+        timeout( 250 );  // block getch() for 250ms.
+        keystroke = getch();  // Get a keystroke.
+        timeout( -1 );  // Switch back to blocking mode.
+
+        switch( keystroke )
+        {
+            /* Escape key. */
+            case 27:
+                return;
+
+            case KEY_BACKSPACE:
+            case KEY_LEFT:
+            case 127:
+
+                if( idx > 0 )
+                {
+                    customer_name[--idx] = 0;
+                }
+
+                break;
+
+        } /* switch keystroke */
+
+        if( ( keystroke >= ' ' && keystroke <= '~' ) && keystroke != '\"' && idx < FIELD_LENGTH )
+        {
+            customer_name[idx++] = keystroke;
+            customer_name[idx] = 0;
+            mvwprintw( main_window, 2, tab1, ">%s", customer_name );
+        }
+
+        /* Hide the cursor. */
+        curs_set( 0 );
+
+    } while( keystroke != 10 && terminate_signal != 1 );
+
+} /* End of nwipe_gui_add_customer_name() */
+
+void nwipe_gui_add_customer_address( char* customer_address )
+{
+    /**
+     * Allows the user to change the customer's address as displayed on the PDF report.
+     *
+     * @modifies  customer's address
+     * @modifies  main_window
+     *
+     */
+
+    /* The first tabstop. */
+    const int tab1 = 2;
+
+    /* The current working row. */
+    int yy;
+
+    /* Input buffer. */
+    int keystroke;
+
+    /* buffer index */
+    int idx = 0;
+
+    extern int terminate_signal;
+
+    // const char* contact_name;
+    extern config_t nwipe_cfg;
+    extern char nwipe_config_file[];
+
+    /* Update the footer window. */
+    werase( footer_window );
+    nwipe_gui_title( footer_window, rounds_footer );
+    wrefresh( footer_window );
+
+    do
+    {
+        /* Erase the main window. */
+        werase( main_window );
+
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+
+        /* Add a border. */
+        box( main_window, 0, 0 );
+
+        /* Add a title. */
+        nwipe_gui_title( main_window, " Add New Customer Address " );
+
+        /* Initialize the working row. */
+        yy = 4;
+
+        mvwprintw( main_window, yy++, tab1, "Enter the customer's address" );
+
+        /* Print this line last so that the cursor is in the right place. */
+        mvwprintw( main_window, 2, tab1, ">%s", customer_address );
+
+        /* Reveal the cursor. */
+        curs_set( 1 );
+
+        /* Refresh the window. */
+        wrefresh( main_window );
+
+        /* Wait 250ms for input from getch, if nothing getch will then continue,
+         * This is necessary so that the while loop can be exited by the
+         * terminate_signal e.g.. the user pressing control-c to exit.
+         * Do not change this value, a higher value means the keys become
+         * sluggish, any slower and more time is spent unnecessarily looping
+         * which wastes CPU cycles.
+         */
+        timeout( 250 );  // block getch() for 250ms.
+        keystroke = getch();  // Get a keystroke.
+        timeout( -1 );  // Switch back to blocking mode.
+
+        switch( keystroke )
+        {
+            /* Escape key. */
+            case 27:
+                return;
+
+            case KEY_BACKSPACE:
+            case KEY_LEFT:
+            case 127:
+
+                if( idx > 0 )
+                {
+                    customer_address[--idx] = 0;
+                }
+
+                break;
+
+        } /* switch keystroke */
+
+        if( ( keystroke >= ' ' && keystroke <= '~' ) && keystroke != '\"' && idx < FIELD_LENGTH )
+        {
+            customer_address[idx++] = keystroke;
+            customer_address[idx] = 0;
+            mvwprintw( main_window, 2, tab1, ">%s", customer_address );
+        }
+
+        /* Hide the cursor. */
+        curs_set( 0 );
+
+    } while( keystroke != 10 && terminate_signal != 1 );
+
+} /* End of nwipe_gui_add_customer_address() */
+
+void nwipe_gui_add_customer_contact_name( char* customer_contact_name )
+{
+    /**
+     * Allows the user to change the customer contact name as displayed on the PDF report.
+     *
+     * @modifies  customer's contact name
+     * @modifies  main_window
+     *
+     */
+
+    /* The first tabstop. */
+    const int tab1 = 2;
+
+    /* The current working row. */
+    int yy;
+
+    /* Input buffer. */
+    int keystroke;
+
+    /* buffer index */
+    int idx = 0;
+
+    extern int terminate_signal;
+
+    // const char* contact_name;
+    extern config_t nwipe_cfg;
+    extern char nwipe_config_file[];
+
+    /* Update the footer window. */
+    werase( footer_window );
+    nwipe_gui_title( footer_window, rounds_footer );
+    wrefresh( footer_window );
+
+    do
+    {
+        /* Erase the main window. */
+        werase( main_window );
+
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+
+        /* Add a border. */
+        box( main_window, 0, 0 );
+
+        /* Add a title. */
+        nwipe_gui_title( main_window, " Add New Customer Contact Name " );
+
+        /* Initialize the working row. */
+        yy = 4;
+
+        mvwprintw( main_window, yy++, tab1, "Enter the customer's contact name" );
+
+        /* Print this line last so that the cursor is in the right place. */
+        mvwprintw( main_window, 2, tab1, ">%s", customer_contact_name );
+
+        /* Reveal the cursor. */
+        curs_set( 1 );
+
+        /* Refresh the window. */
+        wrefresh( main_window );
+
+        /* Wait 250ms for input from getch, if nothing getch will then continue,
+         * This is necessary so that the while loop can be exited by the
+         * terminate_signal e.g.. the user pressing control-c to exit.
+         * Do not change this value, a higher value means the keys become
+         * sluggish, any slower and more time is spent unnecessarily looping
+         * which wastes CPU cycles.
+         */
+        timeout( 250 );  // block getch() for 250ms.
+        keystroke = getch();  // Get a keystroke.
+        timeout( -1 );  // Switch back to blocking mode.
+
+        switch( keystroke )
+        {
+            /* Escape key. */
+            case 27:
+                return;
+
+            case KEY_BACKSPACE:
+            case KEY_LEFT:
+            case 127:
+
+                if( idx > 0 )
+                {
+                    customer_contact_name[--idx] = 0;
+                }
+
+                break;
+
+        } /* switch keystroke */
+
+        if( ( keystroke >= ' ' && keystroke <= '~' ) && keystroke != '\"' && idx < FIELD_LENGTH )
+        {
+            customer_contact_name[idx++] = keystroke;
+            customer_contact_name[idx] = 0;
+            mvwprintw( main_window, 2, tab1, ">%s", customer_contact_name );
+        }
+
+        /* Hide the cursor. */
+        curs_set( 0 );
+
+    } while( keystroke != 10 && terminate_signal != 1 );
+
+} /* End of nwipe_gui_add_customer_contact_name() */
+
+void nwipe_gui_add_customer_contact_phone( char* customer_contact_phone )
+{
+    /**
+     * Allows the user to change the customer contact phone as displayed on the PDF report.
+     *
+     * @modifies  customer's contact phone
+     * @modifies  main_window
+     *
+     */
+
+    /* The first tabstop. */
+    const int tab1 = 2;
+
+    /* The current working row. */
+    int yy;
+
+    /* Input buffer. */
+    int keystroke;
+
+    /* buffer index */
+    int idx = 0;
+
+    extern int terminate_signal;
+
+    // const char* contact_name;
+    extern config_t nwipe_cfg;
+    extern char nwipe_config_file[];
+
+    /* Update the footer window. */
+    werase( footer_window );
+    nwipe_gui_title( footer_window, rounds_footer );
+    wrefresh( footer_window );
+
+    do
+    {
+        /* Erase the main window. */
+        werase( main_window );
+
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+
+        /* Add a border. */
+        box( main_window, 0, 0 );
+
+        /* Add a title. */
+        nwipe_gui_title( main_window, " Add New Customer Contact Phone " );
+
+        /* Initialize the working row. */
+        yy = 4;
+
+        mvwprintw( main_window, yy++, tab1, "Enter the customer's contact phone" );
+
+        /* Print this line last so that the cursor is in the right place. */
+        mvwprintw( main_window, 2, tab1, ">%s", customer_contact_phone );
+
+        /* Reveal the cursor. */
+        curs_set( 1 );
+
+        /* Refresh the window. */
+        wrefresh( main_window );
+
+        /* Wait 250ms for input from getch, if nothing getch will then continue,
+         * This is necessary so that the while loop can be exited by the
+         * terminate_signal e.g.. the user pressing control-c to exit.
+         * Do not change this value, a higher value means the keys become
+         * sluggish, any slower and more time is spent unnecessarily looping
+         * which wastes CPU cycles.
+         */
+        timeout( 250 );  // block getch() for 250ms.
+        keystroke = getch();  // Get a keystroke.
+        timeout( -1 );  // Switch back to blocking mode.
+
+        switch( keystroke )
+        {
+            /* Escape key. */
+            case 27:
+                return;
+
+            case KEY_BACKSPACE:
+            case KEY_LEFT:
+            case 127:
+
+                if( idx > 0 )
+                {
+                    customer_contact_phone[--idx] = 0;
+                }
+
+                break;
+
+        } /* switch keystroke */
+
+        if( ( keystroke >= ' ' && keystroke <= '~' ) && keystroke != '\"' && idx < FIELD_LENGTH )
+        {
+            customer_contact_phone[idx++] = keystroke;
+            customer_contact_phone[idx] = 0;
+            mvwprintw( main_window, 2, tab1, ">%s", customer_contact_phone );
+        }
+
+        /* Hide the cursor. */
+        curs_set( 0 );
+
+    } while( keystroke != 10 && terminate_signal != 1 );
+
+} /* End of nwipe_gui_add_customer_contact_phone() */
 
 void nwipe_gui_load( void )
 {
