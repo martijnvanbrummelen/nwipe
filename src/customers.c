@@ -181,18 +181,13 @@ void select_customers( int count, char** customer_list_array )
 
     nwipe_log( NWIPE_LOG_INFO, "Line selected = %d", selected_entry );
 
-    /* Save the selected customer details to nwipe's config file /etc/nwipe/nwipe.conf */
-    save_selected_customer( &customer_list_array[selected_entry - 1] );
-}
-
-void add_customer()
-{
-    char window_title[] = " Add Customer ";
-    int selected_entry = 0;
-
-    // nwipe_gui_list( count, window_title, &list[8], &selected_entry );
-
-    nwipe_log( NWIPE_LOG_INFO, "Line selected = %d", selected_entry );
+    /* Save the selected customer details to nwipe's config file /etc/nwipe/nwipe.conf
+     * If selected entry equals 0, then the customer did not select an entry so skip save.
+     */
+    if( selected_entry != 0 )
+    {
+        save_selected_customer( &customer_list_array[selected_entry - 1] );
+    }
 }
 
 void delete_customer( int count, char** customer_list_array )
@@ -203,4 +198,90 @@ void delete_customer( int count, char** customer_list_array )
     nwipe_gui_list( count, window_title, customer_list_array, &selected_entry );
 
     nwipe_log( NWIPE_LOG_INFO, "Line selected = %d", selected_entry );
+}
+
+void write_customer_csv_entry( char* customer_name,
+                               char* customer_address,
+                               char* customer_contact_name,
+                               char* customer_contact_phone )
+{
+    /**
+     * Write the attached strings in csv format to the first
+     * line after the header (line 2 of file)
+     */
+
+    FILE* fptr;
+
+    size_t result_size;
+
+    /* Length of the new customer line */
+    int csv_line_length;
+
+    struct stat st;
+
+    extern char nwipe_customers_file[];
+
+    intmax_t existing_file_size = 0;
+
+    /* pointer to the new customer entry in csv format. */
+    char* csv_buffer = 0;
+
+    /* pointer to the buffer containing the existing customer file */
+    char* customers_buffer = 0;
+
+    /* pointer to the buffer containing the existing customer file plus the new entry */
+    char* new_customers_buffer = 0;
+
+    /* Determine length of all four strings and malloc sufficient storage + 12 = 8 quotes + three colons + null */
+    csv_line_length = strlen( customer_name ) + strlen( customer_address ) + strlen( customer_contact_name )
+        + strlen( customer_contact_phone ) + 12;
+    if( !( csv_buffer = calloc( 1, csv_line_length == 0 ) ) )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "func:nwipe_gui_add_customer:csv_buffer, calloc returned NULL " );
+    }
+    else
+    {
+        /* Determine current size of the csv file containing the customers */
+        stat( nwipe_customers_file, &st );
+        existing_file_size = st.st_size;
+
+        /* calloc sufficient storage to hold the existing customers file */
+        if( !( customers_buffer = calloc( 1, existing_file_size + 1 ) ) )
+        {
+            nwipe_log( NWIPE_LOG_ERROR, "func:nwipe_gui_add_customer:customers_buffer, calloc returned NULL " );
+        }
+        else
+        {
+            /* create a third buffer which is the combined size of the previous two, i.e existing file size, plus the
+             * new customer entry + 1 (NULL) */
+            if( !( new_customers_buffer = calloc( 1, existing_file_size + csv_line_length + 1 == 0 ) ) )
+            {
+                nwipe_log( NWIPE_LOG_ERROR, "func:nwipe_gui_add_customer:customers_buffer, calloc returned NULL " );
+            }
+            else
+            {
+                /* Read the whole of customers.csv file into customers_buffer */
+                if( ( fptr = fopen( nwipe_customers_file, "rb" ) ) == NULL )
+                {
+                    nwipe_log( NWIPE_LOG_ERROR, "Unable to open %s", nwipe_customers_file );
+                }
+
+                /* Read the customers.csv file and populate the list array with the data */
+                if( ( result_size = fread( customers_buffer, existing_file_size, 1, fptr ) ) != 1 )
+                {
+                    nwipe_log( NWIPE_LOG_ERROR,
+                               "func:nwipe_gui_add_customer:Error reading customers file, # bytes read not as expected "
+                               "%i bytes",
+                               result_size );
+                }
+                else
+                {
+                    /* Read the first line of the existing customer buffer & write to the new buffer */
+                }
+            }
+        }
+    }
+    free( csv_buffer );
+    free( customers_buffer );
+    free( new_customers_buffer );
 }

@@ -28,6 +28,7 @@ void customer_processes( int );
 void select_customers( int, char** );
 void delete_customer();
 void add_customer();
+void write_customer_csv_entry( char*, char*, char*, char* );
 
 typedef char* nwipe_customers_buffer_t;
 typedef char** nwipe_customers_pointers_t;
