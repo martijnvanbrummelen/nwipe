@@ -39,6 +39,8 @@ const char* nwipe_conf_str;
 char nwipe_config_directory[] = "/etc/nwipe";
 char nwipe_config_file[] = "/etc/nwipe/nwipe.conf";
 char nwipe_customers_file[] = "/etc/nwipe/nwipe_customers.csv";
+char nwipe_customers_file_backup[] = "/etc/nwipe/nwipe_customers.csv.backup";
+char nwipe_customers_file_backup_tmp[] = "/etc/nwipe/nwipe_customers.csv.backup.tmp";
 
 /*
  * Checks for the existence of nwipe.conf and nwipe_customers.csv
