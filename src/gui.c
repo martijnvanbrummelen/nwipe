@@ -3591,6 +3591,9 @@ void nwipe_gui_list( int count, char* window_title, char** list, int* selected_e
     /* Flag, Valid key hit = 1, anything else = 0 */
     int validkeyhit;
 
+    /* Processed customer entry as displayed in selection dialog */
+    char* display_line;
+
     /* Get the terminal size */
     getmaxyx( stdscr, stdscr_lines, stdscr_cols );
 
@@ -3608,6 +3611,9 @@ void nwipe_gui_list( int count, char* window_title, char** list, int* selected_e
     /* Used in the selection loop to trap a failure of the timeout(), getch() mechanism to block for the designated
      * period */
     int expected_iterations;
+
+    /* General Indexes */
+    int idx, idx2;
 
     time_t previous_iteration_timestamp;
 
@@ -3699,8 +3705,28 @@ void nwipe_gui_list( int count, char* window_title, char** list, int* selected_e
              * and the else part will log the out of bounds values for debugging */
             if( i + offset >= 0 && i + offset < count )
             {
-                /* print a entry from the list */
-                wprintw( main_window, "%s ", list[i + offset] );
+                /* print a entry from the list, we need to process the string before display,
+                 * removing the double quotes that are used in csv for identifying the start & end of a field.
+                 */
+                if( ( display_line = calloc( sizeof( char ), strlen( list[i + offset] ) ) ) )
+                {
+                    idx = 0;
+                    idx2 = 0;
+                    while( list[i + offset][idx] != 0 )
+                    {
+                        if( list[i + offset][idx] == '"' )
+                        {
+                            idx++;
+                        }
+                        else
+                        {
+                            display_line[idx2++] = list[i + offset][idx++];
+                        }
+                    }
+                    display_line[idx2] = 0;
+                    wprintw( main_window, "%s ", display_line );
+                    free( display_line );
+                }
             }
             else
             {
