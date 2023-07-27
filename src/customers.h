@@ -36,4 +36,6 @@ typedef char** nwipe_customers_pointers_t;
 #define SELECT_CUSTOMER 1
 #define DELETE_CUSTOMER 2
 
+#define LINEFEED 0x0A
+
 #endif  // CUSTOMERS_H_INCLUDED

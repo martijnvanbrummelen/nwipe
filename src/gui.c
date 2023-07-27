@@ -1237,6 +1237,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                     break;
 
                 case 'c':
+                case 'C':
                     /* main configuration menu */
                     validkeyhit = 1;
 
