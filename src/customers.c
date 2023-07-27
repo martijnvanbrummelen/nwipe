@@ -92,8 +92,9 @@ void customer_processes( int mode )
     idx2 = 0;
     while( idx < size )
     {
-        if( ( raw_buffer[idx] > 0x20 && raw_buffer[idx] < 0x7F ) || raw_buffer[idx] == 0x0A )
+        if( ( raw_buffer[idx] > 0x1F && raw_buffer[idx] < 0x7F ) || raw_buffer[idx] == 0x0A )
         {
+            /* copy printable characters and line feeds but not double quotes. */
             buffer[idx2++] = raw_buffer[idx];
         }
         idx++;
