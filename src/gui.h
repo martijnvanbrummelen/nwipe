@@ -60,7 +60,7 @@ void nwipe_gui_organisation_business_address( const char* );  // Edit business a
 void nwipe_gui_organisation_contact_name( const char* );  // Edit business contact name
 void nwipe_gui_organisation_contact_phone( const char* );  // Edit business contact phone
 void nwipe_gui_organisation_op_tech_name( const char* );  // Edit the name of the operator/technician
-void nwipe_gui_list( int count, char* window_title, char**, int* selected_entry );
+void nwipe_gui_list( int, char* window_title, char**, int* );
 void nwipe_gui_add_customer( void );  // Add new customer
 void nwipe_gui_add_customer_name( char* );  // Add new customer name
 void nwipe_gui_add_customer_address( char* );  // Add new customer address
