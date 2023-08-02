@@ -94,7 +94,7 @@ void customer_processes( int mode )
     {
         if( ( raw_buffer[idx] > 0x1F && raw_buffer[idx] < 0x7F ) || raw_buffer[idx] == 0x0A )
         {
-            /* copy printable characters and line feeds but not double quotes. */
+            /* copy printable characters and line feeds */
             buffer[idx2++] = raw_buffer[idx];
         }
         idx++;
@@ -198,7 +198,7 @@ void delete_customer( int count, char** customer_list_array )
 
     nwipe_gui_list( count, window_title, customer_list_array, &selected_entry );
 
-    nwipe_log( NWIPE_LOG_INFO, "Line selected = %d", selected_entry );
+    delete_customer_csv_entry( &selected_entry );
 }
 
 void write_customer_csv_entry( char* customer_name,
@@ -473,7 +473,6 @@ void write_customer_csv_entry( char* customer_name,
                                                    "Succesfully write new customer entry to %s",
                                                    nwipe_customers_file );
                                     }
-                                    nwipe_log( NWIPE_LOG_INFO, "p_csv_buffer = %li", csv_buffer );
                                 }
                                 fclose( fptr2 );
                             }
@@ -486,5 +485,226 @@ void write_customer_csv_entry( char* customer_name,
             free( customers_buffer );
         }
         free( csv_buffer );
+    }
+}
+
+void delete_customer_csv_entry( int* selected_entry )
+{
+    /**
+     * Deletes a line from the csv file. The line to be deleted is determined
+     * by the value of selected_entry
+     */
+    FILE* fptr = 0;
+    FILE* fptr2 = 0;
+
+    size_t result_size;
+
+    struct stat st;
+
+    extern char nwipe_customers_file[];
+    extern char nwipe_customers_file_backup[];
+    extern char nwipe_customers_file_backup_tmp[];
+
+    intmax_t existing_file_size = 0;
+
+    int linecount;
+
+    /* General index variables */
+    int idx1, idx2, idx3;
+
+    /* pointer to the buffer containing the existing customer file */
+    char* customers_buffer = 0;
+
+    /* pointer to the buffer containing the existing customer minus the deleted entry */
+    char* new_customers_buffer = 0;
+
+    int status_flag = 0;
+
+    size_t new_customers_buffer_length;
+
+    /* Determine current size of the csv file containing the customers */
+    stat( nwipe_customers_file, &st );
+    existing_file_size = st.st_size;
+
+    /* calloc sufficient storage to hold the existing customers file */
+    if( !( customers_buffer = calloc( 1, existing_file_size + 1 ) ) )
+    {
+        nwipe_log( NWIPE_LOG_ERROR,
+                   "func:nwipe_gui_delete_customer_csv_entry:customers_buffer, calloc returned NULL " );
+    }
+    else
+    {
+        /* create a second buffer which is identical in size to the first, it will store the customer
+         * csv file minus the one selected entry
+         */
+
+        if( !( new_customers_buffer = calloc( 1, existing_file_size + 1 ) ) )
+        {
+            nwipe_log( NWIPE_LOG_ERROR,
+                       "func:nwipe_gui_delete_customer_csv_entry:customers_buffer, calloc returned NULL " );
+        }
+        else
+        {
+            /* Read the whole of customers.csv file into customers_buffer */
+            if( ( fptr = fopen( nwipe_customers_file, "rb" ) ) == NULL )
+            {
+                nwipe_log( NWIPE_LOG_ERROR,
+                           "func:nwipe_gui_delete_customer_csv_entry:Unable to open %s",
+                           nwipe_customers_file );
+            }
+            else
+            {
+                /* Read the customers.csv file and populate the list array with the data */
+                if( ( result_size = fread( customers_buffer, existing_file_size, 1, fptr ) ) != 1 )
+                {
+                    nwipe_log( NWIPE_LOG_ERROR,
+                               "func:nwipe_gui_delete_customer_csv_entry:Error reading customers file, # elements read "
+                               "not as expected "
+                               "%i elements",
+                               result_size );
+                }
+                else
+                {
+                    /* --------------------------------------------------------------------
+                     * Read the first line which is the csv header from the existing customer
+                     * buffer & write to the new buffer.
+                     */
+
+                    idx1 = 0;  // Index for the current csv buffer
+                    idx2 = 0;  // Index for the new csv buffer
+
+                    linecount = 1;  // count the lines in the csv file starting at line 1
+
+                    while( idx1 < existing_file_size && idx2 < existing_file_size )
+                    {
+                        if( customers_buffer[idx1] != LINEFEED )
+                        {
+                            new_customers_buffer[idx2++] = customers_buffer[idx1++];
+                        }
+                        else
+                        {
+                            new_customers_buffer[idx2++] = customers_buffer[idx1++];
+                            break;
+                        }
+                    }
+
+                    /* -------------------------------------------------------------------------------
+                     * Now copy the existing customer entries, counting the lines as we go and when we
+                     * get to the the line selected for deletion we skip over it and then carry on
+                     * copying.
+                     */
+
+                    while( idx1 < existing_file_size && idx2 < existing_file_size )
+                    {
+                        /* Don't copy nulls */
+                        if( customers_buffer[idx1] == 0 )
+                        {
+                            idx1++;
+                            continue;
+                        }
+
+                        /* Is this the line to delete? */
+                        if( linecount == *selected_entry )
+                        {
+                            /* skip all the characters in this line */
+                            while( idx1 < existing_file_size && customers_buffer[idx1] != LINEFEED )
+                            {
+                                idx1++;
+                            }
+
+                            /* skip the trailing linefeed if it exists, may not exist if last line */
+                            if( customers_buffer[idx1] == LINEFEED )
+                            {
+                                idx1++;
+                            }
+                            linecount++;
+                            nwipe_log( NWIPE_LOG_INFO, "Deleted customer entry from cache" );
+                            status_flag = 1;
+                        }
+                        else
+                        {
+                            /* Is the character a LINEFEED? */
+                            if( customers_buffer[idx1] == LINEFEED )
+                            {
+                                linecount++;
+                            }
+
+                            /* Copy a character */
+                            new_customers_buffer[idx2++] = customers_buffer[idx1++];
+                        }
+                    }
+
+                    /* Rename the customers.csv file to customers.csv.backup */
+                    if( rename( nwipe_customers_file, nwipe_customers_file_backup_tmp ) != 0 )
+                    {
+                        nwipe_log( NWIPE_LOG_ERROR,
+                                   "func:delete_customer_csv_entry:Unable to rename %s to %s",
+                                   nwipe_customers_file,
+                                   nwipe_customers_file_backup_tmp );
+                    }
+                    else
+                    {
+                        /* Create/open the customers.csv file */
+                        if( ( fptr2 = fopen( nwipe_customers_file, "wb" ) ) == NULL )
+                        {
+                            nwipe_log( NWIPE_LOG_ERROR,
+                                       "func:delete_customer_csv_entry:Unable to open %s",
+                                       nwipe_customers_file );
+                        }
+                        else
+                        {
+                            /* write the new customers.csv file */
+                            new_customers_buffer_length = strlen( new_customers_buffer );
+
+                            if( ( result_size = fwrite(
+                                      new_customers_buffer, sizeof( char ), new_customers_buffer_length, fptr2 ) )
+                                != new_customers_buffer_length )
+                            {
+                                nwipe_log(
+                                    NWIPE_LOG_ERROR,
+                                    "func:delete_customer_csv_entry:fwrite: Error result_size = %i not as expected",
+                                    result_size );
+                            }
+                            else
+                            {
+                                /* Remove the customer.csv.backup file if it exists */
+                                if( remove( nwipe_customers_file_backup ) != 0 )
+                                {
+                                    nwipe_log( NWIPE_LOG_ERROR,
+                                               "func:delete_customer_csv_entry:Unable to remove %s",
+                                               nwipe_customers_file_backup_tmp );
+                                }
+                                else
+                                {
+                                    /* Rename the customers.csv.backup.tmp file to customers.csv.backup */
+                                    if( rename( nwipe_customers_file_backup_tmp, nwipe_customers_file_backup ) != 0 )
+                                    {
+                                        nwipe_log( NWIPE_LOG_ERROR,
+                                                   "func:delete_customer_csv_entry:Unable to rename %s to %s",
+                                                   nwipe_customers_file,
+                                                   nwipe_customers_file_backup_tmp );
+                                    }
+                                    if( status_flag == 1 )
+                                    {
+                                        nwipe_log(
+                                            NWIPE_LOG_INFO, "Deleted customer entry in %s", nwipe_customers_file );
+                                    }
+                                    else
+                                    {
+                                        nwipe_log( NWIPE_LOG_INFO,
+                                                   "Failed to delete customer entry in %s",
+                                                   nwipe_customers_file );
+                                    }
+                                }
+                            }
+                            fclose( fptr2 );
+                        }
+                    }
+                }
+                fclose( fptr );
+            }
+            free( new_customers_buffer );
+        }
+        free( customers_buffer );
     }
 }
