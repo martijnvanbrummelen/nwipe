@@ -198,7 +198,10 @@ void delete_customer( int count, char** customer_list_array )
 
     nwipe_gui_list( count, window_title, customer_list_array, &selected_entry );
 
-    delete_customer_csv_entry( &selected_entry );
+    if( selected_entry != 0 )
+    {
+        delete_customer_csv_entry( &selected_entry );
+    }
 }
 
 void write_customer_csv_entry( char* customer_name,

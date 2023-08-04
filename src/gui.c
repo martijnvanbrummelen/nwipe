@@ -3885,7 +3885,7 @@ void nwipe_gui_list( int count, char* window_title, char** list, int* selected_e
                 case KEY_BACKSPACE:
                 case KEY_LEFT:
                 case 127:
-                    *selected_entry = 1;
+                    *selected_entry = 0;
                     return;
                     break;
 
