@@ -2480,7 +2480,7 @@ void nwipe_gui_config( void )
     extern int terminate_signal;
 
     /* Number of entries in the configuration menu. */
-    const int count = 4;
+    const int count = 5;
 
     /* The first tabstop. */
     const int tab1 = 2;
@@ -2517,6 +2517,7 @@ void nwipe_gui_config( void )
         mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Select Customer  " );
         mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Add Customer     " );
         mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Delete Customer  " );
+        mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Preview Details  " );
         mvwprintw( main_window, yy++, tab1, "                                      " );
 
         /* Print the cursor. */
@@ -2576,6 +2577,17 @@ void nwipe_gui_config( void )
                 mvwprintw( main_window, 10, tab2, "                                      " );
                 mvwprintw( main_window, 11, tab2, "Customer data is saved in:            " );
                 mvwprintw( main_window, 12, tab2, "/etc/nwipe/nwipe_customers.csv        " );
+                break;
+
+            case 4:
+
+                mvwprintw( main_window, 2, tab2, "PDF Report - Preview Organisation,    " );
+                mvwprintw( main_window, 3, tab2, "Customer and Date/Time details        " );
+
+                mvwprintw( main_window, 5, tab2, "This allows the above information to  " );
+                mvwprintw( main_window, 6, tab2, "be checked prior to starting the wipe " );
+                mvwprintw( main_window, 7, tab2, "so that the information is correct on " );
+                mvwprintw( main_window, 8, tab2, "the pdf report.                       " );
                 break;
 
         } /* switch */
@@ -2649,6 +2661,10 @@ void nwipe_gui_config( void )
 
         case 3:
             customer_processes( DELETE_CUSTOMER );
+            break;
+
+        case 4:
+            nwipe_gui_preview_org_customer();
             break;
     }
 
@@ -4565,6 +4581,296 @@ void nwipe_gui_add_customer_contact_phone( char* customer_contact_phone )
 
 } /* End of nwipe_gui_add_customer_contact_phone() */
 
+void nwipe_gui_preview_org_customer( void )
+{
+    /**
+     * Display the organisation and customers details and the current system date and time
+     *
+     */
+
+    extern int terminate_signal;
+
+    /* Number of entries in the configuration menu. */
+    const int count = 12;
+
+    /* The first tabstop. */
+    const int tab1 = 2;
+
+    /* The second tabstop. */
+    const int tab2 = 27;
+
+    /* The currently selected method. */
+    int focus = 0;
+
+    /* The current working row. */
+    int yy;
+
+    /* Input buffer. */
+    int keystroke;
+
+    time_t t;
+
+    /* variables used by libconfig for extracting data from nwipe.conf */
+    config_setting_t* setting;
+    const char *business_name, *business_address, *contact_name, *contact_phone, *op_tech_name;
+    const char *customer_name, *customer_address, *customer_contact_name, *customer_contact_phone;
+    extern config_t nwipe_cfg;
+
+    /* Update the footer window. */
+    werase( footer_window );
+    nwipe_gui_title( footer_window, selection_footer );
+    wrefresh( footer_window );
+
+    do
+    {
+        do
+        {
+            /* Clear the main window. */
+            werase( main_window );
+
+            nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+
+            /* Initialize the working row. */
+            yy = 2;
+
+            /* Print the options. */
+            mvwprintw( main_window, yy++, tab1, "  %s", "Business Name" );
+            mvwprintw( main_window, yy++, tab1, "  %s", "Business Address" );
+            mvwprintw( main_window, yy++, tab1, "  %s", "Contact Name" );
+            mvwprintw( main_window, yy++, tab1, "  %s", "Contact Phone" );
+            mvwprintw( main_window, yy++, tab1, "  %s", "Tech/Operator" );
+            yy++;
+            mvwprintw( main_window, yy++, tab1, "  %s", "Customer Name" );
+            mvwprintw( main_window, yy++, tab1, "  %s", "Customer Address" );
+            mvwprintw( main_window, yy++, tab1, "  %s", "Customer Contact Name" );
+            mvwprintw( main_window, yy++, tab1, "  %s", "Customer Contact Phone" );
+            yy++;
+            mvwprintw( main_window, yy++, tab1, "  %s", "System Date/Time" );
+
+            /* Print the cursor. */
+            mvwaddch( main_window, 2 + focus, tab1, ACS_RARROW );
+
+            /******************************************************************
+             * libconfig: Locate the Organisation Details section in nwipe.conf
+             */
+
+            setting = config_lookup( &nwipe_cfg, "Organisation_Details" );
+
+            /* Retrieve data from nwipe.conf */
+            if( config_setting_lookup_string( setting, "Business_Name", &business_name ) )
+            {
+                mvwprintw( main_window, 2, tab2, ": %s", business_name );
+            }
+            else
+            {
+                mvwprintw( main_window, 2, tab2, ": Cannot retrieve business_name, nwipe.conf" );
+            }
+
+            /* Retrieve data from nwipe.conf */
+            if( config_setting_lookup_string( setting, "Business_Address", &business_address ) )
+            {
+                mvwprintw( main_window, 3, tab2, ": %s", business_address );
+            }
+            else
+            {
+                mvwprintw( main_window, 3, tab2, ": Cannot retrieve business address, nwipe.conf" );
+            }
+
+            /* Retrieve data from nwipe.conf */
+            if( config_setting_lookup_string( setting, "Contact_Name", &contact_name ) )
+            {
+                mvwprintw( main_window, 4, tab2, ": %s", contact_name );
+            }
+            else
+            {
+                mvwprintw( main_window, 4, tab2, ": Cannot retrieve contact name, nwipe.conf" );
+            }
+
+            /* Retrieve data from nwipe.conf */
+            if( config_setting_lookup_string( setting, "Contact_Phone", &contact_phone ) )
+            {
+                mvwprintw( main_window, 5, tab2, ": %s", contact_phone );
+            }
+            else
+            {
+                mvwprintw( main_window, 5, tab2, ": Cannot retrieve customer contact phone, nwipe.conf" );
+            }
+
+            /* Retrieve data from nwipe.conf */
+            if( config_setting_lookup_string( setting, "Op_Tech_Name", &op_tech_name ) )
+            {
+                mvwprintw( main_window, 6, tab2, ": %s", op_tech_name );
+            }
+            else
+            {
+                mvwprintw( main_window, 6, tab2, ": Cannot retrieve op_tech_name, nwipe.conf" );
+            }
+
+            /**********************************************************************
+             * libconfig: Locate the current customer details section in nwipe.conf
+             */
+            setting = config_lookup( &nwipe_cfg, "Selected_Customer" );
+
+            /* Retrieve data from nwipe.conf */
+            if( config_setting_lookup_string( setting, "Customer_Name", &customer_name ) )
+            {
+                mvwprintw( main_window, 8, tab2, ": %s", customer_name );
+            }
+            else
+            {
+                mvwprintw( main_window, 8, tab2, ": Cannot retrieve Customer_Name, nwipe.conf" );
+            }
+
+            /* Retrieve data from nwipe.conf */
+            if( config_setting_lookup_string( setting, "Customer_Address", &customer_address ) )
+            {
+                mvwprintw( main_window, 9, tab2, ": %s", customer_address );
+            }
+            else
+            {
+                mvwprintw( main_window, 9, tab2, ": Cannot retrieve customer address, nwipe.conf" );
+            }
+
+            /* Retrieve data from nwipe.conf */
+            if( config_setting_lookup_string( setting, "Contact_Name", &contact_name ) )
+            {
+                mvwprintw( main_window, 10, tab2, ": %s", contact_name );
+            }
+            else
+            {
+                mvwprintw( main_window, 10, tab2, ": Cannot retrieve contact name, nwipe.conf" );
+            }
+
+            /* Retrieve data from nwipe.conf */
+            if( config_setting_lookup_string( setting, "Contact_Phone", &contact_phone ) )
+            {
+                mvwprintw( main_window, 11, tab2, ": %s", contact_phone );
+            }
+            else
+            {
+                mvwprintw( main_window, 11, tab2, ": Cannot retrieve contact phone, nwipe.conf" );
+            }
+
+            /*******************************
+             * Retrieve system date and time
+             */
+            time( &t );
+            mvwprintw( main_window, 13, tab2, ": %s", ctime( &t ) );
+
+            /* ************
+             * Add a border
+             */
+            box( main_window, 0, 0 );
+
+            /*************
+             * Add a title
+             */
+            nwipe_gui_title( main_window, " PDF Report - Preview Organisation, customer and date/time " );
+
+            /********************
+             * Refresh the window
+             */
+            wrefresh( main_window );
+
+            /* Wait 250ms for input from getch, if nothing getch will then continue,
+             * This is necessary so that the while loop can be exited by the
+             * terminate_signal e.g.. the user pressing control-c to exit.
+             * Do not change this value, a higher value means the keys become
+             * sluggish, any slower and more time is spent unnecessarily looping
+             * which wastes CPU cycles.
+             */
+            timeout( 250 ); /* block getch() for 250ms */
+            keystroke = getch(); /* Get a keystroke. */
+            timeout( -1 ); /* Switch back to blocking mode */
+
+            switch( keystroke )
+            {
+                case KEY_DOWN:
+                case 'j':
+                case 'J':
+
+                    if( focus < count - 1 )
+                    {
+                        if( focus == 4 || focus == 9 )
+                        {
+                            focus += 2; /* mind the gaps */
+                        }
+                        else
+                        {
+                            focus += 1;
+                        }
+                    }
+                    break;
+
+                case KEY_UP:
+                case 'k':
+                case 'K':
+
+                    if( focus > 0 )
+                    {
+                        if( focus == 6 || focus == 11 )
+                        {
+                            focus -= 2; /* mind the gaps */
+                        }
+                        else
+                        {
+                            focus -= 1;
+                        }
+                    }
+                    break;
+
+                case KEY_BACKSPACE:
+                case KEY_BREAK:
+                case 27: /* ESC */
+
+                    return;
+
+            } /* switch */
+
+        } while( keystroke != KEY_ENTER && keystroke != ' ' && keystroke != 10 && terminate_signal != 1 );
+
+        if( keystroke == KEY_ENTER || keystroke == 10 || keystroke == ' ' )
+        {
+            switch( focus )
+            {
+                case 0:
+                    nwipe_gui_organisation_business_name( business_name );
+                    keystroke = 0;
+                    break;
+
+                case 1:
+                    nwipe_gui_organisation_business_address( business_address );
+                    keystroke = 0;
+                    break;
+
+                case 2:
+                    nwipe_gui_organisation_contact_name( contact_name );
+                    keystroke = 0;
+                    break;
+
+                case 3:
+                    nwipe_gui_organisation_contact_phone( contact_phone );
+                    keystroke = 0;
+                    break;
+
+                case 4:
+                    nwipe_gui_organisation_op_tech_name( op_tech_name );
+                    keystroke = 0;
+                    break;
+
+                case 6:
+                case 7:
+                case 8:
+                case 9:
+                    nwipe_gui_config();
+                    break;
+            }
+        }
+
+    } while( keystroke != KEY_ENTER && keystroke != ' ' && keystroke != 10 && terminate_signal != 1 );
+
+} /* end of nwipe_gui_preview_org_customer( void ) */
+
 void nwipe_gui_load( void )
 {
     /**
@@ -5649,3 +5955,26 @@ void wprintw_temperature( nwipe_context_t* c )
         }
     }
 }
+
+/* NOTE Function below is a work in progress */
+#if 0
+int str_trunc(WINDOW *win, const char *str)
+{
+    /****************************************************
+     * Function to truncate a string based on window size
+     */
+
+    int cur_x, max_x, dummy;
+    char *str2;
+
+    getyx(win, dummy, cur_x);
+    getmaxyx(win, dummy, max_x);
+    int w = max_x - cur_x;
+    if (w <= 0) return 0;
+    str2 = strndup(str, w);
+    if (str2 == NULL) return 1;
+    int rv = waddstr(win, str2);
+    free(str2);
+    return rv;
+}
+#endif
