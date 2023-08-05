@@ -67,6 +67,7 @@ void nwipe_gui_add_customer_address( char* );  // Add new customer address
 void nwipe_gui_add_customer_contact_name( char* );  // Add new customer contact name
 void nwipe_gui_add_customer_contact_phone( char* );  // Add new customer contact phone
 int nwipe_gui_yes_no_footer( void );  // Change footer to yes no
+void nwipe_gui_preview_org_customer( void );  // Preview window  for wipe organisation and customer
 int spinner( nwipe_context_t** ptr, int );  // Return the next spinner character
 void temp1_flash( nwipe_context_t* );  // toggles term1_flash_status, which flashes the temperature
 
