@@ -4610,6 +4610,12 @@ void nwipe_gui_preview_org_customer( void )
 
     time_t t;
 
+    char output_str[FIELD_LENGTH];
+
+    /* Window dimensions */
+    int wlines;
+    int wcols;
+
     /* variables used by libconfig for extracting data from nwipe.conf */
     config_setting_t* setting;
     const char *business_name, *business_address, *contact_name, *contact_phone, *op_tech_name;
@@ -4629,6 +4635,9 @@ void nwipe_gui_preview_org_customer( void )
             werase( main_window );
 
             nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+
+            /* Determine size of window */
+            getmaxyx( main_window, wlines, wcols );
 
             /* Initialize the working row. */
             yy = 2;
@@ -4659,51 +4668,62 @@ void nwipe_gui_preview_org_customer( void )
             /* Retrieve data from nwipe.conf */
             if( config_setting_lookup_string( setting, "Business_Name", &business_name ) )
             {
-                mvwprintw( main_window, 2, tab2, ": %s", business_name );
+                str_truncate( wcols, tab2, business_name, output_str, FIELD_LENGTH );
+                mvwprintw( main_window, 2, tab2, ": %s", output_str );
             }
             else
             {
-                mvwprintw( main_window, 2, tab2, ": Cannot retrieve business_name, nwipe.conf" );
+                str_truncate( wcols, tab2, "Cannot retrieve business_name, nwipe.conf", output_str, FIELD_LENGTH );
+                mvwprintw( main_window, 2, tab2, ": %s", output_str );
             }
 
             /* Retrieve data from nwipe.conf */
             if( config_setting_lookup_string( setting, "Business_Address", &business_address ) )
             {
-                mvwprintw( main_window, 3, tab2, ": %s", business_address );
+                str_truncate( wcols, tab2, business_address, output_str, FIELD_LENGTH );
+                mvwprintw( main_window, 3, tab2, ": %s", output_str );
             }
             else
             {
-                mvwprintw( main_window, 3, tab2, ": Cannot retrieve business address, nwipe.conf" );
+                str_truncate( wcols, tab2, "Cannot retrieve business address, nwipe.conf", output_str, FIELD_LENGTH );
+                mvwprintw( main_window, 3, tab2, ": %s", output_str );
             }
 
             /* Retrieve data from nwipe.conf */
             if( config_setting_lookup_string( setting, "Contact_Name", &contact_name ) )
             {
-                mvwprintw( main_window, 4, tab2, ": %s", contact_name );
+                str_truncate( wcols, tab2, contact_name, output_str, FIELD_LENGTH );
+                mvwprintw( main_window, 4, tab2, ": %s", output_str );
             }
             else
             {
-                mvwprintw( main_window, 4, tab2, ": Cannot retrieve contact name, nwipe.conf" );
+                str_truncate( wcols, tab2, "Cannot retrieve contact name, nwipe.conf", output_str, FIELD_LENGTH );
+                mvwprintw( main_window, 4, tab2, ": %s", output_str );
             }
 
             /* Retrieve data from nwipe.conf */
             if( config_setting_lookup_string( setting, "Contact_Phone", &contact_phone ) )
             {
-                mvwprintw( main_window, 5, tab2, ": %s", contact_phone );
+                str_truncate( wcols, tab2, contact_phone, output_str, FIELD_LENGTH );
+                mvwprintw( main_window, 5, tab2, ": %s", output_str );
             }
             else
             {
-                mvwprintw( main_window, 5, tab2, ": Cannot retrieve customer contact phone, nwipe.conf" );
+                str_truncate(
+                    wcols, tab2, "Cannot retrieve customer contact phone, nwipe.conf", output_str, FIELD_LENGTH );
+                mvwprintw( main_window, 5, tab2, ": %s", output_str );
             }
 
             /* Retrieve data from nwipe.conf */
             if( config_setting_lookup_string( setting, "Op_Tech_Name", &op_tech_name ) )
             {
-                mvwprintw( main_window, 6, tab2, ": %s", op_tech_name );
+                str_truncate( wcols, tab2, op_tech_name, output_str, FIELD_LENGTH );
+                mvwprintw( main_window, 6, tab2, ": %s", output_str );
             }
             else
             {
-                mvwprintw( main_window, 6, tab2, ": Cannot retrieve op_tech_name, nwipe.conf" );
+                str_truncate( wcols, tab2, "Cannot retrieve op_tech_name, nwipe.conf", output_str, FIELD_LENGTH );
+                mvwprintw( main_window, 6, tab2, ": %s", output_str );
             }
 
             /**********************************************************************
@@ -4714,41 +4734,49 @@ void nwipe_gui_preview_org_customer( void )
             /* Retrieve data from nwipe.conf */
             if( config_setting_lookup_string( setting, "Customer_Name", &customer_name ) )
             {
-                mvwprintw( main_window, 8, tab2, ": %s", customer_name );
+                str_truncate( wcols, tab2, customer_name, output_str, FIELD_LENGTH );
+                mvwprintw( main_window, 8, tab2, ": %s", output_str );
             }
             else
             {
-                mvwprintw( main_window, 8, tab2, ": Cannot retrieve Customer_Name, nwipe.conf" );
+                str_truncate( wcols, tab2, "Cannot retrieve Customer_Name, nwipe.conf", output_str, FIELD_LENGTH );
+                mvwprintw( main_window, 8, tab2, ": %s", output_str );
             }
 
             /* Retrieve data from nwipe.conf */
             if( config_setting_lookup_string( setting, "Customer_Address", &customer_address ) )
             {
-                mvwprintw( main_window, 9, tab2, ": %s", customer_address );
+                str_truncate( wcols, tab2, customer_address, output_str, FIELD_LENGTH );
+                mvwprintw( main_window, 9, tab2, ": %s", output_str );
             }
             else
             {
-                mvwprintw( main_window, 9, tab2, ": Cannot retrieve customer address, nwipe.conf" );
+                str_truncate( wcols, tab2, "Cannot retrieve customer address, nwipe.conf", output_str, FIELD_LENGTH );
+                mvwprintw( main_window, 9, tab2, ": %s", output_str );
             }
 
             /* Retrieve data from nwipe.conf */
             if( config_setting_lookup_string( setting, "Contact_Name", &contact_name ) )
             {
-                mvwprintw( main_window, 10, tab2, ": %s", contact_name );
+                str_truncate( wcols, tab2, contact_name, output_str, FIELD_LENGTH );
+                mvwprintw( main_window, 10, tab2, ": %s", output_str );
             }
             else
             {
-                mvwprintw( main_window, 10, tab2, ": Cannot retrieve contact name, nwipe.conf" );
+                str_truncate( wcols, tab2, "Cannot retrieve contact name, nwipe.conf", output_str, FIELD_LENGTH );
+                mvwprintw( main_window, 10, tab2, ": %s", output_str );
             }
 
             /* Retrieve data from nwipe.conf */
             if( config_setting_lookup_string( setting, "Contact_Phone", &contact_phone ) )
             {
-                mvwprintw( main_window, 11, tab2, ": %s", contact_phone );
+                str_truncate( wcols, tab2, contact_phone, output_str, FIELD_LENGTH );
+                mvwprintw( main_window, 11, tab2, ": %s", output_str );
             }
             else
             {
-                mvwprintw( main_window, 11, tab2, ": Cannot retrieve contact phone, nwipe.conf" );
+                str_truncate( wcols, tab2, "Cannot retrieve contact phone, nwipe.conf", output_str, FIELD_LENGTH );
+                mvwprintw( main_window, 11, tab2, ": %s", output_str );
             }
 
             /*******************************
@@ -5956,25 +5984,23 @@ void wprintw_temperature( nwipe_context_t* c )
     }
 }
 
-/* NOTE Function below is a work in progress */
-#if 0
-int str_trunc(WINDOW *win, const char *str)
+char* str_truncate( int wcols, int start_column, const char* input, char* output, int output_length )
 {
-    /****************************************************
-     * Function to truncate a string based on window size
+    /***
+     * Truncate a string based on start position and terminal width
      */
 
-    int cur_x, max_x, dummy;
-    char *str2;
+    int length, idx = 0;
 
-    getyx(win, dummy, cur_x);
-    getmaxyx(win, dummy, max_x);
-    int w = max_x - cur_x;
-    if (w <= 0) return 0;
-    str2 = strndup(str, w);
-    if (str2 == NULL) return 1;
-    int rv = waddstr(win, str2);
-    free(str2);
-    return rv;
+    length = wcols - start_column - 1;
+    idx = 0;
+    while( idx < output_length && idx < length )
+    {
+        output[idx] = input[idx];
+        idx++;
+    }
+    /* terminate the string */
+    output[idx] = 0;
+
+    return output;
 }
-#endif
