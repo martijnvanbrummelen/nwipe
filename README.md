@@ -176,8 +176,7 @@ cd ~/nwipe_master/nwipe/src
 
 Note the ./, that means only look in the current directory for nwipe. if you forgot to type ./ the computer would run the older repository version of nwipe.
 
-Once you have copied the script below into a file called buildnwipe, you need to give the file execute permissions `chmod +x buildnwipe` before you can run it. [Download script](
-https://drive.google.com/file/d/1BsQDlMqtEycAgfk9FpG1sxv3jFz5dzNO/view?usp=sharing)
+Once you have copied the script below into a file called buildnwipe, you need to give the file execute permissions `chmod +x buildnwipe` before you can run it.
 ```
 #!/bin/bash
 cd "$HOME"
