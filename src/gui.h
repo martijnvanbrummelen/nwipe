@@ -68,6 +68,18 @@ void nwipe_gui_add_customer_contact_name( char* );  // Add new customer contact 
 void nwipe_gui_add_customer_contact_phone( char* );  // Add new customer contact phone
 int nwipe_gui_yes_no_footer( void );  // Change footer to yes no
 void nwipe_gui_preview_org_customer( void );  // Preview window  for wipe organisation and customer
+
+/**
+ * Truncate a string based on start position and terminal width
+ *
+ * @parameter wcols         Width of window, obtained from getmaxyx(..)
+ * @parameter start_column  Start column where the string starts
+ * @parameter input_string  The string to be truncated if necessary
+ * @parameter ouput_string  The possibly truncated string
+ * @parameter ouput_string_length   Max length of output string
+ * @Return returns a pointer to the output string
+ */
+char* str_truncate( int, int, const char*, char*, int );  // Truncate string based on start column and terminal width
 int spinner( nwipe_context_t** ptr, int );  // Return the next spinner character
 void temp1_flash( nwipe_context_t* );  // toggles term1_flash_status, which flashes the temperature
 
