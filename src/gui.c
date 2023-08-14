@@ -4892,12 +4892,200 @@ void nwipe_gui_preview_org_customer( void )
                 case 9:
                     nwipe_gui_config();
                     break;
+
+                case 11:
+                    nwipe_gui_set_date_time();
             }
         }
 
     } while( keystroke != KEY_ENTER && keystroke != ' ' && keystroke != 10 && terminate_signal != 1 );
 
 } /* end of nwipe_gui_preview_org_customer( void ) */
+
+void nwipe_gui_set_date_time( void )
+{
+    /**
+     * Set system date and time
+     *
+     */
+
+    extern int terminate_signal;
+
+    /* Number of entries in the configuration menu. */
+    const int count = 6;
+
+    /* The first tabstop. */
+    const int tab1 = 2;
+
+    /* The second tabstop. */
+    const int tab2 = 27;
+
+    /* The currently selected method. */
+    int focus = 0;
+
+    /* The current working row. */
+    int yy;
+
+    /* Input buffer. */
+    int keystroke;
+
+    time_t t;
+
+    /* Window dimensions */
+    int wlines;
+    int wcols;
+
+    extern config_t nwipe_cfg;
+
+    /* Update the footer window. */
+    werase( footer_window );
+    nwipe_gui_title( footer_window, selection_footer );
+    wrefresh( footer_window );
+
+    do
+    {
+        do
+        {
+            /* Clear the main window. */
+            werase( main_window );
+
+            nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+
+            /* Determine size of window */
+            getmaxyx( main_window, wlines, wcols );
+
+            /* Initialize the working row. */
+            yy = 4;
+
+            /* Print the options. */
+            mvwprintw( main_window, yy++, tab1, "  %s", "Year" );
+            mvwprintw( main_window, yy++, tab1, "  %s", "Month" );
+            mvwprintw( main_window, yy++, tab1, "  %s", "Day" );
+            yy++;
+            mvwprintw( main_window, yy++, tab1, "  %s", "Hours" );
+            mvwprintw( main_window, yy++, tab1, "  %s", "Minutes" );
+            // mvwprintw( main_window, yy++, tab1, "  %s", "System Date/Time" );
+
+            /* Print the cursor. */
+            mvwaddch( main_window, 4 + focus, tab1, ACS_RARROW );
+
+            /*******************************
+             * Retrieve system date and time
+             */
+            time( &t );
+            mvwprintw( main_window, 2, tab1, "%s", ctime( &t ) );
+
+            /* ************
+             * Add a border
+             */
+            box( main_window, 0, 0 );
+
+            /*************
+             * Add a title
+             */
+            nwipe_gui_title( main_window, " Set date/time " );
+
+            /********************
+             * Refresh the window
+             */
+            wrefresh( main_window );
+
+            /* Wait 250ms for input from getch, if nothing getch will then continue,
+             * This is necessary so that the while loop can be exited by the
+             * terminate_signal e.g.. the user pressing control-c to exit.
+             * Do not change this value, a higher value means the keys become
+             * sluggish, any slower and more time is spent unnecessarily looping
+             * which wastes CPU cycles.
+             */
+            timeout( 250 ); /* block getch() for 250ms */
+            keystroke = getch(); /* Get a keystroke. */
+            timeout( -1 ); /* Switch back to blocking mode */
+
+            switch( keystroke )
+            {
+                case KEY_DOWN:
+                case 'j':
+                case 'J':
+
+                    if( focus < count - 1 )
+                    {
+                        if( focus == 2 )
+                        {
+                            focus += 2; /* mind the gaps */
+                        }
+                        else
+                        {
+                            focus += 1;
+                        }
+                    }
+                    break;
+
+                case KEY_UP:
+                case 'k':
+                case 'K':
+
+                    if( focus > 0 )
+                    {
+                        if( focus == 4 )
+                        {
+                            focus -= 2; /* mind the gaps */
+                        }
+                        else
+                        {
+                            focus -= 1;
+                        }
+                    }
+                    break;
+
+                case KEY_BACKSPACE:
+                case KEY_BREAK:
+                case 27: /* ESC */
+
+                    return;
+
+            } /* switch */
+
+        } while( keystroke != KEY_ENTER && keystroke != ' ' && keystroke != 10 && terminate_signal != 1 );
+
+        if( keystroke == KEY_ENTER || keystroke == 10 || keystroke == ' ' )
+        {
+            switch( focus )
+            {
+                case 0:
+                    /* Set year */
+                    // NOTE ADD Function
+                    keystroke = 0;
+                    break;
+
+                case 1:
+                    /* Set month */
+                    // NOTE ADD Function
+                    keystroke = 0;
+                    break;
+
+                case 2:
+                    /* Set day */
+                    // NOTE ADD Function
+                    keystroke = 0;
+                    break;
+
+                case 3:
+                    /* Set hours */
+                    // NOTE ADD Function
+                    keystroke = 0;
+                    break;
+
+                case 4:
+                    /* Set minutes */
+                    // NOTE ADD Function
+                    keystroke = 0;
+                    break;
+            }
+        }
+
+    } while( keystroke != KEY_ENTER && keystroke != ' ' && keystroke != 10 && terminate_signal != 1 );
+
+} /* end of nwipe_gui_set_date_time( void ) */
 
 void nwipe_gui_load( void )
 {
