@@ -80,6 +80,15 @@ void nwipe_gui_preview_org_customer( void );  // Preview window  for wipe organi
  * @Return returns a pointer to the output string
  */
 char* str_truncate( int, int, const char*, char*, int );  // Truncate string based on start column and terminal width
+
+/**
+ * Set system date and time
+ *
+ *  @parameter void
+ *  @Return void
+ */
+void nwipe_gui_set_date_time( void );
+
 int spinner( nwipe_context_t** ptr, int );  // Return the next spinner character
 void temp1_flash( nwipe_context_t* );  // toggles term1_flash_status, which flashes the temperature
 
@@ -109,6 +118,8 @@ void nwipe_update_speedring( nwipe_speedring_t* speedring, u64 speedring_done, t
 #define GETCH_GUI_STATS_UPDATE_MS 1 /* 1 * 100 = 1/10/sec = millisecond block time for gui stats screen updates */
 
 #define FIELD_LENGTH 256
+
+#define MAX_TITLE_LENGTH 76
 
 #define YES 1
 #define NO 0
