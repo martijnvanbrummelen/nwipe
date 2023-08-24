@@ -46,7 +46,7 @@ int nwipe_random_verify( nwipe_context_t* c )
     size_t blocksize;
 
     /* The result buffer for calls to lseek. */
-    off64_t offset;
+    u_int64_t offset;
 
     /* The input buffer. */
     char* b;
@@ -98,7 +98,7 @@ int nwipe_random_verify( nwipe_context_t* c )
     /* Reset the pass byte counter. */
     c->pass_done = 0;
 
-    if( offset == (off64_t) -1 )
+    if( offset == (u_int64_t) -1 )
     {
         nwipe_perror( errno, __FUNCTION__, "lseek" );
         nwipe_log( NWIPE_LOG_FATAL, "Unable to reset the '%s' file offset.", c->device_name );
@@ -184,7 +184,7 @@ int nwipe_random_verify( nwipe_context_t* c )
             /* Bump the file pointer to the next block. */
             offset = lseek( c->device_fd, s, SEEK_CUR );
 
-            if( offset == (off64_t) -1 )
+            if( offset == (u_int64_t) -1 )
             {
                 nwipe_perror( errno, __FUNCTION__, "lseek" );
                 nwipe_log(
@@ -234,7 +234,7 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
     size_t blocksize;
 
     /* The result buffer for calls to lseek. */
-    off64_t offset;
+    u_int64_t offset;
 
     /* The output buffer. */
     char* b;
@@ -284,7 +284,7 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
     /* Reset the pass byte counter. */
     c->pass_done = 0;
 
-    if( offset == (off64_t) -1 )
+    if( offset == (u_int64_t) -1 )
     {
         nwipe_perror( errno, __FUNCTION__, "lseek" );
         nwipe_log( NWIPE_LOG_FATAL, "Unable to reset the '%s' file offset.", c->device_name );
@@ -376,7 +376,7 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
             /* Bump the file pointer to the next block. */
             offset = lseek( c->device_fd, s, SEEK_CUR );
 
-            if( offset == (off64_t) -1 )
+            if( offset == (u_int64_t) -1 )
             {
                 nwipe_perror( errno, __FUNCTION__, "lseek" );
                 nwipe_log(
@@ -483,7 +483,7 @@ int nwipe_static_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
     size_t blocksize;
 
     /* The result buffer for calls to lseek. */
-    off64_t offset;
+    u_int64_t offset;
 
     /* The input buffer. */
     char* b;
@@ -565,7 +565,7 @@ int nwipe_static_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
     /* Reset the pass byte counter. */
     c->pass_done = 0;
 
-    if( offset == (off64_t) -1 )
+    if( offset == (u_int64_t) -1 )
     {
         nwipe_perror( errno, __FUNCTION__, "lseek" );
         nwipe_log( NWIPE_LOG_FATAL, "Unable to reset the '%s' file offset.", c->device_name );
@@ -636,7 +636,7 @@ int nwipe_static_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
             /* Bump the file pointer to the next block. */
             offset = lseek( c->device_fd, s, SEEK_CUR );
 
-            if( offset == (off64_t) -1 )
+            if( offset == (u_int64_t) -1 )
             {
                 nwipe_perror( errno, __FUNCTION__, "lseek" );
                 nwipe_log(
@@ -687,7 +687,7 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
     size_t blocksize;
 
     /* The result buffer for calls to lseek. */
-    off64_t offset;
+    u_int64_t offset;
 
     /* The output buffer. */
     char* b;
@@ -744,7 +744,7 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
     /* Reset the pass byte counter. */
     c->pass_done = 0;
 
-    if( offset == (off64_t) -1 )
+    if( offset == (u_int64_t) -1 )
     {
         nwipe_perror( errno, __FUNCTION__, "lseek" );
         nwipe_log( NWIPE_LOG_FATAL, "Unable to reset the '%s' file offset.", c->device_name );
@@ -808,7 +808,7 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
             /* Bump the file pointer to the next block. */
             offset = lseek( c->device_fd, s, SEEK_CUR );
 
-            if( offset == (off64_t) -1 )
+            if( offset == (u_int64_t) -1 )
             {
                 nwipe_perror( errno, __FUNCTION__, "lseek" );
                 nwipe_log(

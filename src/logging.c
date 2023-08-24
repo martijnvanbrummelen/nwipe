@@ -148,60 +148,6 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
 
     if( line_current_pos < MAX_LOG_LINE_CHARS )
     {
-        switch( level )
-        {
-
-            case NWIPE_LOG_NONE:
-            case NWIPE_LOG_NOTIMESTAMP:
-                /* Do nothing. */
-                break;
-
-                /* NOTE! The debug labels, i.e. debug, info, notice etc should be left padded with spaces, in order
-                 * to maintain column alignment. Pad a label to achieve the length of whatever the longest label happens
-                 * to be. Important to know if you are thinking of adding another label.
-                 */
-
-            case NWIPE_LOG_DEBUG:
-                chars_written =
-                    snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, "  debug: " );
-                break;
-
-            case NWIPE_LOG_INFO:
-                chars_written =
-                    snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, "   info: " );
-                break;
-
-            case NWIPE_LOG_NOTICE:
-                chars_written =
-                    snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, " notice: " );
-                break;
-
-            case NWIPE_LOG_WARNING:
-                chars_written =
-                    snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, "warning: " );
-                break;
-
-            case NWIPE_LOG_ERROR:
-                chars_written =
-                    snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, "  error: " );
-                break;
-
-            case NWIPE_LOG_FATAL:
-                chars_written =
-                    snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, "  fatal: " );
-                break;
-
-            case NWIPE_LOG_SANITY:
-                /* TODO: Request that the user report the log. */
-                chars_written =
-                    snprintf( message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, " sanity: " );
-                break;
-
-            default:
-                chars_written = snprintf(
-                    message_buffer + line_current_pos, MAX_LOG_LINE_CHARS - line_current_pos, "level %i: ", level );
-        }
-
         /*
          * Has the end of the buffer been reached ?
          */
@@ -331,79 +277,66 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
     /* The log file descriptor. */
     int fd;
 
-    if( nwipe_options.logfile[0] == '\0' )
+    /* Open the log file for appending. */
+    fp = fopen( nwipe_options.logfile, "a" );
+
+    if (fp != NULL)
     {
-        if( nwipe_options.nogui )
+
+        /* Get the file descriptor of the log file. */
+        fd = fileno( fp );
+
+        /* Block and lock. */
+        r = flock( fd, LOCK_EX );
+
+        if( r != 0 )
         {
-            printf( "%s\n", log_lines[log_current_element] );
-            log_elements_displayed++;
-        }
-    }
-    else
-    {
-        /* Open the log file for appending. */
-        fp = fopen( nwipe_options.logfile, "a" );
-
-        if( fp != NULL )
-        {
-
-            /* Get the file descriptor of the log file. */
-            fd = fileno( fp );
-
-            /* Block and lock. */
-            r = flock( fd, LOCK_EX );
-
-            if( r != 0 )
-            {
-                perror( "nwipe_log: flock:" );
-                fprintf( stderr, "nwipe_log: Unable to lock '%s' for logging.\n", nwipe_options.logfile );
-                r = pthread_mutex_unlock( &mutex1 );
-                if( r != 0 )
-                {
-                    fprintf( stderr, "nwipe_log: pthread_mutex_unlock failed. Code %i \n", r );
-
-                    /* Unlock the file. */
-                    r = flock( fd, LOCK_UN );
-                    fclose( fp );
-                    return;
-                }
-            }
-
-            fprintf( fp, "%s\n", log_lines[log_current_element] );
-
-            /* Unlock the file. */
-            r = flock( fd, LOCK_UN );
-
-            if( r != 0 )
-            {
-                perror( "nwipe_log: flock:" );
-                fprintf( stderr, "Error: Unable to unlock '%s' after logging.\n", nwipe_options.logfile );
-            }
-
-            /* Close the stream. */
-            r = fclose( fp );
-
-            if( r != 0 )
-            {
-                perror( "nwipe_log: fclose:" );
-                fprintf( stderr, "Error: Unable to close '%s' after logging.\n", nwipe_options.logfile );
-            }
-        }
-        else
-        {
-            /* Tell user we can't create/open the log and terminate nwipe */
-            fprintf(
-                stderr, "\nERROR:Unable to create/open '%s' for logging, permissions?\n\n", nwipe_options.logfile );
+            perror( "nwipe_log: flock:" );
+            fprintf( stderr, "nwipe_log: Unable to lock '%s' for logging.\n", nwipe_options.logfile );
             r = pthread_mutex_unlock( &mutex1 );
             if( r != 0 )
             {
                 fprintf( stderr, "nwipe_log: pthread_mutex_unlock failed. Code %i \n", r );
+
+                /* Unlock the file. */
+                r = flock( fd, LOCK_UN );
+                fclose( fp );
+                return;
             }
-            user_abort = 1;
-            terminate_signal = 1;
-            return;
+
+        /* Unlock the file. */
+        r = flock( fd, LOCK_UN );
+
+        if( r != 0 )
+        {
+            perror( "nwipe_log: flock:" );
+            fprintf( stderr, "Error: Unable to unlock '%s' after logging.\n", nwipe_options.logfile );
+        }
+
+        /* Close the stream. */
+        r = fclose( fp );
+
+        if( r != 0 )
+        {
+            perror( "nwipe_log: fclose:" );
+            fprintf( stderr, "Error: Unable to close '%s' after logging.\n", nwipe_options.logfile );
         }
     }
+    else
+    {
+        /* Tell user we can't create/open the log and terminate nwipe */
+        fprintf(
+            stderr, "\nERROR:Unable to create/open '%s' for logging, permissions?\n\n", nwipe_options.logfile );
+        r = pthread_mutex_unlock( &mutex1 );
+
+        if( r != 0 )
+            fprintf( stderr, "nwipe_log: pthread_mutex_unlock failed. Code %i \n", r );
+
+        user_abort = 1;
+        terminate_signal = 1;
+        return;
+    }
+
 
     log_current_element++;
 

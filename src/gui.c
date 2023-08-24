@@ -109,6 +109,10 @@
 #define NWIPE_GUI_MAIN_Y 8
 #define NWIPE_GUI_MAIN_X 0
 
+/* WipeOS Logo */
+#define NWIPE_WIPEOS_LOGO_X (COLS - 93)
+#define NWIPE_WIPEOS_LOGO_Y (LINES - 15)
+
 #define SKIP_DEV_PREFIX 5
 
 /* Window pointers. */
@@ -317,6 +321,8 @@ void nwipe_gui_init( void )
 
     /* Create a new main window and panel */
     nwipe_gui_create_main_window();
+
+    nwipe_gui_wipeos_logo();
 
     update_panels();
     doupdate();
@@ -556,6 +562,27 @@ void nwipe_gui_create_stats_window()
     mvwprintw( stats_window, NWIPE_GUI_STATS_ERRORS_Y, NWIPE_GUI_STATS_ERRORS_X, "Errors:        " );
 
 } /* nwipe_gui_create_stats_window */
+
+void nwipe_gui_wipeos_logo()
+{
+    const char* wipeosLogo = "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@]\n"
+                             "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@NNNNNNNNNN@@@@@@@@@@@@@@@@@@@@@@@@]\n"
+                             "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   @@@@@@@@@g  N@@@@@@@@@@@@@@@@@@@@@]\n"
+                             "@@@@@@@@@ ]@@@@@ %@@@@@  @  @@@@@@@@@@@@@@@@@@@@@@@@@  @@@       M@@@ @@P    M@@@@@@@@@@@@@]\n"
+                             "@@@@@@@@@  @@@@@  @@@@@ ]@@@@@@@@@@@@@@@@@@@@@@@@@@@@  @           M@ @[ ]@@@ @@@@@@@@@@@@@]\n"
+                             "@@@@@@@@@@  @@@    @@@  @@  @@         @@@@       N@@            g@k  @@  N@@@@@@@@@@@@@@@@]\n"
+                             "@@@@@@@@@@  @@  @@  @@ ]@@  @@  g@@@@@  %@  @@@@@@ ]@       @@@  N    @@@g   @@@@@@@@@@@@@@]\n"
+                             "@@@@@@@@@@@    @@@@ 3  @@@  @@  @@@@@@@             @   jgg  NN       @@@@@@  M@@@@@@@@@@@@]\n"
+                             "@@@@@@@@@@@   @@@@@   @@@@  @@  @@@@@@@ ]k N@@@@@@ @@   M@@f        @ @ N@@@@  @@@@@@@@@@@@]\n"
+                             "@@@@@@@@@@@@  @@@@@@  @@@@  @@         g@@@        @@  @@          @@ @       @@@@@@@@@@@@@]\n"
+                             "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  @@@g@@@@@@@@@@g@@@@@@  @@@@@ggg@@@@@@ @@@@gg@@@@@@@@@@@@@@@]\n"
+                             "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  @@@@@@@@@@@@@@@@@@@@@  @@@        @@@ @@@@@@@@@@@@@@@@@@@@@]\n"
+                             "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  NNNNNNNNNNN  @@@@@@@@@@@@@@@@@@@@@@]\n"
+                             "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@gggggggg@@@@@@@@@@@@@@@@@@@@@@@@@]\n"
+                             "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@]";
+
+    mvprintw(NWIPE_WIPEOS_LOGO_Y, NWIPE_WIPEOS_LOGO_X, "%s", wipeosLogo);
+}
 
 void nwipe_gui_create_all_windows_on_terminal_resize( int force_creation, const char* footer_text )
 {

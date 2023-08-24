@@ -156,13 +156,13 @@ v0.20
 
 v0.19
 -----
-- Fixed building on Fedora(Unknown `off64_t`) bug #19.
+- Fixed building on Fedora(Unknown `u_int64_t`) bug #19.
 - Use PRNG instead of zero's bug #7. (Thanks xambroz).
 
 v0.18
 -----
 - Fixed grammar.
-- Move from `loff_t` to `off64_t` for musl libc support.
+- Move from `loff_t` to `u_int64_t` for musl libc support.
 - Add `--nosignals` option.
 - Automake needs the `dist_` prefix to include man pages in `make dist`.
 - Remove more compiler warnings.

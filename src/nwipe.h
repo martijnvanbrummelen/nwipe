@@ -36,15 +36,6 @@ void* signal_hand( void* );
 #define _FILE_OFFSET_BITS 64
 #endif
 
-/* workaround for Fedora */
-#ifndef off64_t
-#ifndef off_t
-#define off64_t int64_t
-#else
-#define off64_t off_t
-#endif
-#endif
-
 /* Busybox headers. */
 #ifdef BB_VER
 #include "busybox.h"
