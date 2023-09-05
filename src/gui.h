@@ -68,6 +68,7 @@ void nwipe_gui_add_customer_contact_name( char* );  // Add new customer contact 
 void nwipe_gui_add_customer_contact_phone( char* );  // Add new customer contact phone
 int nwipe_gui_yes_no_footer( void );  // Change footer to yes no
 void nwipe_gui_preview_org_customer( void );  // Preview window  for wipe organisation and customer
+void nwipe_gui_set_system_year( void );  // Set the systems current year
 
 /**
  * Truncate a string based on start position and terminal width
