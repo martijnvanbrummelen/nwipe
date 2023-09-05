@@ -24,6 +24,9 @@
 #ifndef MISCELLANEOUS_H_
 #define MISCELLANEOUS_H_
 
+#define FOUR_DIGITS 4
+#define TWO_DIGITS 2
+
 /**
  * Convert the string from lower to upper case
  * @param pointer to a null terminated string
@@ -86,5 +89,20 @@ void replace_non_alphanumeric( char*, char );
  * @return void
  */
 void convert_double_to_string( char*, double );
+
+/**
+ * Reads system date & time and populates the caller provided strings.
+ * Each string is null terminated by this function. The calling
+ * program must provide the minimum string sizes as shown below.
+ *
+ * @param char* year 5 bytes (4 numeric digits plus NULL terminator)
+ * @param char* month 3 bytes (2 numeric digits plus NULL terminator)
+ * @param char* day 3 bytes (2 numeric digits plus NULL terminator)
+ * @param char* hours 3 bytes (2 numeric digits plus NULL terminator)
+ * @param char* minutes 3 bytes (2 numeric digits plus NULL terminator)
+ * @param char* seconds 3 bytes (2 numeric digits plus NULL terminator)
+ * @return 0 = success, -1 = failure. See nwipe log for detail.
+ */
+int read_system_datetime( char*, char*, char*, char*, char*, char* );
 
 #endif /* HPA_DCO_H_ */

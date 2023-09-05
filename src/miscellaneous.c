@@ -1,6 +1,6 @@
 /*
  *  miscellaneous.c: functions that may be generally used throughout nwipes code,
- *  mainly string processing related functions.
+ *  mainly string processing functions but also time related functions.
  *
  *  Copyright PartialVolume <https://github.com/PartialVolume>.
  *
@@ -19,7 +19,19 @@
  *
  */
 
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE
+#endif
+
+#ifndef _POSIX_SOURCE
+#define _POSIX_SOURCE
+#endif
+
+#include <stdio.h>
 #include "nwipe.h"
+#include "context.h"
+#include "logging.h"
+#include "miscellaneous.h"
 
 /* Convert string to upper case
  */
@@ -265,4 +277,248 @@ void convert_double_to_string( char* output_str, double value )
         output_str[idx3++] = percstr[idx++];
     }
     output_str[idx3] = 0;
+}
+
+int read_system_datetime( char* year, char* month, char* day, char* hours, char* minutes, char* seconds )
+{
+    /* Reads system date & time and populates the caller provided strings.
+     * Each string is null terminated by this function. The calling program
+     * must provide the minimum string sizes as shown below.
+     *
+     * year 5 bytes (4 numeric digits plus NULL terminator)
+     * month 3 bytes (2 numeric digits plus NULL terminator)
+     * day 3 bytes (2 numeric digits plus NULL terminator)
+     * hours 3 bytes (2 numeric digits plus NULL terminator)
+     * minutes 3 bytes (2 numeric digits plus NULL terminator)
+     * seconds 3 bytes (2 numeric digits plus NULL terminator)
+     *
+     * return value:
+     * 0 = success
+     * -1 = Failure, see nwipe log for detail.
+     */
+    FILE* fp;
+    int r;  // A result buffer.
+    int idx;  // general index
+    int status = 0;
+
+    /**
+     * Obtain the year
+     */
+    fp = popen( "date +%Y", "r" );
+    if( fp == NULL )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to obtain system year using commmand = date +%Y" );
+    }
+    else
+    {
+        /* Read the first line and validate it. Should be 4 numeric digits */
+        if( fgets( year, FOUR_DIGITS + 1, fp ) != NULL )
+        {
+            idx = 0;
+            while( idx < 4 )
+            {
+                if( year[idx] >= '0' && year[idx] <= '9' )
+                {
+                    idx++;
+                }
+                else
+                {
+                    /* if we haven't reached the correct number of digits due to invalid data, log error */
+                    year[++idx] = 0; /* terminate the string, prior to using in nwipe_log */
+                    nwipe_log( NWIPE_LOG_ERROR,
+                               "Obtained system year using command = date +%Y, but result appears invalid = %s",
+                               year );
+                    status = -1;
+                    break;
+                }
+            }
+            year[idx] = 0; /* terminate the string */
+        }
+        r = pclose( fp );
+    }
+
+    /**
+     * Obtain the month
+     */
+    fp = popen( "date +%m", "r" );
+    if( fp == NULL )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to obtain system month using the command = date +%m" );
+    }
+    else
+    {
+        /* Read the first line and validate it. Should be 2 numeric digits */
+        if( fgets( month, TWO_DIGITS + 1, fp ) != NULL )
+        {
+            idx = 0;
+            while( idx < 2 )
+            {
+                if( month[idx] >= '0' && month[idx] <= '9' )
+                {
+                    idx++;
+                }
+                else
+                {
+                    /* if we haven't reached the correct number of digits due to invalid data, log error */
+                    month[++idx] = 0; /* terminate the string, prior to using in nwipe_log */
+                    nwipe_log( NWIPE_LOG_ERROR,
+                               "Obtained system month using command = date +%m, but result appears invalid = %s",
+                               month );
+                    status = -1;
+                    break;
+                }
+            }
+            month[idx] = 0; /* terminate the string */
+        }
+        r = pclose( fp );
+    }
+
+    /**
+     * Obtain the day
+     */
+    fp = popen( "date +\%d", "r" );
+    if( fp == NULL )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to obtain system day using the command = date +\%d" );
+    }
+    else
+    {
+        /* Read the first line and validate it. Should be 2 numeric digits */
+        if( fgets( day, TWO_DIGITS + 1, fp ) != NULL )
+        {
+            idx = 0;
+            while( idx < 2 )
+            {
+                if( day[idx] >= '0' && day[idx] <= '9' )
+                {
+                    idx++;
+                }
+                else
+                {
+                    /* if we haven't reached the correct number of digits due to invalid data, log error */
+                    day[++idx] = 0; /* terminate the string, prior to using in nwipe_log */
+                    nwipe_log( NWIPE_LOG_ERROR,
+                               "Obtained system day using command = date +\%d, but result appears invalid = %s",
+                               day );
+                    status = -1;
+                    break;
+                }
+            }
+            day[idx] = 0; /* terminate the string */
+        }
+        r = pclose( fp );
+    }
+
+    /**
+     * Obtain the hours
+     */
+    fp = popen( "date +%H", "r" );
+    if( fp == NULL )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to obtain system hour using the command = date +%H" );
+    }
+    else
+    {
+        /* Read the first line and validate it. Should be 2 numeric digits */
+        if( fgets( hours, TWO_DIGITS + 1, fp ) != NULL )
+        {
+            // nwipe_log( NWIPE_LOG_INFO, "Seconds = %s, Year = %s", seconds, year);
+            idx = 0;
+            while( idx < 2 )
+            {
+                if( hours[idx] >= '0' && hours[idx] <= '9' )
+                {
+                    idx++;
+                }
+                else
+                {
+                    /* if we haven't reached the correct number of digits due to invalid data, log error */
+                    hours[++idx] = 0; /* terminate the string, prior to using in nwipe_log */
+                    nwipe_log( NWIPE_LOG_ERROR,
+                               "Obtained system hours using command = date +%H, but result appears invalid = %s",
+                               hours );
+                    status = -1;
+                    break;
+                }
+            }
+            hours[idx] = 0; /* terminate the string */
+        }
+        r = pclose( fp );
+    }
+
+    /**
+     * Obtain the minutes
+     */
+    fp = popen( "date +%M", "r" );
+    if( fp == NULL )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to obtain system minutes using the command = date +%M" );
+    }
+    else
+    {
+        /* Read the first line and validate it. Should be 2 numeric digits */
+        if( fgets( minutes, TWO_DIGITS + 1, fp ) != NULL )
+        {
+            // nwipe_log( NWIPE_LOG_INFO, "Seconds = %s, Year = %s", seconds, year);
+            idx = 0;
+            while( idx < 2 )
+            {
+                if( minutes[idx] >= '0' && minutes[idx] <= '9' )
+                {
+                    idx++;
+                }
+                else
+                {
+                    /* if we haven't reached the correct number of digits due to invalid data, log the error */
+                    minutes[++idx] = 0; /* terminate the string, prior to using in nwipe_log */
+                    nwipe_log( NWIPE_LOG_ERROR,
+                               "Obtained system minutes using command = date +%H, but result appears invalid = %s",
+                               minutes );
+                    status = -1;
+                    break;
+                }
+            }
+            minutes[idx] = 0; /* terminate the string */
+        }
+        r = pclose( fp );
+    }
+
+    /**
+     * Obtain the seconds
+     */
+    fp = popen( "date +%S", "r" );
+    if( fp == NULL )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to obtain system seconds using the command = date +%S" );
+    }
+    else
+    {
+        /* Read the first line and validate it. Should be 2 numeric digits */
+        if( fgets( seconds, TWO_DIGITS + 1, fp ) != NULL )
+        {
+            // nwipe_log( NWIPE_LOG_INFO, "Seconds = %s, Year = %s", seconds, year);
+            idx = 0;
+            while( idx < 2 )
+            {
+                if( seconds[idx] >= '0' && seconds[idx] <= '9' )
+                {
+                    idx++;
+                }
+                else
+                {
+                    /* if we haven't reached the correct number of digits due to invalid data, log error */
+                    seconds[++idx] = 0; /* terminate the string, prior to using in nwipe_log */
+                    nwipe_log( NWIPE_LOG_ERROR,
+                               "Obtained system seconds using command = date +%S, but result appears invalid = %s",
+                               seconds );
+                    status = -1;
+                    break;
+                }
+            }
+            seconds[idx] = 0; /* terminate the string */
+        }
+        r = pclose( fp );
+    }
+
+    return status;
 }

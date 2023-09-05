@@ -28,6 +28,17 @@
  *   and things like ncurses libmenu are not worth the storage overhead.
  *
  */
+
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE
+#endif
+
+#ifndef _POSIX_SOURCE
+#define _POSIX_SOURCE
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
 #include <ncurses.h>
 #include <panel.h>
 #include <stdint.h>
@@ -5053,7 +5064,7 @@ void nwipe_gui_set_date_time( void )
             {
                 case 0:
                     /* Set year */
-                    // NOTE ADD Function
+                    nwipe_gui_set_system_year();
                     keystroke = 0;
                     break;
 
@@ -5086,6 +5097,160 @@ void nwipe_gui_set_date_time( void )
     } while( keystroke != KEY_ENTER && keystroke != ' ' && keystroke != 10 && terminate_signal != 1 );
 
 } /* end of nwipe_gui_set_date_time( void ) */
+
+void nwipe_gui_set_system_year( void )
+{
+    /**
+     * Allows the user to edit the host systems year
+     *
+     * @modifies  system year
+     * @modifies  main_window
+     *
+     */
+
+    /* The first tabstop. */
+    const int tab1 = 2;
+
+    /* The current working row. */
+    int yy = 2;
+
+    /* Input buffer. */
+    int keystroke;
+
+    /* Various output from the date command is processed in this buffer */
+    char date_buffer[256];
+    date_buffer[0] = 0;
+
+    char year[5] = "";
+    char month[3] = "";
+    char day[3] = "";
+    char hours[3] = "";
+    char minutes[3] = "";
+    char seconds[3] = "";
+
+    /* buffer index */
+    int idx = 0;
+
+    int status = 0;
+
+    FILE* fp;
+
+    extern int terminate_signal;
+
+    /* Update the footer window. */
+    werase( footer_window );
+    nwipe_gui_title( footer_window, selection_footer_text_entry );
+    wrefresh( footer_window );
+
+    fp = popen( "date +%Y", "r" );
+    if( fp == NULL )
+    {
+        nwipe_log( NWIPE_LOG_INFO, "popen:Failed to retrieve date +%Y %s", date_buffer );
+        mvwprintw( main_window, yy + 4, tab1, "popen:date command failed retrieving year" );
+    }
+
+    if( fgets( date_buffer, sizeof( date_buffer ), fp ) == NULL )
+    {
+        nwipe_log( NWIPE_LOG_INFO, "fgets:failed to retrieve year %s", date_buffer );
+        mvwprintw( main_window, yy + 5, tab1, "fgets:failed retrieving year" );
+    }
+
+    /* terminate string after fourth character removing any lf */
+    date_buffer[4] = 0;
+
+    pclose( fp );
+
+    /* Set the buffer index to point to the end of the string, i.e the NULL */
+    idx = strlen( date_buffer );
+
+    do
+    {
+        /* Erase the main window. */
+        werase( main_window );
+
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry );
+
+        /* Add a border. */
+        box( main_window, 0, 0 );
+
+        /* Add a title. */
+        nwipe_gui_title( main_window, " Set System Year " );
+
+        /* Initialize the working row. */
+        yy = 4;
+
+        mvwprintw( main_window, yy++, tab1, "Enter the current year, four numeric digits, return key to submit" );
+
+        /* Print this line last so that the cursor is in the right place. */
+        mvwprintw( main_window, 2, tab1, ">%s", date_buffer );
+
+        /* Reveal the cursor. */
+        curs_set( 1 );
+
+        /* Refresh the window. */
+        wrefresh( main_window );
+
+        /* Wait 250ms for input from getch, if nothing getch will then continue,
+         * This is necessary so that the while loop can be exited by the
+         * terminate_signal e.g.. the user pressing control-c to exit.
+         * Do not change this value, a higher value means the keys become
+         * sluggish, any slower and more time is spent unnecessarily looping
+         * which wastes CPU cycles.
+         */
+        timeout( 250 );  // block getch() for 250ms.
+        keystroke = getch();  // Get a keystroke.
+        timeout( -1 );  // Switch back to blocking mode.
+
+        switch( keystroke )
+        {
+            /* Escape key. */
+            case 27:
+                return;
+
+            case KEY_BACKSPACE:
+            case KEY_LEFT:
+            case 127:
+
+                if( idx > 0 )
+                {
+                    date_buffer[--idx] = 0;
+                }
+
+                break;
+
+        } /* switch keystroke */
+
+        if( ( keystroke >= ' ' && keystroke <= '~' ) && keystroke != '\"' && idx < FIELD_LENGTH && idx < 4 )
+        {
+            date_buffer[idx++] = keystroke;
+            date_buffer[idx] = 0;
+            mvwprintw( main_window, 2, tab1, ">%s", date_buffer );
+        }
+
+        /* Hide the cursor. */
+        curs_set( 0 );
+
+    } while( keystroke != 10 && terminate_signal != 1 );
+
+    /* Write year back to system */
+    status = read_system_datetime( year, month, day, hours, minutes, seconds );
+    if( status == 0 )
+    {
+        nwipe_log( NWIPE_LOG_INFO,
+                   "year=%s, month=%s, day=%s, hours=%s, minutes=%s, seconds=%s",
+                   year,
+                   month,
+                   day,
+                   hours,
+                   minutes,
+                   seconds );
+    }
+    else
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "func:read_system_datetime failed, see previous messages for detail" );
+    }
+
+} /* End of nwipe_gui_set_system_year() */
 
 void nwipe_gui_load( void )
 {
