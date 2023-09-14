@@ -4975,7 +4975,22 @@ void nwipe_gui_set_date_time( void )
             yy++;
             mvwprintw( main_window, yy++, tab1, "  %s", "Hours" );
             mvwprintw( main_window, yy++, tab1, "  %s", "Minutes" );
-            // mvwprintw( main_window, yy++, tab1, "  %s", "System Date/Time" );
+            yy++;
+            mvwprintw( main_window,
+                       yy++,
+                       tab1,
+                       "  %s",
+                       "If a Network Time Protocol (NTP) daemon is running date/time may not change" );
+            mvwprintw( main_window,
+                       yy++,
+                       tab1,
+                       "  %s",
+                       "or may revert back to NTP provided time. Setting time here is for use when" );
+            mvwprintw( main_window,
+                       yy++,
+                       tab1,
+                       "  %s",
+                       "the host system is not running NTP or not connected to the internet." );
 
             /* Print the cursor. */
             mvwaddch( main_window, 4 + focus, tab1, ACS_RARROW );
@@ -5070,7 +5085,7 @@ void nwipe_gui_set_date_time( void )
 
                 case 1:
                     /* Set month */
-                    // NOTE ADD Function
+                    nwipe_gui_set_system_month();
                     keystroke = 0;
                     break;
 
@@ -5234,23 +5249,172 @@ void nwipe_gui_set_system_year( void )
 
     /* Write year back to system */
     status = read_system_datetime( year, month, day, hours, minutes, seconds );
-    if( status == 0 )
-    {
-        nwipe_log( NWIPE_LOG_INFO,
-                   "year=%s, month=%s, day=%s, hours=%s, minutes=%s, seconds=%s",
-                   year,
-                   month,
-                   day,
-                   hours,
-                   minutes,
-                   seconds );
-    }
-    else
+    if( status != 0 )
     {
         nwipe_log( NWIPE_LOG_ERROR, "func:read_system_datetime failed, see previous messages for detail" );
     }
 
+    strncpy( year, date_buffer, 4 );
+
+    status = write_system_datetime( year, month, day, hours, minutes, seconds );
+    if( status != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "func:write_system_datetime failed, see previous messages for detail" );
+    }
+
 } /* End of nwipe_gui_set_system_year() */
+
+void nwipe_gui_set_system_month( void )
+{
+    /**
+     * Allows the user to edit the host systems year
+     *
+     * @modifies  system month
+     * @modifies  main_window
+     *
+     */
+
+    /* The first tabstop. */
+    const int tab1 = 2;
+
+    /* The current working row. */
+    int yy = 2;
+
+    /* Input buffer. */
+    int keystroke;
+
+    /* Various output from the date command is processed in this buffer */
+    char date_buffer[256];
+    date_buffer[0] = 0;
+
+    char year[5] = "";
+    char month[3] = "";
+    char day[3] = "";
+    char hours[3] = "";
+    char minutes[3] = "";
+    char seconds[3] = "";
+
+    /* buffer index */
+    int idx = 0;
+
+    int status = 0;
+
+    FILE* fp;
+
+    extern int terminate_signal;
+
+    /* Update the footer window. */
+    werase( footer_window );
+    nwipe_gui_title( footer_window, selection_footer_text_entry );
+    wrefresh( footer_window );
+
+    fp = popen( "date +%m", "r" );
+    if( fp == NULL )
+    {
+        nwipe_log( NWIPE_LOG_INFO, "popen:Failed to retrieve date +%M %s", date_buffer );
+        mvwprintw( main_window, yy + 4, tab1, "popen:date command failed retrieving month" );
+    }
+
+    if( fgets( date_buffer, sizeof( date_buffer ), fp ) == NULL )
+    {
+        nwipe_log( NWIPE_LOG_INFO, "fgets:failed to retrieve month %s", date_buffer );
+        mvwprintw( main_window, yy + 5, tab1, "fgets:failed retrieving month" );
+    }
+
+    /* terminate string after fourth character removing any lf */
+    date_buffer[2] = 0;
+
+    pclose( fp );
+
+    /* Set the buffer index to point to the end of the string, i.e the NULL */
+    idx = strlen( date_buffer );
+
+    do
+    {
+        /* Erase the main window. */
+        werase( main_window );
+
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry );
+
+        /* Add a border. */
+        box( main_window, 0, 0 );
+
+        /* Add a title. */
+        nwipe_gui_title( main_window, " Set System Month " );
+
+        /* Initialize the working row. */
+        yy = 4;
+
+        mvwprintw(
+            main_window, yy++, tab1, "Enter the current month, two numeric digits, i.e 01, return key to submit" );
+
+        /* Print this line last so that the cursor is in the right place. */
+        mvwprintw( main_window, 2, tab1, ">%s", date_buffer );
+
+        /* Reveal the cursor. */
+        curs_set( 1 );
+
+        /* Refresh the window. */
+        wrefresh( main_window );
+
+        /* Wait 250ms for input from getch, if nothing getch will then continue,
+         * This is necessary so that the while loop can be exited by the
+         * terminate_signal e.g.. the user pressing control-c to exit.
+         * Do not change this value, a higher value means the keys become
+         * sluggish, any slower and more time is spent unnecessarily looping
+         * which wastes CPU cycles.
+         */
+        timeout( 250 );  // block getch() for 250ms.
+        keystroke = getch();  // Get a keystroke.
+        timeout( -1 );  // Switch back to blocking mode.
+
+        switch( keystroke )
+        {
+            /* Escape key. */
+            case 27:
+                return;
+
+            case KEY_BACKSPACE:
+            case KEY_LEFT:
+            case 127:
+
+                if( idx > 0 )
+                {
+                    date_buffer[--idx] = 0;
+                }
+
+                break;
+
+        } /* switch keystroke */
+
+        if( ( keystroke >= ' ' && keystroke <= '~' ) && keystroke != '\"' && idx < FIELD_LENGTH && idx < 4 )
+        {
+            date_buffer[idx++] = keystroke;
+            date_buffer[idx] = 0;
+            mvwprintw( main_window, 2, tab1, ">%s", date_buffer );
+        }
+
+        /* Hide the cursor. */
+        curs_set( 0 );
+
+    } while( keystroke != 10 && terminate_signal != 1 );
+
+    /* Write year back to system */
+    status = read_system_datetime( year, month, day, hours, minutes, seconds );
+    if( status != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "func:read_system_datetime failed, see previous messages for detail" );
+    }
+
+    strncpy( month, date_buffer, 2 );
+
+    status = write_system_datetime( year, month, day, hours, minutes, seconds );
+    if( status != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "func:write_system_datetime failed, see previous messages for detail" );
+    }
+
+} /* End of nwipe_gui_set_system_month() */
 
 void nwipe_gui_load( void )
 {

@@ -105,4 +105,19 @@ void convert_double_to_string( char*, double );
  */
 int read_system_datetime( char*, char*, char*, char*, char*, char* );
 
+/**
+ * Writes system date & time from the caller provided strings.
+ * The calling program must provide the minimum populated string sizes
+ * as shown below.
+ *
+ * @param char* year 5 bytes (4 numeric digits plus NULL terminator)
+ * @param char* month 3 bytes (2 numeric digits plus NULL terminator)
+ * @param char* day 3 bytes (2 numeric digits plus NULL terminator)
+ * @param char* hours 3 bytes (2 numeric digits plus NULL terminator)
+ * @param char* minutes 3 bytes (2 numeric digits plus NULL terminator)
+ * @param char* seconds 3 bytes (2 numeric digits plus NULL terminator)
+ * @return 0 = success, -1 = failure. See nwipe log for detail.
+ */
+int write_system_datetime( char*, char*, char*, char*, char*, char* );
+
 #endif /* HPA_DCO_H_ */
