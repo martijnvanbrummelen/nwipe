@@ -522,3 +522,98 @@ int read_system_datetime( char* year, char* month, char* day, char* hours, char*
 
     return status;
 }
+
+int write_system_datetime( char* year, char* month, char* day, char* hours, char* minutes, char* seconds )
+{
+    /* Writes the system date & time using data from the caller provided strings.
+     * The calling program must provide the minimum string sizes as shown below
+     * populated with current date and time data.
+     *
+     * year 5 bytes (4 numeric digits plus NULL terminator)
+     * month 3 bytes (2 numeric digits plus NULL terminator)
+     * day 3 bytes (2 numeric digits plus NULL terminator)
+     * hours 3 bytes (2 numeric digits plus NULL terminator)
+     * minutes 3 bytes (2 numeric digits plus NULL terminator)
+     * seconds 3 bytes (2 numeric digits plus NULL terminator)
+     *
+     * return value:
+     * 0 = success
+     * -1 = Failure, see nwipe log for detail.
+     */
+    FILE* fp;
+    int r;  // A result buffer.
+    int idx;  // general index
+    int strIdx;  // Index into each string
+    int bufferIdx;  // Index into the buffer
+    char buffer[5];
+
+    /**
+     * Basic validation that confirms the input strings are numeric and of the correct length, we do this
+     * by first constructing three arrays. The first are the names of the variables in order
+     * year, month, day, hours, minutes and seconds. The second array contains the address of
+     * each of those strings. The third array are the lengths.
+     * This allows us to create a single loop to validate all fields.
+     */
+
+    char* names[] = { "year", "month", "day", "hours", "minutes", "seconds" };
+    char* pdata[] = { year, month, day, hours, minutes, seconds };
+    int lengths[] = { 4, 2, 2, 2, 2, 2 };
+    char cmd_format[] = "date %s%s%s%s%s.%s >/dev/null 2>&1";
+    char cmd[256];
+
+    for( idx = 0; idx < 6; idx++ )
+    {
+        strIdx = 0;  // initialise string index
+
+        /* check each characters is numeric */
+        while( strIdx < lengths[idx] )
+        {
+            if( pdata[idx][strIdx] >= '0' && pdata[idx][strIdx] <= '9' )
+            {
+                strIdx++;
+            }
+            else
+            {
+                /* if we haven't reached the correct number of digits due to invalid data, log error,
+                 * but first we read the valid data acquired so far into a buffer, this is done to avoid
+                 * writing to the user provided string because if they did not size the string correctly
+                 * writing a zero at the end could cause a segfault.
+                 */
+
+                for( bufferIdx = 0; bufferIdx < strIdx + 1; bufferIdx++ )
+                {
+                    buffer[bufferIdx] = pdata[idx][bufferIdx];
+                }
+                buffer[bufferIdx] = 0; /* terminate the string, prior to using in nwipe_log */
+
+                /* A typical error will look like ..
+                 * "User provided year data that appear invalid = 202£" */
+                nwipe_log( NWIPE_LOG_ERROR, "User provided %s data that appears invalid = %s", names[idx], buffer );
+                return -1;
+            }
+        }
+    }
+
+    /**
+     * Now using the validated strings construct the date command that we will use to write the system date/time
+     */
+    sprintf( cmd, cmd_format, month, day, hours, minutes, year, seconds );
+
+    /**
+     * Run the date command to write the new date/time
+     */
+
+    fp = popen( cmd, "w" );
+    r = pclose( fp );
+
+    if( fp == NULL || r != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to write system date/time using command = %s", cmd );
+    }
+    else
+    {
+        nwipe_log( NWIPE_LOG_INFO, "Date/time succesfully writen to system using command = %s", cmd );
+    }
+
+    return 0;
+}
