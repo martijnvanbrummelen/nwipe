@@ -2491,7 +2491,7 @@ void nwipe_gui_config( void )
     extern int terminate_signal;
 
     /* Number of entries in the configuration menu. */
-    const int count = 5;
+    const int count = 7;
 
     /* The first tabstop. */
     const int tab1 = 2;
@@ -2529,6 +2529,8 @@ void nwipe_gui_config( void )
         mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Add Customer     " );
         mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Delete Customer  " );
         mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Preview Details  " );
+        yy++;
+        mvwprintw( main_window, yy++, tab1, "  %s", "Set System Date & Time        " );
         mvwprintw( main_window, yy++, tab1, "                                      " );
 
         /* Print the cursor. */
@@ -2601,6 +2603,14 @@ void nwipe_gui_config( void )
                 mvwprintw( main_window, 8, tab2, "the pdf report.                       " );
                 break;
 
+            case 6:
+
+                mvwprintw( main_window, 2, tab2, "Set System Date & Time                " );
+
+                mvwprintw( main_window, 4, tab2, "Useful when host is not connected to  " );
+                mvwprintw( main_window, 5, tab2, "the internet and not running the 'ntp'" );
+                mvwprintw( main_window, 6, tab2, "(network time protocol).              " );
+                break;
         } /* switch */
 
         /* Add a border. */
@@ -2631,7 +2641,14 @@ void nwipe_gui_config( void )
 
                 if( focus < count - 1 )
                 {
-                    focus += 1;
+                    if( focus == 4 )
+                    {
+                        focus += 2; /* mind the gaps */
+                    }
+                    else
+                    {
+                        focus += 1;
+                    }
                 }
                 break;
 
@@ -2641,7 +2658,14 @@ void nwipe_gui_config( void )
 
                 if( focus > 0 )
                 {
-                    focus -= 1;
+                    if( focus == 6 )
+                    {
+                        focus -= 2; /* mind the gaps */
+                    }
+                    else
+                    {
+                        focus -= 1;
+                    }
                 }
                 break;
 
@@ -2676,6 +2700,10 @@ void nwipe_gui_config( void )
 
         case 4:
             nwipe_gui_preview_org_customer();
+            break;
+
+        case 6:
+            nwipe_gui_set_date_time();
             break;
     }
 
@@ -5091,19 +5119,19 @@ void nwipe_gui_set_date_time( void )
 
                 case 2:
                     /* Set day */
-                    // NOTE ADD Function
-                    keystroke = 0;
-                    break;
-
-                case 3:
-                    /* Set hours */
-                    // NOTE ADD Function
+                    nwipe_gui_set_system_day();
                     keystroke = 0;
                     break;
 
                 case 4:
+                    /* Set hours */
+                    nwipe_gui_set_system_hour();
+                    keystroke = 0;
+                    break;
+
+                case 5:
                     /* Set minutes */
-                    // NOTE ADD Function
+                    nwipe_gui_set_system_minute();
                     keystroke = 0;
                     break;
             }
@@ -5311,7 +5339,7 @@ void nwipe_gui_set_system_month( void )
     fp = popen( "date +%m", "r" );
     if( fp == NULL )
     {
-        nwipe_log( NWIPE_LOG_INFO, "popen:Failed to retrieve date +%M %s", date_buffer );
+        nwipe_log( NWIPE_LOG_INFO, "popen:Failed to retrieve date +%m %s", date_buffer );
         mvwprintw( main_window, yy + 4, tab1, "popen:date command failed retrieving month" );
     }
 
@@ -5415,6 +5443,464 @@ void nwipe_gui_set_system_month( void )
     }
 
 } /* End of nwipe_gui_set_system_month() */
+
+void nwipe_gui_set_system_day( void )
+{
+    /**
+     * Allows the user to edit the host systems year
+     *
+     * @modifies  system day of the month
+     * @modifies  main_window
+     *
+     */
+
+    /* The first tabstop. */
+    const int tab1 = 2;
+
+    /* The current working row. */
+    int yy = 2;
+
+    /* Input buffer. */
+    int keystroke;
+
+    /* Various output from the date command is processed in this buffer */
+    char date_buffer[256];
+    date_buffer[0] = 0;
+
+    char year[5] = "";
+    char month[3] = "";
+    char day[3] = "";
+    char hours[3] = "";
+    char minutes[3] = "";
+    char seconds[3] = "";
+
+    /* buffer index */
+    int idx = 0;
+
+    int status = 0;
+
+    FILE* fp;
+
+    extern int terminate_signal;
+
+    /* Update the footer window. */
+    werase( footer_window );
+    nwipe_gui_title( footer_window, selection_footer_text_entry );
+    wrefresh( footer_window );
+
+    fp = popen( "date +%d", "r" );
+    if( fp == NULL )
+    {
+        nwipe_log( NWIPE_LOG_INFO, "popen:Failed to retrieve date +%d %s", date_buffer );
+        mvwprintw( main_window, yy + 4, tab1, "popen:date command failed retrieving day of month" );
+    }
+
+    if( fgets( date_buffer, sizeof( date_buffer ), fp ) == NULL )
+    {
+        nwipe_log( NWIPE_LOG_INFO, "fgets:failed to retrieve day of month %s", date_buffer );
+        mvwprintw( main_window, yy + 5, tab1, "fgets:failed retrieving day of month" );
+    }
+
+    /* terminate string after fourth character removing any lf */
+    date_buffer[2] = 0;
+
+    pclose( fp );
+
+    /* Set the buffer index to point to the end of the string, i.e the NULL */
+    idx = strlen( date_buffer );
+
+    do
+    {
+        /* Erase the main window. */
+        werase( main_window );
+
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry );
+
+        /* Add a border. */
+        box( main_window, 0, 0 );
+
+        /* Add a title. */
+        nwipe_gui_title( main_window, " Set System Day of Month " );
+
+        /* Initialize the working row. */
+        yy = 4;
+
+        mvwprintw( main_window,
+                   yy++,
+                   tab1,
+                   "Enter the current day of month, two numeric digits, i.e 01, return key to submit" );
+
+        /* Print this line last so that the cursor is in the right place. */
+        mvwprintw( main_window, 2, tab1, ">%s", date_buffer );
+
+        /* Reveal the cursor. */
+        curs_set( 1 );
+
+        /* Refresh the window. */
+        wrefresh( main_window );
+
+        /* Wait 250ms for input from getch, if nothing getch will then continue,
+         * This is necessary so that the while loop can be exited by the
+         * terminate_signal e.g.. the user pressing control-c to exit.
+         * Do not change this value, a higher value means the keys become
+         * sluggish, any slower and more time is spent unnecessarily looping
+         * which wastes CPU cycles.
+         */
+        timeout( 250 );  // block getch() for 250ms.
+        keystroke = getch();  // Get a keystroke.
+        timeout( -1 );  // Switch back to blocking mode.
+
+        switch( keystroke )
+        {
+            /* Escape key. */
+            case 27:
+                return;
+
+            case KEY_BACKSPACE:
+            case KEY_LEFT:
+            case 127:
+
+                if( idx > 0 )
+                {
+                    date_buffer[--idx] = 0;
+                }
+
+                break;
+
+        } /* switch keystroke */
+
+        if( ( keystroke >= ' ' && keystroke <= '~' ) && keystroke != '\"' && idx < FIELD_LENGTH && idx < 4 )
+        {
+            date_buffer[idx++] = keystroke;
+            date_buffer[idx] = 0;
+            mvwprintw( main_window, 2, tab1, ">%s", date_buffer );
+        }
+
+        /* Hide the cursor. */
+        curs_set( 0 );
+
+    } while( keystroke != 10 && terminate_signal != 1 );
+
+    /* Write year back to system */
+    status = read_system_datetime( year, month, day, hours, minutes, seconds );
+    if( status != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "func:read_system_datetime failed, see previous messages for detail" );
+    }
+
+    strncpy( day, date_buffer, 2 );
+
+    status = write_system_datetime( year, month, day, hours, minutes, seconds );
+    if( status != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "func:write_system_datetime failed, see previous messages for detail" );
+    }
+
+} /* End of nwipe_gui_set_system_day() */
+
+void nwipe_gui_set_system_hour( void )
+{
+    /**
+     * Allows the user to edit the host systems year
+     *
+     * @modifies  system hour
+     * @modifies  main_window
+     *
+     */
+
+    /* The first tabstop. */
+    const int tab1 = 2;
+
+    /* The current working row. */
+    int yy = 2;
+
+    /* Input buffer. */
+    int keystroke;
+
+    /* Various output from the date command is processed in this buffer */
+    char date_buffer[256];
+    date_buffer[0] = 0;
+
+    char year[5] = "";
+    char month[3] = "";
+    char day[3] = "";
+    char hours[3] = "";
+    char minutes[3] = "";
+    char seconds[3] = "";
+
+    /* buffer index */
+    int idx = 0;
+
+    int status = 0;
+
+    FILE* fp;
+
+    extern int terminate_signal;
+
+    /* Update the footer window. */
+    werase( footer_window );
+    nwipe_gui_title( footer_window, selection_footer_text_entry );
+    wrefresh( footer_window );
+
+    fp = popen( "date +%H", "r" );
+    if( fp == NULL )
+    {
+        nwipe_log( NWIPE_LOG_INFO, "popen:Failed to retrieve date +%H %s", date_buffer );
+        mvwprintw( main_window, yy + 4, tab1, "popen:date command failed retrieving hour" );
+    }
+
+    if( fgets( date_buffer, sizeof( date_buffer ), fp ) == NULL )
+    {
+        nwipe_log( NWIPE_LOG_INFO, "fgets:failed to retrieve the hour %s", date_buffer );
+        mvwprintw( main_window, yy + 5, tab1, "fgets:failed retrieving the hour" );
+    }
+
+    /* terminate string after fourth character removing any lf */
+    date_buffer[2] = 0;
+
+    pclose( fp );
+
+    /* Set the buffer index to point to the end of the string, i.e the NULL */
+    idx = strlen( date_buffer );
+
+    do
+    {
+        /* Erase the main window. */
+        werase( main_window );
+
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry );
+
+        /* Add a border. */
+        box( main_window, 0, 0 );
+
+        /* Add a title. */
+        nwipe_gui_title( main_window, " Set System Hour " );
+
+        /* Initialize the working row. */
+        yy = 4;
+
+        mvwprintw(
+            main_window, yy++, tab1, "Enter the current hour, two numeric digits, i.e 01, return key to submit" );
+
+        /* Print this line last so that the cursor is in the right place. */
+        mvwprintw( main_window, 2, tab1, ">%s", date_buffer );
+
+        /* Reveal the cursor. */
+        curs_set( 1 );
+
+        /* Refresh the window. */
+        wrefresh( main_window );
+
+        /* Wait 250ms for input from getch, if nothing getch will then continue,
+         * This is necessary so that the while loop can be exited by the
+         * terminate_signal e.g.. the user pressing control-c to exit.
+         * Do not change this value, a higher value means the keys become
+         * sluggish, any slower and more time is spent unnecessarily looping
+         * which wastes CPU cycles.
+         */
+        timeout( 250 );  // block getch() for 250ms.
+        keystroke = getch();  // Get a keystroke.
+        timeout( -1 );  // Switch back to blocking mode.
+
+        switch( keystroke )
+        {
+            /* Escape key. */
+            case 27:
+                return;
+
+            case KEY_BACKSPACE:
+            case KEY_LEFT:
+            case 127:
+
+                if( idx > 0 )
+                {
+                    date_buffer[--idx] = 0;
+                }
+
+                break;
+
+        } /* switch keystroke */
+
+        if( ( keystroke >= ' ' && keystroke <= '~' ) && keystroke != '\"' && idx < FIELD_LENGTH && idx < 4 )
+        {
+            date_buffer[idx++] = keystroke;
+            date_buffer[idx] = 0;
+            mvwprintw( main_window, 2, tab1, ">%s", date_buffer );
+        }
+
+        /* Hide the cursor. */
+        curs_set( 0 );
+
+    } while( keystroke != 10 && terminate_signal != 1 );
+
+    /* Write year back to system */
+    status = read_system_datetime( year, month, day, hours, minutes, seconds );
+    if( status != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "func:read_system_datetime failed, see previous messages for detail" );
+    }
+
+    strncpy( hours, date_buffer, 2 );
+
+    status = write_system_datetime( year, month, day, hours, minutes, seconds );
+    if( status != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "func:write_system_datetime failed, see previous messages for detail" );
+    }
+
+} /* End of nwipe_gui_set_system_hour() */
+
+void nwipe_gui_set_system_minute( void )
+{
+    /**
+     * Allows the user to edit the host systems year
+     *
+     * @modifies  system minute
+     * @modifies  main_window
+     *
+     */
+
+    /* The first tabstop. */
+    const int tab1 = 2;
+
+    /* The current working row. */
+    int yy = 2;
+
+    /* Input buffer. */
+    int keystroke;
+
+    /* Various output from the date command is processed in this buffer */
+    char date_buffer[256];
+    date_buffer[0] = 0;
+
+    char year[5] = "";
+    char month[3] = "";
+    char day[3] = "";
+    char hours[3] = "";
+    char minutes[3] = "";
+    char seconds[3] = "";
+
+    /* buffer index */
+    int idx = 0;
+
+    int status = 0;
+
+    FILE* fp;
+
+    extern int terminate_signal;
+
+    /* Update the footer window. */
+    werase( footer_window );
+    nwipe_gui_title( footer_window, selection_footer_text_entry );
+    wrefresh( footer_window );
+
+    fp = popen( "date +%M", "r" );
+    if( fp == NULL )
+    {
+        nwipe_log( NWIPE_LOG_INFO, "popen:Failed to retrieve date +%M %s", date_buffer );
+        mvwprintw( main_window, yy + 4, tab1, "popen:date command failed retrieving minute" );
+    }
+
+    if( fgets( date_buffer, sizeof( date_buffer ), fp ) == NULL )
+    {
+        nwipe_log( NWIPE_LOG_INFO, "fgets:failed to retrieve the minute %s", date_buffer );
+        mvwprintw( main_window, yy + 5, tab1, "fgets:failed retrieving the minute" );
+    }
+
+    /* terminate string after fourth character removing any lf */
+    date_buffer[2] = 0;
+
+    pclose( fp );
+
+    /* Set the buffer index to point to the end of the string, i.e the NULL */
+    idx = strlen( date_buffer );
+
+    do
+    {
+        /* Erase the main window. */
+        werase( main_window );
+
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry );
+
+        /* Add a border. */
+        box( main_window, 0, 0 );
+
+        /* Add a title. */
+        nwipe_gui_title( main_window, " Set System Minute " );
+
+        /* Initialize the working row. */
+        yy = 4;
+
+        mvwprintw(
+            main_window, yy++, tab1, "Enter the current minute, two numeric digits, i.e 01, return key to submit" );
+
+        /* Print this line last so that the cursor is in the right place. */
+        mvwprintw( main_window, 2, tab1, ">%s", date_buffer );
+
+        /* Reveal the cursor. */
+        curs_set( 1 );
+
+        /* Refresh the window. */
+        wrefresh( main_window );
+
+        /* Wait 250ms for input from getch, if nothing getch will then continue,
+         * This is necessary so that the while loop can be exited by the
+         * terminate_signal e.g.. the user pressing control-c to exit.
+         * Do not change this value, a higher value means the keys become
+         * sluggish, any slower and more time is spent unnecessarily looping
+         * which wastes CPU cycles.
+         */
+        timeout( 250 );  // block getch() for 250ms.
+        keystroke = getch();  // Get a keystroke.
+        timeout( -1 );  // Switch back to blocking mode.
+
+        switch( keystroke )
+        {
+            /* Escape key. */
+            case 27:
+                return;
+
+            case KEY_BACKSPACE:
+            case KEY_LEFT:
+            case 127:
+
+                if( idx > 0 )
+                {
+                    date_buffer[--idx] = 0;
+                }
+
+                break;
+
+        } /* switch keystroke */
+
+        if( ( keystroke >= ' ' && keystroke <= '~' ) && keystroke != '\"' && idx < FIELD_LENGTH && idx < 4 )
+        {
+            date_buffer[idx++] = keystroke;
+            date_buffer[idx] = 0;
+            mvwprintw( main_window, 2, tab1, ">%s", date_buffer );
+        }
+
+        /* Hide the cursor. */
+        curs_set( 0 );
+
+    } while( keystroke != 10 && terminate_signal != 1 );
+
+    /* Write year back to system */
+    status = read_system_datetime( year, month, day, hours, minutes, seconds );
+    if( status != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "func:read_system_datetime failed, see previous messages for detail" );
+    }
+
+    strncpy( minutes, date_buffer, 2 );
+
+    status = write_system_datetime( year, month, day, hours, minutes, seconds );
+    if( status != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "func:write_system_datetime failed, see previous messages for detail" );
+    }
+
+} /* End of nwipe_gui_set_system_minute() */
 
 void nwipe_gui_load( void )
 {

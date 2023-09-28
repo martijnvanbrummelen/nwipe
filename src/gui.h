@@ -69,7 +69,10 @@ void nwipe_gui_add_customer_contact_phone( char* );  // Add new customer contact
 int nwipe_gui_yes_no_footer( void );  // Change footer to yes no
 void nwipe_gui_preview_org_customer( void );  // Preview window  for wipe organisation and customer
 void nwipe_gui_set_system_year( void );  // Set the systems current year
-void nwipe_gui_set_system_month( void );
+void nwipe_gui_set_system_month( void );  // Set the systems month
+void nwipe_gui_set_system_day( void );  // Set the system day of the month
+void nwipe_gui_set_system_hour( void );  // Set the system hour
+void nwipe_gui_set_system_minute( void );  // Set the system minute
 
 /**
  * Truncate a string based on start position and terminal width
