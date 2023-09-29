@@ -185,8 +185,10 @@ int main( int argc, char** argv )
         nwipe_enumerated = nwipe_device_get( &c1, argv, argc );
         if( nwipe_enumerated == 0 )
         {
-            nwipe_log( NWIPE_LOG_ERROR, "Devices not found. Check you're not excluding drives unnecessarily." );
-            printf( "No drives found\n" );
+            nwipe_log( NWIPE_LOG_ERROR, "Devices not found. Check you're not excluding drives unnecessarily," );
+            nwipe_log( NWIPE_LOG_ERROR, "and you are running nwipe as sudo or as root." );
+            printf( "Devices not found, check you're not excluding drives unnecessarily \n and you are running nwipe "
+                    "as sudo or as root." );
             cleanup();
             exit( 1 );
         }

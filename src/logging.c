@@ -401,7 +401,6 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
             }
             user_abort = 1;
             terminate_signal = 1;
-            return;
         }
     }
 
