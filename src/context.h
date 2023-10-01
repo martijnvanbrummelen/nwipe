@@ -70,7 +70,7 @@ typedef struct nwipe_speedring_t_
 } nwipe_speedring_t;
 
 #define NWIPE_DEVICE_LABEL_LENGTH 200
-#define NWIPE_DEVICE_SIZE_TXT_LENGTH 7
+#define NWIPE_DEVICE_SIZE_TXT_LENGTH 8
 
 // Arbitrary length, so far most paths don't exceed about 25 characters
 #define MAX_HWMON_PATH_LENGTH 100
