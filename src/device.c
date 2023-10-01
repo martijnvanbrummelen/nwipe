@@ -244,11 +244,18 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
 
     for( idx = 0; idx < 20; idx++ )
     {
-        next_device->device_serial_no[idx] = next_device->identity.serial_no[idx];
+        if( isascii( next_device->identity.serial_no[idx] ) )
+        {
+            next_device->device_serial_no[idx] = next_device->identity.serial_no[idx];
+        }
+        else
+        {
+            break;
+        }
     }
 
     // Terminate the string.
-    next_device->device_serial_no[20] = 0;
+    next_device->device_serial_no[idx] = 0;
 
     // Remove leading/trailing whitespace from serial number and left justify.
     trim( (char*) next_device->device_serial_no );
