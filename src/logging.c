@@ -890,8 +890,13 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
                    model,
                    serial_no );
 
-        /* Create the PDF certificate */
-        create_pdf( c[i] );
+        /* Create the PDF report/certificate */
+        if( strcmp( nwipe_options.PDFreportpath, "noPDF" ) != 0 )
+        {
+            nwipe_log( NWIPE_LOG_NOTIMESTAMP, "Creating PDF report in %s\n", nwipe_options.PDFreportpath );
+            printf( "Creating PDF report in %s\n", nwipe_options.PDFreportpath );
+            create_pdf( c[i] );
+        }
     }
 
     /* Determine the size of throughput so that the correct nomenclature can be used */

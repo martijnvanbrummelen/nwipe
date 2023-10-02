@@ -841,7 +841,8 @@ int create_pdf( nwipe_context_t* ptr )
     replace_non_alphanumeric( c->device_serial_no, '_' );
     snprintf( c->PDF_filename,
               sizeof( c->PDF_filename ),
-              "nwipe_report_%s_Model_%s_Serial_%s.pdf",
+              "%s/nwipe_report_%s_Model_%s_Serial_%s.pdf",
+              nwipe_options.PDFreportpath,
               end_time_text,
               c->device_model,
               c->device_serial_no );
@@ -960,6 +961,7 @@ int nwipe_get_smart_data( char* device )
                     }
                 }
 
+                pdf_set_font( pdf, "Courier" );
                 pdf_add_text( pdf, page_2, result, 6, x, y, PDF_BLACK );
                 y -= 9;
             }

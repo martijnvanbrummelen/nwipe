@@ -159,25 +159,25 @@ void Determine_C_B_nomenclature( u64 qty, char* result, int result_array_size )
     }
 
     /* Determine the size of throughput so that the correct nomenclature can be used */
-    if( qty >= INT64_C( 1000000000000 ) )
+    if( qty >= INT64_C( 10000000000000 ) )
     {
-        snprintf( result, result_array_size, "%3llu TB", qty / INT64_C( 1000000000000 ) );
+        snprintf( result, result_array_size, "%4llu TB", qty / INT64_C( 1000000000000 ) );
     }
-    else if( qty >= INT64_C( 1000000000 ) )
+    else if( qty >= INT64_C( 10000000000 ) )
     {
-        snprintf( result, result_array_size, "%3llu GB", qty / INT64_C( 1000000000 ) );
+        snprintf( result, result_array_size, "%4llu GB", qty / INT64_C( 1000000000 ) );
     }
-    else if( qty >= INT64_C( 1000000 ) )
+    else if( qty >= INT64_C( 10000000 ) )
     {
-        snprintf( result, result_array_size, "%3llu MB", qty / INT64_C( 1000000 ) );
+        snprintf( result, result_array_size, "%4llu MB", qty / INT64_C( 1000000 ) );
     }
-    else if( qty >= INT64_C( 1000 ) )
+    else if( qty >= INT64_C( 10000 ) )
     {
-        snprintf( result, result_array_size, "%3llu KB", qty / INT64_C( 1000 ) );
+        snprintf( result, result_array_size, "%4llu KB", qty / INT64_C( 1000 ) );
     }
     else
     {
-        snprintf( result, result_array_size, "%3llu B", qty / INT64_C( 1 ) );
+        snprintf( result, result_array_size, "%4llu B", qty / INT64_C( 1 ) );
     }
 }
 

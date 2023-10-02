@@ -35,7 +35,7 @@ devices immediately. If devices have been specified, starts wiping only
 those specified devices immediately.
 .TP
 \fB\-\-autopoweroff\fR
-Power off system on completion of wipe delayed for for one minute. During
+Power off system on completion of wipe delayed for one minute. During
 this one minute delay you can abort the shutdown by typing sudo shutdown -c
 .TP
 \fB\-\-sync\fR=\fINUM\fR
@@ -110,6 +110,11 @@ is5enh                 \- HMG IS5 enhanced
 .TP
 \fB\-l\fR, \fB\-\-logfile\fR=\fIFILE\fR
 Filename to log to. Default is STDOUT
+.TP
+\fB\-P\fR, \fB\-\-PDFreportpath\fR=\fIDIR\fR
+Directory to write the PDF nwipe reports/certificates to.
+Defaults to ".".
+If \fIDIR\fR is set to \fInoPDF\fR no report PDF files are written.
 .TP
 \fB\-p\fR, \fB\-\-prng\fR=\fIMETHOD\fR
 PRNG option (mersenne|twister|isaac|isaac64)
