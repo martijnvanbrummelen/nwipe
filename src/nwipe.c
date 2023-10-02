@@ -32,6 +32,7 @@
 #include <signal.h>
 #include <pthread.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include "nwipe.h"
 #include "context.h"
@@ -151,6 +152,17 @@ int main( int argc, char** argv )
                 cleanup();
                 exit( 1 );
             }
+        }
+    }
+
+    /* Check if the given path for PDF reports is a writeable directory */
+    if( strcmp( nwipe_options.PDFreportpath, "noPDF" ) != 0 )
+    {
+        if( access( nwipe_options.PDFreportpath, W_OK ) != 0 )
+        {
+            nwipe_log( NWIPE_LOG_ERROR, "PDFreportpath %s is not a writeable directory.", nwipe_options.PDFreportpath );
+            cleanup();
+            exit( 2 );
         }
     }
 

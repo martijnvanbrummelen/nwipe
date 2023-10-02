@@ -54,7 +54,7 @@ int nwipe_options_parse( int argc, char** argv )
     int i;
 
     /* The list of acceptable short options. */
-    char nwipe_options_short[] = "Vvhl:m:p:qr:e:";
+    char nwipe_options_short[] = "Vvhl:P:m:p:qr:e:";
 
     /* The list of acceptable long options. */
     static struct option nwipe_options_long[] = {
@@ -72,6 +72,9 @@ int nwipe_options_parse( int argc, char** argv )
 
         /* Log file. Corresponds to the 'l' short option. */
         { "logfile", required_argument, 0, 'l' },
+
+        /* PDFreport path. Corresponds to the 'P' short option. */
+        { "PDFreportpath", required_argument, 0, 'P' },
 
         /* Exclude devices, comma separated list */
         { "exclude", required_argument, 0, 'e' },
@@ -131,6 +134,8 @@ int nwipe_options_parse( int argc, char** argv )
     nwipe_options.verbose = 0;
     nwipe_options.verify = NWIPE_VERIFY_LAST;
     memset( nwipe_options.logfile, '\0', sizeof( nwipe_options.logfile ) );
+    memset( nwipe_options.PDFreportpath, '\0', sizeof( nwipe_options.PDFreportpath ) );
+    strncpy( nwipe_options.PDFreportpath, ".", 2 );
 
     /* Initialise each of the strings in the excluded drives array */
     for( i = 0; i < MAX_NUMBER_EXCLUDED_DRIVES; i++ )
@@ -313,6 +318,12 @@ int nwipe_options_parse( int argc, char** argv )
 
                 nwipe_options.logfile[strlen( optarg )] = '\0';
                 strncpy( nwipe_options.logfile, optarg, sizeof( nwipe_options.logfile ) );
+                break;
+
+            case 'P': /* PDFreport path option. */
+
+                nwipe_options.PDFreportpath[strlen( optarg )] = '\0';
+                strncpy( nwipe_options.PDFreportpath, optarg, sizeof( nwipe_options.PDFreportpath ) );
                 break;
 
             case 'e': /* exclude drives option */
@@ -570,6 +581,8 @@ void display_help()
     puts( "                          verify_zero            - Verifies disk is zero filled" );
     puts( "                          verify_one             - Verifies disk is 0xFF filled\n" );
     puts( "  -l, --logfile=FILE      Filename to log to. Default is STDOUT\n" );
+    puts( "  -P, --PDFreportpath=PATH Path to write PDF reports to. Default is \".\"" );
+    puts( "                           If set to \"noPDF\" no PDF reports are written.\n" );
     puts( "  -p, --prng=METHOD       PRNG option (mersenne|twister|isaac|isaac64)\n" );
     puts( "  -q, --quiet             Anonymize logs and the GUI by removing unique data, i.e." );
     puts( "                          serial numbers, LU WWN Device ID, and SMBIOS/DMI data" );

@@ -157,7 +157,7 @@ typedef struct nwipe_context_t_
     time_t start_time;  // Start time of wipe
     time_t end_time;  // End time of wipe
     u64 fsyncdata_errors;  // The number of fsyncdata errors across all passes.
-    char PDF_filename[256];  // The filename of the PDF certificate/report.
+    char PDF_filename[FILENAME_MAX];  // The filename of the PDF certificate/report.
     int HPA_status;  // 0 = No HPA found/disabled, 1 = HPA detected, 2 = Unknown, unable to checked,
                      // 3 = Not applicable to this device
     u64 HPA_reported_set;  // the 'HPA set' value reported hdparm -N, i.e the first value of n/n

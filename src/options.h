@@ -58,6 +58,7 @@ typedef struct
     char* banner;  // The product banner shown on the top line of the screen.
     void* method;  // A function pointer to the wipe method that will be used.
     char logfile[FILENAME_MAX];  // The filename to log the output to.
+    char PDFreportpath[FILENAME_MAX];  // The path to write the PDF report to.
     char exclude[MAX_NUMBER_EXCLUDED_DRIVES][MAX_DRIVE_PATH_LENGTH];  // Drives excluded from the search.
     nwipe_prng_t* prng;  // The pseudo random number generator implementation. pointer to the function.
     int quiet;  // Anonymize serial numbers
