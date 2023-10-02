@@ -200,6 +200,9 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     next_device->device_model = dev->model;
     remove_ATA_prefix( next_device->device_model );
 
+    /* Some USB adapters have drive model endian swapped, pattern match and fix */
+    fix_endian_model_names( next_device->device_model );
+
     /* full device name, i.e. /dev/sda */
     next_device->device_name = dev->path;
 
