@@ -617,3 +617,50 @@ int write_system_datetime( char* year, char* month, char* day, char* hours, char
 
     return 0;
 }
+
+void fix_endian_model_names( char* model )
+{
+    /* Some IDE USB adapters get the endian wrong, we can't determine the endian from the drive
+     * as the drive standard doesn't provide that information, so we have to resort to matching
+     * the model name against known strings with the endian incorrect, then reverse the endian.
+     */
+
+    int idx = 0;
+    int idx2 = 0;
+    unsigned int length = 0;
+    char* tmp_string;
+
+    length = strlen( model );
+
+    tmp_string = calloc( length, 1 );
+
+    /* "ASSMNU G" = "SAMSUNG ", tested against model Samsung HM160HC so that
+     * "ASSMNU G MH61H0 C" becomes "SAMSUNG HM160HC ")
+     */
+    if( !( strncmp( model, "ASSMNU G", 8 ) ) )
+    {
+        while( model[idx] != 0 )
+        {
+            tmp_string[idx2 + 1] = model[idx];
+            if( model[idx + 1] != 0 )
+            {
+                tmp_string[idx2] = model[idx + 1];
+            }
+            else
+            {
+                break;
+            }
+
+            if( tmp_string[idx2 + 1] == ' ' && model[idx + 2] == ' ' )
+            {
+                idx++;
+            }
+
+            idx += 2;
+            idx2 += 2;
+        }
+
+        tmp_string[idx2 + 1] = 0;
+        strcpy( model, tmp_string );
+    }
+}

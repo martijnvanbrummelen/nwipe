@@ -120,4 +120,13 @@ int read_system_datetime( char*, char*, char*, char*, char*, char* );
  */
 int write_system_datetime( char*, char*, char*, char*, char*, char* );
 
+/**
+ * Fixes drive model names that have the incorrect endian. This happens
+ * with some IDE USB adapters.
+ *
+ * @param char* pointer to the drive model names
+ * @return void
+ */
+void fix_endian_model_names( char* model );
+
 #endif /* HPA_DCO_H_ */
