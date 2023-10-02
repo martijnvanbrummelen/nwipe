@@ -244,8 +244,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
 
     for( idx = 0; idx < 20; idx++ )
     {
-        if( isascii( next_device->identity.serial_no[idx] )  && 
-	    !iscntrl( next_device->identity.serial_no[idx] ) )
+        if( isascii( next_device->identity.serial_no[idx] ) && !iscntrl( next_device->identity.serial_no[idx] ) )
         {
             next_device->device_serial_no[idx] = next_device->identity.serial_no[idx];
         }
