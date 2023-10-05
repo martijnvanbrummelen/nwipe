@@ -26,6 +26,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <ctype.h>
 
 #include "nwipe.h"
 #include "context.h"
@@ -711,7 +712,7 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
                     /* If upper case alpha character, change to lower case */
                     if( result[idx] >= 'A' && result[idx] <= 'Z' )
                     {
-                        result[idx] += 32;
+                        result[idx] = tolower( result[idx] );
                     }
 
                     idx++;
@@ -775,6 +776,10 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
                     {
                         /* strip any leading or trailing spaces and left justify, +4 is the length of "bus type:" */
                         trim( &result[19] );
+                        for( idx = 19; result[idx]; idx++ )
+                        {
+                            result[idx] = tolower( result[idx] );
+                        }
 
                         if( strncmp( &result[19], "sas", 3 ) == 0 )
                         {
@@ -787,6 +792,10 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
 
                         /* strip any leading or trailing spaces and left justify, +4 is the length of "bus type:" */
                         trim( &result[16] );
+                        for( idx = 16; result[idx]; idx++ )
+                        {
+                            result[idx] = tolower( result[idx] );
+                        }
 
                         if( strncmp( &result[16], "sata", 4 ) == 0 )
                         {
