@@ -57,7 +57,7 @@ int nwipe_conf_init()
     root = config_root_setting( &nwipe_cfg );
     char nwipe_customers_initial_content[] =
         "\"Customer Name\";\"Contact Name\";\"Customer Address\";\"Contact Phone\"\n"
-        "\"Not Applicable\";\"Not Applicable\";\"Not Applicable\";\"Not Applicable\"";
+        "\"Not Applicable\";\"Not Applicable\";\"Not Applicable\";\"Not Applicable\"\n";
 
     /* Read /etc/nwipe/nwipe.conf. If there is an error, determine whether
      * it's because it doesn't exist. If it doesn't exist create it and
