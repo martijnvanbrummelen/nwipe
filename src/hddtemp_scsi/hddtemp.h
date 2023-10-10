@@ -35,17 +35,6 @@ typedef __u16 u16;
 #define C_to_F(val) (int)(((double)(val)*(double)1.8) + (double)32.0)
 
 enum e_bustype { ERROR = 0, BUS_UNKNOWN, BUS_SATA, BUS_ATA, BUS_SCSI, BUS_TYPE_MAX };
-// enum e_gettemp {
-//   GETTEMP_ERROR,            /* Error */
-//   GETTEMP_NOT_APPLICABLE,   /* */
-//   GETTEMP_UNKNOWN,          /* Drive is not in database */
-//   GETTEMP_GUESS,            /* Not in database, but something was guessed, user must
-// 			       check that the temperature returned is correct */
-//   GETTEMP_KNOWN,            /* Drive appear in database */
-//   GETTEMP_NOSENSOR,         /* Drive appear in database but is known to have no sensor */
-//   GETTEMP_DRIVE_SLEEP,      /* Drive is sleeping */
-//   GETTEMP_SUCCESS           /* read temperature successfully */
-// };
 
 #define GETTEMP_SUCCESS 0
 #define GETTEMP_ERROR 1

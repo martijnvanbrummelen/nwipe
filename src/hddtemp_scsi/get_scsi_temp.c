@@ -3,6 +3,8 @@
  *  in SCSI/SAS drives context structure.
  *  Routines from hddtemp are used here.
  *
+ *  Author: Gerold Gruber <Gerold.Gruber@edv2g.de>
+ *
  *  This program is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free Software
  *  Foundation, version 2.
@@ -41,6 +43,8 @@
 #include "miscellaneous.h"
 #include "hddtemp.h"
 #include "scsi.h"
+
+int scsi_get_temperature( struct disk * );
 
 int nwipe_init_scsi_temperature( nwipe_context_t* c )
 {
