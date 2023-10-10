@@ -206,6 +206,7 @@ int nwipe_init_temperature( nwipe_context_t* c )
             c->templ_has_scsitemp_data = 1;
             nwipe_log( NWIPE_LOG_INFO, "got SCSI temperature data for %s", c->device_name );
         }
+        else
         {
             c->templ_has_scsitemp_data = 0;
             nwipe_log( NWIPE_LOG_INFO, "got no SCSI temperature data for %s", c->device_name );
@@ -240,6 +241,11 @@ void nwipe_update_temperature( nwipe_context_t* c )
     int idx;
     int result;
 
+    time_t nwipe_time_now = time( NULL );
+    if( nwipe_time_now - c->temp1_time < 60 )
+    {
+        return;
+    }
     /* try to get temperatures from hwmon, standard */
     if( c->templ_has_hwmon_data == 1 )
     {
