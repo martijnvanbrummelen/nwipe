@@ -59,6 +59,7 @@ int nwipe_init_temperature( nwipe_context_t* c )
      * so it can display appropriate information when a
      * device is unable to provide temperature data */
 
+    c->templ_has_hwmon_data = 0;
     c->temp1_crit = NO_TEMPERATURE_DATA;
     c->temp1_highest = NO_TEMPERATURE_DATA;
     c->temp1_input = NO_TEMPERATURE_DATA;
@@ -187,6 +188,7 @@ int nwipe_init_temperature( nwipe_context_t* c )
                             }
                             /* Copy the hwmon path to the drive context structure */
                             strcpy( c->temp1_path, dirpath_hwmonX );
+                            c->templ_has_hwmon_data = 1;
                         }
                     }
                     closedir( dir2 );
@@ -194,6 +196,20 @@ int nwipe_init_temperature( nwipe_context_t* c )
             }
         }
         closedir( dir );
+    }
+    /* if no hwmon data available try scsi access (SAS Disks are known to be not working in hwmon */
+    if( c->templ_has_hwmon_data == 0 && ( c->device_type == NWIPE_DEVICE_SAS || c->device_type == NWIPE_DEVICE_SCSI ) )
+    {
+        nwipe_log( NWIPE_LOG_NOTICE, "no hwmon data for %s, try to get SCSI data", c->device_name );
+        if( nwipe_init_scsi_temperature( c ) == 0 )
+        {
+            c->templ_has_scsitemp_data = 1;
+            nwipe_log( NWIPE_LOG_INFO, "got SCSI temperature data for %s", c->device_name );
+        }
+        {
+            c->templ_has_scsitemp_data = 0;
+            nwipe_log( NWIPE_LOG_INFO, "got no SCSI temperature data for %s", c->device_name );
+        }
     }
 
     return 0;
@@ -224,37 +240,56 @@ void nwipe_update_temperature( nwipe_context_t* c )
     int idx;
     int result;
 
-    for( idx = 0; idx < NUMBER_OF_FILES; idx++ )
+    /* try to get temperatures from hwmon, standard */
+    if( c->templ_has_hwmon_data == 1 )
     {
-        /* Construct the full path including filename */
-        strcpy( path, c->temp1_path );
-        strcat( path, "/" );
-        strcat( path, &( temperature_label[idx][0] ) );
-
-        /* Open the file */
-        if( ( fptr = fopen( path, "r" ) ) != NULL )
+        for( idx = 0; idx < NUMBER_OF_FILES; idx++ )
         {
-            /* Acquire data until we reach a newline */
-            result = fscanf( fptr, "%[^\n]", temperature );
+            /* Construct the full path including filename */
+            strcpy( path, c->temp1_path );
+            strcat( path, "/" );
+            strcat( path, &( temperature_label[idx][0] ) );
 
-            /* Convert numeric ascii to binary integer */
-            *( temperature_pcontext[idx] ) = atoi( temperature );
-
-            /* Divide by 1000 to get degrees celsius */
-            *( temperature_pcontext[idx] ) = *( temperature_pcontext[idx] ) / 1000;
-
-            if( nwipe_options.verbose )
+            /* Open the file */
+            if( ( fptr = fopen( path, "r" ) ) != NULL )
             {
-                nwipe_log( NWIPE_LOG_NOTICE, "hwmon: %s %dC", path, *( temperature_pcontext[idx] ) );
+                /* Acquire data until we reach a newline */
+                result = fscanf( fptr, "%[^\n]", temperature );
+
+                /* Convert numeric ascii to binary integer */
+                *( temperature_pcontext[idx] ) = atoi( temperature );
+
+                /* Divide by 1000 to get degrees celsius */
+                *( temperature_pcontext[idx] ) = *( temperature_pcontext[idx] ) / 1000;
+
+                if( nwipe_options.verbose )
+                {
+                    nwipe_log( NWIPE_LOG_NOTICE, "hwmon: %s %dC", path, *( temperature_pcontext[idx] ) );
+                }
+
+                fclose( fptr );
             }
-
-            fclose( fptr );
-        }
-        else
-        {
-            if( nwipe_options.verbose )
+            else
             {
-                nwipe_log( NWIPE_LOG_NOTICE, "hwmon: Unable to  open %s", path );
+                if( nwipe_options.verbose )
+                {
+                    nwipe_log( NWIPE_LOG_NOTICE, "hwmon: Unable to  open %s", path );
+                }
+            }
+        }
+    }
+    else
+    {
+        /* alternative method to get temperature from SCSI/SAS disks */
+        if( c->device_type == NWIPE_DEVICE_SAS || c->device_type == NWIPE_DEVICE_SCSI )
+        {
+            if( c->templ_has_scsitemp_data == 1 )
+            {
+                nwipe_log( NWIPE_LOG_NOTICE, "hddtemp: get temperature for %s", c->device_name );
+                if( nwipe_get_scsi_temperature( c ) != 0 )
+                {
+                    nwipe_log( NWIPE_LOG_ERROR, "get_scsi_temperature error" );
+                }
             }
         }
     }
