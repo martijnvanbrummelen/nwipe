@@ -107,6 +107,7 @@ typedef struct nwipe_context_t_
     struct stat device_stat;  // The device file state from fstat().
     nwipe_device_t device_type;  // Indicates an IDE, SCSI, or Compaq SMART device in enumerated form (int)
     char device_type_str[14];  // Indicates an IDE, SCSI, USB etc as per nwipe_device_t but in ascii
+    int device_is_ssd;  // 0 = no SSD, 1 = is a SSD
     char device_serial_no[21];  // Serial number(processed, 20 characters plus null termination) of the device.
     int device_target;  // The device target.
 

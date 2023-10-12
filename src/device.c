@@ -128,6 +128,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     int r;
     char tmp_serial[21];
     nwipe_device_t bus;
+    int is_ssd;
     int check_HPA;  // a flag that indicates whether we check for a HPA on this device
 
     bus = 0;
@@ -150,7 +151,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     if( nwipe_options.nousb )
     {
         /* retrieve bus and drive serial number, HOWEVER we are only interested in the bus at this time */
-        r = nwipe_get_device_bus_type_and_serialno( dev->path, &bus, tmp_serial );
+        r = nwipe_get_device_bus_type_and_serialno( dev->path, &bus, &is_ssd, tmp_serial );
 
         /* See nwipe_get_device_bus_type_and_serialno() function for meaning of these codes */
         if( r == 0 || ( r >= 3 && r <= 6 ) )
@@ -265,7 +266,8 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     trim( (char*) next_device->device_serial_no );
 
     /* if we couldn't obtain serial number by using the above method .. try this */
-    r = nwipe_get_device_bus_type_and_serialno( next_device->device_name, &next_device->device_type, tmp_serial );
+    r = nwipe_get_device_bus_type_and_serialno(
+        next_device->device_name, &next_device->device_type, &next_device->device_is_ssd, tmp_serial );
 
     /* If serial number & bus retrieved (0) OR unsupported USB bus identified (5) */
     if( r == 0 || r == 5 )
@@ -357,6 +359,14 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
             strcpy( next_device->device_type_str, " SAS" );
             check_HPA = 1;
             break;
+    }
+    if( next_device->device_is_ssd )
+    {
+        strcpy( next_device->device_type_str + 4, "-SSD" );
+    }
+    else
+    {
+        strcpy( next_device->device_type_str + 4, "    " );
     }
 
     if( strlen( (const char*) next_device->device_serial_no ) )
@@ -457,10 +467,10 @@ char* trim( char* str )
     return str;
 }
 
-int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, char* serialnumber )
+int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, int* is_ssd, char* serialnumber )
 {
     /* The caller provides a string that contains the device, i.e. /dev/sdc, also a pointer
-     * to a integer (bus type) and thirdly a 21 byte
+     * to an integer (bus type), another pointer to an integer (is_ssd), and finally a 21 byte
      * character string which this function populates with the serial number (20 characters + null terminator).
      *
      * The function populates the bus integer and serial number strings for the given device.
@@ -801,6 +811,20 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, c
                         {
                             *bus = NWIPE_DEVICE_ATA;
                         }
+                    }
+                }
+                if( strstr( result, "rotation rate:" ) != 0 )
+                {
+                    /* strip any leading or trailing spaces and left justify, +15 is the length of "Rotation Rate:" */
+                    trim( &result[15] );
+                    for( idx = 15; result[idx]; idx++ )
+                    {
+                        result[idx] = tolower( result[idx] );
+                    }
+
+                    if( strncmp( &result[15], "solid state device", 19 ) == 0 )
+                    {
+                        *is_ssd = 1;
                     }
                 }
             }
