@@ -26,6 +26,7 @@
 #include <stdint.h>
 #include <errno.h>
 #include <dirent.h>
+#include <sys/time.h>
 
 #include "nwipe.h"
 #include "context.h"
@@ -216,6 +217,12 @@ int nwipe_init_temperature( nwipe_context_t* c )
     return 0;
 }
 
+float timedifference_msec( struct timeval tv_start, struct timeval tv_end )
+{
+    /* helper function for time measurement in msec */
+    return ( tv_end.tv_sec - tv_start.tv_sec ) * 1000.0f + ( tv_end.tv_usec - tv_start.tv_usec ) / 1000.0f;
+}
+
 void nwipe_update_temperature( nwipe_context_t* c )
 {
     /* For the given drive context obtain the path to it's hwmon temperature settings
@@ -240,12 +247,20 @@ void nwipe_update_temperature( nwipe_context_t* c )
     FILE* fptr;
     int idx;
     int result;
+    struct timeval tv_start;
+    struct timeval tv_end;
+    float delta_t;
 
+    /* avoid being called more often than 1x per 60 seconds */
     time_t nwipe_time_now = time( NULL );
     if( nwipe_time_now - c->temp1_time < 60 )
     {
         return;
     }
+
+    /* measure time it takes to get the temperatures */
+    gettimeofday( &tv_start, 0 );
+
     /* try to get temperatures from hwmon, standard */
     if( c->templ_has_hwmon_data == 1 )
     {
@@ -313,6 +328,10 @@ void nwipe_update_temperature( nwipe_context_t* c )
      * this is used by the GUI to check temperatures periodically, typically
      * every 60 seconds */
     c->temp1_time = time( NULL );
+
+    gettimeofday( &tv_end, 0 );
+    delta_t = timedifference_msec( tv_start, tv_end );
+    nwipe_log( NWIPE_LOG_NOTICE, "get temperature for %s took %f ms", c->device_name, delta_t );
 
     return;
 }
