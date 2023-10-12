@@ -85,11 +85,17 @@ int nwipe_init_scsi_temperature( nwipe_context_t* c )
     {
 	c->temp1_input = dsk->value;
 	c->temp1_crit = dsk->refvalue;
+        c->temp1_lcrit = -40; /* just to give it a value with some kind of sense */
+        c->temp1_highest = dsk->value;
+        c->temp1_lowest = dsk->value;
+        c->temp1_min = dsk->value;
+        c->temp1_max = dsk->value;
     }
     else
     {
 	nwipe_log( NWIPE_LOG_ERROR, "Can not read SCSI temperature for %s, %s",
 	           dsk->drive, dsk->errormsg );
+        close( dsk->fd );
 	free( dsk );
 	c->templ_disk = NULL;
 	return 1;
@@ -119,11 +125,13 @@ int nwipe_get_scsi_temperature( nwipe_context_t* c )
                 if( c->temp1_input > c->temp1_max )
                 {
                     c->temp1_max = c->temp1_input;
+                    c->temp1_highest = c->temp1_input;
                 }
             }
             if( c->temp1_min == NO_TEMPERATURE_DATA )
             {
                 c->temp1_min = c->temp1_input;
+                c->temp1_lowest = c->temp1_input;
             }
             else
             {
