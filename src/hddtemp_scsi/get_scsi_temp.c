@@ -110,6 +110,28 @@ int nwipe_get_scsi_temperature( nwipe_context_t* c )
 	if( scsi_get_temperature( dsk ) == GETTEMP_SUCCESS )
 	{
 	    c->temp1_input = dsk->value;
+            if( c->temp1_max == NO_TEMPERATURE_DATA )
+            {
+                c->temp1_max = c->temp1_input;
+            }
+            else
+            {
+                if( c->temp1_input > c->temp1_max )
+                {
+                    c->temp1_max = c->temp1_input;
+                }
+            }
+            if( c->temp1_min == NO_TEMPERATURE_DATA )
+            {
+                c->temp1_min = c->temp1_input;
+            }
+            else
+            {
+		if( c->temp1_input < c->temp1_min )
+		{
+		    c->temp1_min = c->temp1_input;
+		}
+            }
 	}
 	else
 	{

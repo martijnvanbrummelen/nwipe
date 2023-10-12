@@ -99,11 +99,27 @@ int scsi_get_temperature(struct disk *dsk) {
 	return GETTEMP_ERROR;
       }
 
-      dsk->value = buffer[9];
+      if( (int)buffer[7] == 2 ) /* PARAMETER LENGTH */
+      {
+          dsk->value = buffer[9];
+      }
+      else
+      {
+          snprintf(dsk->errormsg, MAX_ERRORMSG_SIZE, _("parameter length unexpected: %d"), (int)buffer[7] );
+          return GETTEMP_UNKNOWN;
+      }
       dsk->refvalue = buffer[15];
+      if( (int)buffer[13] == 2 ) /* PARAMETER LENGTH */
+      {
+          dsk->refvalue = buffer[15];
+      }
+      else
+      {
+          snprintf(dsk->errormsg, MAX_ERRORMSG_SIZE, _("parameter ref length unexpected: %d"), (int)buffer[13] );
+          return GETTEMP_UNKNOWN;
+      }
       return GETTEMP_SUCCESS;
    } else {
      return GETTEMP_NOSENSOR;
    }
 }
-

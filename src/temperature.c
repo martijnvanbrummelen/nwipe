@@ -291,7 +291,16 @@ void nwipe_update_temperature( nwipe_context_t* c )
         {
             if( c->templ_has_scsitemp_data == 1 )
             {
-                nwipe_log( NWIPE_LOG_NOTICE, "hddtemp: get temperature for %s", c->device_name );
+                if( nwipe_options.verbose )
+                {
+                    nwipe_log( NWIPE_LOG_NOTICE, "hddtemp: %s temp1_crit %dC", c->device_name, c->temp1_crit );
+                    nwipe_log( NWIPE_LOG_NOTICE, "hddtemp: %s temp1_highest %dC", c->device_name, c->temp1_highest );
+                    nwipe_log( NWIPE_LOG_NOTICE, "hddtemp: %s temp1_input %dC", c->device_name, c->temp1_input );
+                    nwipe_log( NWIPE_LOG_NOTICE, "hddtemp: %s temp1_lcrit %dC", c->device_name, c->temp1_lcrit );
+                    nwipe_log( NWIPE_LOG_NOTICE, "hddtemp: %s temp1_lowest %dC", c->device_name, c->temp1_lowest );
+                    nwipe_log( NWIPE_LOG_NOTICE, "hddtemp: %s temp1_max %dC", c->device_name, c->temp1_max );
+                    nwipe_log( NWIPE_LOG_NOTICE, "hddtemp: %s temp1_min %dC", c->device_name, c->temp1_min );
+                }
                 if( nwipe_get_scsi_temperature( c ) != 0 )
                 {
                     nwipe_log( NWIPE_LOG_ERROR, "get_scsi_temperature error" );
