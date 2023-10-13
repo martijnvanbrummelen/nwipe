@@ -131,13 +131,13 @@ int nwipe_get_scsi_temperature( nwipe_context_t* c )
             if( c->temp1_min == NO_TEMPERATURE_DATA )
             {
                 c->temp1_min = c->temp1_input;
-                c->temp1_lowest = c->temp1_input;
             }
             else
             {
 		if( c->temp1_input < c->temp1_min )
 		{
 		    c->temp1_min = c->temp1_input;
+                    c->temp1_lowest = c->temp1_input;
 		}
             }
 	}
