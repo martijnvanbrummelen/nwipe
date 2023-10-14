@@ -124,6 +124,10 @@ int main( int argc, char** argv )
     /*****************************
      * Parse command line options.
      */
+
+    /* Initialise the libconfig code that handles nwipe.conf */
+    nwipe_conf_init();
+
     nwipe_optind = nwipe_options_parse( argc, argv );
 
     /* Log nwipes version */
@@ -131,9 +135,6 @@ int main( int argc, char** argv )
 
     /* Log OS info */
     nwipe_log_OSinfo();
-
-    /* Initialise the libconfig code that handles nwipe.conf */
-    nwipe_conf_init();
 
     /* Check that hdparm exists, we use hdparm for some HPA/DCO detection etc, if not
      * exit nwipe. These checks are required if the PATH environment is not setup !
@@ -383,6 +384,11 @@ int main( int argc, char** argv )
         }
         else
         {
+            if( nwipe_options.PDF_preview_details == 1 )
+            {
+                nwipe_gui_preview_org_customer( SHOWING_PRIOR_TO_DRIVE_SELECTION );
+            }
+
             nwipe_gui_select( nwipe_enumerated, c1 );
         }
     }

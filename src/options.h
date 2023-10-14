@@ -65,6 +65,8 @@ typedef struct
     int rounds;  // The number of times that the wipe method should be called.
     int sync;  // A flag to indicate whether and how often writes should be sync'd.
     int verbose;  // Make log more verbose
+    int PDF_enable;  // 0=PDF creation disabled, 1=PDF creation enabled
+    int PDF_preview_details;  // 0=Disable preview Org/Cust/date/time before drive selection, 1=Enable Preview
     nwipe_verify_t verify;  // A flag to indicate whether writes should be verified.
 } nwipe_options_t;
 
