@@ -67,7 +67,17 @@ void nwipe_gui_add_customer_address( char* );  // Add new customer address
 void nwipe_gui_add_customer_contact_name( char* );  // Add new customer contact name
 void nwipe_gui_add_customer_contact_phone( char* );  // Add new customer contact phone
 int nwipe_gui_yes_no_footer( void );  // Change footer to yes no
-void nwipe_gui_preview_org_customer( void );  // Preview window  for wipe organisation and customer
+
+/** nwipe_gui_preview_org_customer( int )
+ * Display a editable preview of organisation, customer and date/time
+ *
+ * @param int mode 0 = use prior to drive selection
+ *                 1 = use in config menus
+ * The different modes simply change the text in the footer menu and in the case
+ * of mode 0 enable the A key which means accept & display drive selection.
+ */
+void nwipe_gui_preview_org_customer( int );  // Preview window  for wipe organisation and customer
+
 void nwipe_gui_set_system_year( void );  // Set the systems current year
 void nwipe_gui_set_system_month( void );  // Set the systems month
 void nwipe_gui_set_system_day( void );  // Set the system day of the month
@@ -128,5 +138,8 @@ void nwipe_update_speedring( nwipe_speedring_t* speedring, u64 speedring_done, t
 
 #define YES 1
 #define NO 0
+
+#define SHOWING_PRIOR_TO_DRIVE_SELECTION 0
+#define SHOWING_IN_CONFIG_MENUS 1
 
 #endif /* GUI_H_ */

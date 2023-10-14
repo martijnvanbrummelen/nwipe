@@ -27,6 +27,7 @@
 #include "options.h"
 #include "logging.h"
 #include "version.h"
+#include "conf.h"
 
 /* The global options struct. */
 nwipe_options_t nwipe_options;
@@ -55,6 +56,11 @@ int nwipe_options_parse( int argc, char** argv )
 
     /* The list of acceptable short options. */
     char nwipe_options_short[] = "Vvhl:P:m:p:qr:e:";
+
+    /* Used when reading value fron nwipe.conf */
+    const char* read_value = NULL;
+
+    int ret;
 
     /* The list of acceptable long options. */
     static struct option nwipe_options_long[] = {
@@ -136,6 +142,74 @@ int nwipe_options_parse( int argc, char** argv )
     memset( nwipe_options.logfile, '\0', sizeof( nwipe_options.logfile ) );
     memset( nwipe_options.PDFreportpath, '\0', sizeof( nwipe_options.PDFreportpath ) );
     strncpy( nwipe_options.PDFreportpath, ".", 2 );
+
+    /* Read PDF settings from nwipe.conf if available  */
+    if( ( ret = nwipe_conf_read_setting( "PDF_Certificate.PDF_Enable", &read_value ) ) )
+    {
+        /* error occurred */
+        nwipe_log( NWIPE_LOG_ERROR,
+                   "nwipe_conf_read_setting():Error reading PDF_Certificate.PDF_Enable from nwipe.conf, ret code %i",
+                   ret );
+
+        /* Use default values */
+        nwipe_options.PDF_enable = 1;
+    }
+    else
+    {
+        if( !strcmp( read_value, "ENABLED" ) )
+        {
+            nwipe_options.PDF_enable = 1;
+        }
+        else
+        {
+            if( !strcmp( read_value, "DISABLED" ) )
+            {
+                nwipe_options.PDF_enable = 0;
+            }
+            else
+            {
+                // error occurred
+                nwipe_log(
+                    NWIPE_LOG_ERROR,
+                    "PDF_Certificate.PDF_Enable in nwipe.conf returned a value that was neither ENABLED or DISABLED" );
+                nwipe_options.PDF_enable = 1;  // Default to Enabled
+            }
+        }
+    }
+
+    /* PDF Preview enable/disable */
+    if( ( ret = nwipe_conf_read_setting( "PDF_Certificate.PDF_Preview", &read_value ) ) )
+    {
+        /* error occurred */
+        nwipe_log( NWIPE_LOG_ERROR,
+                   "nwipe_conf_read_setting():Error reading PDF_Certificate.PDF_Preview from nwipe.conf, ret code %i",
+                   ret );
+
+        /* Use default values */
+        nwipe_options.PDF_enable = 1;
+    }
+    else
+    {
+        if( !strcmp( read_value, "ENABLED" ) )
+        {
+            nwipe_options.PDF_preview_details = 1;
+        }
+        else
+        {
+            if( !strcmp( read_value, "DISABLED" ) )
+            {
+                nwipe_options.PDF_preview_details = 0;
+            }
+            else
+            {
+                /* error occurred */
+                nwipe_log(
+                    NWIPE_LOG_ERROR,
+                    "PDF_Certificate.PDF_Preview in nwipe.conf returned a value that was neither ENABLED or DISABLED" );
+                nwipe_options.PDF_preview_details = 1; /* Default to Enabled */
+            }
+        }
+    }
 
     /* Initialise each of the strings in the excluded drives array */
     for( i = 0; i < MAX_NUMBER_EXCLUDED_DRIVES; i++ )

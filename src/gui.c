@@ -61,6 +61,7 @@
 #include "miscellaneous.h"
 #include "hpa_dco.h"
 #include "customers.h"
+#include "conf.h"
 
 #define NWIPE_GUI_PANE 8
 
@@ -158,6 +159,8 @@ const char* main_window_footer_warning_no_drive_selected =
 /* Oddly enough, placing extra quotes around the footer strings fixes corruption to the right
  * of the footer message when the terminal is resized, a quirk in ncurses? - DO NOT REMOVE THE \" */
 const char* selection_footer = "J=Down K=Up Space=Select Backspace=Cancel Ctrl+C=Quit";
+const char* selection_footer_preview_prior_to_drive_selection =
+    "A=Accept & display drives J=Down K=Up Space=Select Backspace=Cancel Ctrl+C=Quit";
 const char* selection_footer_add_customer = "S=Save J=Down K=Up Space=Select Backspace=Cancel Ctrl+C=Quit";
 const char* selection_footer_add_customer_yes_no = "Save Customer Details Y/N";
 const char* end_wipe_footer = "B=[Toggle between dark\\blank\\blue screen] Ctrl+C=Quit";
@@ -2491,7 +2494,7 @@ void nwipe_gui_config( void )
     extern int terminate_signal;
 
     /* Number of entries in the configuration menu. */
-    const int count = 7;
+    const int count = 8;
 
     /* The first tabstop. */
     const int tab1 = 2;
@@ -2524,11 +2527,13 @@ void nwipe_gui_config( void )
         yy = 2;
 
         /* Print the options. */
+        mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Enable/Disable   " );
         mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Edit Organisation" );
         mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Select Customer  " );
         mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Add Customer     " );
         mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Delete Customer  " );
         mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Preview Details  " );
+        mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Preview at Start " );
         yy++;
         mvwprintw( main_window, yy++, tab1, "  %s", "Set System Date & Time        " );
         mvwprintw( main_window, yy++, tab1, "                                      " );
@@ -2540,6 +2545,23 @@ void nwipe_gui_config( void )
         {
             case 0:
 
+                mvwprintw( main_window, 2, tab2, "PDF Report - Enable/Disable" );
+
+                mvwprintw( main_window, 4, tab2, "Enable or Disable creation of the PDF " );
+                mvwprintw( main_window, 5, tab2, "report/certificate                    " );
+
+                if( nwipe_options.PDF_enable )
+                {
+                    mvwprintw( main_window, 7, tab2, "Create PDF Report = ENABLED" );
+                }
+                else
+                {
+                    mvwprintw( main_window, 7, tab2, "Create PDF Report = DISABLED" );
+                }
+                break;
+
+            case 1:
+
                 mvwprintw( main_window, 2, tab2, "PDF Report - Edit Organisation" );
 
                 mvwprintw( main_window, 4, tab2, "This option allows you to edit details" );
@@ -2549,7 +2571,7 @@ void nwipe_gui_config( void )
                 mvwprintw( main_window, 8, tab2, "and contact phone.                    " );
                 break;
 
-            case 1:
+            case 2:
                 mvwprintw( main_window, 2, tab2, "PDF Report - Select Customer" );
 
                 mvwprintw( main_window, 4, tab2, "Allows selection of a customer as     " );
@@ -2562,7 +2584,7 @@ void nwipe_gui_config( void )
                 mvwprintw( main_window, 11, tab2, "/etc/nwipe/nwipe_customers.csv       " );
                 break;
 
-            case 2:
+            case 3:
 
                 mvwprintw( main_window, 2, tab2, "PDF Report - Add Customer     " );
 
@@ -2577,7 +2599,7 @@ void nwipe_gui_config( void )
                 mvwprintw( main_window, 12, tab2, "/etc/nwipe/nwipe_customers.csv        " );
                 break;
 
-            case 3:
+            case 4:
 
                 mvwprintw( main_window, 2, tab2, "PDF Report - Delete Customer  " );
 
@@ -2592,7 +2614,7 @@ void nwipe_gui_config( void )
                 mvwprintw( main_window, 12, tab2, "/etc/nwipe/nwipe_customers.csv        " );
                 break;
 
-            case 4:
+            case 5:
 
                 mvwprintw( main_window, 2, tab2, "PDF Report - Preview Organisation,    " );
                 mvwprintw( main_window, 3, tab2, "Customer and Date/Time details        " );
@@ -2604,6 +2626,28 @@ void nwipe_gui_config( void )
                 break;
 
             case 6:
+
+                mvwprintw( main_window, 2, tab2, "PDF Report - Enable Preview at Start  " );
+
+                mvwprintw( main_window, 4, tab2, "A preview prior to the drive selection" );
+                mvwprintw( main_window, 5, tab2, "of the organisation that is performing" );
+                mvwprintw( main_window, 6, tab2, "the wipe, the customer details and the" );
+                mvwprintw( main_window, 7, tab2, "current date and time in order to     " );
+                mvwprintw( main_window, 8, tab2, "confirm that the information is       " );
+                mvwprintw( main_window, 9, tab2, "correct on the pdf report prior to    " );
+                mvwprintw( main_window, 10, tab2, "drive selection and starting the erase" );
+
+                if( nwipe_options.PDF_preview_details )
+                {
+                    mvwprintw( main_window, 12, tab2, "Preview at start = ENABLED" );
+                }
+                else
+                {
+                    mvwprintw( main_window, 12, tab2, "Preview at start = DISABLED" );
+                }
+                break;
+
+            case 8:
 
                 mvwprintw( main_window, 2, tab2, "Set System Date & Time                " );
 
@@ -2641,7 +2685,7 @@ void nwipe_gui_config( void )
 
                 if( focus < count - 1 )
                 {
-                    if( focus == 4 )
+                    if( focus == 6 )
                     {
                         focus += 2; /* mind the gaps */
                     }
@@ -2658,7 +2702,7 @@ void nwipe_gui_config( void )
 
                 if( focus > 0 )
                 {
-                    if( focus == 6 )
+                    if( focus == 8 )
                     {
                         focus -= 2; /* mind the gaps */
                     }
@@ -2677,35 +2721,75 @@ void nwipe_gui_config( void )
 
         } /* switch */
 
+        if( keystroke == 0x0A )
+        {
+            switch( focus )
+            {
+                case 0:
+                    /* Toggle on pressing ENTER key */
+                    if( nwipe_options.PDF_enable == 0 )
+                    {
+                        nwipe_options.PDF_enable = 1;
+
+                        /* write the setting to nwipe.conf */
+                        nwipe_conf_update_setting( "PDF_Certificate.PDF_Enable", "ENABLED" );
+                    }
+                    else
+                    {
+                        nwipe_options.PDF_enable = 0;
+
+                        /* write the setting to nwipe.conf */
+                        nwipe_conf_update_setting( "PDF_Certificate.PDF_Enable", "DISABLED" );
+                    }
+                    break;
+
+                case 1:
+                    nwipe_gui_edit_organisation();
+                    break;
+
+                case 2:
+                    customer_processes( SELECT_CUSTOMER );
+
+                    break;
+
+                case 3:
+                    nwipe_gui_add_customer();
+                    break;
+
+                case 4:
+                    customer_processes( DELETE_CUSTOMER );
+                    break;
+
+                case 5:
+                    nwipe_gui_preview_org_customer( SHOWING_IN_CONFIG_MENUS );
+                    break;
+
+                case 6:
+                    /* Toggle on pressing ENTER key */
+                    if( nwipe_options.PDF_preview_details == 0 )
+                    {
+                        nwipe_options.PDF_preview_details = 1;
+
+                        /* write the setting to nwipe.conf */
+                        nwipe_conf_update_setting( "PDF_Certificate.PDF_Preview", "ENABLED" );
+                    }
+                    else
+                    {
+                        nwipe_options.PDF_preview_details = 0;
+
+                        /* write the setting to nwipe.conf */
+                        nwipe_conf_update_setting( "PDF_Certificate.PDF_Preview", "DISABLED" );
+                    }
+                    break;
+
+                case 8:
+                    nwipe_gui_set_date_time();
+                    break;
+            }
+            keystroke = -1;
+        }
+
     } while( keystroke != KEY_ENTER && keystroke != ' ' && keystroke != 10 && terminate_signal != 1 );
-
-    switch( focus )
-    {
-        case 0:
-            nwipe_gui_edit_organisation();
-            break;
-
-        case 1:
-            customer_processes( SELECT_CUSTOMER );
-
-            break;
-
-        case 2:
-            nwipe_gui_add_customer();
-            break;
-
-        case 3:
-            customer_processes( DELETE_CUSTOMER );
-            break;
-
-        case 4:
-            nwipe_gui_preview_org_customer();
-            break;
-
-        case 6:
-            nwipe_gui_set_date_time();
-            break;
-    }
 
 } /* end of nwipe_config() */
 
@@ -4620,7 +4704,7 @@ void nwipe_gui_add_customer_contact_phone( char* customer_contact_phone )
 
 } /* End of nwipe_gui_add_customer_contact_phone() */
 
-void nwipe_gui_preview_org_customer( void )
+void nwipe_gui_preview_org_customer( int mode )
 {
     /**
      * Display the organisation and customers details and the current system date and time
@@ -4663,7 +4747,14 @@ void nwipe_gui_preview_org_customer( void )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer );
+    if( mode == SHOWING_IN_CONFIG_MENUS )
+    {
+        nwipe_gui_title( footer_window, selection_footer );
+    }
+    else
+    {
+        nwipe_gui_title( footer_window, selection_footer_preview_prior_to_drive_selection );
+    }
     wrefresh( footer_window );
 
     do
@@ -4673,7 +4764,14 @@ void nwipe_gui_preview_org_customer( void )
             /* Clear the main window. */
             werase( main_window );
 
-            nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+            if( mode == SHOWING_IN_CONFIG_MENUS )
+            {
+                nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+            }
+            else
+            {
+                nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_preview_prior_to_drive_selection );
+            }
 
             /* Determine size of window */
             getmaxyx( main_window, wlines, wcols );
@@ -4891,6 +4989,14 @@ void nwipe_gui_preview_org_customer( void )
                 case 27: /* ESC */
 
                     return;
+                    break;
+
+                case 'A':
+                case 'a':
+                    if( mode == SHOWING_PRIOR_TO_DRIVE_SELECTION )
+                    {
+                        return;
+                    }
 
             } /* switch */
 
@@ -4937,7 +5043,8 @@ void nwipe_gui_preview_org_customer( void )
             }
         }
 
-    } while( keystroke != KEY_ENTER && keystroke != ' ' && keystroke != 10 && terminate_signal != 1 );
+    } while( keystroke != 'A' && keystroke != 'a' && keystroke != KEY_ENTER && keystroke != ' ' && keystroke != 10
+             && terminate_signal != 1 );
 
 } /* end of nwipe_gui_preview_org_customer( void ) */
 
