@@ -45,6 +45,8 @@
  */
 int create_pdf( nwipe_context_t* ptr );
 
-int nwipe_get_smart_data( char* );
+int nwipe_get_smart_data( nwipe_context_t* );
+
+void create_header_and_footer( nwipe_context_t*, char* );
 
 #endif /* CREATE_PDF_H_ */
