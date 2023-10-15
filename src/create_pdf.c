@@ -48,7 +48,15 @@
 #define text_size_data 10
 
 struct pdf_doc* pdf;
-struct pdf_object* page_2;
+struct pdf_object* page;
+
+char model_header[50] = ""; /* Model text in the header */
+char serial_header[30] = ""; /* Serial number text in the header */
+char barcode[100] = ""; /* Contents of the barcode, i.e model:serial */
+char pdf_footer[MAX_PDF_FOOTER_TEXT_LENGTH];
+float height;
+float page_width;
+int status_icon;
 
 int create_pdf( nwipe_context_t* ptr )
 {
@@ -60,13 +68,13 @@ int create_pdf( nwipe_context_t* ptr )
     extern config_t nwipe_cfg;
     extern char nwipe_config_file[];
 
-    char pdf_footer[MAX_PDF_FOOTER_TEXT_LENGTH];
+    //    char pdf_footer[MAX_PDF_FOOTER_TEXT_LENGTH];
     nwipe_context_t* c;
     c = ptr;
-    char model_header[50] = ""; /* Model text in the header */
-    char serial_header[30] = ""; /* Serial number text in the header */
+    //    char model_header[50] = ""; /* Model text in the header */
+    //    char serial_header[30] = ""; /* Serial number text in the header */
     char device_size[100] = ""; /* Device size in the form xMB (xxxx bytes) */
-    char barcode[100] = ""; /* Contents of the barcode, i.e model:serial */
+    //    char barcode[100] = ""; /* Contents of the barcode, i.e model:serial */
     char verify[20] = ""; /* Verify option text */
     char blank[10] = ""; /* blanking pass, none, zeros, ones */
     char rounds[50] = ""; /* rounds ASCII numeric */
@@ -80,10 +88,10 @@ int create_pdf( nwipe_context_t* ptr )
     char throughput_txt[50] = "";
     char bytes_percent_str[7] = "";
 
-    int status_icon;
+    //    int status_icon;
 
-    float height;
-    float page_width;
+    //    float height;
+    //    float page_width;
 
     struct pdf_info info = { .creator = "https://github.com/PartialVolume/shredos.x86_64",
                              .producer = "https://github.com/martijnvanbrummelen/nwipe",
@@ -137,7 +145,7 @@ int create_pdf( nwipe_context_t* ptr )
     pdf_add_text_wrap( pdf, NULL, "Disk Erasure Report", 24, 0, 695, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
     snprintf( barcode, sizeof( barcode ), "%s:%s", c->device_model, c->device_serial_no );
     pdf_add_text_wrap(
-        pdf, NULL, "Page 1 of 2 - Erasure Status", 14, 0, 670, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
+        pdf, NULL, "Page 1 - Erasure Status", 14, 0, 670, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
     pdf_add_barcode( pdf, NULL, PDF_BARCODE_128A, 100, 790, 400, 25, barcode, PDF_BLACK );
 
     /* ------------------------ */
@@ -768,67 +776,10 @@ int create_pdf( nwipe_context_t* ptr )
     }
     pdf_set_font( pdf, "Helvetica" );
 
-    /***************************************************************
-     * Create Page 2 of the report. This shows the drives smart data
+    /***************************************
+     * Populate page 2 and 3 with smart data
      */
-
-    // struct pdf_object* page_2 = pdf_append_page( pdf );
-    //  Create page two
-    page_2 = pdf_append_page( pdf );
-
-    /*********************************************************************
-     * Create header and footer on page 1, with the exception of the green
-     * tick/red icon which is set from the 'status' section below
-     */
-    pdf_add_text_wrap( pdf, NULL, pdf_footer, 12, 0, 30, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
-    pdf_add_line( pdf, NULL, 50, 50, 550, 50, 3, PDF_BLACK );
-    pdf_add_line( pdf, NULL, 50, 650, 550, 650, 3, PDF_BLACK );
-    pdf_add_image_data( pdf, NULL, 45, 665, 100, 100, bin2c_shred_db_jpg, 27063 );
-    pdf_set_font( pdf, "Helvetica-Bold" );
-    snprintf( model_header, sizeof( model_header ), " %s: %s ", "Model", c->device_model );
-    pdf_add_text_wrap( pdf, NULL, model_header, 14, 0, 755, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
-    snprintf( serial_header, sizeof( serial_header ), " %s: %s ", "S/N", c->device_serial_no );
-    pdf_add_text_wrap( pdf, NULL, serial_header, 14, 0, 735, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
-    pdf_set_font( pdf, "Helvetica" );
-
-    pdf_add_text_wrap( pdf, NULL, "Disk Erasure Report", 24, 0, 695, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
-    snprintf( barcode, sizeof( barcode ), "%s:%s", c->device_model, c->device_serial_no );
-    pdf_add_text_wrap(
-        pdf, NULL, "Page 2 of 2 - Smart Data", 14, 0, 670, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
-    pdf_add_barcode( pdf, NULL, PDF_BARCODE_128A, 100, 790, 400, 25, barcode, PDF_BLACK );
-
-    /**********************************************************
-     * Display the appropriate status icon, top right on page 2
-     */
-    switch( status_icon )
-    {
-        case STATUS_ICON_GREEN_TICK:
-
-            /* Display the green tick icon in the header */
-            pdf_add_image_data( pdf, NULL, 450, 665, 100, 100, bin2c_te_jpg, 54896 );
-            break;
-
-        case STATUS_ICON_YELLOW_EXCLAMATION:
-
-            /* Display the yellow exclamation icon in the header */
-            pdf_add_image_data( pdf, NULL, 450, 665, 100, 100, bin2c_nwipe_exclamation_jpg, 65791 );
-            break;
-
-        case STATUS_ICON_RED_CROSS:
-
-            // Display the red cross in the header
-            pdf_add_image_data( pdf, NULL, 450, 665, 100, 100, bin2c_redcross_jpg, 60331 );
-            break;
-
-        default:
-
-            break;
-    }
-
-    /*********************************
-     * Populate page 2 with smart data
-     */
-    nwipe_get_smart_data( c->device_name );
+    nwipe_get_smart_data( c );
 
     /*****************************
      * Create the reports filename
@@ -852,11 +803,12 @@ int create_pdf( nwipe_context_t* ptr )
     return 0;
 }
 
-int nwipe_get_smart_data( char* device )
+int nwipe_get_smart_data( nwipe_context_t* c )
 {
     FILE* fp;
 
     char* pdata;
+    char page_title[50];
 
     char smartctl_command[] = "smartctl -a %s";
     char smartctl_command2[] = "/sbin/smartctl -a %s";
@@ -870,6 +822,7 @@ int nwipe_get_smart_data( char* device )
     int idx, idx2, idx3;
     int x, y;
     int set_return_value;
+    int page_number;
 
     final_cmd_smartctl[0] = 0;
 
@@ -885,17 +838,17 @@ int nwipe_get_smart_data( char* device )
             }
             else
             {
-                sprintf( final_cmd_smartctl, smartctl_command3, device );
+                sprintf( final_cmd_smartctl, smartctl_command3, c->device_name );
             }
         }
         else
         {
-            sprintf( final_cmd_smartctl, smartctl_command2, device );
+            sprintf( final_cmd_smartctl, smartctl_command2, c->device_name );
         }
     }
     else
     {
-        sprintf( final_cmd_smartctl, smartctl_command, device );
+        sprintf( final_cmd_smartctl, smartctl_command, c->device_name );
     }
 
     if( final_cmd_smartctl[0] != 0 )
@@ -910,8 +863,18 @@ int nwipe_get_smart_data( char* device )
         }
         else
         {
-            x = 50;
-            y = 630;
+            x = 50;  // left side of page
+            y = 630;  // top row of page
+            page_number = 2;
+
+            /* Create Page 2 of the report. This shows the drives smart data
+             */
+            page = pdf_append_page( pdf );
+
+            /* Create the header and footer for page 2, the start of the smart data */
+            snprintf( page_title, sizeof( page_title ), "Smart Data - Page %i", page_number );
+            create_header_and_footer( c, page_title );
+
             /* Read the output a line at a time - output it. */
             while( fgets( result, sizeof( result ) - 1, fp ) != NULL )
             {
@@ -930,13 +893,6 @@ int nwipe_get_smart_data( char* device )
                         result[idx] += 32;
                     }
                     idx++;
-                }
-
-                if( !strncmp( "smart attributes", result, 16 ) )
-                {
-                    // move to right column on page, starting at top
-                    x = 270;
-                    y = 630;
                 }
 
                 if( nwipe_options.quiet == 1 )
@@ -962,8 +918,21 @@ int nwipe_get_smart_data( char* device )
                 }
 
                 pdf_set_font( pdf, "Courier" );
-                pdf_add_text( pdf, page_2, result, 6, x, y, PDF_BLACK );
+                pdf_add_text( pdf, NULL, result, 8, x, y, PDF_BLACK );
                 y -= 9;
+
+                /* Have we reached the bottom of the page yet */
+                if( y < 60 )
+                {
+                    /* Append an extra page */
+                    page = pdf_append_page( pdf );
+                    page_number++;
+                    y = 630;
+
+                    /* create the header and footer for the next page */
+                    snprintf( page_title, sizeof( page_title ), "Smart Data - Page %i", page_number );
+                    create_header_and_footer( c, page_title );
+                }
             }
             set_return_value = 0;
         }
@@ -973,4 +942,56 @@ int nwipe_get_smart_data( char* device )
         set_return_value = 1;
     }
     return set_return_value;
+}
+
+void create_header_and_footer( nwipe_context_t* c, char* page_title )
+{
+    /**************************************************************************
+     * Create header and footer on most recently added page, with the exception
+     * of the green tick/red icon which is set from the 'status' section below.
+     */
+    pdf_add_text_wrap( pdf, NULL, pdf_footer, 12, 0, 30, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
+    pdf_add_line( pdf, NULL, 50, 50, 550, 50, 3, PDF_BLACK );
+    pdf_add_line( pdf, NULL, 50, 650, 550, 650, 3, PDF_BLACK );
+    pdf_add_image_data( pdf, NULL, 45, 665, 100, 100, bin2c_shred_db_jpg, 27063 );
+    pdf_set_font( pdf, "Helvetica-Bold" );
+    snprintf( model_header, sizeof( model_header ), " %s: %s ", "Model", c->device_model );
+    pdf_add_text_wrap( pdf, NULL, model_header, 14, 0, 755, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
+    snprintf( serial_header, sizeof( serial_header ), " %s: %s ", "S/N", c->device_serial_no );
+    pdf_add_text_wrap( pdf, NULL, serial_header, 14, 0, 735, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
+    pdf_set_font( pdf, "Helvetica" );
+
+    pdf_add_text_wrap( pdf, NULL, "Disk Erasure Report", 24, 0, 695, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
+    snprintf( barcode, sizeof( barcode ), "%s:%s", c->device_model, c->device_serial_no );
+    pdf_add_text_wrap( pdf, NULL, page_title, 14, 0, 670, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
+    pdf_add_barcode( pdf, NULL, PDF_BARCODE_128A, 100, 790, 400, 25, barcode, PDF_BLACK );
+
+    /**********************************************************
+     * Display the appropriate status icon, top right on page on
+     * most recently added page.
+     */
+    switch( status_icon )
+    {
+        case STATUS_ICON_GREEN_TICK:
+
+            /* Display the green tick icon in the header */
+            pdf_add_image_data( pdf, NULL, 450, 665, 100, 100, bin2c_te_jpg, 54896 );
+            break;
+
+        case STATUS_ICON_YELLOW_EXCLAMATION:
+
+            /* Display the yellow exclamation icon in the header */
+            pdf_add_image_data( pdf, NULL, 450, 665, 100, 100, bin2c_nwipe_exclamation_jpg, 65791 );
+            break;
+
+        case STATUS_ICON_RED_CROSS:
+
+            // Display the red cross in the header
+            pdf_add_image_data( pdf, NULL, 450, 665, 100, 100, bin2c_redcross_jpg, 60331 );
+            break;
+
+        default:
+
+            break;
+    }
 }

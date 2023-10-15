@@ -434,7 +434,6 @@ int nwipe_conf_read_setting( char* group_name_setting_name, const char** setting
         /* Retrieve data from nwipe.conf */
         if( CONFIG_TRUE == config_setting_lookup_string( setting, setting_name, setting_value ) )
         {
-            nwipe_log( NWIPE_LOG_INFO, "setting_value = %s", *setting_value );
             return_status = 0; /* Success */
         }
         else
