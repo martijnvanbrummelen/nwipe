@@ -291,6 +291,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     }
 
     /* Initialise the variables that toggle the [size][temp c] with [HPA status]
+     * Not currently used, but may be used in the future or for other purposes
      */
     next_device->HPA_toggle_time = time( NULL );
     next_device->HPA_display_toggle_state = 0;

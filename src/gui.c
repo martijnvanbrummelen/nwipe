@@ -832,50 +832,34 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                 /* print the temperature */
                 wprintw_temperature( c[i + offset] );
 
-                /* Toggle the drive/serial with [HDA/DCO Status]
-                 */
-                switch( c[i + offset]->HPA_display_toggle_state )
+                switch( c[i + offset]->HPA_status )
                 {
-                    case 0:
-                        /* print the drive model and serial number */
-                        wprintw( main_window, " %s/%s", c[i + offset]->device_model, c[i + offset]->device_serial_no );
+                    case HPA_ENABLED:
+                        wprintw( main_window, " " );
+                        wattron( main_window, COLOR_PAIR( 9 ) );
+                        wprintw( main_window, "[HS? YES!]" );
+                        wattroff( main_window, COLOR_PAIR( 9 ) );
                         break;
 
-                    case 1:
-                        switch( c[i + offset]->HPA_status )
-                        {
-                            case HPA_ENABLED:
-                                wprintw( main_window, " " );
-                                wattron( main_window, COLOR_PAIR( 9 ) );
-                                wprintw( main_window, " HPA/DCO Hidden sectors detected !!" );
-                                wattroff( main_window, COLOR_PAIR( 9 ) );
-                                break;
+                    case HPA_DISABLED:
+                        wprintw( main_window, " " );
+                        wprintw( main_window, "[HS? NO ]" );
+                        break;
 
-                            case HPA_DISABLED:
-                                wprintw( main_window, " " );
-                                wprintw( main_window, "HPA/DCO No hidden sectors detected " );
-                                break;
+                    case HPA_UNKNOWN:
+                        wprintw( main_window, " " );
+                        wprintw( main_window, "[HS? ???]" );
+                        break;
 
-                            case HPA_UNKNOWN:
-                                wprintw( main_window, " " );
-                                wattron( main_window, COLOR_PAIR( 9 ) );
-                                wprintw( main_window, " HPA/DCO hidden sectors indeterminate " );
-                                wattroff( main_window, COLOR_PAIR( 9 ) );
-                                break;
+                    default:
 
-                            case HPA_NOT_APPLICABLE:
-                                /* print the drive model and serial number */
-                                wprintw( main_window,
-                                         " %s/%s",
-                                         c[i + offset]->device_model,
-                                         c[i + offset]->device_serial_no );
-                                break;
-
-                            default:
-
-                                break;
-                        }
+                        wprintw( main_window, " " );
+                        wprintw( main_window, "[HS? N/A]" );
+                        break;
                 }
+
+                /* print the drive model and serial number */
+                wprintw( main_window, " %s/%s", c[i + offset]->device_model, c[i + offset]->device_serial_no );
 
                 if( c[i + offset]->HPA_toggle_time + 1 < time( NULL ) )
                 {
