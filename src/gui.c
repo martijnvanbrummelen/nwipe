@@ -826,20 +826,8 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
 
                 wprintw( main_window, "[%s] ", c[i + offset]->device_size_text );
 
-                // NOTE temporary timing code
-                clock_t t;
-                t = clock();
-
                 /* Read the drive temperature values */
                 nwipe_update_temperature( c[i + offset] );
-
-                // NOTE temporary timing code
-                t = clock() - t;
-                double time_taken = ( (double) t ) / CLOCKS_PER_SEC;  // in seconds
-                nwipe_log( NWIPE_LOG_INFO,
-                           "nwipe_update_temperature() took %f seconds for %s",
-                           time_taken,
-                           c[i + offset]->device_name );
 
                 /* print the temperature */
                 wprintw_temperature( c[i + offset] );
@@ -849,7 +837,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                     case HPA_ENABLED:
                         wprintw( main_window, " " );
                         wattron( main_window, COLOR_PAIR( 9 ) );
-                        wprintw( main_window, "[HS? YES!]" );
+                        wprintw( main_window, "[HS? YES]" );
                         wattroff( main_window, COLOR_PAIR( 9 ) );
                         break;
 
@@ -7026,65 +7014,39 @@ void wprintw_temperature( nwipe_context_t* c )
         }
     }
 
-    /* if drive temperature has exceeded the critical temperature if available
+    /* if drive temperature has exceeded the max temperature if available
      */
-    if( ( local_temp1_input >= temp_highest_limit ) && ( local_temp1_input != NO_TEMPERATURE_DATA )
-        && ( temp_highest_limit != NO_TEMPERATURE_DATA ) )
+    if( ( local_temp1_input >= temp_high_limit ) && ( local_temp1_input != NO_TEMPERATURE_DATA )
+        && ( temp_high_limit != NO_TEMPERATURE_DATA ) )
     {
-        /* white on red */
-        wattron( main_window, COLOR_PAIR( 6 ) );
+        /* red on blue */
+        wattron( main_window, COLOR_PAIR( 3 ) );
         wprintw( main_window, "[%dC]", local_temp1_input );
-        wattroff( main_window, COLOR_PAIR( 6 ) );
+        wattroff( main_window, COLOR_PAIR( 3 ) );
     }
     else
     {
-        /* if drive temperature has exceeded the max temperature if available
+        /* if drive temperature is below the low temperature limit if available
          */
-        if( ( local_temp1_input >= temp_high_limit ) && ( local_temp1_input <= temp_highest_limit )
-            && ( local_temp1_input != NO_TEMPERATURE_DATA ) && ( temp_high_limit != NO_TEMPERATURE_DATA ) )
+        if( ( local_temp1_input <= temp_lowest_limit ) && ( temp_lowest_limit != NO_TEMPERATURE_DATA )
+            && ( local_temp1_input != NO_TEMPERATURE_DATA ) )
         {
-            /* red on blue */
-            wattron( main_window, COLOR_PAIR( 3 ) );
+            /* white on black */
+            wattron( main_window, COLOR_PAIR( 14 ) );
             wprintw( main_window, "[%dC]", local_temp1_input );
-            wattroff( main_window, COLOR_PAIR( 3 ) );
+            wattroff( main_window, COLOR_PAIR( 14 ) );
         }
         else
         {
-            /* if drive temperature is below the lowest critical temperature and the critical value is present
-             */
-            if( ( local_temp1_input <= temp_lowest_limit ) && ( temp_lowest_limit != NO_TEMPERATURE_DATA )
-                && ( local_temp1_input != NO_TEMPERATURE_DATA ) )
+            if( local_temp1_input != NO_TEMPERATURE_DATA )
             {
-                /* white on black */
-                wattron( main_window, COLOR_PAIR( 14 ) );
+                /* Default white on blue */
                 wprintw( main_window, "[%dC]", local_temp1_input );
-                wattroff( main_window, COLOR_PAIR( 14 ) );
             }
             else
             {
-                /* if drive temperature is below the minimum but above the lowest temperature and the value is present
-                 */
-                if( ( ( local_temp1_input <= temp_low_limit ) && ( local_temp1_input >= temp_lowest_limit )
-                      && ( local_temp1_input != NO_TEMPERATURE_DATA ) && ( temp_low_limit != NO_TEMPERATURE_DATA ) ) )
-                {
-                    /* black on blue */
-                    wattron( main_window, COLOR_PAIR( 11 ) );
-                    wprintw( main_window, "[%dC]", local_temp1_input );
-                    wattroff( main_window, COLOR_PAIR( 11 ) );
-                }
-                else
-                {
-                    if( local_temp1_input != NO_TEMPERATURE_DATA )
-                    {
-                        /* Default white on blue */
-                        wprintw( main_window, "[%dC]", local_temp1_input );
-                    }
-                    else
-                    {
-                        /* Default white on blue */
-                        wprintw( main_window, "[--C]" );
-                    }
-                }
+                /* Default white on blue */
+                wprintw( main_window, "[--C]" );
             }
         }
     }
