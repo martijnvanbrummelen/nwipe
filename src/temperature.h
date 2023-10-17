@@ -36,6 +36,15 @@ int nwipe_init_temperature( nwipe_context_t* );
 void nwipe_update_temperature( nwipe_context_t* );
 
 /**
+ * Workaround for obtaining temperatures from SCSI/SAS drives
+ * @param pointer to a drive context
+ * @return returns 0 on success < 1 on error
+ */
+int nwipe_init_scsi_temperature( nwipe_context_t* );
+int nwipe_get_scsi_temperature( nwipe_context_t* );
+void nwipe_shut_scsi_temperature( nwipe_context_t* );
+
+/**
  * This function is normally called only once. It's called after both the
  * nwipe_init_temperature() function and nwipe_update_temperature()
  * functions have been called. It logs the drives critical, highest, lowest

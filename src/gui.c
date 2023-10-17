@@ -826,8 +826,20 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
 
                 wprintw( main_window, "[%s] ", c[i + offset]->device_size_text );
 
+                // NOTE temporary timing code
+                clock_t t;
+                t = clock();
+
                 /* Read the drive temperature values */
                 nwipe_update_temperature( c[i + offset] );
+
+                // NOTE temporary timing code
+                t = clock() - t;
+                double time_taken = ( (double) t ) / CLOCKS_PER_SEC;  // in seconds
+                nwipe_log( NWIPE_LOG_INFO,
+                           "nwipe_update_temperature() took %f seconds for %s",
+                           time_taken,
+                           c[i + offset]->device_name );
 
                 /* print the temperature */
                 wprintw_temperature( c[i + offset] );

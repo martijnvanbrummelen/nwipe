@@ -24,6 +24,9 @@
 #define CONTEXT_H_
 
 #include "prng.h"
+#ifndef __HDDTEMP_H__
+#include "hddtemp_scsi/hddtemp.h"
+#endif /* __HDDTEMP_H__ */
 
 typedef enum nwipe_device_t_ {
     NWIPE_DEVICE_UNKNOWN = 0,  // Unknown device.
@@ -104,6 +107,7 @@ typedef struct nwipe_context_t_
     struct stat device_stat;  // The device file state from fstat().
     nwipe_device_t device_type;  // Indicates an IDE, SCSI, or Compaq SMART device in enumerated form (int)
     char device_type_str[14];  // Indicates an IDE, SCSI, USB etc as per nwipe_device_t but in ascii
+    int device_is_ssd;  // 0 = no SSD, 1 = is a SSD
     char device_serial_no[21];  // Serial number(processed, 20 characters plus null termination) of the device.
     int device_target;  // The device target.
 
@@ -133,6 +137,8 @@ typedef struct nwipe_context_t_
     u64 throughput;  // Average throughput in bytes per second.
     char throughput_txt[13];  // Human readable throughput.
     u64 verify_errors;  // The number of verification errors across all passes.
+    int templ_has_hwmon_data;  // 0 = no hwmon data available, 1 = hwmon data available
+    int templ_has_scsitemp_data;  // 0 = no scsitemp data available, 1 = scsitemp data available
     char temp1_path[MAX_HWMON_PATH_LENGTH];  // path to temperature variables /sys/class/hwmon/hwmonX/ etc.
     int temp1_crit;  // Critical high drive temperature, 1000000=unitialised, millidegree celsius.
     int temp1_highest;  // Historical highest temperature reached, 1000000=unitialised, millidegree celsius.
@@ -148,6 +154,7 @@ typedef struct nwipe_context_t_
     int temp1_flash_rate_counter;  // used by the gui for timing the flash rate
     int temp1_flash_rate_status;  // 0=blank 1=visible
     time_t temp1_time;  // The time when temperature was last checked, seconds since epoch
+    struct disk* templ_disk;  // Pointer to disk structure for hddtemp SCSI routines
     int wipe_status;  // Wipe finished = 0, wipe in progress = 1, wipe yet to start = -1.
     char wipe_status_txt[10];  // ERASED, FAILED, ABORTED, INSANITY
     int spinner_idx;  // Index into the spinner character array

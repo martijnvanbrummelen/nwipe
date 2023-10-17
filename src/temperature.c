@@ -26,6 +26,7 @@
 #include <stdint.h>
 #include <errno.h>
 #include <dirent.h>
+#include <sys/time.h>
 
 #include "nwipe.h"
 #include "context.h"
@@ -59,6 +60,7 @@ int nwipe_init_temperature( nwipe_context_t* c )
      * so it can display appropriate information when a
      * device is unable to provide temperature data */
 
+    c->templ_has_hwmon_data = 0;
     c->temp1_crit = NO_TEMPERATURE_DATA;
     c->temp1_highest = NO_TEMPERATURE_DATA;
     c->temp1_input = NO_TEMPERATURE_DATA;
@@ -187,6 +189,7 @@ int nwipe_init_temperature( nwipe_context_t* c )
                             }
                             /* Copy the hwmon path to the drive context structure */
                             strcpy( c->temp1_path, dirpath_hwmonX );
+                            c->templ_has_hwmon_data = 1;
                         }
                     }
                     closedir( dir2 );
@@ -195,8 +198,29 @@ int nwipe_init_temperature( nwipe_context_t* c )
         }
         closedir( dir );
     }
+    /* if no hwmon data available try scsi access (SAS Disks are known to be not working in hwmon */
+    if( c->templ_has_hwmon_data == 0 && ( c->device_type == NWIPE_DEVICE_SAS || c->device_type == NWIPE_DEVICE_SCSI ) )
+    {
+        nwipe_log( NWIPE_LOG_NOTICE, "no hwmon data for %s, try to get SCSI data", c->device_name );
+        if( nwipe_init_scsi_temperature( c ) == 0 )
+        {
+            c->templ_has_scsitemp_data = 1;
+            nwipe_log( NWIPE_LOG_INFO, "got SCSI temperature data for %s", c->device_name );
+        }
+        else
+        {
+            c->templ_has_scsitemp_data = 0;
+            nwipe_log( NWIPE_LOG_INFO, "got no SCSI temperature data for %s", c->device_name );
+        }
+    }
 
     return 0;
+}
+
+float timedifference_msec( struct timeval tv_start, struct timeval tv_end )
+{
+    /* helper function for time measurement in msec */
+    return ( tv_end.tv_sec - tv_start.tv_sec ) * 1000.0f + ( tv_end.tv_usec - tv_start.tv_usec ) / 1000.0f;
 }
 
 void nwipe_update_temperature( nwipe_context_t* c )
@@ -223,38 +247,79 @@ void nwipe_update_temperature( nwipe_context_t* c )
     FILE* fptr;
     int idx;
     int result;
+    struct timeval tv_start;
+    struct timeval tv_end;
+    float delta_t;
 
-    for( idx = 0; idx < NUMBER_OF_FILES; idx++ )
+    /* avoid being called more often than 1x per 60 seconds */
+    time_t nwipe_time_now = time( NULL );
+    if( nwipe_time_now - c->temp1_time < 60 )
     {
-        /* Construct the full path including filename */
-        strcpy( path, c->temp1_path );
-        strcat( path, "/" );
-        strcat( path, &( temperature_label[idx][0] ) );
+        return;
+    }
 
-        /* Open the file */
-        if( ( fptr = fopen( path, "r" ) ) != NULL )
+    /* measure time it takes to get the temperatures */
+    gettimeofday( &tv_start, 0 );
+
+    /* try to get temperatures from hwmon, standard */
+    if( c->templ_has_hwmon_data == 1 )
+    {
+        for( idx = 0; idx < NUMBER_OF_FILES; idx++ )
         {
-            /* Acquire data until we reach a newline */
-            result = fscanf( fptr, "%[^\n]", temperature );
+            /* Construct the full path including filename */
+            strcpy( path, c->temp1_path );
+            strcat( path, "/" );
+            strcat( path, &( temperature_label[idx][0] ) );
 
-            /* Convert numeric ascii to binary integer */
-            *( temperature_pcontext[idx] ) = atoi( temperature );
-
-            /* Divide by 1000 to get degrees celsius */
-            *( temperature_pcontext[idx] ) = *( temperature_pcontext[idx] ) / 1000;
-
-            if( nwipe_options.verbose )
+            /* Open the file */
+            if( ( fptr = fopen( path, "r" ) ) != NULL )
             {
-                nwipe_log( NWIPE_LOG_NOTICE, "hwmon: %s %dC", path, *( temperature_pcontext[idx] ) );
+                /* Acquire data until we reach a newline */
+                result = fscanf( fptr, "%[^\n]", temperature );
+
+                /* Convert numeric ascii to binary integer */
+                *( temperature_pcontext[idx] ) = atoi( temperature );
+
+                /* Divide by 1000 to get degrees celsius */
+                *( temperature_pcontext[idx] ) = *( temperature_pcontext[idx] ) / 1000;
+
+                if( nwipe_options.verbose )
+                {
+                    nwipe_log( NWIPE_LOG_NOTICE, "hwmon: %s %dC", path, *( temperature_pcontext[idx] ) );
+                }
+
+                fclose( fptr );
             }
-
-            fclose( fptr );
-        }
-        else
-        {
-            if( nwipe_options.verbose )
+            else
             {
-                nwipe_log( NWIPE_LOG_NOTICE, "hwmon: Unable to  open %s", path );
+                if( nwipe_options.verbose )
+                {
+                    nwipe_log( NWIPE_LOG_NOTICE, "hwmon: Unable to  open %s", path );
+                }
+            }
+        }
+    }
+    else
+    {
+        /* alternative method to get temperature from SCSI/SAS disks */
+        if( c->device_type == NWIPE_DEVICE_SAS || c->device_type == NWIPE_DEVICE_SCSI )
+        {
+            if( c->templ_has_scsitemp_data == 1 )
+            {
+                if( nwipe_options.verbose )
+                {
+                    nwipe_log( NWIPE_LOG_NOTICE, "hddtemp: %s temp1_crit %dC", c->device_name, c->temp1_crit );
+                    nwipe_log( NWIPE_LOG_NOTICE, "hddtemp: %s temp1_highest %dC", c->device_name, c->temp1_highest );
+                    nwipe_log( NWIPE_LOG_NOTICE, "hddtemp: %s temp1_input %dC", c->device_name, c->temp1_input );
+                    nwipe_log( NWIPE_LOG_NOTICE, "hddtemp: %s temp1_lcrit %dC", c->device_name, c->temp1_lcrit );
+                    nwipe_log( NWIPE_LOG_NOTICE, "hddtemp: %s temp1_lowest %dC", c->device_name, c->temp1_lowest );
+                    nwipe_log( NWIPE_LOG_NOTICE, "hddtemp: %s temp1_max %dC", c->device_name, c->temp1_max );
+                    nwipe_log( NWIPE_LOG_NOTICE, "hddtemp: %s temp1_min %dC", c->device_name, c->temp1_min );
+                }
+                if( nwipe_get_scsi_temperature( c ) != 0 )
+                {
+                    nwipe_log( NWIPE_LOG_ERROR, "get_scsi_temperature error" );
+                }
             }
         }
     }
@@ -263,6 +328,10 @@ void nwipe_update_temperature( nwipe_context_t* c )
      * this is used by the GUI to check temperatures periodically, typically
      * every 60 seconds */
     c->temp1_time = time( NULL );
+
+    gettimeofday( &tv_end, 0 );
+    delta_t = timedifference_msec( tv_start, tv_end );
+    nwipe_log( NWIPE_LOG_NOTICE, "get temperature for %s took %f ms", c->device_name, delta_t );
 
     return;
 }
