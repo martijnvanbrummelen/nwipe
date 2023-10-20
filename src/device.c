@@ -58,7 +58,7 @@ int nwipe_device_scan( nwipe_context_t*** c )
      * Scans the filesystem for storage device names.
      *
      * @parameter device_names  A reference to a null array pointer.
-     * @modifies  device_names  Populates device_names with an array of nwipe_contect_t
+     * @modifies  device_names  Populates device_names with an array of nwipe_context_t
      * @returns                 The number of strings in the device_names array.
      *
      */

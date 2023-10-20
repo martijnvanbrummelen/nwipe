@@ -28,6 +28,9 @@
 #endif
 
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <signal.h>
 #include <pthread.h>
@@ -60,6 +63,16 @@
 int terminate_signal;
 int user_abort;
 int global_wipe_status;
+
+/* helper function for sorting */
+int devnamecmp( const void* a, const void* b )
+{
+    // nwipe_log( NWIPE_LOG_DEBUG, "a: %s, b: %s", ( *( nwipe_context_t** ) a)->device_name, ( *( nwipe_context_t** )
+    // b)->device_name );
+
+    int ret = strcmp( ( *(nwipe_context_t**) a )->device_name, ( *(nwipe_context_t**) b )->device_name );
+    return ( ret );
+}
 
 int main( int argc, char** argv )
 {
@@ -207,6 +220,9 @@ int main( int argc, char** argv )
         }
     }
 
+    /* sort list of devices here */
+    qsort( (void*) c1, (size_t) nwipe_enumerated, sizeof( nwipe_context_t* ), devnamecmp );
+
     if( terminate_signal == 1 )
     {
         cleanup();
@@ -218,6 +234,12 @@ int main( int argc, char** argv )
 
     /* The array of pointers to contexts that will actually be wiped. */
     nwipe_context_t** c2 = (nwipe_context_t**) malloc( nwipe_enumerated * sizeof( nwipe_context_t* ) );
+    if( c2 == NULL )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "memory allocation for c2 failed" );
+        cleanup();
+        exit( 1 );
+    }
 
     /* Open the entropy source. */
     nwipe_entropy = open( NWIPE_KNOB_ENTROPY, O_RDONLY );
