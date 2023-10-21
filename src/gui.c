@@ -827,7 +827,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                 wprintw( main_window, "[%s] ", c[i + offset]->device_size_text );
 
                 /* Read the drive temperature values */
-                nwipe_update_temperature( c[i + offset] );
+                // nwipe_update_temperature( c[i + offset] );
 
                 /* print the temperature */
                 wprintw_temperature( c[i + offset] );
@@ -6716,10 +6716,10 @@ int compute_stats( void* ptr )
         nwipe_misc_thread_data->errors += c[i]->fsyncdata_errors;
 
         /* Read the drive temperature values */
-        if( nwipe_time_now > ( c[i]->temp1_time + 60 ) )
-        {
-            nwipe_update_temperature( c[i] );
-        }
+        //        if( nwipe_time_now > ( c[i]->temp1_time + 60 ) )
+        //        {
+        //            nwipe_update_temperature( c[i] );
+        //        }
 
     } /* for statistics */
 

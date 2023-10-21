@@ -43,6 +43,7 @@ void nwipe_update_temperature( nwipe_context_t* );
 int nwipe_init_scsi_temperature( nwipe_context_t* );
 int nwipe_get_scsi_temperature( nwipe_context_t* );
 void nwipe_shut_scsi_temperature( nwipe_context_t* );
+void* nwipe_update_temperature_thread( void* ptr );
 
 /**
  * This function is normally called only once. It's called after both the

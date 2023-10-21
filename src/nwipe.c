@@ -70,6 +70,7 @@ int main( int argc, char** argv )
     int any_threads_still_running;  // used in wipe thread cancellation wait loop
     int thread_timeout_counter;  // timeout thread cancellation after THREAD_CANCELLATION_TIMEOUT seconds
     pthread_t nwipe_gui_thread = 0;  // The thread ID of the GUI thread.
+    pthread_t nwipe_temperature_thread = 0;  // The thread ID of the temperature update thread
     pthread_t nwipe_sigint_thread;  // The thread ID of the sigint handler.
 
     char modprobe_command[] = "modprobe %s";
@@ -346,7 +347,7 @@ int main( int argc, char** argv )
             nwipe_log( NWIPE_LOG_NOTICE, "hwmon: Device %s hwmon path = %s", c1[i]->device_name, c1[i]->temp1_path );
         }
 
-        nwipe_update_temperature( c1[i] );
+        // nwipe_update_temperature( c1[i] );
 
         /* Log the temperature crtical, highest, lowest and lowest critical temperature
          * limits to nwipes log file using the INFO catagory
@@ -362,6 +363,15 @@ int main( int argc, char** argv )
         cleanup();
         return -1;
     }
+
+    /* Set up the data structures to pass the temperature thread the data it needs */
+    nwipe_thread_data_ptr_t nwipe_temperature_thread_data;
+    nwipe_temperature_thread_data.c = c1;
+    nwipe_temperature_thread_data.nwipe_misc_thread_data = &nwipe_misc_thread_data;
+
+    /* Fork the temperature thread */
+    errno = pthread_create(
+        &nwipe_temperature_thread, NULL, nwipe_update_temperature_thread, &nwipe_temperature_thread_data );
 
     /* Start the ncurses interface. */
     if( !nwipe_options.nogui )
@@ -690,6 +700,32 @@ int main( int argc, char** argv )
             if( nwipe_options.verbose )
             {
                 nwipe_log( NWIPE_LOG_INFO, "GUI compute_stats thread has been cancelled" );
+            }
+        }
+    }
+
+    /* Kill the temperature update thread */
+    if( nwipe_temperature_thread )
+    {
+        if( nwipe_options.verbose )
+        {
+            nwipe_log( NWIPE_LOG_INFO, "Cancelling the temperature thread." );
+        }
+
+        /* We don't want to use pthread_cancel as our temperature thread is aware of the control-c
+         *  signal and will exit itself we just join the temperature thread and wait for confirmation
+         */
+        r = pthread_join( nwipe_temperature_thread, NULL );
+        if( r != 0 )
+        {
+            nwipe_log( NWIPE_LOG_WARNING,
+                       "main()>pthread_join():Error when waiting for temperature thread to cancel." );
+        }
+        else
+        {
+            if( nwipe_options.verbose )
+            {
+                nwipe_log( NWIPE_LOG_INFO, "temperature thread has been cancelled" );
             }
         }
     }
