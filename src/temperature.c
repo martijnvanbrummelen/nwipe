@@ -39,6 +39,8 @@
 #include "temperature.h"
 #include "miscellaneous.h"
 
+extern int terminate_signal;
+
 int nwipe_init_temperature( nwipe_context_t* c )
 {
     /* See header definition for description of function
@@ -223,9 +225,63 @@ float timedifference_msec( struct timeval tv_start, struct timeval tv_end )
     return ( tv_end.tv_sec - tv_start.tv_sec ) * 1000.0f + ( tv_end.tv_usec - tv_start.tv_usec ) / 1000.0f;
 }
 
+void* nwipe_update_temperature_thread( void* ptr )
+{
+    int i;
+
+    /* Set up the structs we will use for the data required. */
+    nwipe_thread_data_ptr_t* nwipe_thread_data_ptr;
+    nwipe_context_t** c;
+    nwipe_misc_thread_data_t* nwipe_misc_thread_data;
+
+    /* Retrieve from the pointer passed to the function. */
+    nwipe_thread_data_ptr = (nwipe_thread_data_ptr_t*) ptr;
+    c = nwipe_thread_data_ptr->c;
+    nwipe_misc_thread_data = nwipe_thread_data_ptr->nwipe_misc_thread_data;
+
+    /* mark start second of update */
+    time_t nwipe_timemark = time( NULL );
+
+    /* update immediately on entry to thread */
+    for( i = 0; i < nwipe_misc_thread_data->nwipe_enumerated; i++ )
+    {
+        nwipe_update_temperature( c[i] );
+        if( terminate_signal == 1 )
+        {
+            break;
+        }
+    }
+
+    while( terminate_signal != 1 )
+    {
+        /* Update all drive/s but never repeat checking the
+         * set of drive/s faster than once every 2 seconds */
+        if( time( NULL ) > ( nwipe_timemark + 1 ) )
+        {
+            nwipe_timemark = time( NULL );
+
+            for( i = 0; i < nwipe_misc_thread_data->nwipe_enumerated; i++ )
+            {
+                nwipe_update_temperature( c[i] );
+            }
+        }
+        else
+        {
+            sleep( 1 );
+        }
+    }
+    return NULL;
+}
+
 void nwipe_update_temperature( nwipe_context_t* c )
 {
-    /* For the given drive context obtain the path to it's hwmon temperature settings
+    /* Warning !! This function should only be called by nwipe_update_temperature_thread()
+     * Due to delays of upto 2 seconds with some drives, especially SAS in obtaining
+     * temperatures while wiping, the delays being worse the more drives you are wiping. Updating
+     * temperatures are performed within it's own thread so it doesn't cause momentary freezes
+     * in the GUI interface.
+     *
+     * For the given drive context obtain the path to it's hwmon temperature settings
      * and read then write the temperature values back to the context. A numeric ascii to integer conversion is
      * performed. The temperaures should be updated no more frequently than every 60 seconds
      */
@@ -331,7 +387,10 @@ void nwipe_update_temperature( nwipe_context_t* c )
 
     gettimeofday( &tv_end, 0 );
     delta_t = timedifference_msec( tv_start, tv_end );
-    nwipe_log( NWIPE_LOG_NOTICE, "get temperature for %s took %f ms", c->device_name, delta_t );
+    if( nwipe_options.verbose )
+    {
+        nwipe_log( NWIPE_LOG_NOTICE, "get temperature for %s took %f ms", c->device_name, delta_t );
+    }
 
     return;
 }
