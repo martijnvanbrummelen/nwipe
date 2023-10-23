@@ -893,8 +893,6 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
         /* Create the PDF report/certificate */
         if( strcmp( nwipe_options.PDFreportpath, "noPDF" ) != 0 )
         {
-            nwipe_log( NWIPE_LOG_NOTIMESTAMP, "Creating PDF report in %s\n", nwipe_options.PDFreportpath );
-            printf( "Creating PDF report in %s\n", nwipe_options.PDFreportpath );
             create_pdf( c[i] );
         }
     }
@@ -946,4 +944,12 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
     nwipe_log( NWIPE_LOG_NOTIMESTAMP,
                "********************************************************************************" );
     nwipe_log( NWIPE_LOG_NOTIMESTAMP, "" );
+
+    /* Log information regarding where the PDF certificate is saved but log after the summary table so
+     * this information is only printed once.
+     */
+    if( strcmp( nwipe_options.PDFreportpath, "noPDF" ) != 0 )
+    {
+        nwipe_log( NWIPE_LOG_NOTIMESTAMP, "Creating PDF report in %s\n", nwipe_options.PDFreportpath );
+    }
 }
