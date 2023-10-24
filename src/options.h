@@ -38,6 +38,7 @@
 #define MAX_NUMBER_EXCLUDED_DRIVES 10
 #define MAX_DRIVE_PATH_LENGTH 200  // e.g. /dev/sda is only 8 characters long, so 200 should be plenty.
 #define DEFAULT_SYNC_RATE 100000
+#define PATHNAME_MAX 2048
 
 /* Function prototypes for loading options from the environment and command line. */
 int nwipe_options_parse( int argc, char** argv );
@@ -58,7 +59,7 @@ typedef struct
     char* banner;  // The product banner shown on the top line of the screen.
     void* method;  // A function pointer to the wipe method that will be used.
     char logfile[FILENAME_MAX];  // The filename to log the output to.
-    char PDFreportpath[FILENAME_MAX];  // The path to write the PDF report to.
+    char PDFreportpath[PATHNAME_MAX];  // The path to write the PDF report to.
     char exclude[MAX_NUMBER_EXCLUDED_DRIVES][MAX_DRIVE_PATH_LENGTH];  // Drives excluded from the search.
     nwipe_prng_t* prng;  // The pseudo random number generator implementation. pointer to the function.
     int quiet;  // Anonymize serial numbers
