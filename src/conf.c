@@ -31,10 +31,12 @@
 #include "nwipe.h"
 #include "context.h"
 #include "logging.h"
+#include "method.h"
+#include "options.h"
 #include "conf.h"
 
 config_t nwipe_cfg;
-config_setting_t *nwipe_conf_setting, *group_organisation, *group_selected_customer, *root, *group, *setting;
+config_setting_t *nwipe_conf_setting, *group_organisation, *root, *group, *previous_group, *setting;
 const char* nwipe_conf_str;
 char nwipe_config_directory[] = "/etc/nwipe";
 char nwipe_config_file[] = "/etc/nwipe/nwipe.conf";
@@ -54,7 +56,6 @@ int nwipe_conf_init()
     FILE* fp_customers;
 
     config_init( &nwipe_cfg );
-    root = config_root_setting( &nwipe_cfg );
     char nwipe_customers_initial_content[] =
         "\"Customer Name\";\"Contact Name\";\"Customer Address\";\"Contact Phone\"\n"
         "\"Not Applicable\";\"Not Applicable\";\"Not Applicable\";\"Not Applicable\"\n";
@@ -68,6 +69,18 @@ int nwipe_conf_init()
     if( access( nwipe_config_file, F_OK ) == 0 )
     {
         nwipe_log( NWIPE_LOG_INFO, "Nwipes config file %s exists", nwipe_config_file );
+
+        /* Read the nwipe.conf configuration file and report any errors */
+
+        nwipe_log( NWIPE_LOG_INFO, "Reading nwipe's config file %s", nwipe_config_file );
+        if( !config_read_file( &nwipe_cfg, nwipe_config_file ) )
+        {
+            nwipe_log( NWIPE_LOG_ERROR,
+                       "Syntax error: %s:%d - %s\n",
+                       config_error_file( &nwipe_cfg ),
+                       config_error_line( &nwipe_cfg ),
+                       config_error_text( &nwipe_cfg ) );
+        }
     }
     else
     {
@@ -84,65 +97,50 @@ int nwipe_conf_init()
         else
         {
             nwipe_log( NWIPE_LOG_INFO, "Created %s", nwipe_config_file );
-
-            /* Populate with some basic structure */
-
-            /* Add information about the business performing the erasure  */
-            group_organisation = config_setting_add( root, "Organisation_Details", CONFIG_TYPE_GROUP );
-
-            setting = config_setting_add( group_organisation, "Business_Name", CONFIG_TYPE_STRING );
-            config_setting_set_string( setting, "Not Applicable (BN)" );
-
-            setting = config_setting_add( group_organisation, "Business_Address", CONFIG_TYPE_STRING );
-            config_setting_set_string( setting, "Not Applicable (BA)" );
-
-            setting = config_setting_add( group_organisation, "Contact_Name", CONFIG_TYPE_STRING );
-            config_setting_set_string( setting, "Not Applicable (BCN)" );
-
-            setting = config_setting_add( group_organisation, "Contact_Phone", CONFIG_TYPE_STRING );
-            config_setting_set_string( setting, "Not Applicable (BCP)" );
-
-            setting = config_setting_add( group_organisation, "Op_Tech_Name", CONFIG_TYPE_STRING );
-            config_setting_set_string( setting, "Not Applicable (OTN)" );
-
-            /* Add PDF Certificate/Report settings */
-            group_organisation = config_setting_add( root, "PDF_Certificate", CONFIG_TYPE_GROUP );
-
-            setting = config_setting_add( group_organisation, "PDF_Enable", CONFIG_TYPE_STRING );
-            config_setting_set_string( setting, "ENABLED" );
-
-            setting = config_setting_add( group_organisation, "PDF_Preview", CONFIG_TYPE_STRING );
-            config_setting_set_string( setting, "DISABLED" );
-
-            /**
-             * The currently selected customer that will be printed on the report
-             */
-
-            group_selected_customer = config_setting_add( root, "Selected_Customer", CONFIG_TYPE_GROUP );
-
-            setting = config_setting_add( group_selected_customer, "Customer_Name", CONFIG_TYPE_STRING );
-            config_setting_set_string( setting, "Not Applicable (CN)" );
-
-            setting = config_setting_add( group_selected_customer, "Customer_Address", CONFIG_TYPE_STRING );
-            config_setting_set_string( setting, "Not Applicable (CA)" );
-
-            setting = config_setting_add( group_selected_customer, "Contact_Name", CONFIG_TYPE_STRING );
-            config_setting_set_string( setting, "Not Applicable (CN)" );
-
-            setting = config_setting_add( group_selected_customer, "Contact_Phone", CONFIG_TYPE_STRING );
-            config_setting_set_string( setting, "Not Applicable (CP)" );
-
-            /* Write out the new configuration. */
-            if( !config_write_file( &nwipe_cfg, nwipe_config_file ) )
-            {
-                nwipe_log( NWIPE_LOG_ERROR, "Failed to write basic config to %s", nwipe_config_file );
-            }
-            else
-            {
-                nwipe_log( NWIPE_LOG_INFO, "Populated %s with basic config", nwipe_config_file );
-            }
             fclose( fp_config );
         }
+    }
+
+    root = config_root_setting( &nwipe_cfg );
+
+    /**
+     * If they don't already exist, populate nwipe.conf with groups, settings and values.
+     * This will also fill in missing group or settings if they have been corrupted or
+     * accidently deleted by the user. It will also update an existing nwipe.conf
+     * file as new groups and settings are added to nwipe. If new settings are added
+     * to nwipes conf file they MUST appear below in this list of groups and settings.
+     */
+
+    nwipe_conf_populate( "Organisation_Details.Business_Name", "Not Applicable (BN)" );
+    nwipe_conf_populate( "Organisation_Details.Business_Address", "Not Applicable (BA)" );
+    nwipe_conf_populate( "Organisation_Details.Contact_Name", "Not Applicable (BCN)" );
+    nwipe_conf_populate( "Organisation_Details.Contact_Phone", "Not Applicable (BCP)" );
+    nwipe_conf_populate( "Organisation_Details.Op_Tech_Name", "Not Applicable (OTN)" );
+
+    /**
+     * Add PDF Certificate/Report settings
+     */
+    nwipe_conf_populate( "PDF_Certificate.PDF_Enable", "ENABLED" );
+    nwipe_conf_populate( "PDF_Certificate.PDF_Preview", "DISABLED" );
+
+    /**
+     * The currently selected customer that will be printed on the report
+     */
+    nwipe_conf_populate( "Selected_Customer.Customer_Name", "Not Applicable (CN)" );
+    nwipe_conf_populate( "Selected_Customer.Customer_Address", "Not Applicable (CA)" );
+    nwipe_conf_populate( "Selected_Customer.Contact_Name", "Not Applicable (CCN)" );
+    nwipe_conf_populate( "Selected_Customer.Contact_Phone", "Not Applicable (CP)" );
+
+    /**
+     * Write out the new configuration.
+     */
+    if( !config_write_file( &nwipe_cfg, nwipe_config_file ) )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to write nwipe config to %s", nwipe_config_file );
+    }
+    else
+    {
+        nwipe_log( NWIPE_LOG_INFO, "Sucessfully written nwipe config to %s", nwipe_config_file );
     }
 
     /* Read the nwipe.conf configuration file and report any errors */
@@ -449,6 +447,172 @@ int nwipe_conf_read_setting( char* group_name_setting_name, const char** setting
     return ( return_status );
 
 }  // end nwipe_conf_read_setting()
+
+int nwipe_conf_populate( char* path, char* value )
+{
+    /* This function will check that a path containing a group or multiple groups that lead to a setting all exist,
+     * if they don't exist, the group/s, settings and associated value are created.
+     *
+     * The path, a string consisting of one or more groups separted by a period symbol
+     * '.' with the final element in the path being the setting name. For instance the path might be
+     * PDF_Certificate.PDF_Enable. Where PDF_Certificate is the group name and PDF_Enable is the setting name.
+     * If one or other don't exist then they will be created.
+     *
+     * An arbitary depth of four groups are allowed for nwipe's configuration file, although we only currently, as of
+     * October 2023 use a depth of one group. The number of groups can be increased in the future if required by
+     * changing the definition MAX_GROUP_DEPTH in conf.h
+     */
+
+    char* path_copy;
+    char* path_build;
+
+    char* group_start[MAX_GROUP_DEPTH + 2];  // A pointer to the start of each group string
+    char* setting_start;
+
+    int idx;  // General index
+    int group_count;  // Counts the number of groups in the path
+
+    /* Initialise the pointers */
+    memset( group_start, 0, MAX_GROUP_DEPTH + 2 );
+    memset( &setting_start, 0, 1 );
+
+    /* Allocate enough memory for a copy of the path and initialise to zero */
+    path_copy = calloc( strlen( path ) + 1, sizeof( char ) );
+    path_build = calloc( strlen( path ) + 1, sizeof( char ) );
+
+    /* Duplicate the path */
+    strcpy( path_copy, path );
+
+    /* Create individual strings by replacing the period '.' with NULL, counting the number of groups. */
+    idx = 0;
+    group_count = 0;
+
+    /* pointer to first group */
+    group_start[group_count] = path_copy;
+
+    while( *( path_copy + idx ) != 0 )
+    {
+        if( group_count > MAX_GROUP_DEPTH )
+        {
+            nwipe_log( NWIPE_LOG_ERROR,
+                       "Too many groups in path, specified = %i, allowed = %i ",
+                       group_count,
+                       MAX_GROUP_DEPTH );
+            return 1;
+        }
+
+        if( *( path_copy + idx ) == '.' )
+        {
+            *( path_copy + idx ) = 0;
+            group_count++;
+            group_start[group_count] = path_copy + idx + 1;
+        }
+        idx++;
+    }
+
+    /* setting_start points to a string that represents the setting to be created */
+    setting_start = group_start[group_count];
+
+    /* Remove the last entry from group_start as that would be the setting and not a group */
+    group_start[group_count] = 0;
+
+    if( group_count == 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "No groups specified in path, i.e. no period . separator found." );
+        return 2;
+    }
+
+    /**
+     * Now determine whether the group/s in the path exist, if not create them.
+     */
+
+    idx = 0;
+    while( group_start[idx] != 0 )
+    {
+        strcat( path_build, group_start[idx] );
+
+        if( !( group = config_lookup( &nwipe_cfg, path_build ) ) )
+        {
+            if( idx == 0 )
+            {
+                group = config_setting_add( root, path_build, CONFIG_TYPE_GROUP );
+                previous_group = group;
+            }
+            else
+            {
+                group = config_setting_add( previous_group, group_start[idx], CONFIG_TYPE_GROUP );
+                previous_group = group;
+            }
+            if( group )
+            {
+                nwipe_log( NWIPE_LOG_INFO, "Created group [%s] in %s", path_build, nwipe_config_file );
+            }
+            else
+            {
+                nwipe_log( NWIPE_LOG_ERROR, "Failed to create group [%s] in %s", path_build, nwipe_config_file );
+            }
+        }
+        else
+        {
+            previous_group = group;
+        }
+
+        idx++;
+
+        if( group_start[idx] != 0 )
+        {
+            strcat( path_build, "." );
+        }
+    }
+
+    /**
+     * And finally determine whether the setting already exists, if not create it and assign the value to it
+     */
+
+    /* Does the full path exist ? i.e AAA.BBB */
+    if( ( group = config_lookup( &nwipe_cfg, path_build ) ) )
+    {
+        /* Does the path and setting exist? AAA.BBB.SETTING_NAME */
+        if( !( setting = config_lookup( &nwipe_cfg, path ) ) )
+        {
+            /* Add the new SETTING_NAME */
+            if( ( setting = config_setting_add( group, setting_start, CONFIG_TYPE_STRING ) ) )
+            {
+                nwipe_log( NWIPE_LOG_INFO, "Created setting name %s in %s", path, nwipe_config_file );
+            }
+            else
+            {
+                nwipe_log(
+                    NWIPE_LOG_ERROR, "Failed to create setting name %s in %s", setting_start, nwipe_config_file );
+            }
+
+            if( config_setting_set_string( setting, value ) == CONFIG_TRUE )
+            {
+                nwipe_log( NWIPE_LOG_INFO, "Set value for %s in %s to %s", path, nwipe_config_file, value );
+            }
+            else
+            {
+                nwipe_log( NWIPE_LOG_ERROR, "Failed to set value for %s in %s to %s", path, nwipe_config_file, value );
+            }
+        }
+        else
+        {
+            if( nwipe_options.verbose )
+            {
+                nwipe_log( NWIPE_LOG_INFO, "Setting already exists [%s] in %s", path, nwipe_config_file );
+            }
+        }
+    }
+    else
+    {
+        nwipe_log( NWIPE_LOG_INFO, "Couldn't find constructed path [%s] in %s", path_build, nwipe_config_file );
+    }
+
+    free( path_copy );
+    free( path_build );
+
+    return 0;
+}
 
 void nwipe_conf_close()
 {
