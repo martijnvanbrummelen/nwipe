@@ -46,7 +46,10 @@ int nwipe_conf_update_setting( char*, char* );
  */
 int nwipe_conf_read_setting( char*, const char** );
 
+int nwipe_conf_populate( char* path, char* value );
+
 #define FIELD_LENGTH 256
 #define NUMBER_OF_FIELDS 4
+#define MAX_GROUP_DEPTH 4
 
 #endif /* CONF_H_ */
