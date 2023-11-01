@@ -1,6 +1,11 @@
 RELEASE NOTES
 =============
 
+v0.35
+- Nwipe will now optionally create a multi-page PDF certificate that shows details of a specific discs erasure. The first page forms the certificate of erasure and subsequent pages show the drives smart data. See snapshots below.
+
+MORE INFO TO BE ADDED ..
+
 v0.34
 -----------------------
 - Fix a compiler warning -Wformat-zero-length string 
