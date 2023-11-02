@@ -126,6 +126,12 @@ int main( int argc, char** argv )
     /* Initialised and populated in device scan.     */
     nwipe_context_t** c1 = 0;
 
+    if( geteuid() != 0 )
+    {
+        printf( "nwipe must run with root permissions, which is not the case.\nAborting\n" );
+        exit( 99 );
+    }
+
     int wipe_threads_started = 0;
 
     /** NOTE ** NOTE ** NOTE ** NOTE ** NOTE ** NOTE ** NOTE ** NOTE ** NOTE **
