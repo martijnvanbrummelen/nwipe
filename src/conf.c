@@ -186,8 +186,8 @@ int nwipe_conf_init()
             {
                 nwipe_log( NWIPE_LOG_ERROR, "Failed to write basic config to %s", nwipe_customers_file );
             }
+            fclose( fp_customers );
         }
-        fclose( fp_customers );
     }
     return ( 0 );
 }
