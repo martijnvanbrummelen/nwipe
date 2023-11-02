@@ -7,12 +7,24 @@ nwipe is a fork of the dwipe command originally used by Darik's Boot and Nuke (D
 nwipe is a program that will securely erase the entire contents of disks. It can wipe a single drive or multiple disks simultaneously. It can operate as both a command line tool without a GUI or with a ncurses GUI as shown in the example below:
 
 > **Warning**
->  Nwipe does not currently support HDA (hidden disc area) detection but will be available in the next release v0.35. For versions prior to this, you will need to run hdparm to detect and if necessary correct the reported size of the disc prior to using nwipe. `sudo hdparm -N /dev/sdx` and `sudo hdparm --dco-identify /dev/sdx`. The three sector values returned should all be identical for there to be no hidden sectors on the disc. xxxxxxxxxx / yyyyyyyyyy as returned by hdparm -N and Real max sectors = zzzzzzzzzz as returned by hdparm --dco-identify.
+> For some of nwipes features such as smart data in the PDF certificate, HPA/DCO detection and other uses, nwipe utilises smartmontools and hdparm. Therefore both hdparm & smartmontools are a mandatory requirement if you want all of nwipes features to be fully available. If you do not install smartmontools and hdparm, nwipe will provide a warning in the log that these programs cannot be found but will still run but many important features may not work as they should do.
+
+# New Features in 0.35
+- Nwipe now supports HPA/DCO (hidden disc area) detection. The status of a discs HPA/DCO is shown on nwipes's drive selection screen. This allows you to identify a drive that is reporting a smaller size than it actually is. To wipe the hidden sectors the HPA/DCO must be reset to the true size of the disc. Currently nwipe cannot reset the HPA/DCO (scheduled for 0.36). To reset the HPA/DCO you would need to manually perform a reset using the command line tool hdparm.
+- Nwipe now optionally generates a multi page PDF certificate for each drive erased. Page one of the PDF is a erasure certificate that shows the erasure details such as drive make, model, serial number, bytes erased, HPA/DCO status, organisation performing the erase, customer details, technician name, status of erasure, errors detected.
+- Nwipe now has a configuration file, /etc/nwipe/nwipe.conf. This is currently used to store PDF parameters but will be enhanced over the next versions to include default wipe parameters amongst other additions.
+- There is a new configuration screen in nwipe. It can be accessed from the drive selection screen by typing 'c'. Curerntly the configuration screen allows changes to be made to the PDF certificate however later versions will expand this configuration screen.
+- Nwipe now provides better support for temperature retrieval specifically on SAS hardware, so that both SATA and SAS drives should now all show temperatures both at drive selection and during the erasure.
+- Nwipes temperature retrieval code has been placed in it's own thread. This was done because it was found that any delays in obtaining the temperature resulted in a momentary freeze in the GUI wipe screen updating it's stats. This wasn't noticable if you were erasing a small number of drives but become apparent when wiping ten or twenty drives simultaneously.
 
 ![Example wipe](/images/example_wipe.gif)
 
-<i>GIF showing six drives being simultaneously erased. It skips to the completion of all six wipes and shows five drives that were successfully erased and one drive that failed due to an I/O error. The drive that failed would then normally be physically destroyed. The five drives that were successfully wiped with zero errors or failures can then be redeployed.</i>
+<i>The video above shows six drives being simultaneously erased. It skips to the completion of all six wipes and shows five drives that were successfully erased and one drive that failed due to an I/O error. The drive that failed would then normally be physically destroyed. The five drives that were successfully wiped with zero errors or failures can then be redeployed.</i>
 
+![nwipe_certificate_0 35_5s](https://github.com/martijnvanbrummelen/nwipe/assets/22084881/cf181a9c-af2d-4bca-a6ed-15a4726cb12b)
+<i>The snapshot above shows nwipe's three page PDF certificate, drive identifiable information such as serial numbers have been anonymised using the nwipe command line option -q</i>
+
+## Erasure methods
 The user can select from a variety of recognised secure erase methods which include:
 
 * Fill With Zeros    - Fills the device with zeros (0x00), one round only.
