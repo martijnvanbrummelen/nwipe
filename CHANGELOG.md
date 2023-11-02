@@ -12,7 +12,7 @@ v0.35
 - Disc sizes are now shown differently to provide more information about their size. For instance a 1.2TB drive was shown as 1TB, now it is shown as 1200GB. Thanks to @ggruber for his code contribution.
 - Interface/bustype type was reported as UNK fo SAS drives, now reported correctly as SAS. Thanks to @ggruber for his code contribution.
 - Interface/bustype type has been enhanced to show SAS-SSD when a SSD drive is present. Thanks to @ggruber for his code contribution.
-
+- Nwipe's temperature retrieval code has been placed in it's own thread. This was done because it was found that any delays in obtaining the temperature resulted in a momentary freeze in the GUI wipe screen updating it's stats. This wasn't noticable if you were erasing a small number of drives but become apparent when wiping ten or twenty drives simultaneously.
 v0.34
 -----------------------
 - Fix a compiler warning -Wformat-zero-length string 
