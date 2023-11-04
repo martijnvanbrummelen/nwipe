@@ -33,6 +33,8 @@
 #define _DEFAULT_SOURCE
 #endif
 
+#include <time.h>
+
 #ifndef _POSIX_SOURCE
 #define _POSIX_SOURCE
 #endif
@@ -42,7 +44,6 @@
 #include <ncurses.h>
 #include <panel.h>
 #include <stdint.h>
-#include <time.h>
 #include <libconfig.h>
 #include <string.h>
 #include <strings.h>
