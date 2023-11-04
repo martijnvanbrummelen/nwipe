@@ -70,6 +70,9 @@ int nwipe_device_scan( nwipe_context_t*** c )
 
     while( ( dev = ped_device_get_next( dev ) ) )
     {
+        /* to have some progress indication. can help if there are many/slow disks */
+        fprintf( stderr, "." );
+
         if( check_device( c, dev, dcount ) )
             dcount++;
 
@@ -95,6 +98,8 @@ int nwipe_device_get( nwipe_context_t*** c, char** devnamelist, int ndevnames )
 
     for( i = 0; i < ndevnames; i++ )
     {
+        /* to have some progress indication. can help if there are many/slow disks */
+        fprintf( stderr, "." );
 
         dev = ped_device_get( devnamelist[i] );
         if( !dev )
