@@ -35,7 +35,7 @@
 #define NWIPE_KNOB_SCSI "/proc/scsi/scsi"
 #define NWIPE_KNOB_SLEEP 1
 #define NWIPE_KNOB_STAT "/proc/stat"
-#define MAX_NUMBER_EXCLUDED_DRIVES 10
+#define MAX_NUMBER_EXCLUDED_DRIVES 32
 #define MAX_DRIVE_PATH_LENGTH 200  // e.g. /dev/sda is only 8 characters long, so 200 should be plenty.
 #define DEFAULT_SYNC_RATE 100000
 #define PATHNAME_MAX 2048

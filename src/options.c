@@ -439,6 +439,13 @@ int nwipe_options_parse( int argc, char** argv )
                             }
                         }
                     }
+                    if( idx_drive == MAX_NUMBER_EXCLUDED_DRIVES )
+                    {
+                        fprintf(
+                            stderr,
+                            "The number of excluded drives has reached the programs configured limit, aborting\n" );
+                        exit( 130 );
+                    }
                 }
                 break;
 

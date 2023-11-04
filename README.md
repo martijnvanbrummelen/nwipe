@@ -116,7 +116,7 @@ dmidecode provides SMBIOS/DMI host data to stdout or the log file. If you don't 
 #### coreutils (provides readlink) [RECOMMENDED]
 readlink determines the bus type, i.e. ATA, USB etc. Without it the --nousb option won't work and bus type information will be missing from nwipes selection and wipe windows. The coreutils package is often automatically installed as default in most if not all distros.
 
-#### smartmontools [RECOMMENDED]
+#### smartmontools [REQUIRED]
 smartmontools obtains serial number information for supported USB to IDE/SATA adapters. Without it, drives plugged into USB ports will not show serial number information.
 
 If you want a quick and easy way to keep your copy of nwipe running the latest master release of nwipe see the [automating the download and compilation](#automating-the-download-and-compilation-process-for-debian-based-distros) section.
