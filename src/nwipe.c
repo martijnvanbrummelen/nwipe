@@ -70,6 +70,11 @@ int devnamecmp( const void* a, const void* b )
     // nwipe_log( NWIPE_LOG_DEBUG, "a: %s, b: %s", ( *( nwipe_context_t** ) a)->device_name, ( *( nwipe_context_t** )
     // b)->device_name );
 
+    int ldiff = strlen( ( *(nwipe_context_t**) a )->device_name ) - strlen( ( *(nwipe_context_t**) b )->device_name );
+    if( ldiff != 0 )
+    {
+        return ldiff;
+    }
     int ret = strcmp( ( *(nwipe_context_t**) a )->device_name, ( *(nwipe_context_t**) b )->device_name );
     return ( ret );
 }
