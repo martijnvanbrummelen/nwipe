@@ -38,7 +38,8 @@ typedef enum nwipe_device_t_ {
     NWIPE_DEVICE_ATA,
     NWIPE_DEVICE_NVME,
     NWIPE_DEVICE_VIRT,
-    NWIPE_DEVICE_SAS
+    NWIPE_DEVICE_SAS,
+    NWIPE_DEVICE_MMC
 } nwipe_device_t;
 
 typedef enum nwipe_pass_t_ {
