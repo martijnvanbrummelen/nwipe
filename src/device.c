@@ -365,6 +365,10 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
             strcpy( next_device->device_type_str, " SAS" );
             check_HPA = 1;
             break;
+
+        case NWIPE_DEVICE_MMC:
+            strcpy( next_device->device_type_str, " MMC" );
+            break;
     }
     if( next_device->device_is_ssd )
     {
@@ -638,6 +642,13 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, i
                             {
                                 *bus = NWIPE_DEVICE_VIRT;
                             }
+                            else
+                            {
+                                if( strstr( result, "/mmcblk" ) != 0 )
+                                {
+                                    *bus = NWIPE_DEVICE_MMC;
+                                }
+                            }
                         }
                     }
                 }
@@ -859,9 +870,9 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, i
 
                 if( exit_status == 1 )
                 {
-                    nwipe_log( NWIPE_LOG_WARNING, "%s USB bridge, no pass-through support", device );
+                    nwipe_log( NWIPE_LOG_WARNING, "Smartctl is unable to provide smart data for %s", device );
 
-                    if( *bus == NWIPE_DEVICE_USB )
+                    if( *bus == NWIPE_DEVICE_USB || *bus == NWIPE_DEVICE_MMC )
                     {
                         strcpy( serialnumber, "(S/N: unknown)" );
                         set_return_value = 5;
