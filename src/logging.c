@@ -666,7 +666,7 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
     // char duration[5];
     char duration[314];
     char model[18];
-    char serial_no[20];
+    char serial_no[NWIPE_SERIALNUMBER_LENGTH + 1];
     char exclamation_flag[2];
     int hours;
     int minutes;
@@ -875,7 +875,8 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
         model[17] = 0;
 
         /* Serial No. */
-        strncpy( serial_no, c[i]->device_serial_no, 20 );
+        strncpy( serial_no, c[i]->device_serial_no, NWIPE_SERIALNUMBER_LENGTH );
+        serial_no[NWIPE_SERIALNUMBER_LENGTH] = 0;
         model[17] = 0;
 
         nwipe_log( NWIPE_LOG_NOTIMESTAMP,
