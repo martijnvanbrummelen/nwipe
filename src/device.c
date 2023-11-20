@@ -131,7 +131,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     int fd;
     int idx;
     int r;
-    char tmp_serial[21];
+    char tmp_serial[NWIPE_SERIALNUMBER_LENGTH + 1];
     nwipe_device_t bus;
     int is_ssd;
     int check_HPA;  // a flag that indicates whether we check for a HPA on this device
@@ -252,7 +252,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     ioctl( fd, HDIO_GET_IDENTITY, &next_device->identity );
     close( fd );
 
-    for( idx = 0; idx < 20; idx++ )
+    for( idx = 0; idx < NWIPE_SERIALNUMBER_LENGTH; idx++ )
     {
         if( isascii( next_device->identity.serial_no[idx] ) && !iscntrl( next_device->identity.serial_no[idx] ) )
         {
@@ -794,7 +794,8 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, i
                     /* strip any leading or trailing spaces and left justify, +15 is the length of "Serial Number:" */
                     trim( &result[15] );
 
-                    strncpy( serialnumber, &result[15], 20 );
+                    strncpy( serialnumber, &result[15], NWIPE_SERIALNUMBER_LENGTH );
+                    serialnumber[NWIPE_SERIALNUMBER_LENGTH] = 0;
                 }
 
                 if( *bus == 0 )
