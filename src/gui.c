@@ -6395,234 +6395,244 @@ void* nwipe_gui_status( void* ptr )
         }
 
         /* Update data in statistics & main windows only if we're in 'gui' mode and only if a wipe has started */
-        if( nwipe_gui_blank == 0 && global_wipe_status == 1 )
+        if( global_wipe_status == 1 )
         {
-
+            /* Always run compute_stats() as we need to whether any threads are still active */
             if( terminate_signal != 1 )
             {
                 nwipe_active = compute_stats( ptr );  // Returns number of active wipe threads
             }
 
-            /* Print information for the user. */
-            for( i = offset; i < offset + slots && i < count; i++ )
+            /* Only print the stats if the user hasn't blanked the screen */
+            if( nwipe_gui_blank == 0 )
             {
-                /* Print the device details. */
-                mvwprintw( main_window,
-                           yy++,
-                           2,
-                           "%s %s [%s] ",
-                           c[i]->device_name,
-                           c[i]->device_type_str,
-                           c[i]->device_size_text );
-                wprintw_temperature( c[i] );
-                wprintw( main_window, "%s/%s", c[i]->device_model, c[i]->device_serial_no );
 
-                /* Check whether the child process is still running the wipe. */
-                if( c[i]->wipe_status == 1 )
+                /* Print information for the user. */
+                for( i = offset; i < offset + slots && i < count; i++ )
                 {
-                    /* Print percentage and pass information. */
+                    /* Print the device details. */
                     mvwprintw( main_window,
                                yy++,
-                               4,
-                               "[%5.2f%%, round %i of %i, pass %i of %i] ",
-                               c[i]->round_percent,
-                               c[i]->round_working,
-                               c[i]->round_count,
-                               c[i]->pass_working,
-                               c[i]->pass_count );
+                               2,
+                               "%s %s [%s] ",
+                               c[i]->device_name,
+                               c[i]->device_type_str,
+                               c[i]->device_size_text );
+                    wprintw_temperature( c[i] );
+                    wprintw( main_window, "%s/%s", c[i]->device_model, c[i]->device_serial_no );
 
-                } /* child running */
-                else
-                {
-                    if( c[i]->result == 0 )
+                    /* Check whether the child process is still running the wipe. */
+                    if( c[i]->wipe_status == 1 )
                     {
-                        mvwprintw( main_window, yy++, 4, "[%05.2f%% complete, SUCCESS! ", c[i]->round_percent );
+                        /* Print percentage and pass information. */
+                        mvwprintw( main_window,
+                                   yy++,
+                                   4,
+                                   "[%5.2f%%, round %i of %i, pass %i of %i] ",
+                                   c[i]->round_percent,
+                                   c[i]->round_working,
+                                   c[i]->round_count,
+                                   c[i]->pass_working,
+                                   c[i]->pass_count );
+
+                    } /* child running */
+                    else
+                    {
+                        if( c[i]->result == 0 )
+                        {
+                            mvwprintw( main_window, yy++, 4, "[%05.2f%% complete, SUCCESS! ", c[i]->round_percent );
+                        }
+                        else if( c[i]->signal )
+                        {
+                            wattron( main_window, COLOR_PAIR( 9 ) );
+                            mvwprintw( main_window, yy++, 4, "(>>> FAILURE! <<<, signal %i) ", c[i]->signal );
+                            wattroff( main_window, COLOR_PAIR( 9 ) );
+                        }
+                        else
+                        {
+                            wattron( main_window, COLOR_PAIR( 9 ) );
+                            mvwprintw( main_window, yy++, 4, "(>>> IOERROR! <<<, code %i) ", c[i]->result );
+                            wattroff( main_window, COLOR_PAIR( 9 ) );
+                        }
+
+                    } /* child returned */
+
+                    if( c[i]->verify_errors )
+                    {
+                        wprintw( main_window, "[verr:%llu] ", c[i]->verify_errors );
                     }
-                    else if( c[i]->signal )
+                    if( c[i]->pass_errors )
                     {
-                        wattron( main_window, COLOR_PAIR( 9 ) );
-                        mvwprintw( main_window, yy++, 4, "(>>> FAILURE! <<<, signal %i) ", c[i]->signal );
-                        wattroff( main_window, COLOR_PAIR( 9 ) );
+                        wprintw( main_window, "[perr:%llu] ", c[i]->pass_errors );
+                    }
+                    if( c[i]->wipe_status == 1 )
+                    {
+                        switch( c[i]->pass_type )
+                        {
+                            /* Each text field in square brackets should be the same number of characters
+                             * to retain output in columns */
+                            case NWIPE_PASS_FINAL_BLANK:
+                                if( !c[i]->sync_status )
+                                {
+                                    wprintw( main_window, "[ blanking] " );
+                                }
+                                break;
+
+                            case NWIPE_PASS_FINAL_OPS2:
+                                if( !c[i]->sync_status )
+                                {
+                                    wprintw( main_window, "[OPS2final] " );
+                                }
+                                break;
+
+                            case NWIPE_PASS_WRITE:
+                                if( !c[i]->sync_status )
+                                {
+                                    wprintw( main_window, "[ writing ] " );
+                                }
+                                break;
+
+                            case NWIPE_PASS_VERIFY:
+                                if( !c[i]->sync_status )
+                                {
+                                    wprintw( main_window, "[verifying] " );
+                                }
+                                break;
+
+                            case NWIPE_PASS_NONE:
+                                break;
+                        }
+
+                        if( c[i]->sync_status )
+                        {
+                            wprintw( main_window, "[ syncing ] " );
+                        }
+                    }
+
+                    /* Determine throughput nomenclature for this drive and output drives throughput to GUI */
+                    Determine_C_B_nomenclature(
+                        c[i]->throughput, nomenclature_result_str, NOMENCLATURE_RESULT_STR_SIZE );
+
+                    wprintw( main_window, "[%s/s] ", nomenclature_result_str );
+
+                    /* Insert whitespace. */
+                    yy += 1;
+
+                    /* Increment the next spinner character for this context if the thread is active */
+                    if( c[i]->wipe_status == 1 )
+                    {
+                        spinner( c, i );
+                        spinner_string[0] = c[i]->spinner_character[0];
                     }
                     else
                     {
-                        wattron( main_window, COLOR_PAIR( 9 ) );
-                        mvwprintw( main_window, yy++, 4, "(>>> IOERROR! <<<, code %i) ", c[i]->result );
-                        wattroff( main_window, COLOR_PAIR( 9 ) );
+                        /* If the wipe thread is no longer active, replace the spinner with a space */
+                        spinner_string[0] = ' ';
                     }
-
-                } /* child returned */
-
-                if( c[i]->verify_errors )
-                {
-                    wprintw( main_window, "[verr:%llu] ", c[i]->verify_errors );
-                }
-                if( c[i]->pass_errors )
-                {
-                    wprintw( main_window, "[perr:%llu] ", c[i]->pass_errors );
-                }
-                if( c[i]->wipe_status == 1 )
-                {
-                    switch( c[i]->pass_type )
-                    {
-                        /* Each text field in square brackets should be the same number of characters
-                         * to retain output in columns */
-                        case NWIPE_PASS_FINAL_BLANK:
-                            if( !c[i]->sync_status )
-                            {
-                                wprintw( main_window, "[ blanking] " );
-                            }
-                            break;
-
-                        case NWIPE_PASS_FINAL_OPS2:
-                            if( !c[i]->sync_status )
-                            {
-                                wprintw( main_window, "[OPS2final] " );
-                            }
-                            break;
-
-                        case NWIPE_PASS_WRITE:
-                            if( !c[i]->sync_status )
-                            {
-                                wprintw( main_window, "[ writing ] " );
-                            }
-                            break;
-
-                        case NWIPE_PASS_VERIFY:
-                            if( !c[i]->sync_status )
-                            {
-                                wprintw( main_window, "[verifying] " );
-                            }
-                            break;
-
-                        case NWIPE_PASS_NONE:
-                            break;
-                    }
-
-                    if( c[i]->sync_status )
-                    {
-                        wprintw( main_window, "[ syncing ] " );
-                    }
+                    spinner_string[1] = 0;
+                    wprintw( main_window, " %s ", spinner_string );
                 }
 
-                /* Determine throughput nomenclature for this drive and output drives throughput to GUI */
-                Determine_C_B_nomenclature( c[i]->throughput, nomenclature_result_str, NOMENCLATURE_RESULT_STR_SIZE );
-
-                wprintw( main_window, "[%s/s] ", nomenclature_result_str );
-
-                /* Insert whitespace. */
-                yy += 1;
-
-                /* Increment the next spinner character for this context if the thread is active */
-                if( c[i]->wipe_status == 1 )
+                if( offset > 0 )
                 {
-                    spinner( c, i );
-                    spinner_string[0] = c[i]->spinner_character[0];
+                    mvwprintw( main_window, 1, wcols - 8, " More " );
+                    waddch( main_window, ACS_UARROW );
                 }
-                else
+
+                if( count - offset > slots )
                 {
-                    /* If the wipe thread is no longer active, replace the spinner with a space */
-                    spinner_string[0] = ' ';
+                    mvwprintw( main_window, wlines - 2, wcols - 8, " More " );
+                    waddch( main_window, ACS_DARROW );
                 }
-                spinner_string[1] = 0;
-                wprintw( main_window, " %s ", spinner_string );
-            }
 
-            if( offset > 0 )
-            {
-                mvwprintw( main_window, 1, wcols - 8, " More " );
-                waddch( main_window, ACS_UARROW );
-            }
+                /* Box the main window. */
+                box( main_window, 0, 0 );
 
-            if( count - offset > slots )
-            {
-                mvwprintw( main_window, wlines - 2, wcols - 8, " More " );
-                waddch( main_window, ACS_DARROW );
-            }
+                /* Refresh the main window. */
+                wnoutrefresh( main_window );
 
-            /* Box the main window. */
-            box( main_window, 0, 0 );
+                /* Update the load average field, but only if we are still wiping */
+                if( nwipe_active && terminate_signal != 1 )
+                {
+                    nwipe_gui_load();
+                }
 
-            /* Refresh the main window. */
-            wnoutrefresh( main_window );
+                nwipe_throughput = nwipe_misc_thread_data->throughput;
 
-            /* Update the load average field, but only if we are still wiping */
-            if( nwipe_active && terminate_signal != 1 )
-            {
-                nwipe_gui_load();
-            }
+                /* Determine the nomenclature for the combined throughput */
+                Determine_C_B_nomenclature( nwipe_throughput, nomenclature_result_str, NOMENCLATURE_RESULT_STR_SIZE );
 
-            nwipe_throughput = nwipe_misc_thread_data->throughput;
+                /* Print the combined throughput. */
+                mvwprintw( stats_window, NWIPE_GUI_STATS_THROUGHPUT_Y, NWIPE_GUI_STATS_THROUGHPUT_X, "Throughput:" );
 
-            /* Determine the nomenclature for the combined throughput */
-            Determine_C_B_nomenclature( nwipe_throughput, nomenclature_result_str, NOMENCLATURE_RESULT_STR_SIZE );
+                mvwprintw(
+                    stats_window, NWIPE_GUI_STATS_THROUGHPUT_Y, NWIPE_GUI_STATS_TAB, "%s/s", nomenclature_result_str );
 
-            /* Print the combined throughput. */
-            mvwprintw( stats_window, NWIPE_GUI_STATS_THROUGHPUT_Y, NWIPE_GUI_STATS_THROUGHPUT_X, "Throughput:" );
+                /* Change the current time into a delta. */
+                nwipe_time_now -= nwipe_time_start;
 
-            mvwprintw(
-                stats_window, NWIPE_GUI_STATS_THROUGHPUT_Y, NWIPE_GUI_STATS_TAB, "%s/s", nomenclature_result_str );
+                /* Put the delta into HH:mm:ss form. */
+                nwipe_hh = nwipe_time_now / 3600;
+                nwipe_time_now %= 3600;
+                nwipe_mm = nwipe_time_now / 60;
+                nwipe_time_now %= 60;
+                nwipe_ss = nwipe_time_now;
 
-            /* Change the current time into a delta. */
-            nwipe_time_now -= nwipe_time_start;
-
-            /* Put the delta into HH:mm:ss form. */
-            nwipe_hh = nwipe_time_now / 3600;
-            nwipe_time_now %= 3600;
-            nwipe_mm = nwipe_time_now / 60;
-            nwipe_time_now %= 60;
-            nwipe_ss = nwipe_time_now;
-
-            /* Print the runtime. */
-            mvwprintw( stats_window, NWIPE_GUI_STATS_RUNTIME_Y, 1, "Runtime:" );
-            mvwprintw( stats_window,
-                       NWIPE_GUI_STATS_RUNTIME_Y,
-                       NWIPE_GUI_STATS_TAB,
-                       "%02i:%02i:%02i",
-                       nwipe_hh,
-                       nwipe_mm,
-                       nwipe_ss );
-
-            mvwprintw( stats_window, NWIPE_GUI_STATS_ETA_Y, 1, "Remaining:" );
-
-            time_t nwipe_maxeta = nwipe_misc_thread_data->maxeta;
-            if( nwipe_maxeta > 0 )
-            {
-                /* Do it again for the estimated runtime remaining. */
-                nwipe_hh = nwipe_maxeta / 3600;
-                nwipe_maxeta %= 3600;
-                nwipe_mm = nwipe_maxeta / 60;
-                nwipe_maxeta %= 60;
-                nwipe_ss = nwipe_maxeta;
-
-                /* Print the estimated runtime remaining. */
+                /* Print the runtime. */
+                mvwprintw( stats_window, NWIPE_GUI_STATS_RUNTIME_Y, 1, "Runtime:" );
                 mvwprintw( stats_window,
-                           NWIPE_GUI_STATS_ETA_Y,
+                           NWIPE_GUI_STATS_RUNTIME_Y,
                            NWIPE_GUI_STATS_TAB,
                            "%02i:%02i:%02i",
                            nwipe_hh,
                            nwipe_mm,
                            nwipe_ss );
-            }
 
-            /* Print the error count. */
-            mvwprintw( stats_window, NWIPE_GUI_STATS_ERRORS_Y, NWIPE_GUI_STATS_ERRORS_X, "Errors:" );
-            mvwprintw(
-                stats_window, NWIPE_GUI_STATS_ERRORS_Y, NWIPE_GUI_STATS_TAB, "  %llu", nwipe_misc_thread_data->errors );
+                mvwprintw( stats_window, NWIPE_GUI_STATS_ETA_Y, 1, "Remaining:" );
 
-            /* Add a border. */
-            box( stats_window, 0, 0 );
+                time_t nwipe_maxeta = nwipe_misc_thread_data->maxeta;
+                if( nwipe_maxeta > 0 )
+                {
+                    /* Do it again for the estimated runtime remaining. */
+                    nwipe_hh = nwipe_maxeta / 3600;
+                    nwipe_maxeta %= 3600;
+                    nwipe_mm = nwipe_maxeta / 60;
+                    nwipe_maxeta %= 60;
+                    nwipe_ss = nwipe_maxeta;
 
-            /* Add a title. */
-            mvwprintw( stats_window, 0, ( NWIPE_GUI_STATS_W - strlen( stats_title ) ) / 2, "%s", stats_title );
+                    /* Print the estimated runtime remaining. */
+                    mvwprintw( stats_window,
+                               NWIPE_GUI_STATS_ETA_Y,
+                               NWIPE_GUI_STATS_TAB,
+                               "%02i:%02i:%02i",
+                               nwipe_hh,
+                               nwipe_mm,
+                               nwipe_ss );
+                }
 
-            /* Refresh internal representation of stats window */
-            wnoutrefresh( stats_window );
+                /* Print the error count. */
+                mvwprintw( stats_window, NWIPE_GUI_STATS_ERRORS_Y, NWIPE_GUI_STATS_ERRORS_X, "Errors:" );
+                mvwprintw( stats_window,
+                           NWIPE_GUI_STATS_ERRORS_Y,
+                           NWIPE_GUI_STATS_TAB,
+                           "  %llu",
+                           nwipe_misc_thread_data->errors );
 
-            /* Output all windows to screen */
-            doupdate();
+                /* Add a border. */
+                box( stats_window, 0, 0 );
 
-        }  // end blank screen if
+                /* Add a title. */
+                mvwprintw( stats_window, 0, ( NWIPE_GUI_STATS_W - strlen( stats_title ) ) / 2, "%s", stats_title );
+
+                /* Refresh internal representation of stats window */
+                wnoutrefresh( stats_window );
+
+                /* Output all windows to screen */
+                doupdate();
+
+            }  // end blank screen if
+
+        }  // end wipes have started if
 
     } /* End of while loop */
 
