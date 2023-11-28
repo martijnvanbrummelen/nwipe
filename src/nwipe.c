@@ -737,32 +737,6 @@ int main( int argc, char** argv )
         }
     }
 
-    /* Kill the temperature update thread */
-    if( nwipe_temperature_thread )
-    {
-        if( nwipe_options.verbose )
-        {
-            nwipe_log( NWIPE_LOG_INFO, "Cancelling the temperature thread." );
-        }
-
-        /* We don't want to use pthread_cancel as our temperature thread is aware of the control-c
-         *  signal and will exit itself we just join the temperature thread and wait for confirmation
-         */
-        r = pthread_join( nwipe_temperature_thread, NULL );
-        if( r != 0 )
-        {
-            nwipe_log( NWIPE_LOG_WARNING,
-                       "main()>pthread_join():Error when waiting for temperature thread to cancel." );
-        }
-        else
-        {
-            if( nwipe_options.verbose )
-            {
-                nwipe_log( NWIPE_LOG_INFO, "temperature thread has been cancelled" );
-            }
-        }
-    }
-
     /* Release the gui. */
     if( !nwipe_options.nogui )
     {
@@ -839,6 +813,42 @@ int main( int argc, char** argv )
         thread_timeout_counter--;
         sleep( 1 );
     }
+
+    /* Now all the wipe threads have finished, we can issue a terminate_signal = 1
+     * which will cause the temperature update thread to terminate, this is necessary
+     * because in gui mode the terminate_signal is set when the user presses a key to
+     * exit on completion of all the wipes, however in non gui mode that code isn't
+     * active (being in the gui section) so here we need to set the terminate signal
+     * specifically for a completed wipes/s just for non gui mode.
+     */
+    terminate_signal = 1;
+
+    /* Kill the temperature update thread */
+    if( nwipe_temperature_thread )
+    {
+        if( nwipe_options.verbose )
+        {
+            nwipe_log( NWIPE_LOG_INFO, "Cancelling the temperature thread." );
+        }
+
+        /* We don't want to use pthread_cancel as our temperature thread is aware of the control-c
+         *  signal and will exit itself we just join the temperature thread and wait for confirmation
+         */
+        r = pthread_join( nwipe_temperature_thread, NULL );
+        if( r != 0 )
+        {
+            nwipe_log( NWIPE_LOG_WARNING,
+                       "main()>pthread_join():Error when waiting for temperature thread to cancel." );
+        }
+        else
+        {
+            if( nwipe_options.verbose )
+            {
+                nwipe_log( NWIPE_LOG_INFO, "temperature thread has been cancelled" );
+            }
+        }
+    }
+
     if( nwipe_options.verbose )
     {
         for( i = 0; i < nwipe_selected; i++ )
