@@ -872,7 +872,7 @@ int nwipe_get_smart_data( nwipe_context_t* c )
             page = pdf_append_page( pdf );
 
             /* Create the header and footer for page 2, the start of the smart data */
-            snprintf( page_title, sizeof( page_title ), "Smart Data - Page %i", page_number );
+            snprintf( page_title, sizeof( page_title ), "Page %i - Smart Data", page_number );
             create_header_and_footer( c, page_title );
 
             /* Read the output a line at a time - output it. */
@@ -930,7 +930,7 @@ int nwipe_get_smart_data( nwipe_context_t* c )
                     y = 630;
 
                     /* create the header and footer for the next page */
-                    snprintf( page_title, sizeof( page_title ), "Smart Data - Page %i", page_number );
+                    snprintf( page_title, sizeof( page_title ), "Page %i - Smart Data", page_number );
                     create_header_and_footer( c, page_title );
                 }
             }
