@@ -6415,7 +6415,7 @@ void* nwipe_gui_status( void* ptr )
                                c[i]->device_type_str,
                                c[i]->device_size_text );
                     wprintw_temperature( c[i] );
-                    wprintw( main_window, "%s/%s", c[i]->device_model, c[i]->device_serial_no );
+                    wprintw( main_window, " %s/%s", c[i]->device_model, c[i]->device_serial_no );
 
                     /* Check whether the child process is still running the wipe. */
                     if( c[i]->wipe_status == 1 )
