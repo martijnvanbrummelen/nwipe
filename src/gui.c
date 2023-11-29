@@ -160,13 +160,14 @@ const char* main_window_footer_warning_no_drive_selected =
 /* Oddly enough, placing extra quotes around the footer strings fixes corruption to the right
  * of the footer message when the terminal is resized, a quirk in ncurses? - DO NOT REMOVE THE \" */
 const char* selection_footer = "J=Down K=Up Space=Select Backspace=Cancel Ctrl+C=Quit";
+const char* selection_footer_config = "J=Down K=Up Return=Select ESC|Backspace=back Ctrl+C=Quit";
 const char* selection_footer_preview_prior_to_drive_selection =
     "A=Accept & display drives J=Down K=Up Space=Select Backspace=Cancel Ctrl+C=Quit";
 const char* selection_footer_add_customer = "S=Save J=Down K=Up Space=Select Backspace=Cancel Ctrl+C=Quit";
 const char* selection_footer_add_customer_yes_no = "Save Customer Details Y/N";
 const char* end_wipe_footer = "B=[Toggle between dark\\blank\\blue screen] Ctrl+C=Quit";
 const char* rounds_footer = "Left=Erase Esc=Cancel Ctrl+C=Quit";
-const char* selection_footer_text_entry = "Esc=Cancel Ctrl+C=Quit";
+const char* selection_footer_text_entry = "Esc=Cancel Return=Submit Ctrl+C=Quit";
 
 const char* wipes_finished_footer = "Wipe finished - press enter to exit. Logged to STDOUT";
 
@@ -2496,17 +2497,17 @@ void nwipe_gui_config( void )
     /* Input buffer. */
     int keystroke;
 
-    /* Update the footer window. */
-    werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer );
-    wrefresh( footer_window );
-
     do
     {
         /* Clear the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+        /* Update the footer window. */
+        werase( footer_window );
+        nwipe_gui_title( footer_window, selection_footer_config );
+        wrefresh( footer_window );
+
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_config );
 
         /* Initialize the working row. */
         yy = 2;
@@ -2530,19 +2531,17 @@ void nwipe_gui_config( void )
         {
             case 0:
 
-                mvwprintw( main_window, 2, tab2, "PDF Report - Enable/Disable" );
-
-                mvwprintw( main_window, 4, tab2, "Enable or Disable creation of the PDF " );
-                mvwprintw( main_window, 5, tab2, "report/certificate                    " );
-
                 if( nwipe_options.PDF_enable )
                 {
-                    mvwprintw( main_window, 7, tab2, "Create PDF Report = ENABLED" );
+                    mvwprintw( main_window, 2, tab2, "PDF Report = ENABLED" );
                 }
                 else
                 {
-                    mvwprintw( main_window, 7, tab2, "Create PDF Report = DISABLED" );
+                    mvwprintw( main_window, 2, tab2, "PDF Report = DISABLED" );
                 }
+
+                mvwprintw( main_window, 4, tab2, "Enable or Disable creation of the PDF " );
+                mvwprintw( main_window, 5, tab2, "report/certificate                    " );
                 break;
 
             case 1:
@@ -2612,8 +2611,14 @@ void nwipe_gui_config( void )
 
             case 6:
 
-                mvwprintw( main_window, 2, tab2, "PDF Report - Enable Preview at Start  " );
-
+                if( nwipe_options.PDF_preview_details )
+                {
+                    mvwprintw( main_window, 2, tab2, "Preview Org. & Customer at start = ENABLED" );
+                }
+                else
+                {
+                    mvwprintw( main_window, 2, tab2, "Preview Org. & Customer at start = DISABLED" );
+                }
                 mvwprintw( main_window, 4, tab2, "A preview prior to the drive selection" );
                 mvwprintw( main_window, 5, tab2, "of the organisation that is performing" );
                 mvwprintw( main_window, 6, tab2, "the wipe, the customer details and the" );
@@ -2621,15 +2626,6 @@ void nwipe_gui_config( void )
                 mvwprintw( main_window, 8, tab2, "confirm that the information is       " );
                 mvwprintw( main_window, 9, tab2, "correct on the pdf report prior to    " );
                 mvwprintw( main_window, 10, tab2, "drive selection and starting the erase" );
-
-                if( nwipe_options.PDF_preview_details )
-                {
-                    mvwprintw( main_window, 12, tab2, "Preview at start = ENABLED" );
-                }
-                else
-                {
-                    mvwprintw( main_window, 12, tab2, "Preview at start = DISABLED" );
-                }
                 break;
 
             case 8:
@@ -2774,7 +2770,7 @@ void nwipe_gui_config( void )
             keystroke = -1;
         }
 
-    } while( keystroke != KEY_ENTER && keystroke != ' ' && keystroke != 10 && terminate_signal != 1 );
+    } while( keystroke != KEY_ENTER && /* keystroke != ' ' && */ keystroke != 10 && terminate_signal != 1 );
 
 } /* end of nwipe_config() */
 
@@ -2810,11 +2806,6 @@ void nwipe_gui_edit_organisation( void )
     const char *business_name, *business_address, *contact_name, *contact_phone, *op_tech_name;
     extern config_t nwipe_cfg;
 
-    /* Update the footer window. */
-    werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer );
-    wrefresh( footer_window );
-
     do
     {
         do
@@ -2822,7 +2813,12 @@ void nwipe_gui_edit_organisation( void )
             /* Clear the main window. */
             werase( main_window );
 
-            nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+            /* Update the footer window. */
+            werase( footer_window );
+            nwipe_gui_title( footer_window, selection_footer_config );
+            wrefresh( footer_window );
+
+            nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_config );
 
             /* Initialize the working row. */
             yy = 2;
@@ -2941,7 +2937,7 @@ void nwipe_gui_edit_organisation( void )
 
             } /* switch */
 
-        } while( keystroke != KEY_ENTER && keystroke != ' ' && keystroke != 10 && terminate_signal != 1 );
+        } while( keystroke != KEY_ENTER && keystroke != 10 && terminate_signal != 1 );
 
         if( keystroke == KEY_ENTER || keystroke == 10 || keystroke == ' ' )
         {
@@ -2974,7 +2970,7 @@ void nwipe_gui_edit_organisation( void )
             }
         }
 
-    } while( keystroke != KEY_ENTER && keystroke != ' ' && keystroke != 10 && terminate_signal != 1 );
+    } while( keystroke != KEY_ENTER && keystroke != 10 && terminate_signal != 1 );
 
 } /* end of nwipe_gui_edit_organisation( void ) */
 
@@ -3013,7 +3009,7 @@ void nwipe_gui_organisation_business_name( const char* business_name )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, rounds_footer );
+    nwipe_gui_title( footer_window, selection_footer_text_entry );
     wrefresh( footer_window );
 
     /* Copy the current business name to the buffer */
@@ -3027,7 +3023,7 @@ void nwipe_gui_organisation_business_name( const char* business_name )
         /* Erase the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry );
 
         /* Add a border. */
         box( main_window, 0, 0 );
@@ -3153,7 +3149,7 @@ void nwipe_gui_organisation_business_address( const char* business_address )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, rounds_footer );
+    nwipe_gui_title( footer_window, selection_footer_text_entry );
     wrefresh( footer_window );
 
     /* Copy the current business address to the buffer */
@@ -3167,7 +3163,7 @@ void nwipe_gui_organisation_business_address( const char* business_address )
         /* Erase the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry );
 
         /* Add a border. */
         box( main_window, 0, 0 );
@@ -3294,7 +3290,7 @@ void nwipe_gui_organisation_contact_name( const char* contact_name )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, rounds_footer );
+    nwipe_gui_title( footer_window, selection_footer_text_entry );
     wrefresh( footer_window );
 
     /* Copy the current business address to the buffer */
@@ -3308,7 +3304,7 @@ void nwipe_gui_organisation_contact_name( const char* contact_name )
         /* Erase the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry );
 
         /* Add a border. */
         box( main_window, 0, 0 );
@@ -3434,7 +3430,7 @@ void nwipe_gui_organisation_contact_phone( const char* contact_phone )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, rounds_footer );
+    nwipe_gui_title( footer_window, selection_footer_text_entry );
     wrefresh( footer_window );
 
     /* Copy the current business address to the buffer */
@@ -3448,7 +3444,7 @@ void nwipe_gui_organisation_contact_phone( const char* contact_phone )
         /* Erase the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry );
 
         /* Add a border. */
         box( main_window, 0, 0 );
@@ -3574,7 +3570,7 @@ void nwipe_gui_organisation_op_tech_name( const char* op_tech_name )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, rounds_footer );
+    nwipe_gui_title( footer_window, selection_footer_text_entry );
     wrefresh( footer_window );
 
     /* Copy the current op_tech_name to the buffer */
@@ -3588,7 +3584,7 @@ void nwipe_gui_organisation_op_tech_name( const char* op_tech_name )
         /* Erase the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry );
 
         /* Add a border. */
         box( main_window, 0, 0 );
@@ -4094,7 +4090,7 @@ void nwipe_gui_add_customer( void )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer_add_customer );
+    nwipe_gui_title( footer_window, selection_footer_config );
     wrefresh( footer_window );
 
     do
@@ -4118,10 +4114,10 @@ void nwipe_gui_add_customer( void )
             {
                 /* Update the footer window. */
                 werase( footer_window );
-                nwipe_gui_title( footer_window, selection_footer_add_customer );
+                nwipe_gui_title( footer_window, selection_footer_config );
                 wrefresh( footer_window );
 
-                nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_add_customer );
+                nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_config );
             }
             /* Initialize the working row. */
             yy = 2;
@@ -4221,10 +4217,10 @@ void nwipe_gui_add_customer( void )
                 }
             }
 
-        } while( save != YES && keystroke != 's' && keystroke != KEY_ENTER && keystroke != ' ' && keystroke != 10
+        } while( save != YES && keystroke != 's' && keystroke != KEY_ENTER && keystroke != 10
                  && terminate_signal != 1 );
 
-        if( keystroke == KEY_ENTER || keystroke == 10 || keystroke == ' ' )
+        if( keystroke == KEY_ENTER || keystroke == 10 )
         {
             switch( focus )
             {
@@ -5070,7 +5066,7 @@ void nwipe_gui_set_date_time( void )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer );
+    nwipe_gui_title( footer_window, selection_footer_config );
     wrefresh( footer_window );
 
     do
@@ -5080,7 +5076,7 @@ void nwipe_gui_set_date_time( void )
             /* Clear the main window. */
             werase( main_window );
 
-            nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+            nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_config );
 
             /* Determine size of window */
             getmaxyx( main_window, wlines, wcols );
