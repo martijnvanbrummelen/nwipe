@@ -4726,18 +4726,6 @@ void nwipe_gui_preview_org_customer( int mode )
     const char *customer_name, *customer_address, *customer_contact_name, *customer_contact_phone;
     extern config_t nwipe_cfg;
 
-    /* Update the footer window. */
-    werase( footer_window );
-    if( mode == SHOWING_IN_CONFIG_MENUS )
-    {
-        nwipe_gui_title( footer_window, selection_footer );
-    }
-    else
-    {
-        nwipe_gui_title( footer_window, selection_footer_preview_prior_to_drive_selection );
-    }
-    wrefresh( footer_window );
-
     do
     {
         do
@@ -4745,14 +4733,19 @@ void nwipe_gui_preview_org_customer( int mode )
             /* Clear the main window. */
             werase( main_window );
 
+            /* Update the footer window. */
+            werase( footer_window );
             if( mode == SHOWING_IN_CONFIG_MENUS )
             {
+                nwipe_gui_title( footer_window, selection_footer );
                 nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
             }
             else
             {
                 nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_preview_prior_to_drive_selection );
+                nwipe_gui_title( footer_window, selection_footer_preview_prior_to_drive_selection );
             }
+            wrefresh( footer_window );
 
             /* Determine size of window */
             getmaxyx( main_window, wlines, wcols );
