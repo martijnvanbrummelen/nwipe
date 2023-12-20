@@ -892,7 +892,8 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
                    serial_no );
 
         /* Create the PDF report/certificate */
-        if( strcmp( nwipe_options.PDFreportpath, "noPDF" ) != 0 )
+        if( nwipe_options.PDF_enable == 1 )
+        // if( strcmp( nwipe_options.PDFreportpath, "noPDF" ) != 0 )
         {
             /* to have some progress indication. can help if there are many/slow disks */
             fprintf( stderr, "." );
