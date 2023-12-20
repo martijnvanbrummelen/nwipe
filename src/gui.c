@@ -169,8 +169,6 @@ const char* end_wipe_footer = "B=[Toggle between dark\\blank\\blue screen] Ctrl+
 const char* rounds_footer = "Left=Erase Esc=Cancel Ctrl+C=Quit";
 const char* selection_footer_text_entry = "Esc=Cancel Return=Submit Ctrl+C=Quit";
 
-const char* wipes_finished_footer = "Wipe finished - press enter to exit. Logged to STDOUT";
-
 /* The number of lines available in the terminal */
 int stdscr_lines;
 
@@ -6067,6 +6065,53 @@ void* nwipe_gui_status( void* ptr )
     /* Spinner character */
     char spinner_string[2];
 
+    /* Create the finish message, this changes based on whether PDF creation is enabled
+     * and whether a logfile has been specified
+     */
+    char finish_message[NWIPE_GUI_FOOTER_W + 132];
+    if( nwipe_options.logfile[0] == 0 && nwipe_options.PDF_enable != 0 )
+    {
+        snprintf( finish_message,
+                  sizeof( finish_message ),
+                  "Wipe finished - press enter to create pdfs & exit. Logged to STDOUT" );
+    }
+    else
+    {
+        if( nwipe_options.logfile[0] != 0 && nwipe_options.PDF_enable != 0 )
+        {
+            snprintf( finish_message,
+                      sizeof( finish_message ),
+                      "Wipe finished - press enter to create pdfs & exit. Logged to %s",
+                      nwipe_options.logfile );
+        }
+        else
+        {
+            if( nwipe_options.logfile[0] != 0 && nwipe_options.PDF_enable == 0 )
+            {
+                snprintf( finish_message,
+                          sizeof( finish_message ),
+                          "Wipe finished - press enter to exit (pdfs disabled in config). Logged to %s",
+                          nwipe_options.logfile );
+            }
+            else
+            {
+                if( nwipe_options.logfile[0] == 0 && nwipe_options.PDF_enable == 0 )
+                {
+                    snprintf( finish_message,
+                              sizeof( finish_message ),
+                              "Wipe finished - press enter to exit (pdfs disabled in config). Logged to STDOUT" );
+                }
+                else
+                {
+                    /* This is a catch all something unexpected happens with the above logic */
+                    snprintf( finish_message,
+                              sizeof( finish_message ),
+                              "Wipe finished - press enter to exit. Logged to STDOUT" );
+                }
+            }
+        }
+    }
+
     /* We count time from when this function is first called. */
     static time_t nwipe_time_start = 0;
 
@@ -6224,7 +6269,7 @@ void* nwipe_gui_status( void* ptr )
             else
             {
                 /* and if the wipes have finished a different footer is required */
-                nwipe_gui_create_all_windows_on_terminal_resize( 0, wipes_finished_footer );
+                nwipe_gui_create_all_windows_on_terminal_resize( 0, finish_message );
             }
         }
 
@@ -6242,7 +6287,7 @@ void* nwipe_gui_status( void* ptr )
 
         if( nwipe_active == 0 || terminate_signal == 1 )
         {
-            nwipe_gui_title( footer_window, wipes_finished_footer );
+            nwipe_gui_title( footer_window, finish_message );
 
             // Refresh the footer_window ;
             wnoutrefresh( footer_window );
@@ -6625,19 +6670,7 @@ void* nwipe_gui_status( void* ptr )
 
     } /* End of while loop */
 
-    if( nwipe_options.logfile[0] == '\0' )
-    {
-        nwipe_gui_title( footer_window, wipes_finished_footer );
-    }
-    else
-    {
-        char finish_message[NWIPE_GUI_FOOTER_W];
-        snprintf( finish_message,
-                  sizeof( finish_message ),
-                  "Wipe finished - press enter to exit. Logged to %s",
-                  nwipe_options.logfile );
-        nwipe_gui_title( footer_window, finish_message );
-    }
+    nwipe_gui_title( footer_window, finish_message );
     terminate_signal = 1;
 
     return NULL;

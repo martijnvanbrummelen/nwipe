@@ -398,6 +398,23 @@ int nwipe_options_parse( int argc, char** argv )
 
                 nwipe_options.PDFreportpath[strlen( optarg )] = '\0';
                 strncpy( nwipe_options.PDFreportpath, optarg, sizeof( nwipe_options.PDFreportpath ) );
+
+                /* Command line options will override what's in nwipe.conf */
+                if( strcmp( nwipe_options.PDFreportpath, "noPDF" ) == 0 )
+                {
+                    nwipe_options.PDF_enable = 0;
+                    nwipe_conf_update_setting( "PDF_Certificate.PDF_Enable", "DISABLED" );
+                }
+                else
+                {
+                    if( strcmp( nwipe_options.PDFreportpath, "." ) )
+                    {
+                        /* and if the user has specified a PDF path then enable PDF */
+                        nwipe_options.PDF_enable = 1;
+                        nwipe_conf_update_setting( "PDF_Certificate.PDF_Enable", "ENABLED" );
+                    }
+                }
+
                 break;
 
             case 'e': /* exclude drives option */
