@@ -465,8 +465,10 @@ int hpa_dco_status( nwipe_context_t* ptr )
             }
 
             nwipe_log( NWIPE_LOG_INFO,
-                       "libata: apparent max sectors reported as %lli on %s",
+                       "libata: apparent max sectors reported as %lli with sector size as %i/%i on %s",
                        c->device_size_in_sectors,
+                       c->device_block_size,
+                       c->device_sector_size,
                        c->device_name );
 
             /* close */
@@ -553,8 +555,8 @@ int hpa_dco_status( nwipe_context_t* ptr )
 #endif
 
     /* If any of the HPA or DCO values are larger than the apparent size then HPA is enabled. */
-    if( /*c->HPA_reported_set > c->device_size_in_sectors || */ c->HPA_reported_real > c->device_size_in_sectors
-        || c->DCO_reported_real_max_sectors > c->device_size_in_sectors )
+    if( /*c->HPA_reported_set > c->device_size_in_sectors || */ c->HPA_reported_real > c->device_size_in_512byte_sectors
+        || c->DCO_reported_real_max_sectors > c->device_size_in_512byte_sectors )
     {
         c->HPA_status = HPA_ENABLED;
         nwipe_log( NWIPE_LOG_WARNING, " *********************************" );
@@ -602,7 +604,7 @@ int hpa_dco_status( nwipe_context_t* ptr )
         /* If the DCO is reporting a real max sectors > the apparent size
          * as reported by libata then that is what we will use as the real disc size
          */
-        if( c->DCO_reported_real_max_size > c->device_size_in_sectors )
+        if( c->DCO_reported_real_max_size > c->device_size_in_512byte_sectors )
         {
             c->Calculated_real_max_size_in_bytes = c->DCO_reported_real_max_sectors * c->device_sector_size;
         }
@@ -612,13 +614,13 @@ int hpa_dco_status( nwipe_context_t* ptr )
              * is the value we need, however if that is zero, then c->HPA_reported_set and if that is zero then
              * c->device_size as reported by libata
              */
-            if( c->HPA_reported_real > c->device_size_in_sectors )
+            if( c->HPA_reported_real > c->device_size_in_512byte_sectors )
             {
                 c->Calculated_real_max_size_in_bytes = c->HPA_reported_real * c->device_sector_size;
             }
             else
             {
-                if( c->HPA_reported_set > c->device_size_in_sectors )
+                if( c->HPA_reported_set > c->device_size_in_512byte_sectors )
                 {
                     c->Calculated_real_max_size_in_bytes = c->HPA_reported_set * c->device_sector_size;
                 }
@@ -674,6 +676,7 @@ int hpa_dco_status( nwipe_context_t* ptr )
                "c->DCO_reported_real_max_size=%lli, c->DCO_reported_real_max_sectors=%lli, c->HPA_sectors=%lli, "
                "c->HPA_reported_set=%lli, c->HPA_reported_real=%lli, c->device_type=%i, "
                "libata:c->device_size_in_sectors=%lli ",
+               "libata:c->device_size_in_512byte_sectors=%lli ",
                c->Calculated_real_max_size_in_bytes,
                c->device_size,
                c->device_sector_size,
@@ -683,7 +686,8 @@ int hpa_dco_status( nwipe_context_t* ptr )
                c->HPA_reported_set,
                c->HPA_reported_real,
                c->device_type,
-               c->device_size_in_sectors );
+               c->device_size_in_sectors,
+               c->device_size_in_512byte_sectors );
 
     return set_return_value;
 }
