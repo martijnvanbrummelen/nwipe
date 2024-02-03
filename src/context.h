@@ -101,7 +101,9 @@ typedef struct nwipe_context_t_
     char device_name_without_path[100];
     char gui_device_name[100];
     unsigned long long device_size;  // The device size in bytes.
-    u64 device_size_in_sectors;  // The device size in sectors
+    u64 device_size_in_sectors;  // The device size in number of logical sectors, this may be 512 or 4096 sectors
+    u64 device_size_in_512byte_sectors;  // The device size in number of 512byte sectors, irrespective of logical sector
+                                         // size reported by libata
     unsigned long long bytes_erased;  // Irrespective of pass, this how much of the drive has been erased, CANNOT be
                                       // greater than device_size.
     char* device_size_text;  // The device size in a more (human)readable format.
