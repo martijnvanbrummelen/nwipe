@@ -542,7 +542,8 @@ int main( int argc, char** argv )
                 nwipe_log( NWIPE_LOG_NOTICE, "%s has serial number %s", c2[i]->device_name, c2[i]->device_serial_no );
             }
 
-            /* Do sector size and block size checking. */
+            /* Do sector size and block size checking. I don't think this does anything useful as logical/Physical
+             * sector sizes are obtained by libparted in check.c */
             if( ioctl( c2[i]->device_fd, BLKSSZGET, &c2[i]->device_sector_size ) == 0 )
             {
 
