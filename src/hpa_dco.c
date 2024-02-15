@@ -464,12 +464,13 @@ int hpa_dco_status( nwipe_context_t* ptr )
                 nwipe_log( NWIPE_LOG_INFO, "DCO Real max sectors not found" );
             }
 
-            nwipe_log( NWIPE_LOG_INFO,
-                       "libata: apparent max sectors reported as %lli with sector size as %i/%i on %s",
-                       c->device_size_in_sectors,
-                       c->device_block_size,
-                       c->device_sector_size,
-                       c->device_name );
+            nwipe_log(
+                NWIPE_LOG_INFO,
+                "libata: apparent max sectors reported as %lli with sector size as %i/%i (logical/physical) on %s",
+                c->device_size_in_sectors,
+                c->device_sector_size,  // logical
+                c->device_phys_sector_size,  // physical
+                c->device_name );
 
             /* close */
             r = pclose( fp );

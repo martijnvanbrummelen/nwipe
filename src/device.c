@@ -229,7 +229,9 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     }
 
     next_device->device_size = dev->length * dev->sector_size;
-    next_device->device_sector_size = dev->sector_size;
+    next_device->device_sector_size = dev->sector_size;  // logical sector size
+    next_device->device_block_size = dev->sector_size;  // set as logical but could be a multiple of logical sector size
+    next_device->device_phys_sector_size = dev->phys_sector_size;  // physical sector size
     next_device->device_size_in_sectors = next_device->device_size / next_device->device_sector_size;
     next_device->device_size_in_512byte_sectors = next_device->device_size / 512;
     Determine_C_B_nomenclature( next_device->device_size, next_device->device_size_txt, NWIPE_DEVICE_SIZE_TXT_LENGTH );
@@ -409,6 +411,12 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
                next_device->device_model,
                next_device->device_size_text,
                next_device->device_serial_no );
+
+    nwipe_log( NWIPE_LOG_INFO,
+               "%s, sector(logical)/block(physical) sizes %i/%i",
+               next_device->device_name,
+               dev->sector_size,
+               dev->phys_sector_size );
 
     /******************************
      * Check for hidden sector_size

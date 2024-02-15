@@ -87,8 +87,9 @@ typedef struct nwipe_context_t_
     /*
      * Device fields
      */
-    int device_block_size;  // The soft block size reported by the device.
-    int device_sector_size;  // The hard sector size reported by the device.
+    int device_block_size;  // The soft block size reported by the device, as logical
+    int device_sector_size;  // The logical sector size reported by libparted
+    int device_phys_sector_size;  // The physical sector size reported by libparted
     int device_bus;  // The device bus number.
     int device_fd;  // The file descriptor of the device file being wiped.
     int device_host;  // The host number.
