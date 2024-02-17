@@ -283,7 +283,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
         /* If the serial number hasn't already been populated */
         if( next_device->device_serial_no[0] == 0 )
         {
-            strcpy( next_device->device_serial_no, tmp_serial );
+            strncpy( next_device->device_serial_no, tmp_serial, NWIPE_SERIALNUMBER_LENGTH );
         }
     }
 
@@ -292,13 +292,16 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     {
         if( next_device->device_serial_no[0] == 0 )
         {
-            strcpy( next_device->device_serial_no, "???????????????" );
+            strncpy( next_device->device_serial_no, "????????????????????", NWIPE_SERIALNUMBER_LENGTH + 1 );
         }
         else
         {
-            strcpy( next_device->device_serial_no, "XXXXXXXXXXXXXXX" );
+            strncpy( next_device->device_serial_no, "XXXXXXXXXXXXXXXXXXXX", NWIPE_SERIALNUMBER_LENGTH + 1 );
         }
     }
+    /* strncpy would have copied the null terminator BUT just to be sure, just in case somebody changes the length
+     * of those strings we should explicitly terminate the string */
+    next_device->device_serial_no[NWIPE_SERIALNUMBER_LENGTH] = 0;
 
     /* Initialise the variables that toggle the [size][temp c] with [HPA status]
      * Not currently used, but may be used in the future or for other purposes
