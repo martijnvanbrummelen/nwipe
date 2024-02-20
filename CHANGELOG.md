@@ -1,6 +1,21 @@
 RELEASE NOTES
 =============
 
+v0.36
+-----------------------
+- Added the abbreviation MMC for mmcblk devices such as SD and microSD cards and some low budget laptops. #526
+- Fixed some serial numbers that were displaying garbage. #527
+- Fixed auto power off and nowait when the screen has been blanked by the user. #529
+- Fixed nwipe not auto exiting on completion when in non gui mode. #531
+- Fixed smart page titles so they have a consistent format with page 1 in the PDF report. #532
+- Fixed some of the config help messages that displayed incorrect information. #533
+- Inserted a space between temperature and model. #534
+- Fixed incorrect footer on return to organisation/customer preview screen. #535
+- Made footer completion message more informative. #538
+- Fixed hidden sector detection for devices with logical/physical size of 4096/4096. #543 #546
+- Fixed some strcpy compiler warnings. #548
+
+
 v0.35
 -----------------------
 - Nwipe will now optionally create a multi-page PDF certificate that shows details of a specific discs erasure. The first page forms the certificate of erasure and subsequent pages show the drives smart data. Two related options have been added to nwipe's command line options -P, --PDFreportpath=PATH Path to write PDF reports to. Default is "." If set to "noPDF" no PDF reports are written. From the drive selection screen you can now press 'c' for config. This takes you to the configuration screen where you can select various PDF certificate related options such as enabling PDF, entering customer or company data for entry onto the certificate and enabling a preview of customer/company info prior to the drive selection screen starting.
