@@ -25,11 +25,16 @@
 #include "mt19937ar-cok/mt19937ar-cok.h"
 #include "isaac_rand/isaac_rand.h"
 #include "isaac_rand/isaac64.h"
+#include "aes/aes_ctr_prng.h" // AES-NI prototype
 
 nwipe_prng_t nwipe_twister = { "Mersenne Twister (mt19937ar-cok)", nwipe_twister_init, nwipe_twister_read };
 
 nwipe_prng_t nwipe_isaac = { "ISAAC (rand.c 20010626)", nwipe_isaac_init, nwipe_isaac_read };
 nwipe_prng_t nwipe_isaac64 = { "ISAAC-64 (isaac64.c)", nwipe_isaac64_init, nwipe_isaac64_read };
+
+/* AES-CTR-NI PRNG Structure */
+nwipe_prng_t nwipe_aes_ctr_prng = { "AES-CTR-PRNG", nwipe_aes_ctr_prng_init, nwipe_aes_ctr_prng_read };
+
 
 /* Print given number of bytes from unsigned integer number to a byte stream buffer starting with low-endian. */
 static inline void u32_to_buffer( u8* restrict buffer, u32 val, const int len )
@@ -250,3 +255,44 @@ int nwipe_isaac64_read( NWIPE_PRNG_READ_SIGNATURE )
 
     return 0;
 }
+
+
+/* EXPERIMENTAL implementation of AES-128 in counter mode to provide high-quality random numbers */
+
+int nwipe_aes_ctr_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
+{
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising AES CTR PRNG" );
+
+    if( *state == NULL )
+    {
+        /* This is the first time that we have been called. */
+        *state = malloc( sizeof( aes_ctr_state_t )  );
+    }
+    aes_ctr_prng_init( (aes_ctr_state_t*) *state, (unsigned long*) ( seed->s ), seed->length / sizeof( unsigned long ) );
+
+    return 0;
+}
+
+int nwipe_aes_ctr_prng_read( NWIPE_PRNG_READ_SIGNATURE )
+{
+    u8* restrict bufpos = buffer;
+    size_t words = count / SIZE_OF_AES_CTR_PRNG;  // the values of aes_ctr_prng_genrand_uint32 is strictly 4 bytes
+
+    /* AES CTR PRNG returns 4-bytes per call, so progress by 4 bytes. */
+    for( size_t ii = 0; ii < words; ++ii )
+    {
+        u32_to_buffer( bufpos, aes_ctr_prng_genrand_uint32( (aes_ctr_state_t*) *state ), SIZE_OF_AES_CTR_PRNG );
+        bufpos += SIZE_OF_AES_CTR_PRNG;
+    }
+
+    /* If there is some remainder copy only relevant number of bytes to not overflow the buffer. */
+    const size_t remain = count % SIZE_OF_AES_CTR_PRNG;  // SIZE_OF_AES_CTR_PRNG is strictly 4 bytes
+    if( remain > 0 )
+    {
+        u32_to_buffer( bufpos, aes_ctr_prng_genrand_uint32( (aes_ctr_state_t*) *state ), remain );
+    }
+
+    return 0;
+}
+
+

@@ -1599,10 +1599,11 @@ void nwipe_gui_prng( void )
     extern nwipe_prng_t nwipe_twister;
     extern nwipe_prng_t nwipe_isaac;
     extern nwipe_prng_t nwipe_isaac64;
+    extern nwipe_prng_t nwipe_aes_ctr_prng;
     extern int terminate_signal;
 
     /* The number of implemented PRNGs. */
-    const int count = 3;
+    const int count = 4;
 
     /* The first tabstop. */
     const int tab1 = 2;
@@ -1636,6 +1637,10 @@ void nwipe_gui_prng( void )
     {
         focus = 2;
     }
+    if( nwipe_options.prng == &nwipe_aes_ctr_prng )
+    {
+        focus = 3;
+    }
 
     do
     {
@@ -1651,6 +1656,7 @@ void nwipe_gui_prng( void )
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_twister.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_isaac.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_isaac64.label );
+        mvwprintw( main_window, yy++, tab1, "  %s", nwipe_aes_ctr_prng.label );
         yy++;
 
         /* Print the cursor. */
@@ -1733,8 +1739,18 @@ void nwipe_gui_prng( void )
                            tab1,
                            "Performs best on a 64-bit CPU. Use ISAAC if this system has a 32-bit CPU.   " );
                 break;
+           case 3:
 
-        } /* switch */
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "AES-CTR Ni Prototype   " );
+                break;
+
+        } 
+
+	
+	/* switch */
 
         /* Add a border. */
         box( main_window, 0, 0 );
@@ -1793,6 +1809,10 @@ void nwipe_gui_prng( void )
                 if( focus == 2 )
                 {
                     nwipe_options.prng = &nwipe_isaac64;
+                }
+		if( focus == 3 )
+                {
+                    nwipe_options.prng = &nwipe_aes_ctr_prng;
                 }
                 return;
 
