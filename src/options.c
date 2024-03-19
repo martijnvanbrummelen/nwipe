@@ -42,6 +42,7 @@ int nwipe_options_parse( int argc, char** argv )
     extern nwipe_prng_t nwipe_twister;
     extern nwipe_prng_t nwipe_isaac;
     extern nwipe_prng_t nwipe_isaac64;
+    extern nwipe_prng_t nwipe_xoroshiro256_prng;
 
     /* The getopt() result holder. */
     int nwipe_opt;
@@ -490,6 +491,11 @@ int nwipe_options_parse( int argc, char** argv )
                     nwipe_options.prng = &nwipe_isaac64;
                     break;
                 }
+                if( strcmp( optarg, "xoroshiro256_prng" ) == 0 )
+                {
+                    nwipe_options.prng = &nwipe_xoroshiro256_prng;
+                    break;
+                }
 
                 /* Else we do not know this PRNG. */
                 fprintf( stderr, "Error: Unknown prng '%s'.\n", optarg );
@@ -539,6 +545,7 @@ void nwipe_options_log( void )
     extern nwipe_prng_t nwipe_twister;
     extern nwipe_prng_t nwipe_isaac;
     extern nwipe_prng_t nwipe_isaac64;
+    extern nwipe_prng_t nwipe_xoroshiro256_prng;
 
     /**
      *  Prints a manifest of options to the log.
@@ -590,6 +597,11 @@ void nwipe_options_log( void )
     {
         nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Mersenne Twister" );
     }
+    if( nwipe_options.prng == &nwipe_xoroshiro256_prng )
+    {
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = XORoshiro-256 (EXPERIMENTAL!)" );
+    }
+
     else
     {
         if( nwipe_options.prng == &nwipe_isaac )

@@ -55,11 +55,18 @@ int nwipe_isaac_read( NWIPE_PRNG_READ_SIGNATURE );
 int nwipe_isaac64_init( NWIPE_PRNG_INIT_SIGNATURE );
 int nwipe_isaac64_read( NWIPE_PRNG_READ_SIGNATURE );
 
+/* AES-CTR-NI prototypes. */
+int nwipe_xoroshiro256_prng_init( NWIPE_PRNG_INIT_SIGNATURE );
+int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE );
+
 /* Size of the twister is not derived from the architecture, but it is strictly 4 bytes */
 #define SIZE_OF_TWISTER 4
 
 /* Size of the isaac/isaac64 is not derived from the architecture, but it is strictly 4 or 8 bytes */
 #define SIZE_OF_ISAAC 4
 #define SIZE_OF_ISAAC64 8
+
+/* Size of the XOROSHIRO-256 is not derived from the architecture, but it is strictly 32 bytes */
+#define SIZE_OF_XOROSHIRO256_PRNG 32
 
 #endif /* PRNG_H_ */

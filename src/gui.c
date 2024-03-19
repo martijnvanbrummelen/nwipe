@@ -1599,10 +1599,13 @@ void nwipe_gui_prng( void )
     extern nwipe_prng_t nwipe_twister;
     extern nwipe_prng_t nwipe_isaac;
     extern nwipe_prng_t nwipe_isaac64;
+    extern nwipe_prng_t nwipe_aes_ctr_prng;
+    extern nwipe_prng_t nwipe_xoroshiro256_prng;
+
     extern int terminate_signal;
 
     /* The number of implemented PRNGs. */
-    const int count = 3;
+    const int count = 4;
 
     /* The first tabstop. */
     const int tab1 = 2;
@@ -1636,7 +1639,10 @@ void nwipe_gui_prng( void )
     {
         focus = 2;
     }
-
+    if( nwipe_options.prng == &nwipe_xoroshiro256_prng )
+    {
+        focus = 3;
+    }
     do
     {
         /* Clear the main window. */
@@ -1651,6 +1657,7 @@ void nwipe_gui_prng( void )
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_twister.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_isaac.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_isaac64.label );
+        mvwprintw( main_window, yy++, tab1, "  %s", nwipe_xoroshiro256_prng.label );
         yy++;
 
         /* Print the cursor. */
@@ -1734,7 +1741,55 @@ void nwipe_gui_prng( void )
                            "Performs best on a 64-bit CPU. Use ISAAC if this system has a 32-bit CPU.   " );
                 break;
 
-        } /* switch */
+            case 3:
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "Xoroshiro256**, originally designed by David Blackman and Sebastiano Vigna" );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "for 128 bits, was adapted to 256 bits by Fabian Druschke. This adaptation  " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "enhances its capability for fast, high-quality generation of pseudo-random " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "numbers with a state size of 256 bits. It boasts an extremely long period  " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "of 2^256-1 without sacrificing performance, suitable for a wide range of   " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "applications.                                                              " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "                                                                            " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "The simple arithmetic operations (shifts, rotations, and XORs) of          " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "Xoroshiro256** ensure low computational complexity. This, combined with    " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "the adaptation for 256 bits by Fabian Druschke, allows efficient use       " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "especially for legacy systems, due to its efficiency and minimal demands.  " );
+                break;
+        }
+
+        /* switch */
 
         /* Add a border. */
         box( main_window, 0, 0 );
@@ -1793,6 +1848,10 @@ void nwipe_gui_prng( void )
                 if( focus == 2 )
                 {
                     nwipe_options.prng = &nwipe_isaac64;
+                }
+                if( focus == 3 )
+                {
+                    nwipe_options.prng = &nwipe_xoroshiro256_prng;
                 }
                 return;
 
