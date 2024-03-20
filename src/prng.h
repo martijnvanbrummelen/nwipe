@@ -55,7 +55,7 @@ int nwipe_isaac_read( NWIPE_PRNG_READ_SIGNATURE );
 int nwipe_isaac64_init( NWIPE_PRNG_INIT_SIGNATURE );
 int nwipe_isaac64_read( NWIPE_PRNG_READ_SIGNATURE );
 
-/* AES-CTR-NI prototypes. */
+/* XOROSHIRO-256 prototypes. */
 int nwipe_xoroshiro256_prng_init( NWIPE_PRNG_INIT_SIGNATURE );
 int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE );
 
