@@ -16,8 +16,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-//#define _LARGEFILE64_SOURCE
-//#define _FILE_OFFSET_BITS 64
+// #define _LARGEFILE64_SOURCE
+// #define _FILE_OFFSET_BITS 64
 #define _BSD_SOURCE
 
 #include <stdio.h>
