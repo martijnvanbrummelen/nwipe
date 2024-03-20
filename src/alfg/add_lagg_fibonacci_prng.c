@@ -54,14 +54,26 @@ void add_lagg_fibonacci_init( add_lagg_fibonacci_state_t* state, uint64_t init_k
 void add_lagg_fibonacci_genrand_uint256_to_buf( add_lagg_fibonacci_state_t* state, unsigned char* bufpos )
 {
     uint64_t* buf_as_uint64 = (uint64_t*) bufpos;  // Interprets bufpos as a uint64_t array for direct assignment
+    int64_t result;  // Use signed integer to handle potential negative results from subtraction
 
-    for( int i = 0; i < 4; i++ )
-    {  // Generate 4 * 64 bits = 256 bits
-        // Update the state and write the result into buf_as_uint64
-        state->s[state->index] =
-            ( state->s[( state->index + LAG_BIG ) % STATE_SIZE] + state->s[( state->index + LAG_SMALL ) % STATE_SIZE] )
-            % MODULUS;
+    for (int i = 0; i < 4; i++) {
+        // Subtract the two previous numbers in the sequence
+        result = (int64_t)state->s[(state->index + LAG_BIG) % STATE_SIZE] - (int64_t)state->s[(state->index + LAG_SMALL) % STATE_SIZE];
+
+        // Handle borrow if result is negative
+        if (result < 0) {
+            result += MODULUS;
+            // Optionally set a borrow flag or adjust the next operation based on borrow logic
+        }
+
+        // Store the result (after adjustment) back into the state, ensuring it's positive and within range
+        state->s[state->index] = (uint64_t)result;
+
+        // Write the result into buf_as_uint64
         buf_as_uint64[i] = state->s[state->index];
-        state->index = ( state->index + 1 ) % STATE_SIZE;  // Update the index for the next round
+
+        // Update the index for the next round
+        state->index = (state->index + 1) % STATE_SIZE;
     }
 }
+
