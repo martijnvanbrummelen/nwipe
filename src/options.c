@@ -1,4 +1,4 @@
-\/*
+/*
  *  options.c:  Command line processing routines for nwipe.
  *
  *  Copyright Darik Horn <dajhorn-dban@vanadac.com>.
