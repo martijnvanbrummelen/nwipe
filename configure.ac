@@ -51,6 +51,24 @@ PKG_CHECK_MODULES(
 )
 
 PKG_CHECK_MODULES(
+    [OPENSSL],
+    [openssl],
+    [
+            CFLAGS="${CFLAGS} ${OPENSSL_CFLAGS}"
+            LIBS="${LIBS} ${OPENSSL_LIBS}"
+    ],
+    [AC_CHECK_LIB([ssl], [SSL_library_init], [
+            LIBS="-lssl -lcrypto $LIBS"
+            AC_CHECK_HEADERS(openssl/ssl.h,, [
+                AC_CHECK_HEADERS(openssl/crypto.h, [
+                    AC_DEFINE([OPENSSL_IN_SUBDIR], [openssl/], [Look for openssl headers in subdir])
+                    ], [AC_MSG_ERROR([openssl headers not found])])
+            ])
+        ], [AC_MSG_ERROR([OpenSSL development library not found])]
+    )]
+)
+
+PKG_CHECK_MODULES(
 	[LIBCONFIG],
 	[libconfig],
 	[
@@ -84,3 +102,4 @@ AC_FUNC_MALLOC
 AC_CHECK_FUNCS([fdatasync memset regcomp strdup strerror])
 
 AC_OUTPUT
+

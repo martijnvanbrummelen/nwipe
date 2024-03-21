@@ -1602,11 +1602,12 @@ void nwipe_gui_prng( void )
     extern nwipe_prng_t nwipe_aes_ctr_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
+    extern nwipe_prng_t nwipe_sha_dbrg_prng;
 
     extern int terminate_signal;
 
     /* The number of implemented PRNGs. */
-    const int count = 5;
+    const int count = 6;
 
     /* The first tabstop. */
     const int tab1 = 2;
@@ -1648,6 +1649,10 @@ void nwipe_gui_prng( void )
     {
         focus = 4;
     }
+    if( nwipe_options.prng == &nwipe_sha_dbrg_prng )
+    {
+        focus = 5;
+    }
     do
     {
         /* Clear the main window. */
@@ -1664,6 +1669,7 @@ void nwipe_gui_prng( void )
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_isaac64.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_add_lagg_fibonacci_prng.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_xoroshiro256_prng.label );
+        mvwprintw( main_window, yy++, tab1, "  %s", nwipe_sha_dbrg_prng.label );
         yy++;
 
         /* Print the cursor. */
@@ -1838,6 +1844,53 @@ void nwipe_gui_prng( void )
                            tab1,
                            "especially for legacy systems, due to its efficiency and minimal demands.  " );
                 break;
+            case 5:
+
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "SHA-512 HMAC DRBG, based on the SHA-512 hash function and HMAC construction," );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "adheres to NIST's SP 800-90A Rev. 1 standard for secure random number        " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "generation. It's designed for generating cryptographically secure random     " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "numbers, offering high security and resistance to both brute force and       " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "sophisticated cryptographic attacks. Ideal for cryptographic key generation," );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "secure communications, and other security-sensitive applications.           " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "                                                                            " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "Utilizes OpenSSL for its cryptographic operations, ensuring compliance with  " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "the rigorous requirements of SP 800-90A Rev. 1 and providing robustness     " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "against predictability. This guarantees the security of the generated       " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "numbers for all cryptographic purposes.                                     " );
+                break;
         }
 
         /* switch */
@@ -1908,6 +1961,11 @@ void nwipe_gui_prng( void )
                 {
                     nwipe_options.prng = &nwipe_xoroshiro256_prng;
                 }
+                if( focus == 5 )
+                {
+                    nwipe_options.prng = &nwipe_sha_dbrg_prng;
+                }
+                return;
                 return;
 
             case KEY_BACKSPACE:
