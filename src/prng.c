@@ -269,7 +269,7 @@ int nwipe_add_lagg_fibonacci_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
         *state = malloc( sizeof( add_lagg_fibonacci_state_t ) );
     }
     add_lagg_fibonacci_init(
-         (add_lagg_fibonacci_state_t*) *state, (unsigned long*) ( seed->s ), seed->length / sizeof( unsigned long ) );
+        (add_lagg_fibonacci_state_t*) *state, (unsigned long*) ( seed->s ), seed->length / sizeof( unsigned long ) );
 
     return 0;
 }
@@ -315,7 +315,7 @@ int nwipe_add_lagg_fibonacci_prng_read( NWIPE_PRNG_READ_SIGNATURE )
 
     return 0;  // Success
 }
-      
+
 int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE )
 {
     u8* restrict bufpos = buffer;
