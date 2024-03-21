@@ -1,4 +1,4 @@
-/*
+\/*
  *  options.c:  Command line processing routines for nwipe.
  *
  *  Copyright Darik Horn <dajhorn-dban@vanadac.com>.
@@ -599,7 +599,7 @@ void nwipe_options_log( void )
     }
     if( nwipe_options.prng == &nwipe_add_lagg_fibonacci_prng )
     {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = XORoshiro-256 (EXPERIMENTAL!)" );
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Lagged Fibonacci generator (EXPERIMENTAL!)" );
     }
 
     else
@@ -693,7 +693,7 @@ void display_help()
     puts( "  -l, --logfile=FILE      Filename to log to. Default is STDOUT\n" );
     puts( "  -P, --PDFreportpath=PATH Path to write PDF reports to. Default is \".\"" );
     puts( "                           If set to \"noPDF\" no PDF reports are written.\n" );
-    puts( "  -p, --prng=METHOD       PRNG option (mersenne|twister|isaac|isaac64)\n" );
+    puts( "  -p, --prng=METHOD       PRNG option (mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng)\n" );
     puts( "  -q, --quiet             Anonymize logs and the GUI by removing unique data, i.e." );
     puts( "                          serial numbers, LU WWN Device ID, and SMBIOS/DMI data" );
     puts( "                          XXXXXX = S/N exists, ????? = S/N not obtainable\n" );

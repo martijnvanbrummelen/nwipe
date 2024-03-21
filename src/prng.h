@@ -66,7 +66,7 @@ int nwipe_add_lagg_fibonacci_prng_read( NWIPE_PRNG_READ_SIGNATURE );
 #define SIZE_OF_ISAAC 4
 #define SIZE_OF_ISAAC64 8
 
-/* Size of the XOROSHIRO-256 is not derived from the architecture, but it is strictly 32 bytes */
+/* Size of the Lagged Fibonacci generator is not derived from the architecture, but it is strictly 32 bytes */
 #define SIZE_OF_ADD_LAGG_FIBONACCI_PRNG 32
 
 #endif /* PRNG_H_ */
