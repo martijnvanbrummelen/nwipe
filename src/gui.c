@@ -1746,9 +1746,9 @@ void nwipe_gui_prng( void )
                            tab1,
                            "Performs best on a 64-bit CPU. Use ISAAC if this system has a 32-bit CPU.   " );
                 break;
-  
+
             case 3:
- 
+
                 mvwprintw( main_window,
                            yy++,
                            tab1,
