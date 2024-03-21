@@ -1601,6 +1601,7 @@ void nwipe_gui_prng( void )
     extern nwipe_prng_t nwipe_isaac64;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
+    extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
 
     extern int terminate_signal;
 
@@ -1639,9 +1640,13 @@ void nwipe_gui_prng( void )
     {
         focus = 2;
     }
-    if( nwipe_options.prng == &nwipe_xoroshiro256_prng )
+    if( nwipe_options.prng == &nwipe_add_lagg_fibonacci_prng )
     {
         focus = 3;
+    }
+    if( nwipe_options.prng == &nwipe_xoroshiro256_prng )
+    {
+        focus = 4;
     }
     do
     {
@@ -1657,6 +1662,7 @@ void nwipe_gui_prng( void )
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_twister.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_isaac.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_isaac64.label );
+        mvwprintw( main_window, yy++, tab1, "  %s", nwipe_add_lagg_fibonacci_prng.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_xoroshiro256_prng.label );
         yy++;
 
@@ -1740,8 +1746,53 @@ void nwipe_gui_prng( void )
                            tab1,
                            "Performs best on a 64-bit CPU. Use ISAAC if this system has a 32-bit CPU.   " );
                 break;
-
+  
             case 3:
+ 
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "ALFG (Additive Lagged Fibonacci Generator), is a class of PRNGs utilizing" );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "the Fibonacci sequence with additive operations between lagged values. While" );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "they offer a good balance between speed and randomness, it's important to note" );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "that they provide lower levels of security, making them less suitable for" );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "cryptographic applications. Their periodicity depends on the choice of lags" );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "and arithmetic operations, potentially achieving large values, often 2^N or" );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "higher, where N is the bit length of the states.                                " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "                                                                                " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "Efficient on CPUs of any bit width, particularly suited for non-cryptographic" );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "applications requiring long sequences with a good speed-randomness trade-off.   " );
+                break;
+
+            case 4:
+
                 mvwprintw( main_window,
                            yy++,
                            tab1,
@@ -1850,6 +1901,10 @@ void nwipe_gui_prng( void )
                     nwipe_options.prng = &nwipe_isaac64;
                 }
                 if( focus == 3 )
+                {
+                    nwipe_options.prng = &nwipe_add_lagg_fibonacci_prng;
+                }
+                if( focus == 4 )
                 {
                     nwipe_options.prng = &nwipe_xoroshiro256_prng;
                 }

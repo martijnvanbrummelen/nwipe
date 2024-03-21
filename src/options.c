@@ -42,6 +42,7 @@ int nwipe_options_parse( int argc, char** argv )
     extern nwipe_prng_t nwipe_twister;
     extern nwipe_prng_t nwipe_isaac;
     extern nwipe_prng_t nwipe_isaac64;
+    extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
 
     /* The getopt() result holder. */
@@ -491,6 +492,11 @@ int nwipe_options_parse( int argc, char** argv )
                     nwipe_options.prng = &nwipe_isaac64;
                     break;
                 }
+                if( strcmp( optarg, "add_lagg_fibonacci_prng" ) == 0 )
+                {
+                    nwipe_options.prng = &nwipe_add_lagg_fibonacci_prng;
+                    break;
+                }
                 if( strcmp( optarg, "xoroshiro256_prng" ) == 0 )
                 {
                     nwipe_options.prng = &nwipe_xoroshiro256_prng;
@@ -545,6 +551,7 @@ void nwipe_options_log( void )
     extern nwipe_prng_t nwipe_twister;
     extern nwipe_prng_t nwipe_isaac;
     extern nwipe_prng_t nwipe_isaac64;
+    extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
 
     /**
@@ -597,26 +604,35 @@ void nwipe_options_log( void )
     {
         nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Mersenne Twister" );
     }
-    if( nwipe_options.prng == &nwipe_xoroshiro256_prng )
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = XORoshiro-256 (EXPERIMENTAL!)" );
-    }
-
     else
     {
-        if( nwipe_options.prng == &nwipe_isaac )
+        if( nwipe_options.prng == &nwipe_add_lagg_fibonacci_prng )
         {
-            nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Isaac" );
+            nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Lagged Fibonacci generator (EXPERIMENTAL!)" );
         }
         else
         {
-            if( nwipe_options.prng == &nwipe_isaac64 )
+            if( nwipe_options.prng == &nwipe_xoroshiro256_prng )
             {
-                nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Isaac64" );
+                nwipe_log( NWIPE_LOG_NOTICE, "  prng     = XORoshiro-256 (EXPERIMENTAL!)" );
             }
             else
             {
-                nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Undefined" );
+                if( nwipe_options.prng == &nwipe_isaac )
+                {
+                    nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Isaac" );
+                }
+                else
+                {
+                    if( nwipe_options.prng == &nwipe_isaac64 )
+                    {
+                        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Isaac64" );
+                    }
+                    else
+                    {
+                        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Undefined" );
+                    }
+                }
             }
         }
     }
@@ -693,7 +709,7 @@ void display_help()
     puts( "  -l, --logfile=FILE      Filename to log to. Default is STDOUT\n" );
     puts( "  -P, --PDFreportpath=PATH Path to write PDF reports to. Default is \".\"" );
     puts( "                           If set to \"noPDF\" no PDF reports are written.\n" );
-    puts( "  -p, --prng=METHOD       PRNG option (mersenne|twister|isaac|isaac64)\n" );
+    puts( "  -p, --prng=METHOD       PRNG option (mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng)\n" );
     puts( "  -q, --quiet             Anonymize logs and the GUI by removing unique data, i.e." );
     puts( "                          serial numbers, LU WWN Device ID, and SMBIOS/DMI data" );
     puts( "                          XXXXXX = S/N exists, ????? = S/N not obtainable\n" );
