@@ -1606,7 +1606,7 @@ void nwipe_gui_prng( void )
     extern int terminate_signal;
 
     /* The number of implemented PRNGs. */
-    const int count = 4;
+    const int count = 5;
 
     /* The first tabstop. */
     const int tab1 = 2;
