@@ -627,7 +627,7 @@ void nwipe_options_log( void )
             {
                 if( nwipe_options.prng == &nwipe_sha_dbrg_prng )
                 {
-                    nwipe_log( NWIPE_LOG_NOTICE, "  prng     = SHA-512 HMAC DBRG (EXPERIMENTAL!)" );
+                    nwipe_log( NWIPE_LOG_NOTICE, "  prng     = SHA-256 HMAC DBRG (EXPERIMENTAL!)" );
                 }
 
                 if( nwipe_options.prng == &nwipe_isaac )

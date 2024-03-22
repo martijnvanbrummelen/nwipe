@@ -1849,7 +1849,7 @@ void nwipe_gui_prng( void )
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "SHA-512 HMAC DRBG, based on the SHA-512 hash function and HMAC construction," );
+                           "SHA-256 HMAC DRBG, based on the SHA-256 hash function and HMAC construction," );
                 mvwprintw( main_window,
                            yy++,
                            tab1,

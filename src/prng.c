@@ -27,7 +27,7 @@
 #include "isaac_rand/isaac64.h"
 #include "alfg/add_lagg_fibonacci_prng.h"  //Lagged Fibonacci generator prototype
 #include "xor/xoroshiro256_prng.h"  //XORoshiro-256 prototype
-#include "sha/sha_dbrg_prng.h"  // SHA-512 HMAC DBRG prototype
+#include "sha/sha_dbrg_prng.h"  // SHA-256 HMAC DBRG prototype
 
 nwipe_prng_t nwipe_twister = { "Mersenne Twister (mt19937ar-cok)", nwipe_twister_init, nwipe_twister_read };
 
@@ -41,8 +41,8 @@ nwipe_prng_t nwipe_add_lagg_fibonacci_prng = { "Lagged Fibonacci generator",
 /* XOROSHIRO-256 PRNG Structure */
 nwipe_prng_t nwipe_xoroshiro256_prng = { "XORoshiro-256", nwipe_xoroshiro256_prng_init, nwipe_xoroshiro256_prng_read };
 
-/*  SHA-512 HMAC DBRG Structure */
-nwipe_prng_t nwipe_sha_dbrg_prng = { "SHA-512 DBRG (OpenSSL)", nwipe_sha_dbrg_prng_init, nwipe_sha_dbrg_prng_read };
+/*  SHA-256 HMAC DBRG Structure */
+nwipe_prng_t nwipe_sha_dbrg_prng = { "SHA-256 DBRG (OpenSSL)", nwipe_sha_dbrg_prng_init, nwipe_sha_dbrg_prng_read };
 
 /* Print given number of bytes from unsigned integer number to a byte stream buffer starting with low-endian. */
 static inline void u32_to_buffer( u8* restrict buffer, u32 val, const int len )
@@ -346,11 +346,11 @@ int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE )
     return 0;  // Success
 }
 
-/* EXPERIMENTAL implementation of SHA-512 as HMAC DBRG to provide high-quality random numbers */
+/* EXPERIMENTAL implementation of SHA-256 as HMAC DBRG to provide high-quality random numbers */
 
 int nwipe_sha_dbrg_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
 {
-    nwipe_log( NWIPE_LOG_NOTICE, "Initialising SHA-512 HMAC DBRG" );
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising SHA-256 HMAC DBRG" );
 
     if( *state == NULL )
     {
@@ -368,10 +368,10 @@ int nwipe_sha_dbrg_prng_read( NWIPE_PRNG_READ_SIGNATURE )
     u8* restrict bufpos = buffer;
     size_t words = count / SIZE_OF_SHA_DBRG_PRNG;
 
-    /* Loop to fill the buffer with 512-bit blocks directly */
+    /* Loop to fill the buffer with 256-bit blocks directly */
     for( size_t ii = 0; ii < words; ++ii )
     {
-        sha_dbrg_prng_genrand_uint512_to_buf( (sha_dbrg_state_t*) *state, bufpos );
+        sha_dbrg_prng_genrand_uint256_to_buf( (sha_dbrg_state_t*) *state, bufpos );
         bufpos += SIZE_OF_SHA_DBRG_PRNG;  // Move to the next block
     }
 
@@ -380,7 +380,7 @@ int nwipe_sha_dbrg_prng_read( NWIPE_PRNG_READ_SIGNATURE )
     if( remain > 0 )
     {
         unsigned char temp_output[16];  // Temporary buffer for the last block
-        sha_dbrg_prng_genrand_uint512_to_buf( (sha_dbrg_state_t*) *state, temp_output );
+        sha_dbrg_prng_genrand_uint256_to_buf( (sha_dbrg_state_t*) *state, temp_output );
         // Copy the remaining bytes
         memcpy( bufpos, temp_output, remain );
     }

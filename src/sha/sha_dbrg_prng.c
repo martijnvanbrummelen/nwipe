@@ -1,10 +1,10 @@
 /*
- * SHA-512 HMAC DBRG (Deterministic Random Bit Generator) Implementation
+ * SHA-256 HMAC DBRG (Deterministic Random Bit Generator) Implementation
  * Author: Fabian Druschke
  * Date: 2024-03-13
  *
  * This header file contains definitions and functionality for implementing a
- * Deterministic Random Bit Generator using the SHA-512 HMAC (Hash-Based Message Authentication Code) algorithm,
+ * Deterministic Random Bit Generator using the SHA-256 HMAC (Hash-Based Message Authentication Code) algorithm,
  * leveraging OpenSSL for cryptographic operations.
  *
  * As the author of this work, I, Fabian Druschke, hereby release this work into the public
@@ -31,7 +31,7 @@
 void sha_dbrg_prng_init( sha_dbrg_state_t* state, unsigned long init_key[], unsigned long key_length )
 {
     EVP_MD_CTX* mdctx;
-    const EVP_MD* md = EVP_sha512();
+    const EVP_MD* md = EVP_sha256();
     mdctx = EVP_MD_CTX_new();
     EVP_DigestInit_ex( mdctx, md, NULL );
 
@@ -46,7 +46,7 @@ void sha_dbrg_prng_init( sha_dbrg_state_t* state, unsigned long init_key[], unsi
 static void next_state( sha_dbrg_state_t* state )
 {
     EVP_MD_CTX* mdctx;
-    const EVP_MD* md = EVP_sha512();
+    const EVP_MD* md = EVP_sha256();
     mdctx = EVP_MD_CTX_new();
     EVP_DigestInit_ex( mdctx, md, NULL );
 
@@ -57,11 +57,11 @@ static void next_state( sha_dbrg_state_t* state )
     EVP_MD_CTX_free( mdctx );
 }
 
-void sha_dbrg_prng_genrand_uint512_to_buf( sha_dbrg_state_t* state, unsigned char* bufpos )
+void sha_dbrg_prng_genrand_uint256_to_buf( sha_dbrg_state_t* state, unsigned char* bufpos )
 {
     // Generate random data based on the current state
     EVP_MD_CTX* mdctx;
-    const EVP_MD* md = EVP_sha512();
+    const EVP_MD* md = EVP_sha256();
     mdctx = EVP_MD_CTX_new();
     EVP_DigestInit_ex( mdctx, md, NULL );
     EVP_DigestUpdate( mdctx, state->seed, sizeof( state->seed ) );

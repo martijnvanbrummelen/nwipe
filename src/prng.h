@@ -80,7 +80,7 @@ int nwipe_sha_dbrg_prng_read( NWIPE_PRNG_READ_SIGNATURE );
 /* Size of the XOROSHIRO-256 is not derived from the architecture, but it is strictly 32 bytes */
 #define SIZE_OF_XOROSHIRO256_PRNG 32
 
-/* Size of the SHA-512 DBRG is not derived from the architecture, but it is strictly 64 bytes */
-#define SIZE_OF_SHA_DBRG_PRNG 64
+/* Size of the SHA-256 DBRG is not derived from the architecture, but it is strictly 32 bytes */
+#define SIZE_OF_SHA_DBRG_PRNG 32
 
 #endif /* PRNG_H_ */
