@@ -27,6 +27,7 @@
 #include "isaac_rand/isaac64.h"
 #include "alfg/add_lagg_fibonacci_prng.h"  //Lagged Fibonacci generator prototype
 #include "xor/xoroshiro256_prng.h"  //XORoshiro-256 prototype
+#include "aes/aes_ctr_prng.h"  // AES-NI prototype
 
 nwipe_prng_t nwipe_twister = { "Mersenne Twister (mt19937ar-cok)", nwipe_twister_init, nwipe_twister_read };
 
@@ -39,6 +40,9 @@ nwipe_prng_t nwipe_add_lagg_fibonacci_prng = { "Lagged Fibonacci generator",
                                                nwipe_add_lagg_fibonacci_prng_read };
 /* XOROSHIRO-256 PRNG Structure */
 nwipe_prng_t nwipe_xoroshiro256_prng = { "XORoshiro-256", nwipe_xoroshiro256_prng_init, nwipe_xoroshiro256_prng_read };
+
+/* AES-CTR-NI PRNG Structure */
+nwipe_prng_t nwipe_aes_ctr_prng = { "AES-CTR-PRNG", nwipe_aes_ctr_prng_init, nwipe_aes_ctr_prng_read };
 
 /* Print given number of bytes from unsigned integer number to a byte stream buffer starting with low-endian. */
 static inline void u32_to_buffer( u8* restrict buffer, u32 val, const int len )
@@ -335,6 +339,54 @@ int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE )
         unsigned char temp_output[16];  // Temporary buffer for the last block
         xoroshiro256_genrand_uint256_to_buf( (xoroshiro256_state_t*) *state, temp_output );
 
+        // Copy the remaining bytes
+        memcpy( bufpos, temp_output, remain );
+    }
+
+    return 0;  // Success
+}
+
+/* EXPERIMENTAL implementation of AES-128 in counter mode to provide high-quality random numbers */
+
+int nwipe_aes_ctr_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
+{
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising AES CTR PRNG" );
+
+    if( *state == NULL )
+    {
+        *state = calloc( 1, sizeof( aes_ctr_state_t ) );  // Verwende calloc für Speicherzuweisung und Initialisierung
+        if( *state == NULL )
+        {
+            // calloc fehlgeschlagen, logge den Fehler und breche ab
+            nwipe_log( NWIPE_LOG_FATAL, "Failed to allocate memory for AES CTR PRNG state." );
+            return -1;  // Rückgabe eines Fehlercodes signalisiert ein Problem
+        }
+    }
+
+    aes_ctr_prng_init(
+        (aes_ctr_state_t*) *state, (unsigned long*) ( seed->s ), seed->length / sizeof( unsigned long ) );
+
+    return 0;  // Erfolg
+}
+
+int nwipe_aes_ctr_prng_read( NWIPE_PRNG_READ_SIGNATURE )
+{
+    u8* restrict bufpos = buffer;
+    size_t words = count / SIZE_OF_AES_CTR_PRNG;
+
+    /* Loop to fill the buffer with 128-bit blocks directly */
+    for( size_t ii = 0; ii < words; ++ii )
+    {
+        aes_ctr_prng_genrand_uint128_to_buf( (aes_ctr_state_t*) *state, bufpos );
+        bufpos += SIZE_OF_AES_CTR_PRNG;  // Move to the next block
+    }
+
+    /* Handle remaining bytes if count is not a multiple of SIZE_OF_AES_CTR_PRNG */
+    const size_t remain = count % SIZE_OF_AES_CTR_PRNG;
+    if( remain > 0 )
+    {
+        unsigned char temp_output[16];  // Temporary buffer for the last block
+        aes_ctr_prng_genrand_uint128_to_buf( (aes_ctr_state_t*) *state, temp_output );
         // Copy the remaining bytes
         memcpy( bufpos, temp_output, remain );
     }

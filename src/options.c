@@ -44,6 +44,7 @@ int nwipe_options_parse( int argc, char** argv )
     extern nwipe_prng_t nwipe_isaac64;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
+    extern nwipe_prng_t nwipe_aes_ctr_prng;
 
     /* The getopt() result holder. */
     int nwipe_opt;
@@ -502,6 +503,11 @@ int nwipe_options_parse( int argc, char** argv )
                     nwipe_options.prng = &nwipe_xoroshiro256_prng;
                     break;
                 }
+                if( strcmp( optarg, "aes_ctr_prng" ) == 0 )
+                {
+                    nwipe_options.prng = &nwipe_aes_ctr_prng;
+                    break;
+                }
 
                 /* Else we do not know this PRNG. */
                 fprintf( stderr, "Error: Unknown prng '%s'.\n", optarg );
@@ -553,6 +559,7 @@ void nwipe_options_log( void )
     extern nwipe_prng_t nwipe_isaac64;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
+    extern nwipe_prng_t nwipe_aes_ctr_prng;
 
     /**
      *  Prints a manifest of options to the log.
@@ -615,6 +622,10 @@ void nwipe_options_log( void )
             if( nwipe_options.prng == &nwipe_xoroshiro256_prng )
             {
                 nwipe_log( NWIPE_LOG_NOTICE, "  prng     = XORoshiro-256 (EXPERIMENTAL!)" );
+            }
+            if( nwipe_options.prng == &nwipe_aes_ctr_prng )
+            {
+                nwipe_log( NWIPE_LOG_NOTICE, "  prng     = AES-CTR New Instructions (EXPERIMENTAL!)" );
             }
             else
             {
