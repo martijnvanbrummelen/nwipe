@@ -33,26 +33,27 @@
    - key_length: Length of the seed array. */
 void aes_ctr_prng_init( aes_ctr_state_t* state, unsigned long init_key[], unsigned long key_length )
 {
-    unsigned char key[32]; /* Space for a 256-bit key */
+    unsigned char key[32];  // Space for a 256-bit key
 
-    /* Initialize IV (initialization vector) and counter before use */
+    // Initialize IV (initialization vector) and counter before use
     memset( state->ivec, 0, AES_BLOCK_SIZE );
     state->num = 0;
     memset( state->ecount, 0, AES_BLOCK_SIZE );
 
-    /* Initialize SHA256 context and generate the key from the provided seed */
-    SHA256_CTX sha256;
-    SHA256_Init( &sha256 );
-    SHA256_Update( &sha256, (unsigned char*) init_key, key_length * sizeof( unsigned long ) );
+    // Use EVP for SHA-256 hashing to generate the key from the provided seed
+    EVP_MD_CTX* mdctx = EVP_MD_CTX_new();
+    EVP_DigestInit_ex( mdctx, EVP_sha256(), NULL );
+    EVP_DigestUpdate( mdctx, (unsigned char*) init_key, key_length * sizeof( unsigned long ) );
 
-    /* Optional: Add a salt to increase uniqueness
-       const unsigned char salt[] = "optional salt value";
-       SHA256_Update(&sha256, salt, sizeof(salt)); */
+    // Optional: Add a salt to increase uniqueness
+    // const unsigned char salt[] = "optional salt value";
+    // EVP_DigestUpdate(mdctx, salt, sizeof(salt));
 
-    SHA256_Final( key, &sha256 ); /* Generate the final key */
+    EVP_DigestFinal_ex( mdctx, key, NULL );  // Generate the final key
+    EVP_MD_CTX_free( mdctx );
 
     state->ctx = EVP_CIPHER_CTX_new();
-    /* Initialize the encryption context with AES-256-CTR mode */
+    // Initialize the encryption context with AES-256-CTR mode
     EVP_EncryptInit_ex( state->ctx, EVP_aes_256_ctr(), NULL, key, state->ivec );
 }
 
