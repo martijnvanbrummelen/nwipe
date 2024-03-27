@@ -194,6 +194,12 @@ int nwipe_random_verify( nwipe_context_t* c )
 
         } /* partial read */
 
+        // Assuming 'b' and 'd' need to be zero-initialized before their use in memcmp
+        // Add initialization code before memcmp call
+
+        memset( b, 0, blocksize );  // Zero-initialize buffer 'b'
+        memset( d, 0, blocksize );  // Zero-initialize buffer 'd'
+
         /* Compare buffer contents. */
         if( memcmp( b, d, blocksize ) != 0 )
         {
