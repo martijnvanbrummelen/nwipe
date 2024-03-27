@@ -392,36 +392,32 @@ int nwipe_conf_update_setting( char* group_name_setting_name, char* setting_valu
 
 int nwipe_conf_read_setting( char* group_name_setting_name, const char** setting_value )
 {
-    /* You would call this function if you wanted to read a settings value in nwipe.conf, i.e
-     *
-     * const char ** pReturnString;
-     * nwipe_conf_read_setting( "PDF_Certificate", "PDF_Enable", pReturnString );
-     *
-     */
-
-    /* Separate group_name_setting_name i.e "PDF_Certificate.PDF_Enable" string
-     * into two separate strings by replacing the period with a NULL.
-     */
-
     int return_status;
     int length = strlen( group_name_setting_name );
 
-    char* group_name = malloc( length );
-    char* setting_name = malloc( length );
+    char* group_name = malloc( length + 1 );  // Allocate extra byte for '\0'
+    char* setting_name = malloc( length + 1 );  // Allocate extra byte for '\0'
+
+    // Initialize memory to zero to ensure strings are null-terminated
+    memset( group_name, 0, length + 1 );
+    memset( setting_name, 0, length + 1 );
 
     int idx = 0;
 
+    // Find the position of the period (.) to split the string
     while( group_name_setting_name[idx] != 0 && group_name_setting_name[idx] != '.' )
     {
-        if( group_name_setting_name[idx] == '.' )
-        {
-            break;
-        }
         idx++;
     }
-    memcpy( group_name, group_name_setting_name, idx );
-    strcpy( setting_name, &group_name_setting_name[idx + 1] );
 
+    // Copy the group name to group_name
+    memcpy( group_name, group_name_setting_name, idx );
+    group_name[idx] = '\0';  // Null-terminate group_name
+
+    // Copy the setting name to setting_name
+    strcpy( setting_name, &group_name_setting_name[idx + 1] );  // setting_name is null-terminated by strcpy
+
+    config_setting_t* setting;
     if( !( setting = config_lookup( &nwipe_cfg, group_name ) ) )
     {
         nwipe_log( NWIPE_LOG_ERROR, "Can't find group name %s.%s in %s", group_name, setting_name, nwipe_config_file );
@@ -429,10 +425,10 @@ int nwipe_conf_read_setting( char* group_name_setting_name, const char** setting
     }
     else
     {
-        /* Retrieve data from nwipe.conf */
+        // Retrieve data from nwipe.conf
         if( CONFIG_TRUE == config_setting_lookup_string( setting, setting_name, setting_value ) )
         {
-            return_status = 0; /* Success */
+            return_status = 0;  // Success
         }
         else
         {
@@ -442,11 +438,11 @@ int nwipe_conf_read_setting( char* group_name_setting_name, const char** setting
         }
     }
 
+    // Free allocated memory
     free( group_name );
     free( setting_name );
-    return ( return_status );
-
-}  // end nwipe_conf_read_setting()
+    return return_status;
+}
 
 int nwipe_conf_populate( char* path, char* value )
 {
