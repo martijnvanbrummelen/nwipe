@@ -1092,7 +1092,14 @@ int cleanup()
     /* Print the logs held in memory to the console */
     for( i = log_elements_displayed; i < log_elements_allocated; i++ )
     {
-        printf( "%s\n", log_lines[i] );
+        if( log_lines[i] != NULL )
+        {
+            // Ensure the string is not longer than MAX_LOG_LINE_CHARS
+            char safe_print[MAX_LOG_LINE_CHARS + 1];
+            strncpy( safe_print, log_lines[i], MAX_LOG_LINE_CHARS );
+            safe_print[MAX_LOG_LINE_CHARS] = '\0';  // Ensure null-termination
+            printf( "%s\n", safe_print );
+        }
     }
     fflush( stdout );
 
@@ -1114,6 +1121,7 @@ int cleanup()
 
     return 0;
 }
+
 void check_for_autopoweroff( void )
 {
     char cmd[] = "shutdown -Ph +1 \"System going down in one minute\"";
