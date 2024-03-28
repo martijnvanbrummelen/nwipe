@@ -129,8 +129,9 @@ int nwipe_options_parse( int argc, char** argv )
     /* Set default options. */
     nwipe_options.autonuke = 0;
     nwipe_options.autopoweroff = 0;
-    nwipe_options.method = &nwipe_dodshort;
-    nwipe_options.prng = ( sizeof( unsigned long int ) >= 8 ) ? &nwipe_isaac64 : &nwipe_isaac;
+    nwipe_options.method = &nwipe_random;
+    nwipe_options.prng =
+        ( sizeof( unsigned long int ) >= 8 ) ? &nwipe_xoroshiro256_prng : &nwipe_add_lagg_fibonacci_prng;
     nwipe_options.rounds = 1;
     nwipe_options.noblank = 0;
     nwipe_options.nousb = 0;
