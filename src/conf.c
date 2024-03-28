@@ -392,11 +392,12 @@ int nwipe_conf_update_setting( char* group_name_setting_name, char* setting_valu
 
 int nwipe_conf_read_setting( char* group_name_setting_name, const char** setting_value )
 {
-    /* You would call this function if you wanted to read a settings value in nwipe.conf, i.e
+    /* This function returns a setting value from nwipe's configuration file nwipe.conf
+     * when provided with a groupname.settingname string.
      *
+     * Example:
      * const char ** pReturnString;
      * nwipe_conf_read_setting( "PDF_Certificate", "PDF_Enable", pReturnString );
-     *
      */
 
     /* Separate group_name_setting_name i.e "PDF_Certificate.PDF_Enable" string
@@ -406,20 +407,20 @@ int nwipe_conf_read_setting( char* group_name_setting_name, const char** setting
     int return_status;
     int length = strlen( group_name_setting_name );
 
-    char* group_name = malloc( length );
-    char* setting_name = malloc( length );
+    char* group_name = calloc( length, sizeof( char ) );
+    char* setting_name = calloc( length, sizeof( char ) );
 
     int idx = 0;
 
     while( group_name_setting_name[idx] != 0 && group_name_setting_name[idx] != '.' )
     {
-        if( group_name_setting_name[idx] == '.' )
-        {
-            break;
-        }
         idx++;
     }
+    // Copy the group name from the combined input string
     memcpy( group_name, group_name_setting_name, idx );
+    group_name[idx] = '\0';  // Null-terminate group_name
+
+    // Copy the setting name from the combined input string
     strcpy( setting_name, &group_name_setting_name[idx + 1] );
 
     if( !( setting = config_lookup( &nwipe_cfg, group_name ) ) )
