@@ -101,4 +101,9 @@ AC_CHECK_MEMBERS([struct stat.st_blksize])
 AC_FUNC_MALLOC
 AC_CHECK_FUNCS([fdatasync memset regcomp strdup strerror])
 
+# Checks for programs.
+AC_PROG_CC
+AC_PROG_CXX
+
+
 AC_OUTPUT
