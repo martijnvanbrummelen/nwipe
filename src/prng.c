@@ -29,6 +29,10 @@
 #include "xor/xoroshiro256_prng.h"  //XORoshiro-256 prototype
 #include "aes/aes_ctr_prng.h"  // AES-NI prototype
 
+extern void* create_aes_ctr_state();  // Add this line at the top of your C file
+extern void delete_aes_ctr_state(
+    void* state );  // Declare this function at the top of your C file where you need to free the state
+
 nwipe_prng_t nwipe_twister = { "Mersenne Twister (mt19937ar-cok)", nwipe_twister_init, nwipe_twister_read };
 
 nwipe_prng_t nwipe_isaac = { "ISAAC (rand.c 20010626)", nwipe_isaac_init, nwipe_isaac_read };
@@ -354,19 +358,18 @@ int nwipe_aes_ctr_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
 
     if( *state == NULL )
     {
-        *state = calloc( 1, sizeof( aes_ctr_state_t ) );  // Verwende calloc für Speicherzuweisung und Initialisierung
+        *state = create_aes_ctr_state();  // Updated line
         if( *state == NULL )
         {
-            // calloc fehlgeschlagen, logge den Fehler und breche ab
             nwipe_log( NWIPE_LOG_FATAL, "Failed to allocate memory for AES CTR PRNG state." );
-            return -1;  // Rückgabe eines Fehlercodes signalisiert ein Problem
+            return -1;
         }
     }
 
     aes_ctr_prng_init(
         (aes_ctr_state_t*) *state, (unsigned long*) ( seed->s ), seed->length / sizeof( unsigned long ) );
 
-    return 0;  // Erfolg
+    return 0;  // Success
 }
 
 int nwipe_aes_ctr_prng_read( NWIPE_PRNG_READ_SIGNATURE )
