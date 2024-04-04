@@ -695,7 +695,10 @@ void display_help()
     puts( "                          (default: last)" );
     puts( "                          off   - Do not verify" );
     puts( "                          last  - Verify after the last pass" );
-    puts( "                          all   - Verify every pass\n" );
+    puts( "                          all   - Verify every pass" );
+    puts( "                          " );
+    puts( "                          Please mind that HMG IS5 enhanced always verifies the" );
+    puts( "                          last (PRNG) pass regardless of this option.\n" );
     puts( "  -m, --method=METHOD     The wiping method. See man page for more details." );
     puts( "                          (default: dodshort)" );
     puts( "                          dod522022m / dod       - 7 pass DOD 5220.22-M method" );
@@ -706,7 +709,8 @@ void display_help()
     puts( "                          zero / quick           - Overwrite with zeros" );
     puts( "                          one                    - Overwrite with ones (0xFF)" );
     puts( "                          verify_zero            - Verifies disk is zero filled" );
-    puts( "                          verify_one             - Verifies disk is 0xFF filled\n" );
+    puts( "                          verify_one             - Verifies disk is 0xFF filled" );
+    puts( "                          is5enh                 - HMG IS5 enhanced\n" );
     puts( "  -l, --logfile=FILE      Filename to log to. Default is STDOUT\n" );
     puts( "  -P, --PDFreportpath=PATH Path to write PDF reports to. Default is \".\"" );
     puts( "                           If set to \"noPDF\" no PDF reports are written.\n" );
