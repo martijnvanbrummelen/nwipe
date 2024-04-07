@@ -324,7 +324,7 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
         /* For the first block only, check the prng actually wrote something to the buffer */
         if( z == c->device_size )
         {
-            idx = c->device_stat.st_blksize;
+            idx = c->device_stat.st_blksize - 1;
             while( idx > 0 )
             {
                 if( b[idx] != 0 )
