@@ -63,6 +63,8 @@ int create_pdf( nwipe_context_t* ptr )
     extern nwipe_prng_t nwipe_twister;
     extern nwipe_prng_t nwipe_isaac;
     extern nwipe_prng_t nwipe_isaac64;
+    extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
+    extern nwipe_prng_t nwipe_xoroshiro256_prng;
 
     /* Used by libconfig functions to retrieve data from nwipe.conf defined in conf.c */
     extern config_t nwipe_cfg;
@@ -466,7 +468,21 @@ int create_pdf( nwipe_context_t* ptr )
                 }
                 else
                 {
-                    snprintf( prng_type, sizeof( prng_type ), "Unknown" );
+                    if( nwipe_options.prng == &nwipe_add_lagg_fibonacci_prng )
+                    {
+                        snprintf( prng_type, sizeof( prng_type ), "Fibonacci" );
+                    }
+                    else
+                    {
+                        if( nwipe_options.prng == &nwipe_xoroshiro256_prng )
+                        {
+                            snprintf( prng_type, sizeof( prng_type ), "XORshiro256" );
+                        }
+                        else
+                        {
+                            snprintf( prng_type, sizeof( prng_type ), "Unknown" );
+                        }
+                    }
                 }
             }
         }
