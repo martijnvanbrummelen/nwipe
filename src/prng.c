@@ -46,7 +46,7 @@ nwipe_prng_t nwipe_add_lagg_fibonacci_prng = { "Lagged Fibonacci generator",
 nwipe_prng_t nwipe_xoroshiro256_prng = { "XORoshiro-256", nwipe_xoroshiro256_prng_init, nwipe_xoroshiro256_prng_read };
 
 /* AES-CTR-NI PRNG Structure */
-nwipe_prng_t nwipe_aes_ctr_prng = { "AES-128-CTR (OpenSSL)", nwipe_aes_ctr_prng_init, nwipe_aes_ctr_prng_read };
+nwipe_prng_t nwipe_aes_ctr_prng = { "AES-256-CTR (OpenSSL)", nwipe_aes_ctr_prng_init, nwipe_aes_ctr_prng_read };
 
 /* Print given number of bytes from unsigned integer number to a byte stream buffer starting with low-endian. */
 static inline void u32_to_buffer( u8* restrict buffer, u32 val, const int len )
@@ -377,10 +377,10 @@ int nwipe_aes_ctr_prng_read( NWIPE_PRNG_READ_SIGNATURE )
     u8* restrict bufpos = buffer;
     size_t words = count / SIZE_OF_AES_CTR_PRNG;
 
-    /* Loop to fill the buffer with 128-bit blocks directly */
+    /* Loop to fill the buffer with 256-bit blocks directly */
     for( size_t ii = 0; ii < words; ++ii )
     {
-        aes_ctr_prng_genrand_uint128_to_buf( (aes_ctr_state_t*) *state, bufpos );
+        aes_ctr_prng_genrand_uint256_to_buf( (aes_ctr_state_t*) *state, bufpos );
         bufpos += SIZE_OF_AES_CTR_PRNG;  // Move to the next block
     }
 
@@ -388,8 +388,8 @@ int nwipe_aes_ctr_prng_read( NWIPE_PRNG_READ_SIGNATURE )
     const size_t remain = count % SIZE_OF_AES_CTR_PRNG;
     if( remain > 0 )
     {
-        unsigned char temp_output[16];  // Temporary buffer for the last block
-        aes_ctr_prng_genrand_uint128_to_buf( (aes_ctr_state_t*) *state, temp_output );
+        unsigned char temp_output[32];  // Temporary buffer for the last block
+        aes_ctr_prng_genrand_uint256_to_buf( (aes_ctr_state_t*) *state, temp_output );
         // Copy the remaining bytes
         memcpy( bufpos, temp_output, remain );
     }

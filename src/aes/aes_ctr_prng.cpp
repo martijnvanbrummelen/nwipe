@@ -122,10 +122,10 @@ void aes_ctr_prng_init( aes_ctr_state_t* state, unsigned long* init_key, unsigne
 
 // Fills a buffer with pseudorandom data generated using AES-CTR mode. It's designed to be efficient
 // and avoids logging on each call to prevent flooding the log with messages for every random number generated.
-void aes_ctr_prng_genrand_uint128_to_buf( aes_ctr_state_t* state, unsigned char* bufpos )
+void aes_ctr_prng_genrand_uint256_to_buf( aes_ctr_state_t* state, unsigned char* bufpos )
 {
     auto* cppState = reinterpret_cast<AesCtrState*>( state );
-    unsigned char temp_buffer[16];  // Temporary buffer for pseudorandom output.
+    unsigned char temp_buffer[32];  // Temporary buffer for pseudorandom output.
     int outlen;
 
     if( !EVP_EncryptUpdate( cppState->ctx.get(), temp_buffer, &outlen, temp_buffer, sizeof( temp_buffer ) ) )
