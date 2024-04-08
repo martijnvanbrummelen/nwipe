@@ -722,6 +722,9 @@ u64 nwipe_read_dco_real_max_sectors( char* device )
     unsigned char buffer[LBA_SIZE];  // Received data block
     unsigned char sense_buffer[SENSE_BUFFER_SIZE];  // Sense data
 
+    /* Zero the data block prior to use */
+    memset( buffer, 0, LBA_SIZE );
+
     /* three characters represent one byte of sense data, i.e
      * two characters and a space "01 AE 67"
      */
