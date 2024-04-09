@@ -126,6 +126,7 @@ void aes_ctr_prng_genrand_uint256_to_buf( aes_ctr_state_t* state, unsigned char*
 {
     auto* cppState = reinterpret_cast<AesCtrState*>( state );
     unsigned char temp_buffer[32];  // Temporary buffer for pseudorandom output.
+    std::memset(temp_buffer, 0, sizeof(temp_buffer));
     int outlen;
 
     if( !EVP_EncryptUpdate( cppState->ctx.get(), temp_buffer, &outlen, temp_buffer, sizeof( temp_buffer ) ) )
