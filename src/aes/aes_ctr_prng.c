@@ -95,9 +95,10 @@ void aes_ctr_prng_init( aes_ctr_state_t* state, unsigned long init_key[], unsign
    generated using the AES-256-CTR mode of operation.
    - state: Pointer to the initialized AES CTR PRNG state.
    - bufpos: Target buffer where the pseudorandom numbers will be written. */
-void aes_ctr_prng_genrand_uint128_to_buf( aes_ctr_state_t* state, unsigned char* bufpos )
+void aes_ctr_prng_genrand_uint256_to_buf( aes_ctr_state_t* state, unsigned char* bufpos )
 {
-    unsigned char temp_buffer[16];  // Intermediate buffer for 128-bit pseudorandom output.
+    unsigned char temp_buffer[32];  // Intermediate buffer for 256-bit pseudorandom output.
+    memset(temp_buffer, 0, sizeof(temp_buffer));
     int outlen;
 
     // Generating pseudorandom numbers. No logging here to avoid excessive log entries.
