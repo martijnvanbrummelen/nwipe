@@ -32,6 +32,40 @@
 /* The global options struct. */
 nwipe_options_t nwipe_options;
 
+/*
+ * Executes the CPUID instruction and fills out the provided variables with the results.
+ * eax: The function/subfunction number to query with CPUID.
+ * *eax_out, *ebx_out, *ecx_out, *edx_out: Pointers to variables where the CPUID output will be stored.
+ */
+void cpuid( uint32_t eax, uint32_t* eax_out, uint32_t* ebx_out, uint32_t* ecx_out, uint32_t* edx_out )
+{
+#if defined( _MSC_VER )  // Microsoft compiler
+    int registers[4];
+    __cpuid( registers, eax );
+    *eax_out = registers[0];
+    *ebx_out = registers[1];
+    *ecx_out = registers[2];
+    *edx_out = registers[3];
+#elif defined( __GNUC__ )  // GCC and Clang
+    __asm__ __volatile__( "cpuid"
+                          : "=a"( *eax_out ), "=b"( *ebx_out ), "=c"( *ecx_out ), "=d"( *edx_out )
+                          : "a"( eax ) );
+#else
+#error "Unsupported compiler"
+#endif
+}
+
+/*
+ * Checks if the AES-NI instruction set is supported by the processor.
+ * Returns 1 (true) if supported, 0 (false) otherwise.
+ */
+int has_aes_ni( void )
+{
+    uint32_t eax, ebx, ecx, edx;
+    cpuid( 1, &eax, &ebx, &ecx, &edx );
+    return ( ecx & ( 1 << 25 ) ) != 0;  // Check if bit 25 in ECX is set
+}
+
 int nwipe_options_parse( int argc, char** argv )
 {
     extern char* optarg;  // The working getopt option argument.
@@ -131,8 +165,26 @@ int nwipe_options_parse( int argc, char** argv )
     nwipe_options.autonuke = 0;
     nwipe_options.autopoweroff = 0;
     nwipe_options.method = &nwipe_random;
-    nwipe_options.prng =
-        ( sizeof( unsigned long int ) >= 8 ) ? &nwipe_xoroshiro256_prng : &nwipe_add_lagg_fibonacci_prng;
+    /*
+     * Determines and sets the default PRNG based on AES-NI support and system architecture.
+     * It selects AES-CTR PRNG if AES-NI is supported, xoroshiro256 for 64-bit systems without AES-NI,
+     * and add lagged Fibonacci for 32-bit systems.
+     */
+
+    if( has_aes_ni() )
+    {
+        nwipe_options.prng = &nwipe_aes_ctr_prng;
+    }
+    else if( sizeof( unsigned long int ) >= 8 )
+    {
+        nwipe_options.prng = &nwipe_xoroshiro256_prng;
+        nwipe_log( NWIPE_LOG_WARNING, "CPU doesn't support AES New Instructions, opting for XORoshiro-256 instead." );
+    }
+    else
+    {
+        nwipe_options.prng = &nwipe_add_lagg_fibonacci_prng;
+    }
+
     nwipe_options.rounds = 1;
     nwipe_options.noblank = 0;
     nwipe_options.nousb = 0;
