@@ -124,7 +124,7 @@ void aes_ctr_prng_genrand_uint256_to_buf( aes_ctr_state_t* state, unsigned char*
 {
     unsigned char temp_buffer[32];  // Intermediate buffer for 256-bit pseudorandom output.
     // Memory initialization is absolutely crucial, otherwise it will produce verificatione errors!
-    memset(temp_buffer, 0, sizeof(temp_buffer)); 
+    memset( temp_buffer, 0, sizeof( temp_buffer ) );
     int outlen;
 
     // Generating pseudorandom numbers. No logging here to avoid excessive log entries.

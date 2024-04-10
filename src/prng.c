@@ -354,7 +354,7 @@ int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE )
  * @param seed A pointer to a seed structure containing the seed data and its length.
  * @return int Returns 0 on success, -1 on failure (e.g., memory allocation failure).
  */
- 
+
 int nwipe_aes_ctr_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
 {
     // Log the start of the PRNG initialization process.
@@ -371,7 +371,7 @@ int nwipe_aes_ctr_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
         {
             // Log the memory allocation failure.
             nwipe_log( NWIPE_LOG_FATAL, "Failed to allocate memory for AES CTR PRNG state." );
-            return -1; // Return an error code indicating failure.
+            return -1;  // Return an error code indicating failure.
         }
     }
 
@@ -379,7 +379,7 @@ int nwipe_aes_ctr_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
     aes_ctr_prng_init(
         (aes_ctr_state_t*) *state, (unsigned long*) ( seed->s ), seed->length / sizeof( unsigned long ) );
 
-    return 0; // Indicate success.
+    return 0;  // Indicate success.
 }
 
 /**
@@ -424,6 +424,5 @@ int nwipe_aes_ctr_prng_read( NWIPE_PRNG_READ_SIGNATURE )
         memcpy( bufpos, temp_output, remain );
     }
 
-    return 0; // Indicate success.
+    return 0;  // Indicate success.
 }
-
