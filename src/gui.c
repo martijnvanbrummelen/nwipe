@@ -1847,7 +1847,7 @@ void nwipe_gui_prng( void )
             case 5:
 
                 mvwprintw(
-                    main_window, yy++, tab1, "AES-128 in Counter Mode (CTR), securely implemented by Fabian Druschke" );
+                    main_window, yy++, tab1, "AES-256 in Counter Mode (CTR), securely implemented by Fabian Druschke" );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
@@ -1869,7 +1869,7 @@ void nwipe_gui_prng( void )
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "of AES-NI accelerates cryptographic computations, making AES-128 CTR an" );
+                           "of AES-NI accelerates cryptographic computations, making AES-256 CTR an" );
                 mvwprintw( main_window, yy++, tab1, "ideal choice for efficient and secure data erasure in nwipe." );
                 break;
         }
