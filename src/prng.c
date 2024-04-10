@@ -416,6 +416,7 @@ int nwipe_aes_ctr_prng_read( NWIPE_PRNG_READ_SIGNATURE )
     {
         // Temporary buffer for the last block of random data.
         unsigned char temp_output[32];
+        memset( temp_output, 0, sizeof( temp_output ) );
 
         // Generate one more block of random data.
         aes_ctr_prng_genrand_uint256_to_buf( (aes_ctr_state_t*) *state, temp_output );
