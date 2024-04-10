@@ -1856,6 +1856,10 @@ void nwipe_gui_prng( void )
                            yy++,
                            tab1,
                            "efficiency of AES for generating high-quality pseudo-random numbers.   " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "                                                                            " );
                 mvwprintw(
                     main_window, yy++, tab1, "This adaptation emphasizes the utilization of AES New Instructions    " );
                 mvwprintw( main_window,
@@ -1871,6 +1875,17 @@ void nwipe_gui_prng( void )
                            tab1,
                            "of AES-NI accelerates cryptographic computations, making AES-256 CTR an" );
                 mvwprintw( main_window, yy++, tab1, "ideal choice for efficient and secure data erasure in nwipe." );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "                                                                            " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "Compliant with NIST SP 800-38A for cryptographic standards, AES-256 CTR" );
+                mvwprintw(
+                    main_window, yy++, tab1, "stands as the world gold standard for data encryption techniques." );
+                mvwprintw( main_window, yy++, tab1, "Intended to be used only with 64-Bit CPUs, supporting AES-Ni." );
                 break;
         }
 
