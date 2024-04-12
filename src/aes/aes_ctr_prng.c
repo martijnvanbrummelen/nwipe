@@ -1,20 +1,26 @@
 /*
- * AES CTR PRNG Implementation with Detailed Error Logging
+ * AES CTR PRNG Implementation
  * Author: Fabian Druschke
- * Date: 2024-04-12
+ * Date: 2024-03-13
  *
- * This module provides an AES (Advanced Encryption Standard) implementation in CTR (Counter) mode
- * for pseudorandom number generation, enhanced with detailed error handling and logging using OpenSSL.
- * This version logs detailed error messages including function return codes to facilitate debugging
- * and troubleshooting in cryptographic operations.
+ * This header file contains definitions for the AES (Advanced Encryption Standard)
+ * implementation in CTR (Counter) mode for pseudorandom number generation, utilizing
+ * OpenSSL for cryptographic functions.
  *
- * Use of OpenSSL requires compliance with its licensing, and this software manages OpenSSL resources
- * carefully to ensure both security and compliance. Errors are logged with detailed messages to aid
- * in diagnosing issues during development or in production environments.
+ * As the author of this work, I, Fabian Druschke, hereby release this work into the public
+ * domain. I dedicate any and all copyright interest in this work to the public domain,
+ * making it free to use for anyone for any purpose without any conditions, unless such
+ * conditions are required by law.
  *
- * This software is released into the public domain, available for use without restrictions as permitted
- * by law. It is provided "as is", without any warranties, and the author is not liable for any consequences
- * from its use.
+ * This software is provided "as is", without warranty of any kind, express or implied,
+ * including but not limited to the warranties of merchantability, fitness for a particular
+ * purpose and noninfringement. In no event shall the authors be liable for any claim,
+ * damages or other liability, whether in an action of contract, tort or otherwise, arising
+ * from, out of or in connection with the software or the use or other dealings in the software.
+ *
+ * USAGE OF OPENSSL IN THIS SOFTWARE:
+ * This software uses OpenSSL for cryptographic operations. Users are responsible for
+ * ensuring compliance with OpenSSL's licensing terms.
  */
 
 #include "aes_ctr_prng.h"
