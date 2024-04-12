@@ -358,7 +358,7 @@ int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE )
 int nwipe_aes_ctr_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
 {
     // Log the start of the PRNG initialization process.
-    nwipe_log( NWIPE_LOG_NOTICE, "Initialising AES CTR PRNG" );
+    nwipe_log( NWIPE_LOG_DEBUG, "Initialising AES CTR PRNG" );
 
     // Check if the state pointer is NULL, indicating that it hasn't been allocated yet.
     if( *state == NULL )
