@@ -112,7 +112,7 @@ void aes_ctr_prng_init( aes_ctr_state_t* state, unsigned long init_key[], unsign
         goto error;  // Handle error
     }
 
-    nwipe_log( NWIPE_LOG_INFO, "AES CTR PRNG successfully initialized." );  // Log successful initialization
+    nwipe_log( NWIPE_LOG_DEBUG, "AES CTR PRNG successfully initialized." );  // Log successful initialization
     return;  // Exit successfully
 
 error:
