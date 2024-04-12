@@ -159,3 +159,19 @@ error:
     cleanup();  // Perform cleanup
     exit( 1 );  // Exit with failure status
 }
+
+// General cleanup function for AES CTR PRNG
+void aes_ctr_prng_general_cleanup(aes_ctr_state_t* state) {
+    if (state != NULL) {
+        // Free the EVP_CIPHER_CTX if it has been allocated
+        if (state->ctx) {
+            EVP_CIPHER_CTX_free(state->ctx);
+            state->ctx = NULL;  // Nullify the pointer after free
+        }
+
+        // Clear sensitive information from the state
+        memset(state->ivec, 0, AES_BLOCK_SIZE);
+        memset(state->ecount, 0, AES_BLOCK_SIZE);
+        state->num = 0;
+    }
+}

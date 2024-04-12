@@ -45,4 +45,7 @@ void aes_ctr_prng_init(aes_ctr_state_t* state, unsigned long init_key[], unsigne
 // Generates a 256-bit random number using AES-CTR and stores it directly in the output buffer
 void aes_ctr_prng_genrand_uint256_to_buf( aes_ctr_state_t* state, unsigned char* bufpos );
 
+// General cleanup function for AES CTR PRNG
+void aes_ctr_prng_general_cleanup(aes_ctr_state_t* state);
+
 #endif  // AES_CTR_RNG_H
