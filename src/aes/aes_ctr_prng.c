@@ -116,9 +116,7 @@ void aes_ctr_prng_init( aes_ctr_state_t* state, unsigned long init_key[], unsign
     return;  // Exit successfully
 
 error:
-    nwipe_log( NWIPE_LOG_FATAL,
-               "Fatal error occured during PRNG init in OpenSSL. Please report this bug and include the logs and "
-               "report to https://github.com/martijnvanbrummelen/nwipe/issues" );
+    nwipe_log( NWIPE_LOG_SANITY,"Fatal error occured during PRNG init in OpenSSL." );
     if( mdctx )
         EVP_MD_CTX_free( mdctx );  // Ensure clean up if initialized
     if( state->ctx )
@@ -153,9 +151,7 @@ void aes_ctr_prng_genrand_uint256_to_buf( aes_ctr_state_t* state, unsigned char*
     return;  // Exit successfully
 
 error:
-    nwipe_log( NWIPE_LOG_FATAL,
-               "Fatal error occured during RNG generation in OpenSSL. Please report this bug and include the logs and "
-               "report to https://github.com/martijnvanbrummelen/nwipe/issues" );
+    nwipe_log( NWIPE_LOG_FATAL,"Fatal error occured during RNG generation in OpenSSL." );
     cleanup();  // Perform cleanup
     exit( 1 );  // Exit with failure status
 }
