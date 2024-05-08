@@ -1,6 +1,15 @@
 RELEASE NOTES
 =============
 
+v0.37
+-----------------------
+includes the following changes:
+
+- Added the XORoshiro-256 pseudo random number generator (PRNG). Thanks to Fabian Druschke @knogle #555
+- Added  the Lagged Fibonacci PRNG generator. Thanks again to Fabian Druschke @knogle #556
+- Added missing help for HMG IS5 enhanced. Thanks to @AndCycle #569
+- Fixed an issue in configure.ac which was producing an error while running `./configure`,  mentioning libconfig, however the presence of libconfig had already been checked for, earlier in configure.ac. Although this error did not cause `./configure` to abort prematurely and therefore make would build the source correctly, it did cause a issue for inclusion into Debian Sid. Thanks to @Polynomial-C #574
+
 v0.36
 -----------------------
 - Added the abbreviation MMC for mmcblk devices such as SD and microSD cards and some low budget laptops. #526
