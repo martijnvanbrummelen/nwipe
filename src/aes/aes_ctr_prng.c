@@ -44,7 +44,6 @@ typedef enum {
 } nwipe_log_t;
 
 extern void nwipe_log( nwipe_log_t level, const char* format, ... );
-extern void cleanup( void );
 
 /* Initializes the AES CTR pseudorandom number generator state.
    This function sets up the cryptographic context necessary for generating
@@ -54,7 +53,7 @@ extern void cleanup( void );
    - state: Pointer to the AES CTR PRNG state structure.
    - init_key: Array containing the seed for key generation.
    - key_length: Length of the seed array. */
-void aes_ctr_prng_init( aes_ctr_state_t* state, unsigned long init_key[], unsigned long key_length )
+int aes_ctr_prng_init( aes_ctr_state_t* state, unsigned long init_key[], unsigned long key_length )
 {
     assert( state != NULL && init_key != NULL && key_length > 0 );  // Validate inputs
 
@@ -71,7 +70,7 @@ void aes_ctr_prng_init( aes_ctr_state_t* state, unsigned long init_key[], unsign
         nwipe_log( NWIPE_LOG_FATAL,
                    "Failed to allocate EVP_MD_CTX for SHA-256, return code: %d.",
                    ERR_get_error() );  // Log context allocation failure
-        goto error;  // Handle error
+        return -1;  // Handle error
     }
 
     if( EVP_DigestInit_ex( mdctx, EVP_sha256(), NULL ) != 1 )
@@ -79,7 +78,7 @@ void aes_ctr_prng_init( aes_ctr_state_t* state, unsigned long init_key[], unsign
         nwipe_log( NWIPE_LOG_FATAL,
                    "SHA-256 context initialization failed, return code: %d.",
                    ERR_get_error() );  // Log init failure
-        goto error;  // Handle error
+        return -1;  // Handle error
     }
 
     EVP_DigestUpdate(
@@ -90,7 +89,7 @@ void aes_ctr_prng_init( aes_ctr_state_t* state, unsigned long init_key[], unsign
         nwipe_log( NWIPE_LOG_FATAL,
                    "SHA-256 hash finalization failed, return code: %d.",
                    ERR_get_error() );  // Log finalization failure
-        goto error;  // Handle error
+        return -1;  // Handle error
     }
     EVP_MD_CTX_free( mdctx );
     mdctx = NULL;  // Clean up SHA-256 context
@@ -101,7 +100,7 @@ void aes_ctr_prng_init( aes_ctr_state_t* state, unsigned long init_key[], unsign
         nwipe_log( NWIPE_LOG_FATAL,
                    "Failed to allocate EVP_CIPHER_CTX, return code: %d.",
                    ERR_get_error() );  // Log cipher context failure
-        goto error;  // Handle error
+        return -1;  // Handle error
     }
 
     if( EVP_EncryptInit_ex( state->ctx, EVP_aes_256_ctr(), NULL, key, state->ivec ) != 1 )
@@ -109,29 +108,19 @@ void aes_ctr_prng_init( aes_ctr_state_t* state, unsigned long init_key[], unsign
         nwipe_log( NWIPE_LOG_FATAL,
                    "AES-256-CTR encryption context initialization failed, return code: %d.",
                    ERR_get_error() );  // Log encryption init failure
-        goto error;  // Handle error
+        return -1;  // Handle error
     }
 
     nwipe_log( NWIPE_LOG_DEBUG, "AES CTR PRNG successfully initialized." );  // Log successful initialization
-    return;  // Exit successfully
-
-error:
-    nwipe_log( NWIPE_LOG_SANITY,"Fatal error occured during PRNG init in OpenSSL." );
-    if( mdctx )
-        EVP_MD_CTX_free( mdctx );  // Ensure clean up if initialized
-    if( state->ctx )
-        EVP_CIPHER_CTX_free( state->ctx );  // Clean up if cipher context was created
-    cleanup();  // Perform additional cleanup
-    exit( 1 );  // Exit with failure status
+    return 0;  // Exit successfully
 }
-
 /* Generates pseudorandom numbers and writes them to a buffer.
    This function performs the core operation of producing pseudorandom data.
    It directly updates the buffer provided, filling it with pseudorandom bytes
    generated using the AES-256-CTR mode of operation.
    - state: Pointer to the initialized AES CTR PRNG state.
    - bufpos: Target buffer where the pseudorandom numbers will be written. */
-void aes_ctr_prng_genrand_uint256_to_buf( aes_ctr_state_t* state, unsigned char* bufpos )
+int aes_ctr_prng_genrand_uint256_to_buf( aes_ctr_state_t* state, unsigned char* bufpos )
 {
     assert( state != NULL && bufpos != NULL );  // Validate inputs
 
@@ -144,30 +133,28 @@ void aes_ctr_prng_genrand_uint256_to_buf( aes_ctr_state_t* state, unsigned char*
         nwipe_log( NWIPE_LOG_ERROR,
                    "Failed to generate pseudorandom numbers, return code: %d.",
                    ERR_get_error() );  // Log generation failure
-        goto error;  // Handle error
+        return -1;  // Handle error
     }
 
     memcpy( bufpos, temp_buffer, sizeof( temp_buffer ) );  // Copy pseudorandom bytes to buffer
-    return;  // Exit successfully
-
-error:
-    nwipe_log( NWIPE_LOG_FATAL,"Fatal error occured during RNG generation in OpenSSL." );
-    cleanup();  // Perform cleanup
-    exit( 1 );  // Exit with failure status
+    return 0;  // Exit successfully
 }
-
 // General cleanup function for AES CTR PRNG
-void aes_ctr_prng_general_cleanup(aes_ctr_state_t* state) {
-    if (state != NULL) {
+int aes_ctr_prng_general_cleanup( aes_ctr_state_t* state )
+{
+    if( state != NULL )
+    {
         // Free the EVP_CIPHER_CTX if it has been allocated
-        if (state->ctx) {
-            EVP_CIPHER_CTX_free(state->ctx);
+        if( state->ctx )
+        {
+            EVP_CIPHER_CTX_free( state->ctx );
             state->ctx = NULL;  // Nullify the pointer after free
         }
 
         // Clear sensitive information from the state
-        memset(state->ivec, 0, AES_BLOCK_SIZE);
-        memset(state->ecount, 0, AES_BLOCK_SIZE);
+        memset( state->ivec, 0, AES_BLOCK_SIZE );
+        memset( state->ecount, 0, AES_BLOCK_SIZE );
         state->num = 0;
     }
+    return 0;
 }
