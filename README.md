@@ -30,9 +30,14 @@ The user can select from a variety of recognised secure erase methods which incl
 * Verify Ones        - This method only reads the device and checks that it is filled with ones (0xFF).
 * HMG IS5 enhanced   - Secure Sanitisation of Protectively Marked Information or Sensitive Information
 
-nwipe also includes the following pseudo random number generators:
+nwipe also includes the following pseudo random number generators (prng):
 * Mersenne Twister
 * ISAAC
+
+  In addition to the above, the following prngs will be available in v0.37  
+* XORoshiro-256
+* Lagged Fibonacci
+* AES-CTR (openssl)
 
 These can be used to overwrite a drive with a stream of randomly generated characters.
 

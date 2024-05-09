@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
-AC_INIT([nwipe],[0.36],[git@brumit.nl])
+AC_INIT([nwipe],[0.37],[git@brumit.nl])
 AM_INIT_AUTOMAKE(foreign subdir-objects)
 AC_CONFIG_FILES([Makefile src/Makefile man/Makefile])
 AC_OUTPUT
@@ -87,7 +87,7 @@ PKG_CHECK_MODULES(
 
 AC_CHECK_LIB([intl], [libintl_dgettext]) # needed to statically link libparted, but not given in its pkgconfig file
 AC_CHECK_LIB([uuid], [uuid_generate])    # needed to statically link libparted, but not given in its pkgconfig file
-PKG_CHECK_MODULES([PARTED], [libparted], [libconfig])
+PKG_CHECK_MODULES([PARTED], [libparted])
 AC_CHECK_LIB([pthread], [main], ,[AC_MSG_ERROR([pthread development library not found])])
 
 # Checks for header files.
