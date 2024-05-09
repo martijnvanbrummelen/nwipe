@@ -376,8 +376,13 @@ int nwipe_aes_ctr_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
     }
 
     // Initialize the PRNG state with the provided seed.
-    aes_ctr_prng_init(
-        (aes_ctr_state_t*) *state, (unsigned long*) ( seed->s ), seed->length / sizeof( unsigned long ) );
+    if( aes_ctr_prng_init(
+            (aes_ctr_state_t*) *state, (unsigned long*) ( seed->s ), seed->length / sizeof( unsigned long ) )
+        != 0 )
+    {
+        nwipe_log( NWIPE_LOG_SANITY, "Fatal error occured during PRNG init in OpenSSL." );
+        return -1;
+    }
 
     return 0;  // Indicate success.
 }
@@ -402,7 +407,11 @@ int nwipe_aes_ctr_prng_read( NWIPE_PRNG_READ_SIGNATURE )
     for( size_t ii = 0; ii < words; ++ii )
     {
         // Generate a 256-bit block and write it directly to the buffer.
-        aes_ctr_prng_genrand_uint256_to_buf( (aes_ctr_state_t*) *state, bufpos );
+        if( aes_ctr_prng_genrand_uint256_to_buf( (aes_ctr_state_t*) *state, bufpos ) != 0 )
+        {
+            nwipe_log( NWIPE_LOG_SANITY, "Fatal error occured during RNG generation in OpenSSL." );
+            return -1;
+        }
 
         // Move the buffer position to the start of the next block.
         bufpos += SIZE_OF_AES_CTR_PRNG;
