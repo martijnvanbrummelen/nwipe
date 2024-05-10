@@ -10,6 +10,7 @@ includes the following changes:
 - Added missing help for HMG IS5 enhanced. Thanks to @AndCycle #569
 - Changed the default method from "DOD Short" to "prng stream", using the XORoshiro-256 prng
 - Fixed an issue in configure.ac which was producing an error while running `./configure`,  mentioning libconfig, however the presence of libconfig had already been checked for, earlier in configure.ac. Although this error did not cause `./configure` to abort prematurely and therefore make would build the source correctly, it did cause a issue for inclusion into Debian Sid. Thanks to @Polynomial-C #574
+- Minor change to nwipe's man page filename, nwipe.1 to nwipe.8 to fix a Debian warning. #577 
 
 v0.36
 -----------------------
