@@ -269,7 +269,7 @@ int nwipe_add_lagg_fibonacci_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
         *state = malloc( sizeof( add_lagg_fibonacci_state_t ) );
     }
     add_lagg_fibonacci_init(
-        (add_lagg_fibonacci_state_t*) *state, (unsigned long*) ( seed->s ), seed->length / sizeof( unsigned long ) );
+        (add_lagg_fibonacci_state_t*) *state, (uint64_t*) ( seed->s ), seed->length / sizeof( uint64_t ) );
 
     return 0;
 }
@@ -284,8 +284,7 @@ int nwipe_xoroshiro256_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
         /* This is the first time that we have been called. */
         *state = malloc( sizeof( xoroshiro256_state_t ) );
     }
-    xoroshiro256_init(
-        (xoroshiro256_state_t*) *state, (unsigned long*) ( seed->s ), seed->length / sizeof( unsigned long ) );
+    xoroshiro256_init( (xoroshiro256_state_t*) *state, (uint64_t*) ( seed->s ), seed->length / sizeof( uint64_t ) );
 
     return 0;
 }
