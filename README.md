@@ -213,6 +213,7 @@ And in addition checkout the following distros that all include nwipe:
 
 - [ShredOS](https://github.com/PartialVolume/shredos.x86_64) Always has the latest nwipe release.
 - [netboot.xyz](https://github.com/netbootxyz/netboot.xyz) Can network-boot ShredOS.
+- [DiskDump](https://github.com/Awire9966/DiskDump) nwipe on Debian livecd, can wipe eMMC chips.
 - [partedmagic](https://partedmagic.com)
 - [SystemRescueCD](https://www.system-rescue.org)
 - [gparted live](https://sourceforge.net/projects/gparted/files/gparted-live-testing/1.2.0-2/)
