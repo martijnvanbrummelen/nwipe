@@ -63,6 +63,7 @@
 #include "hpa_dco.h"
 #include "customers.h"
 #include "conf.h"
+#include "unistd.h"
 
 #define NWIPE_GUI_PANE 8
 
@@ -1344,6 +1345,19 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                                 NWIPE_LOG_ERROR,
                                 "gui.c:nwipe_gui_select(), Invalid value in variable select_all_toggle_status = %d",
                                 select_all_toggle_status );
+                        }
+                    }
+
+                    break;
+
+                case 'd':
+
+                    /* The d key is only meaningful for ShredOS, it toggles the fontsize */
+                    if( access( "/usr/bin/shredos_toggle_font_size.sh", F_OK ) == 0 )
+                    {
+                        if( system( "/usr/bin/shredos_toggle_font_size.sh > /dev/null 2>&1" ) == 0 )
+                        {
+                            nwipe_log( NWIPE_LOG_INFO, "Toggle font size" );
                         }
                     }
 
