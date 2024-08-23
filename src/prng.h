@@ -67,6 +67,10 @@ int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE );
 int nwipe_aes_ctr_prng_init( NWIPE_PRNG_INIT_SIGNATURE );
 int nwipe_aes_ctr_prng_read( NWIPE_PRNG_READ_SIGNATURE );
 
+/* AES-XTR-256 (512-bit) prototype. */
+int nwipe_aes_xts_prng_init( NWIPE_PRNG_INIT_SIGNATURE );
+int nwipe_aes_xts_prng_read( NWIPE_PRNG_READ_SIGNATURE );
+
 /* Size of the twister is not derived from the architecture, but it is strictly 4 bytes */
 #define SIZE_OF_TWISTER 4
 
@@ -82,5 +86,8 @@ int nwipe_aes_ctr_prng_read( NWIPE_PRNG_READ_SIGNATURE );
 
 /* Size of the AES-CTR is not derived from the architecture, but it is strictly 32 bytes */
 #define SIZE_OF_AES_CTR_PRNG 32
+
+/* Size of the AES-XTS is not derived from the architecture, but it is strictly 64 bytes */
+#define SIZE_OF_AES_XTS_PRNG 64
 
 #endif /* PRNG_H_ */

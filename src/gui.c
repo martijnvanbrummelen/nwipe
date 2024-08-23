@@ -1603,11 +1603,12 @@ void nwipe_gui_prng( void )
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
+    extern nwipe_prng_t nwipe_aes_xts_prng;
 
     extern int terminate_signal;
 
     /* The number of implemented PRNGs. */
-    const int count = 6;
+    const int count = 7;
 
     /* The first tabstop. */
     const int tab1 = 2;
@@ -1653,6 +1654,10 @@ void nwipe_gui_prng( void )
     {
         focus = 5;
     }
+    if( nwipe_options.prng == &nwipe_aes_xts_prng )
+    {
+        focus = 6;
+    }
     do
     {
         /* Clear the main window. */
@@ -1670,6 +1675,7 @@ void nwipe_gui_prng( void )
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_add_lagg_fibonacci_prng.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_xoroshiro256_prng.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_aes_ctr_prng.label );
+        mvwprintw( main_window, yy++, tab1, "  %s", nwipe_aes_xts_prng.label );
         yy++;
 
         /* Print the cursor. */
@@ -1887,8 +1893,79 @@ void nwipe_gui_prng( void )
                     main_window, yy++, tab1, "stands as the world gold standard for data encryption techniques." );
                 mvwprintw( main_window, yy++, tab1, "Intended to be used only with 64-Bit CPUs, supporting AES-Ni." );
                 break;
+            case 6:
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "AES-256 in ultra-secure XTS Mode (XEX-based), expertly implemented by Fabian Druschke" );
+                mvwprintw(
+                    main_window, yy++, tab1, "within nwipe using OpenSSL, leveraging the cryptographic strength and " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "efficiency of AES to generate high-quality pseudo-random numbers.           " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "                                                                            " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "Designed specifically for the truly paranoid (just kidding!): If AES-256-CTR" );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "isn't enough for you, this XTS mode with XEX-based tweaked-codebook steps" );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "up the security game. Perfectly optimized for encrypting block devices," );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "ensuring maximum data protection.                                            " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "                                                                            " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "This implementation emphasizes the use of AES New Instructions (AES-NI)," );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "starting from the Westmere-EP architecture, which significantly boosts " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "performance and security for data wiping tasks.                               " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "                                                                            " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "The integration of AES-NI accelerates cryptographic operations, making " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "AES-256 in XTS mode an ideal choice for efficient and secure data erasure " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "in nwipe. Compliant with NIST SP 800-38E, AES-256 XTS (XEX-based) stands as" );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "the gold standard for data encryption and protection. Intended for use only" );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "with 64-bit CPUs that support AES-NI by generating 2x256-bit keys at once." );
+                break;
         }
-
         /* switch */
 
         /* Add a border. */
@@ -1960,6 +2037,10 @@ void nwipe_gui_prng( void )
                 if( focus == 5 )
                 {
                     nwipe_options.prng = &nwipe_aes_ctr_prng;
+                }
+                if( focus == 6 )
+                {
+                    nwipe_options.prng = &nwipe_aes_xts_prng;
                 }
                 return;
 
