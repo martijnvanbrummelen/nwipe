@@ -50,7 +50,7 @@ In the current form nwipe does not sanitize solid state drives (hereinafter refe
 SSDs, as the transistors contained in the memory modules are subject to wear, contain in most cases additional memory modules installed as failover for broken sectors outside of the system accessible space (frequently referred to as "overprovisioning") and for garbage collection.
 Some manufacturers reserve access to these areas only to disk's own controller and firmware.
 It is therefor always advised to proceed also with the manufacturer's or hardware vendor's own tools to assure full destruction of the information contained on the disk. 
-A list of the most common tools and instructions [can be found here](./ssd-guide.md).
+A list of the most common tools and instructions [can be found here](ssd-guide.md).
 
 ## Compiling & Installing
 
