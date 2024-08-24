@@ -39,6 +39,7 @@ The following table does not claim or warrant to be complete, it is highly advis
 | Others          	| Unconfirmed for Linux                                	| N/A             	| N/A               	| N/A      	|
 
 \*      [DC Toolkit 3.0 contains hdparm, but Interface Standard Compliance is unconfirmed](https://download.semiconductor.samsung.com/resources/user-manual/Samsung_DCToolkit_V3.0_User_Guide.pdf)
+
 \*\*    [Generally Supported, but individual models might offer different levels of support](https://community.solidigm.com/t5/solid-state-drives-nand/support-for-sata-sanitize-command/td-p/24452)
 
 ## Advised Procedure for Sanitization of SSD Drives
