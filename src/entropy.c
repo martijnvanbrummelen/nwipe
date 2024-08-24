@@ -163,14 +163,14 @@ int nwipe_check_entropy( uint64_t num )
      * - Runs count wider range (10 < runs < 54) to allow more variation
      * - Lower requirement on auto-correlation (<0.7) for more flexibility
      */
-    if (entropy > 0.9 && frequency > 0.3 && frequency < 0.7 && runs > 10 && runs < 54 && correlation < 0.7)
+    if( entropy > 0.9 && frequency > 0.3 && frequency < 0.7 && runs > 10 && runs < 54 && correlation < 0.7 )
     {
-        nwipe_log(NWIPE_LOG_INFO, "Entropy check passed. Sufficient randomness detected. Entropy: %f", entropy);
+        nwipe_log( NWIPE_LOG_INFO, "Entropy check passed. Sufficient randomness detected. Entropy: %f", entropy );
         return 1;  // Sufficient entropy
     }
     else
     {
-        nwipe_log(NWIPE_LOG_ERROR, "Entropy check failed. Insufficient randomness. Entropy: %f", entropy);
+        nwipe_log( NWIPE_LOG_ERROR, "Entropy check failed. Insufficient randomness. Entropy: %f", entropy );
         return 0;  // Insufficient entropy
     }
 }
