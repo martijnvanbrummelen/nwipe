@@ -46,11 +46,16 @@ nwipe can be found in many [Linux distro repositories](#which-linux-distro-uses-
 nwipe is also included in [ShredOS](https://github.com/PartialVolume/shredos.x86_64) which was developed in particular to showcase nwipe as a fast-to-boot standalone method similar to DBAN. ShredOS always contains the latest nwipe version.
 
 ## Limitations regarding solid state drives
-In the current form nwipe does not sanitize solid state drives (hereinafter referred to as SSDs) of any form (SAS / Sata / NVME) and form factor (2.5" / 3.5" / PCI) fully due to their nature:  
-SSDs, as the transistors contained in the memory modules are subject to wear, contain in most cases additional memory modules installed as failover for broken sectors outside of the host accessible space (frequently referred to as "overprovisioning") and for garbage collection.
+In the current form nwipe does not sanitize solid state drives (hereinafter referred to as SSDs)
+of any form (SAS / Sata / NVME) and form factor (2.5" / 3.5" / PCI) fully due to their nature:  
+SSDs, as the transistors contained in the memory modules are subject to wear, contain in most cases
+additional memory modules installed as failover for broken sectors outside
+of the host accessible space (frequently referred to as "overprovisioning") and for garbage collection.
 Some manufacturers reserve access to these areas only to disk's own controller and firmware.
-It is therefor always advised to proceed also with the manufacturer's or hardware vendor's own tools to assure full destruction of the information contained on the disk.
-A list of the most common tools and instructions can be found in the [SSD Guide](ssd-guide.md).
+It is therefor always advised to use nwipe / shredOS in conjunction with the manufacturer's or hardware vendor's own tools for sanitization to assure
+full destruction of the information contained on the disk.
+Given that most vendors and manufacturers do not provide open source tools, it is advised to validate the outcome by comparing the data on the disk before and after sanitization.
+A list of the most common tools and instructions for SSD wipes can be found in the [SSD Guide](ssd-guide.md).
 
 ## Compiling & Installing
 
