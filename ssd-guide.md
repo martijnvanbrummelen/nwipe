@@ -1,13 +1,19 @@
 ﻿# Guide for the cancellation of solid state media (Sata / SAS / NVME)
 
+# Index
+1. Disclaimer & Warning
+2. Current Standard Commands for Sanitization
+3. Manufacturer and Vendor Support for Sanitization
+4. Advised Procedure for Sanitization of Drives
+
 # Disclaimer & Warning
 The following information is given without any warranty and indicates best practices as of the writing of this content.
-All information should be validated for the precise model you want to sanitize.
-Any sanitization process should be validated by comparing the information contained on the disk before and after sanitization assuring that the previous data has been destroyed.
-Given that most of the manufacturer tools available today are closed source, it is not possible to determine if such tool does or does not effectively verify the outcome of a sanitization.
-To assure a successful sanitization it is highly recommended to compare the data contained on the disk before and after sanitization. 
+All information should be validated for the precise manufacturer / vendor SKU you want to sanitize.
+Any sanitization process should be validated by comparing the information contained on the disk before and after sanitization assuring that the previously stored data has been destroyed.
+Given that most of the manufacturer tools available today are closed source, it is not possible to determine with security if the respective tool does or does not effectively verify the outcome of a sanitization.
+To assure a successful sanitization it is highly recommended to compare the data contained on the disk before and after sanitization and use the manufacturer tool together with tools such as nwipe. 
 
-## Current Standard Commands for sanitization
+## Current Standard Commands for Sanitization
 
 All major block device interface standards contain optional block commands for sanitization. 
 Below are the standards listed for reference: 
@@ -31,7 +37,7 @@ The following table does not claim or warrant to be complete, it is highly advis
 | Kingston        	| Unconfirmed for Linux                                	| N/A             	| N/A               	| N/A      	|
 | Others          	| Unconfirmed for Linux                                	| N/A             	| N/A               	| N/A      	|
 
-## Advised Procedure for sanitization of drives
+## Advised Procedure for Sanitization of Drives
 
 1.  Complete an intial secure erase using the manufacturer tools or if supported by the manufacturer use hdparm, sg_utils or nvme;
 2.  Follow up with SHREDOS/Nwipe with a single PRNG stream with verification (do NOT use Zeros/ones or any other methods given that PRNG data is extremely hard if not impossible to compress;

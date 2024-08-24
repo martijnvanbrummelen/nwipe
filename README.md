@@ -47,7 +47,7 @@ nwipe is also included in [ShredOS](https://github.com/PartialVolume/shredos.x86
 
 ## Limitations regarding solid state drives
 In the current form nwipe does not sanitize solid state drives (hereinafter referred to as SSDs)
-of any form (SAS / Sata / NVME) and form factor (2.5" / 3.5" / PCI) fully due to their nature:  
+of any form (SAS / Sata / NVME) and / or form factor (2.5" / 3.5" / PCI) fully due to their nature:  
 SSDs, as the transistors contained in the memory modules are subject to wear, contain in most cases
 additional memory modules installed as failover for broken sectors outside
 of the host accessible space (frequently referred to as "overprovisioning") and for garbage collection.
