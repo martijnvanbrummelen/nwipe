@@ -31,11 +31,14 @@ The following table does not claim or warrant to be complete, it is highly advis
 | Intel / Solidigm  | Solidigm™ Storage Tool                               	| Use MFT         	| Use MFT           	| Use MFT  	|
 | Western Digital 	| supports SAS / SCSI format unit command        	    | hdparm sanitize 	| sg_utils sanitize 	| nvme-cli sanitize	|
 | Sandisk         	| supports SAS / SATA / SCSI format unit command 	    | hdparm sanitize 	| sg_utils sanitize 	| nvme-cli sanitize	|
+| Seagate         	| Open Seachest 	    | Use MFT 	| Use MFT 	| Use MFT	|
 | SK Hynix        	| Unconfirmed for Linux                                	| N/A             	| N/A               	| N/A      	|
 | Kioxia          	| Unconfirmed for Linux                                	| N/A             	| N/A               	| N/A      	|
 | Micron          	| Unconfirmed for Linux                                	| N/A             	| N/A               	| N/A      	|
 | Kingston        	| Unconfirmed for Linux                                	| N/A             	| N/A               	| N/A      	|
 | Others          	| Unconfirmed for Linux                                	| N/A             	| N/A               	| N/A      	|
+
+\* DC Toolkit contains hdparm, but Interface Standard Compliance is unconfirmed
 
 ## Advised Procedure for Sanitization of Drives
 
