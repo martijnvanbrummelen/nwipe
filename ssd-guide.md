@@ -1,7 +1,10 @@
 ﻿# Guide for the cancellation of solid state media (Sata / SAS / NVME)
 
-The following information are without any warranty and indicate best practices as of the writing of this content.
-All information should be validated for the precise model you want to sanitize. 
+# Disclaimer & Warning
+The following information is given without any warranty and indicates best practices as of the writing of this content.
+All information should be validated for the precise model you want to sanitize.
+Any sanitization process should be validated by comparing blocks before and after sanitization assuring that the previous data has been overwritten.
+Given that most of the manufacturer tools available today are closed source, it is not possible to determine if such tool does or does not effectively verify the outcome of a sanitization. 
 
 ## Manufacturer Support for Standard Commands
 
