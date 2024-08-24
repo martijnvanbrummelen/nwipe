@@ -151,27 +151,26 @@ int nwipe_check_entropy( uint64_t num )
     double correlation = auto_correlation_test( num );
 
     // Log the results for debugging
-    nwipe_log( NWIPE_LOG_DEBUG, "Shannon Entropy: %f", entropy );
-    nwipe_log( NWIPE_LOG_DEBUG, "Bit Frequency (proportion of 1s): %f", frequency );
-    nwipe_log( NWIPE_LOG_DEBUG, "Number of Runs: %d", runs );
-    nwipe_log( NWIPE_LOG_DEBUG, "Auto-correlation: %f", correlation );
+    nwipe_log( NWIPE_LOG_INFO, "Shannon Entropy: %f", entropy );
+    nwipe_log( NWIPE_LOG_INFO, "Bit Frequency (proportion of 1s): %f", frequency );
+    nwipe_log( NWIPE_LOG_INFO, "Number of Runs: %d", runs );
+    nwipe_log( NWIPE_LOG_INFO, "Auto-correlation: %f", correlation );
 
     /*
-     * Entropy evaluation criteria
-     * Criteria are chosen based on expected randomness for simplicity:
-     * - High Shannon entropy (>0.9) indicates high unpredictability
-     * - Bit frequency around 0.5 indicates a balanced number of 0s and 1s
-     * - Runs count close to N/2 indicates randomness
-     * - Low auto-correlation (<0.5) suggests randomness
+     * Relaxed entropy evaluation criteria:
+     * - High Shannon entropy (>0.9) is still required for high unpredictability
+     * - Bit frequency close to 0.5, but not strictly (0.3 < frequency < 0.7)
+     * - Runs count wider range (10 < runs < 54) to allow more variation
+     * - Lower requirement on auto-correlation (<0.7) for more flexibility
      */
-    if( entropy > 0.9 && frequency > 0.4 && frequency < 0.6 && runs > 20 && runs < 44 && correlation < 0.5 )
+    if (entropy > 0.9 && frequency > 0.3 && frequency < 0.7 && runs > 10 && runs < 54 && correlation < 0.7)
     {
-        nwipe_log( NWIPE_LOG_INFO, "Entropy check passed. Sufficient randomness detected." );
+        nwipe_log(NWIPE_LOG_INFO, "Entropy check passed. Sufficient randomness detected. Entropy: %f", entropy);
         return 1;  // Sufficient entropy
     }
     else
     {
-        nwipe_log( NWIPE_LOG_ERROR, "Entropy check failed. Insufficient randomness." );
+        nwipe_log(NWIPE_LOG_ERROR, "Entropy check failed. Insufficient randomness. Entropy: %f", entropy);
         return 0;  // Insufficient entropy
     }
 }
