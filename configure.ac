@@ -85,6 +85,9 @@ PKG_CHECK_MODULES(
 	    ], [AC_MSG_ERROR([libconfig library not found])])]
 )
 
+# Check for math library (-lm) for log2 function
+AC_CHECK_LIB([m], [log2], [LIBS="-lm $LIBS"], [AC_MSG_ERROR([math library not found - required for log2])])
+
 AC_CHECK_LIB([intl], [libintl_dgettext]) # needed to statically link libparted, but not given in its pkgconfig file
 AC_CHECK_LIB([uuid], [uuid_generate])    # needed to statically link libparted, but not given in its pkgconfig file
 PKG_CHECK_MODULES([PARTED], [libparted])
@@ -102,3 +105,4 @@ AC_FUNC_MALLOC
 AC_CHECK_FUNCS([fdatasync memset regcomp strdup strerror])
 
 AC_OUTPUT
+

@@ -59,6 +59,7 @@
 #include "hpa_dco.h"
 #include "conf.h"
 #include <libconfig.h>
+#include "entropy.h"
 
 int terminate_signal;
 int user_abort;
@@ -99,6 +100,9 @@ int main( int argc, char** argv )
 
     /* The entropy source file handle. */
     int nwipe_entropy;
+
+    /* Entropy check in entropy.c */
+    extern int nwipe_check_entropy( uint64_t num );
 
     /* The generic index variables. */
     int i;
@@ -262,11 +266,32 @@ int main( int argc, char** argv )
         nwipe_perror( errno, __FUNCTION__, "open" );
         nwipe_log( NWIPE_LOG_FATAL, "Unable to open entropy source %s.", NWIPE_KNOB_ENTROPY );
         cleanup();
-        free( c2 );
         return errno;
     }
 
     nwipe_log( NWIPE_LOG_NOTICE, "Opened entropy source '%s'.", NWIPE_KNOB_ENTROPY );
+
+    /* Validate the entropy using nwipe_check_entropy */
+    uint64_t entropy_sample;
+    if( read( nwipe_entropy, &entropy_sample, sizeof( entropy_sample ) ) != sizeof( entropy_sample ) )
+    {
+        nwipe_log( NWIPE_LOG_FATAL, "Failed to read sufficient entropy from the source." );
+        cleanup();
+        close( nwipe_entropy );
+        return -1;
+    }
+
+    if( nwipe_check_entropy( entropy_sample ) == 0 )
+    {
+        nwipe_log( NWIPE_LOG_FATAL, "Entropy validation failed. Insufficient randomness detected." );
+        cleanup();
+        close( nwipe_entropy );
+        return -1;
+    }
+    else
+    {
+        nwipe_log( NWIPE_LOG_INFO, "Entropy validation passed. Sufficient randomness detected." );
+    }
 
     /* Block relevant signals in main thread. Any other threads that are     */
     /*        created after this will also block those signals.              */
