@@ -44,6 +44,7 @@ typedef enum {
 } nwipe_log_t;
 
 extern void nwipe_log( nwipe_log_t level, const char* format, ... );
+extern int nwipe_check_entropy( uint64_t num );
 
 /* Initializes the AES CTR pseudorandom number generator state.
    This function sets up the cryptographic context necessary for generating
@@ -112,8 +113,87 @@ int aes_ctr_prng_init( aes_ctr_state_t* state, unsigned long init_key[], unsigne
     }
 
     nwipe_log( NWIPE_LOG_DEBUG, "AES CTR PRNG successfully initialized." );  // Log successful initialization
+    /*
+     * Generate a 256-bit random number and store it in a buffer.
+     * This is done by defining a buffer that can hold 32 bytes (256 bits).
+     * The buffer is first initialized to zero using memset to ensure that no residual data
+     * from previous operations is present, which could compromise security.
+     * Initializing the buffer is a good practice in cryptographic operations
+     * to avoid any accidental data leakage or corruption.
+     */
+    unsigned char random_output[32];  // Buffer for 256-bit random number
+    memset( random_output, 0, sizeof( random_output ) );  // Initialize the buffer to zero
+
+    /*
+     * Call the function aes_ctr_prng_genrand_uint256_to_buf to generate a secure 256-bit random number.
+     * This function uses the AES-CTR PRNG state, which has been initialized earlier, to fill the buffer
+     * with pseudorandom data. AES-CTR mode is chosen for its efficiency and strong cryptographic properties,
+     * making it suitable for generating secure random numbers. If this function fails (returns non-zero),
+     * it indicates an issue with the random number generation process, which is critical for the security
+     * of the application.
+     */
+    if( aes_ctr_prng_genrand_uint256_to_buf( state, random_output ) != 0 )
+    {
+        /*
+         * Log a fatal error message indicating that the random number generation has failed.
+         * This is a critical error as it affects the integrity of the cryptographic operations.
+         * The function then returns -1 to signal the failure, and the PRNG initialization
+         * process is aborted to prevent the use of an uninitialized or faulty PRNG.
+         */
+        nwipe_log( NWIPE_LOG_FATAL, "Failed to generate 256-bit random number." );
+        return -1;  // Handle error and exit the function
+    }
+
+    /*
+     * Extract the first 64 bits (8 bytes) of the generated 256-bit random number.
+     * Using the memcpy function, the first 8 bytes of data from the random_output buffer
+     * are copied into the variable random_64bit. This 64-bit portion will be used for
+     * entropy verification, which is a process to ensure that the generated random number
+     * has enough randomness to be considered secure. Proper entropy is essential for
+     * cryptographic applications to avoid predictability and ensure robust security.
+     */
+    uint64_t random_64bit;
+    memcpy( &random_64bit, random_output, sizeof( uint64_t ) );
+
+    /*
+     * Verify the entropy of the extracted 64-bit number.
+     * The nwipe_verify_entropy function is called with random_64bit as an argument.
+     * This function checks if the 64-bit number meets the entropy requirements.
+     * Sufficient entropy ensures that the generated random numbers are not predictable,
+     * which is crucial for cryptographic security. If the function returns 1, it means
+     * the entropy is sufficient, and the PRNG initialization is considered successful.
+     * If the function returns 0, it indicates that the entropy check failed, meaning
+     * the generated number might not be sufficiently random. The function logs an appropriate
+     * message based on the result and returns 0 for success or -1 for failure.
+     */
+    if( nwipe_check_entropy( random_64bit ) == 1 )
+    {
+        /*
+         * Log a debug message indicating that the PRNG has been successfully initialized
+         * with sufficient entropy. This positive outcome ensures that the generated random
+         * numbers will provide the necessary unpredictability for cryptographic operations.
+         * The function returns 0 to signal successful initialization.
+         */
+        nwipe_log( NWIPE_LOG_INFO, "AES CTR PRNG successfully initialized with sufficient entropy." );
+        return 0;  // Successful initialization
+    }
+    else
+    {
+        /*
+         * Log an error message indicating that the entropy check has failed for the
+         * generated random number. A failure in the entropy check suggests that the
+         * generated number may not be random enough for secure cryptographic operations.
+         * Without adequate entropy, the security of the cryptographic system could be compromised.
+         * The function returns -1 to indicate this failure, ensuring that the faulty
+         * PRNG is not used.
+         */
+        nwipe_log( NWIPE_LOG_FATAL, "Entropy check for generated random number failed." );
+        return -1;  // Entropy check failed
+    }
+
     return 0;  // Exit successfully
 }
+
 /* Generates pseudorandom numbers and writes them to a buffer.
    This function performs the core operation of producing pseudorandom data.
    It directly updates the buffer provided, filling it with pseudorandom bytes
