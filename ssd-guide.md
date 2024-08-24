@@ -28,7 +28,7 @@ The following table does not claim or warrant to be complete, it is highly advis
 | Manufacturer    	| Manufacturer Tool (MFT)                              	| SATA            	| SAS               	| NVME     	|
 |-----------------	|------------------------------------------------------	|-----------------	|-------------------	|----------	|
 | Samsung         	| Samsung DC Toolkit 2.1                               	| Use MFT*        	| Use MFT           	| Use MFT  	|
-| Intel / Solidigm  | Solidigm™ Storage Tool                               	| Use MFT         	| Use MFT           	| Use MFT  	|
+| Intel / Solidigm  | Solidigm™ Storage Tool                               	| Use MFT*\*        	| Use MFT           	| Use MFT  	|
 | Western Digital 	| supports SAS / SCSI format unit command        	    | hdparm sanitize 	| sg_utils sanitize 	| nvme-cli sanitize	|
 | Sandisk         	| supports SAS / SATA / SCSI format unit command 	    | hdparm sanitize 	| sg_utils sanitize 	| nvme-cli sanitize	|
 | Seagate         	| Open Seachest 	    | Use MFT 	| Use MFT 	| Use MFT	|
@@ -38,10 +38,12 @@ The following table does not claim or warrant to be complete, it is highly advis
 | Kingston        	| Unconfirmed for Linux                                	| N/A             	| N/A               	| N/A      	|
 | Others          	| Unconfirmed for Linux                                	| N/A             	| N/A               	| N/A      	|
 
-\* DC Toolkit contains hdparm, but Interface Standard Compliance is unconfirmed
+\*      [DC Toolkit 3.0 contains hdparm, but Interface Standard Compliance is unconfirmed](https://download.semiconductor.samsung.com/resources/user-manual/Samsung_DCToolkit_V3.0_User_Guide.pdf)
+\*\*    [Generally Supported, but individual models might offer different levels of support](https://community.solidigm.com/t5/solid-state-drives-nand/support-for-sata-sanitize-command/td-p/24452)
 
-## Advised Procedure for Sanitization of Drives
+## Advised Procedure for Sanitization of SSD Drives
 
-1.  Complete an intial secure erase using the manufacturer tools or if supported by the manufacturer use hdparm, sg_utils or nvme;
-2.  Follow up with SHREDOS/Nwipe with a single PRNG stream with verification (do NOT use Zeros/ones or any other methods given that PRNG data is extremely hard if not impossible to compress;
-3.  Complete an additional secure erase using the manufacturer tools or if supported by the manufacturer use hdparm, sg_utils or nvme.
+1.  Complete an intial sanitization using the manufacturer tools or if supported by the manufacturer use hdparm, sg_utils or nvme;
+2.  Follow up with SHREDOS/Nwipe with a single PRNG stream with verification (PRNG data is extremely hard if not impossible to compress and therefor has to be written out by the firmware);
+3.  Complete an additional sanitization using the manufacturer tools or if supported by the manufacturer use hdparm, sg_utils or nvme;
+4.  Validate that the data has been overwritten.
