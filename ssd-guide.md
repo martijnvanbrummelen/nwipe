@@ -27,7 +27,7 @@ The following table does not claim or warrant to be complete, it is highly advis
 
 | Manufacturer    	| Manufacturer Tool (MFT)                              	| SATA            	| SAS               	| NVME     	|
 |-----------------	|------------------------------------------------------	|-----------------	|-------------------	|----------	|
-| Samsung         	| Samsung DC Toolkit 2.1                               	| Use MFT*        	| Use MFT           	| Use MFT  	|
+| Samsung         	| Samsung DC Toolkit 3.0                               	| Use MFT*        	| Use MFT           	| Use MFT  	|
 | Intel / Solidigm  | Solidigm™ Storage Tool                               	| Use MFT*\*        	| Use MFT           	| Use MFT  	|
 | Western Digital 	| supports SAS / SCSI format unit command        	    | hdparm sanitize 	| sg_utils sanitize 	| nvme-cli sanitize	|
 | Sandisk         	| supports SAS / SATA / SCSI format unit command 	    | hdparm sanitize 	| sg_utils sanitize 	| nvme-cli sanitize	|
