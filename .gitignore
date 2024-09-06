@@ -20,3 +20,4 @@ src/Makefile
 src/Makefile.in
 src/nwipe
 stamp-h1
+.DS_Store
