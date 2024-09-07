@@ -121,6 +121,7 @@ void rc4_sse4_genrand( rc4_state_t* state, unsigned char* bufpos )
 }
 
 // AVX2-optimized version for parallel byte generation
+/*
 void rc4_avx2_genrand( rc4_state_t* state, unsigned char* bufpos )
 {
     unsigned char temp;
@@ -148,4 +149,4 @@ void rc4_avx2_genrand( rc4_state_t* state, unsigned char* bufpos )
         avx2_temp_buffer = _mm256_loadu_si256( (__m256i*) &temp_buffer[n] );
         _mm256_storeu_si256( (__m256i*) ( bufpos + n ), avx2_temp_buffer );
     }
-}
+}*/

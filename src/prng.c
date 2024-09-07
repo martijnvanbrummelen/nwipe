@@ -81,42 +81,46 @@ int cpu_supports_sse41()
  *
  * @return 1 if AVX2 is supported, 0 otherwise.
  */
+
+/*
 int cpu_supports_avx2()
 {
-    unsigned int eax, ebx, ecx, edx;
+   unsigned int eax, ebx, ecx, edx;
 
 #if defined( _MSC_VER )
-    int cpuInfo[4];
-    // Call __cpuid with eax = 1 to get basic feature information
-    __cpuid( cpuInfo, 1 );
-    ecx = cpuInfo[2];  // ECX contains basic feature bits
+   int cpuInfo[4];
+   // Call __cpuid with eax = 1 to get basic feature information
+   __cpuid( cpuInfo, 1 );
+   ecx = cpuInfo[2];  // ECX contains basic feature bits
 
-    // Check if the CPU supports AVX (bit 28 of ECX in leaf 1)
-    if( !( ecx & ( 1 << 28 ) ) )
-    {
-        return 0;  // AVX is not supported, so AVX2 can't be supported
-    }
+   // Check if the CPU supports AVX (bit 28 of ECX in leaf 1)
+   if( !( ecx & ( 1 << 28 ) ) )
+   {
+       return 0;  // AVX is not supported, so AVX2 can't be supported
+   }
 
-    // Call __cpuid with eax = 7 and ecx = 0 to get extended features
-    __cpuid( cpuInfo, 7 );
-    ebx = cpuInfo[1];  // EBX contains extended feature bits
+   // Call __cpuid with eax = 7 and ecx = 0 to get extended features
+   __cpuid( cpuInfo, 7 );
+   ebx = cpuInfo[1];  // EBX contains extended feature bits
 #else
-    // Use GCC/Clang __cpuid for basic feature information (leaf 1)
-    __cpuid( 1, eax, ebx, ecx, edx );
+   // Use GCC/Clang __cpuid for basic feature information (leaf 1)
+   __cpuid( 1, eax, ebx, ecx, edx );
 
-    // Check if the CPU supports AVX (bit 28 of ECX in leaf 1)
-    if( !( ecx & ( 1 << 28 ) ) )
-    {
-        return 0;  // AVX is not supported, so AVX2 can't be supported
-    }
+   // Check if the CPU supports AVX (bit 28 of ECX in leaf 1)
+   if( !( ecx & ( 1 << 28 ) ) )
+   {
+       return 0;  // AVX is not supported, so AVX2 can't be supported
+   }
 
-    // Use GCC/Clang __cpuid for extended feature information (leaf 7)
-    __cpuid_count( 7, 0, eax, ebx, ecx, edx );
+   // Use GCC/Clang __cpuid for extended feature information (leaf 7)
+   __cpuid_count( 7, 0, eax, ebx, ecx, edx );
 #endif
 
-    // AVX2 is indicated by bit 5 in the EBX register of CPUID leaf 7.
-    return ( ebx & ( 1 << 5 ) ) != 0;
+   // AVX2 is indicated by bit 5 in the EBX register of CPUID leaf 7.
+   return ( ebx & ( 1 << 5 ) ) != 0;
 }
+
+*/
 
 /* Print given number of bytes from unsigned integer number to a byte stream buffer starting with low-endian. */
 static inline void u32_to_buffer( u8* restrict buffer, u32 val, const int len )
@@ -439,7 +443,9 @@ int nwipe_rc4_prng_read( NWIPE_PRNG_READ_SIGNATURE )
     size_t words = count / SIZE_OF_RC4_PRNG;  // SIZE_OF_RC4_PRNG is 4096 bytes
 
     // Check if the CPU supports AVX2 first
-    int use_avx2 = cpu_supports_avx2();
+    /*
+        int use_avx2 = cpu_supports_avx2();
+    */
 
     // Check if the CPU supports SSE4.1
     int use_sse4 = cpu_supports_sse41();
@@ -447,12 +453,12 @@ int nwipe_rc4_prng_read( NWIPE_PRNG_READ_SIGNATURE )
     /* Loop to fill the buffer with blocks directly from the RC4 algorithm */
     for( size_t ii = 0; ii < words; ++ii )
     {
-        if( use_avx2 )
+        /*if( use_avx2 )
         {
             // Use AVX2-optimized version
             rc4_avx2_genrand( (rc4_state_t*) *state, bufpos );
-        }
-        else if( use_sse4 )
+        }*/
+        if( use_sse4 )
         {
             // Use SSE4-optimized version
             rc4_sse4_genrand( (rc4_state_t*) *state, bufpos );
@@ -471,12 +477,12 @@ int nwipe_rc4_prng_read( NWIPE_PRNG_READ_SIGNATURE )
     {
         unsigned char temp_output[SIZE_OF_RC4_PRNG];  // Temporary buffer for the last block
 
-        if( use_avx2 )
+        /*if( use_avx2 )
         {
             // Use AVX2-optimized version
             rc4_avx2_genrand( (rc4_state_t*) *state, temp_output );
-        }
-        else if( use_sse4 )
+        }*/
+        if( use_sse4 )
         {
             // Use SSE4-optimized version
             rc4_sse4_genrand( (rc4_state_t*) *state, temp_output );

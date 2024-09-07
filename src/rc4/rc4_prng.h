@@ -45,6 +45,8 @@ void rc4_init( rc4_state_t* state, uint64_t init_key[], unsigned long key_length
 // bufpos: The buffer where the generated random bytes will be written
 void rc4_genrand_4096_to_buf( rc4_state_t* state, unsigned char* bufpos );
 void rc4_sse4_genrand( rc4_state_t* state, unsigned char* bufpos );
+/*
 void rc4_avx2_genrand( rc4_state_t* state, unsigned char* bufpos );
+*/
 
 #endif  // RC4_PRNG_H
