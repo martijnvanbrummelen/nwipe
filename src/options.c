@@ -44,6 +44,7 @@ int nwipe_options_parse( int argc, char** argv )
     extern nwipe_prng_t nwipe_isaac64;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
+    extern nwipe_prng_t nwipe_rc4_prng;
 
     /* The getopt() result holder. */
     int nwipe_opt;
@@ -503,6 +504,11 @@ int nwipe_options_parse( int argc, char** argv )
                     nwipe_options.prng = &nwipe_xoroshiro256_prng;
                     break;
                 }
+                if( strcmp( optarg, "rc4_prng" ) == 0 )
+                {
+                    nwipe_options.prng = &nwipe_rc4_prng;
+                    break;
+                }
 
                 /* Else we do not know this PRNG. */
                 fprintf( stderr, "Error: Unknown prng '%s'.\n", optarg );
@@ -554,6 +560,7 @@ void nwipe_options_log( void )
     extern nwipe_prng_t nwipe_isaac64;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
+    extern nwipe_prng_t nwipe_rc4_prng;
 
     /**
      *  Prints a manifest of options to the log.
@@ -623,6 +630,11 @@ void nwipe_options_log( void )
                 {
                     nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Isaac" );
                 }
+                if( nwipe_options.prng == &nwipe_rc4_prng )
+                {
+                    nwipe_log( NWIPE_LOG_NOTICE, "  prng     = RC4" );
+                }
+
                 else
                 {
                     if( nwipe_options.prng == &nwipe_isaac64 )
@@ -714,7 +726,7 @@ void display_help()
     puts( "  -l, --logfile=FILE      Filename to log to. Default is STDOUT\n" );
     puts( "  -P, --PDFreportpath=PATH Path to write PDF reports to. Default is \".\"" );
     puts( "                           If set to \"noPDF\" no PDF reports are written.\n" );
-    puts( "  -p, --prng=METHOD       PRNG option (mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng)\n" );
+    puts( "  -p, --prng=METHOD       PRNG option (mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng|rc4_prng)\n" );
     puts( "  -q, --quiet             Anonymize logs and the GUI by removing unique data, i.e." );
     puts( "                          serial numbers, LU WWN Device ID, and SMBIOS/DMI data" );
     puts( "                          XXXXXX = S/N exists, ????? = S/N not obtainable\n" );
