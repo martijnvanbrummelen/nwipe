@@ -108,6 +108,8 @@ typedef unsigned char u8;
 
 #define THREAD_CANCELLATION_TIMEOUT 10
 
+#define NWIPE_GITHUB_ISSUE_URL "https://github.com/martijnvanbrummelen/nwipe/issues"
+
 /* This is required for ioctl FDFLUSH. */
 #include <linux/fd.h>
 

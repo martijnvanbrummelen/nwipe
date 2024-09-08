@@ -27,6 +27,7 @@
 #include "isaac_rand/isaac64.h"
 #include "alfg/add_lagg_fibonacci_prng.h"  //Lagged Fibonacci generator prototype
 #include "xor/xoroshiro256_prng.h"  //XORoshiro-256 prototype
+#include "chacha/chacha20_prng.h"  // ChaCha20 prototype
 
 nwipe_prng_t nwipe_twister = { "Mersenne Twister (mt19937ar-cok)", nwipe_twister_init, nwipe_twister_read };
 
@@ -39,6 +40,9 @@ nwipe_prng_t nwipe_add_lagg_fibonacci_prng = { "Lagged Fibonacci generator",
                                                nwipe_add_lagg_fibonacci_prng_read };
 /* XOROSHIRO-256 PRNG Structure */
 nwipe_prng_t nwipe_xoroshiro256_prng = { "XORoshiro-256", nwipe_xoroshiro256_prng_init, nwipe_xoroshiro256_prng_read };
+
+/* ChaCha20 PRNG Structure */
+nwipe_prng_t nwipe_chacha20_prng = { "ChaCha20 (OpenSSL)", nwipe_chacha20_prng_init, nwipe_chacha20_prng_read };
 
 /* Print given number of bytes from unsigned integer number to a byte stream buffer starting with low-endian. */
 static inline void u32_to_buffer( u8* restrict buffer, u32 val, const int len )
@@ -274,21 +278,6 @@ int nwipe_add_lagg_fibonacci_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
     return 0;
 }
 
-/* EXPERIMENTAL implementation of XORoroshiro256 algorithm to provide high-quality, but a lot of random numbers */
-int nwipe_xoroshiro256_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
-{
-    nwipe_log( NWIPE_LOG_NOTICE, "Initialising XORoroshiro-256 PRNG" );
-
-    if( *state == NULL )
-    {
-        /* This is the first time that we have been called. */
-        *state = malloc( sizeof( xoroshiro256_state_t ) );
-    }
-    xoroshiro256_init( (xoroshiro256_state_t*) *state, (uint64_t*) ( seed->s ), seed->length / sizeof( uint64_t ) );
-
-    return 0;
-}
-
 int nwipe_add_lagg_fibonacci_prng_read( NWIPE_PRNG_READ_SIGNATURE )
 {
     u8* restrict bufpos = buffer;
@@ -315,6 +304,22 @@ int nwipe_add_lagg_fibonacci_prng_read( NWIPE_PRNG_READ_SIGNATURE )
     return 0;  // Success
 }
 
+/* EXPERIMENTAL implementation of XORoroshiro256 algorithm to provide high-quality, but a lot of random numbers */
+int nwipe_xoroshiro256_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
+{
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising XORoroshiro-256 PRNG" );
+
+    if( *state == NULL )
+    {
+        /* This is the first time that we have been called. */
+        *state = malloc( sizeof( xoroshiro256_state_t ) );
+    }
+    xoroshiro256_init(
+        (xoroshiro256_state_t*) *state, (unsigned long*) ( seed->s ), seed->length / sizeof( unsigned long ) );
+
+    return 0;
+}
+
 int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE )
 {
     u8* restrict bufpos = buffer;
@@ -339,4 +344,101 @@ int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE )
     }
 
     return 0;  // Success
+}
+
+/**
+ * Initializes the ChaCha20 PRNG using OpenSSL and validates its output.
+ *
+ * @param state A double pointer to the PRNG state structure. If the pointed state is NULL,
+ *        memory will be allocated and initialized for it.
+ * @param seed A pointer to a seed structure containing the seed data and its length.
+ * @return int Returns 0 on success, -1 on failure.
+ */
+int nwipe_chacha20_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
+{
+    nwipe_log( NWIPE_LOG_NOTICE, "Initializing ChaCha20 PRNG" );
+
+    // Falls der state noch nicht allokiert wurde, allokiere ihn.
+    if( *state == NULL )
+    {
+        *state = calloc( 1, sizeof( chacha20_state_t ) );
+        if( *state == NULL )
+        {
+            nwipe_log( NWIPE_LOG_FATAL, "Failed to allocate memory for ChaCha20 PRNG state." );
+            return -1;
+        }
+    }
+
+    // Initialisiere den ChaCha20 PRNG Zustand mit dem übergebenen Seed.
+    if( chacha20_prng_init(
+            (chacha20_state_t*) *state, (unsigned long*) ( seed->s ), seed->length / sizeof( unsigned long ) )
+        != 0 )
+    {
+        nwipe_log( NWIPE_LOG_FATAL, "Fatal error occurred during ChaCha20 PRNG initialization in OpenSSL." );
+        chacha20_prng_general_cleanup( (chacha20_state_t*) *state );
+        free( *state );
+        *state = NULL;
+        return -1;
+    }
+
+    // Validierung der PRNG-Ausgabe.
+    if( chacha20_prng_validate( (chacha20_state_t*) *state ) != 0 )
+    {
+        nwipe_log( NWIPE_LOG_FATAL, "ChaCha20 PRNG validation failed." );
+        chacha20_prng_general_cleanup( (chacha20_state_t*) *state );
+        free( *state );
+        *state = NULL;
+        return -1;
+    }
+
+    nwipe_log( NWIPE_LOG_NOTICE, "ChaCha20 PRNG successfully initialized and validated." );
+    return 0;
+}
+
+/**
+ * Generates random data using the ChaCha20 PRNG.
+ *
+ * @param state A double pointer to the PRNG state structure.
+ * @param buffer A pointer to the buffer where the generated random data will be stored.
+ * @param count The number of bytes of random data to generate.
+ * @return int Returns 0 on success, -1 on failure.
+ */
+int nwipe_chacha20_prng_read( NWIPE_PRNG_READ_SIGNATURE )
+{
+    // Zeiger, um die aktuelle Position im Ausgabepuffer zu verfolgen
+    unsigned char* restrict bufpos = buffer;
+
+    // Berechne die Anzahl der vollständigen 512-Bit Blöcke, die generiert werden müssen.
+    size_t blocks = count / SIZE_OF_CHACHA20_PRNG;
+
+    // Fülle den Puffer blockweise (je 64 Byte)
+    for( size_t ii = 0; ii < blocks; ++ii )
+    {
+        if( chacha20_prng_genrand_uint512_to_buf( (chacha20_state_t*) *state, bufpos ) != 0 )
+        {
+            nwipe_log( NWIPE_LOG_ERROR, "Error occurred during ChaCha20 RNG generation in OpenSSL." );
+            return -1;
+        }
+        bufpos += SIZE_OF_CHACHA20_PRNG;
+    }
+
+    // Berechne, ob noch Restbytes zu generieren sind
+    const size_t remain = count % SIZE_OF_CHACHA20_PRNG;
+    if( remain > 0 )
+    {
+        // Temporärer Puffer für den letzten Block
+        unsigned char temp_output[SIZE_OF_CHACHA20_PRNG];
+        memset( temp_output, 0, sizeof( temp_output ) );
+
+        if( chacha20_prng_genrand_uint512_to_buf( (chacha20_state_t*) *state, temp_output ) != 0 )
+        {
+            nwipe_log( NWIPE_LOG_ERROR, "Error occurred during ChaCha20 RNG generation in OpenSSL." );
+            return -1;
+        }
+
+        // Nur die notwendigen restlichen Bytes in den Ausgabepuffer kopieren
+        memcpy( bufpos, temp_output, remain );
+    }
+
+    return 0;  // Erfolg
 }
