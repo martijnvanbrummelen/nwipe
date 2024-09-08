@@ -1616,11 +1616,12 @@ void nwipe_gui_prng( void )
     extern nwipe_prng_t nwipe_aes_ctr_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
+    extern nwipe_prng_t nwipe_aes_ctr_prng;
 
     extern int terminate_signal;
 
     /* The number of implemented PRNGs. */
-    const int count = 5;
+    const int count = 6;
 
     /* The first tabstop. */
     const int tab1 = 2;
@@ -1662,6 +1663,10 @@ void nwipe_gui_prng( void )
     {
         focus = 4;
     }
+    if( nwipe_options.prng == &nwipe_aes_ctr_prng )
+    {
+        focus = 5;
+    }
     do
     {
         /* Clear the main window. */
@@ -1678,6 +1683,7 @@ void nwipe_gui_prng( void )
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_isaac64.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_add_lagg_fibonacci_prng.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_xoroshiro256_prng.label );
+        mvwprintw( main_window, yy++, tab1, "  %s", nwipe_aes_ctr_prng.label );
         yy++;
 
         /* Print the cursor. */
@@ -1852,6 +1858,49 @@ void nwipe_gui_prng( void )
                            tab1,
                            "especially for legacy systems, due to its efficiency and minimal demands.  " );
                 break;
+            case 5:
+
+                mvwprintw(
+                    main_window, yy++, tab1, "AES-256 in Counter Mode (CTR), securely implemented by Fabian Druschke" );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "within nwipe using OpenSSL, leverages the cryptographic robustness and " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "efficiency of AES for generating high-quality pseudo-random numbers.   " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "                                                                            " );
+                mvwprintw(
+                    main_window, yy++, tab1, "This adaptation emphasizes the utilization of AES New Instructions    " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "(AES-NI) starting from the Westmere-EP microarchitecture, enhancing the" );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "performance and security for data wiping applications. The integration " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "of AES-NI accelerates cryptographic computations, making AES-256 CTR an" );
+                mvwprintw( main_window, yy++, tab1, "ideal choice for efficient and secure data erasure in nwipe." );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "                                                                            " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "Compliant with NIST SP 800-38A for cryptographic standards, AES-256 CTR" );
+                mvwprintw(
+                    main_window, yy++, tab1, "stands as the world gold standard for data encryption techniques." );
+                mvwprintw( main_window, yy++, tab1, "Intended to be used only with 64-Bit CPUs, supporting AES-Ni." );
+                break;
         }
 
         /* switch */
@@ -1921,6 +1970,10 @@ void nwipe_gui_prng( void )
                 if( focus == 4 )
                 {
                     nwipe_options.prng = &nwipe_xoroshiro256_prng;
+                }
+                if( focus == 5 )
+                {
+                    nwipe_options.prng = &nwipe_aes_ctr_prng;
                 }
                 return;
 
