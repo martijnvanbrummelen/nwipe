@@ -12,5 +12,5 @@ check-format:
 all: build-openssl $(SUBDIRS)
 
 build-openssl:
-	cd external/openssl && ./config --prefix=$(abs_top_srcdir)/external/openssl/build && make && make install
+	cd external/openssl && ./config no-shared --prefix=$(abs_top_srcdir)/external/openssl/build && make && make install
 
