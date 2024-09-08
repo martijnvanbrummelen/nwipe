@@ -27,6 +27,7 @@
 #include "isaac_rand/isaac64.h"
 #include "alfg/add_lagg_fibonacci_prng.h"  //Lagged Fibonacci generator prototype
 #include "xor/xoroshiro256_prng.h"  //XORoshiro-256 prototype
+#include "aes/aes_ctr_prng.h"  // AES-NI prototype
 
 nwipe_prng_t nwipe_twister = { "Mersenne Twister (mt19937ar-cok)", nwipe_twister_init, nwipe_twister_read };
 
@@ -39,6 +40,9 @@ nwipe_prng_t nwipe_add_lagg_fibonacci_prng = { "Lagged Fibonacci generator",
                                                nwipe_add_lagg_fibonacci_prng_read };
 /* XOROSHIRO-256 PRNG Structure */
 nwipe_prng_t nwipe_xoroshiro256_prng = { "XORoshiro-256", nwipe_xoroshiro256_prng_init, nwipe_xoroshiro256_prng_read };
+
+/* AES-CTR-NI PRNG Structure */
+nwipe_prng_t nwipe_aes_ctr_prng = { "AES-256-CTR (OpenSSL)", nwipe_aes_ctr_prng_init, nwipe_aes_ctr_prng_read };
 
 /* Print given number of bytes from unsigned integer number to a byte stream buffer starting with low-endian. */
 static inline void u32_to_buffer( u8* restrict buffer, u32 val, const int len )
@@ -274,21 +278,6 @@ int nwipe_add_lagg_fibonacci_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
     return 0;
 }
 
-/* EXPERIMENTAL implementation of XORoroshiro256 algorithm to provide high-quality, but a lot of random numbers */
-int nwipe_xoroshiro256_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
-{
-    nwipe_log( NWIPE_LOG_NOTICE, "Initialising XORoroshiro-256 PRNG" );
-
-    if( *state == NULL )
-    {
-        /* This is the first time that we have been called. */
-        *state = malloc( sizeof( xoroshiro256_state_t ) );
-    }
-    xoroshiro256_init( (xoroshiro256_state_t*) *state, (uint64_t*) ( seed->s ), seed->length / sizeof( uint64_t ) );
-
-    return 0;
-}
-
 int nwipe_add_lagg_fibonacci_prng_read( NWIPE_PRNG_READ_SIGNATURE )
 {
     u8* restrict bufpos = buffer;
@@ -315,6 +304,22 @@ int nwipe_add_lagg_fibonacci_prng_read( NWIPE_PRNG_READ_SIGNATURE )
     return 0;  // Success
 }
 
+/* EXPERIMENTAL implementation of XORoroshiro256 algorithm to provide high-quality, but a lot of random numbers */
+int nwipe_xoroshiro256_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
+{
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising XORoroshiro-256 PRNG" );
+
+    if( *state == NULL )
+    {
+        /* This is the first time that we have been called. */
+        *state = malloc( sizeof( xoroshiro256_state_t ) );
+    }
+    xoroshiro256_init(
+        (xoroshiro256_state_t*) *state, (unsigned long*) ( seed->s ), seed->length / sizeof( unsigned long ) );
+
+    return 0;
+}
+
 int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE )
 {
     u8* restrict bufpos = buffer;
@@ -339,4 +344,94 @@ int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE )
     }
 
     return 0;  // Success
+}
+
+/**
+ * EPERIMENTAL implementation of AES-256 in counter mode to provide high-quality random numbers.
+ * Initializes the AES CTR PRNG state.
+ * @param state A double pointer to the PRNG state structure. If the pointed state is NULL,
+ *        memory will be allocated and initialized for it.
+ * @param seed A pointer to a seed structure containing the seed data and its length.
+ * @return int Returns 0 on success, -1 on failure (e.g., memory allocation failure).
+ */
+
+int nwipe_aes_ctr_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
+{
+    // Log the start of the PRNG initialization process.
+    nwipe_log( NWIPE_LOG_DEBUG, "Initialising AES CTR PRNG" );
+
+    // Check if the state pointer is NULL, indicating that it hasn't been allocated yet.
+    if( *state == NULL )
+    {
+        // Allocate memory for the PRNG state and initialize it to zeros.
+        *state = calloc( 1, sizeof( aes_ctr_state_t ) );
+
+        // Check if memory allocation failed.
+        if( *state == NULL )
+        {
+            // Log the memory allocation failure.
+            nwipe_log( NWIPE_LOG_FATAL, "Failed to allocate memory for AES CTR PRNG state." );
+            return -1;  // Return an error code indicating failure.
+        }
+    }
+
+    // Initialize the PRNG state with the provided seed.
+    if( aes_ctr_prng_init( (aes_ctr_state_t*) *state, (uint64_t*) ( seed->s ), seed->length / sizeof( uint64_t ) )
+        != 0 )
+    {
+        nwipe_log( NWIPE_LOG_SANITY, "Fatal error occured during PRNG init in OpenSSL." );
+        return -1;
+    }
+
+    return 0;  // Indicate success.
+}
+
+/**
+ * Generates random data using the AES CTR PRNG.
+ *
+ * @param state A double pointer to the PRNG state structure.
+ * @param buffer A pointer to the buffer where the generated random data will be stored.
+ * @param count The number of bytes of random data to generate.
+ * @return int Returns 0 on success.
+ */
+int nwipe_aes_ctr_prng_read( NWIPE_PRNG_READ_SIGNATURE )
+{
+    // Pointer to track the current position in the output buffer.
+    u8* restrict bufpos = buffer;
+
+    // Calculate the number of complete 256-bit blocks to generate.
+    size_t words = count / SIZE_OF_AES_CTR_PRNG;
+
+    // Loop to fill the buffer with 256-bit blocks of random data.
+    for( size_t ii = 0; ii < words; ++ii )
+    {
+        // Generate a 256-bit block and write it directly to the buffer.
+        if( aes_ctr_prng_genrand_uint256_to_buf( (aes_ctr_state_t*) *state, bufpos ) != 0 )
+        {
+            nwipe_log( NWIPE_LOG_SANITY, "Fatal error occured during RNG generation in OpenSSL." );
+            return -1;
+        }
+
+        // Move the buffer position to the start of the next block.
+        bufpos += SIZE_OF_AES_CTR_PRNG;
+    }
+
+    // Calculate the number of remaining bytes to generate, if any.
+    const size_t remain = count % SIZE_OF_AES_CTR_PRNG;
+
+    // Check if there are remaining bytes to generate.
+    if( remain > 0 )
+    {
+        // Temporary buffer for the last block of random data.
+        unsigned char temp_output[32];
+        memset( temp_output, 0, sizeof( temp_output ) );
+
+        // Generate one more block of random data.
+        aes_ctr_prng_genrand_uint256_to_buf( (aes_ctr_state_t*) *state, temp_output );
+
+        // Copy only the necessary remaining bytes to the output buffer.
+        memcpy( bufpos, temp_output, remain );
+    }
+
+    return 0;  // Indicate success.
 }
