@@ -14,7 +14,6 @@ AC_PROG_CC
 PKG_PROG_PKG_CONFIG
 
 # Checks for libraries.
-
 PKG_CHECK_MODULES(
 	[PANEL],
 	[panel],
@@ -84,3 +83,4 @@ AC_FUNC_MALLOC
 AC_CHECK_FUNCS([fdatasync memset regcomp strdup strerror])
 
 AC_OUTPUT
+
