@@ -476,7 +476,7 @@ int create_pdf( nwipe_context_t* ptr )
                     {
                         if( nwipe_options.prng == &nwipe_xoroshiro256_prng )
                         {
-                            snprintf( prng_type, sizeof( prng_type ), "XORshiro256" );
+                            snprintf( prng_type, sizeof( prng_type ), "XORoshiro256" );
                         }
                         else
                         {
