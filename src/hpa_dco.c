@@ -570,13 +570,22 @@ int hpa_dco_status( nwipe_context_t* ptr )
          * through */
         if( c->HPA_reported_set == 0 && c->HPA_reported_real == 0 && c->DCO_reported_real_max_sectors <= 1 )
         {
-            c->HPA_status = HPA_UNKNOWN;
-            if( c->device_bus == NWIPE_DEVICE_USB )
+            if( c->device_bus == NWIPE_DEVICE_SAS )
             {
-                nwipe_log( NWIPE_LOG_WARNING,
-                           "HIDDEN SECTORS INDETERMINATE! on %s, Some USB adapters & memory sticks don't support "
-                           "ATA pass through",
-                           c->device_name );
+                /* SAS SCSI doesn't appear to support HPA/DCO commands */
+                c->HPA_status = HPA_NOT_APPLICABLE;
+                nwipe_log( NWIPE_LOG_INFO, "No hidden sectors on %s", c->device_name );
+            }
+            else
+            {
+                c->HPA_status = HPA_UNKNOWN;
+                if( c->device_bus == NWIPE_DEVICE_USB )
+                {
+                    nwipe_log( NWIPE_LOG_WARNING,
+                               "HIDDEN SECTORS INDETERMINATE! on %s, Some USB adapters & memory sticks don't support "
+                               "ATA pass through",
+                               c->device_name );
+                }
             }
         }
         else
