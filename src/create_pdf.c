@@ -829,6 +829,7 @@ int nwipe_get_smart_data( nwipe_context_t* c )
     char smartctl_command[] = "smartctl -a %s";
     char smartctl_command2[] = "/sbin/smartctl -a %s";
     char smartctl_command3[] = "/usr/bin/smartctl -a %s";
+    char smartctl_command4[] = "/usr/sbin/smartctl -a %s";
     char final_cmd_smartctl[sizeof( smartctl_command3 ) + 256];
     char result[512];
     char smartctl_labels_to_anonymize[][18] = {
@@ -850,7 +851,14 @@ int nwipe_get_smart_data( nwipe_context_t* c )
         {
             if( system( "which /usr/bin/smartctl > /dev/null 2>&1" ) )
             {
-                nwipe_log( NWIPE_LOG_WARNING, "Command not found. Install smartmontools !" );
+                if( system( "which /usr/sbin/smartctl > /dev/null 2>&1" ) )
+                {
+                    nwipe_log( NWIPE_LOG_WARNING, "Command not found. Install smartmontools !" );
+                }
+                else
+                {
+                    sprintf( final_cmd_smartctl, smartctl_command4, c->device_name );
+                }
             }
             else
             {

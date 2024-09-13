@@ -171,12 +171,15 @@ int main( int argc, char** argv )
         {
             if( system( "which /usr/bin/hdparm > /dev/null 2>&1" ) )
             {
-                nwipe_log( NWIPE_LOG_WARNING, "hdparm command not found." );
-                nwipe_log( NWIPE_LOG_WARNING,
-                           "Required by nwipe for HPA/DCO detection & correction and ATA secure erase." );
-                nwipe_log( NWIPE_LOG_WARNING, "** Please install hdparm **\n" );
-                cleanup();
-                exit( 1 );
+                if( system( "which /usr/sbin/hdparm > /dev/null 2>&1" ) )
+                {
+                    nwipe_log( NWIPE_LOG_WARNING, "hdparm command not found." );
+                    nwipe_log( NWIPE_LOG_WARNING,
+                               "Required by nwipe for HPA/DCO detection & correction and ATA secure erase." );
+                    nwipe_log( NWIPE_LOG_WARNING, "** Please install hdparm **\n" );
+                    cleanup();
+                    exit( 1 );
+                }
             }
         }
     }
