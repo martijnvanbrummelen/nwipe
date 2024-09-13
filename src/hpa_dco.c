@@ -59,13 +59,15 @@ int hpa_dco_status( nwipe_context_t* ptr )
     int dco_line_found;
 
     FILE* fp;
-    char path_hdparm_cmd1_get_hpa[] = "hdparm --verbose -N";
-    char path_hdparm_cmd2_get_hpa[] = "/sbin/hdparm --verbose -N";
-    char path_hdparm_cmd3_get_hpa[] = "/usr/bin/hdparm --verbose -N";
+    char path_hdparm_cmd10_get_hpa[] = "hdparm --verbose -N";
+    char path_hdparm_cmd20_get_hpa[] = "/sbin/hdparm --verbose -N";
+    char path_hdparm_cmd30_get_hpa[] = "/usr/bin/hdparm --verbose -N";
+    char path_hdparm_cmd31_get_hpa[] = "/usr/sbin/hdparm --verbose -N";
 
-    char path_hdparm_cmd4_get_dco[] = "hdparm --verbose --dco-identify";
-    char path_hdparm_cmd5_get_dco[] = "/sbin/hdparm --verbose --dco-identify";
-    char path_hdparm_cmd6_get_dco[] = "/usr/bin/hdparm --verbose --dco-identify";
+    char path_hdparm_cmd40_get_dco[] = "hdparm --verbose --dco-identify";
+    char path_hdparm_cmd50_get_dco[] = "/sbin/hdparm --verbose --dco-identify";
+    char path_hdparm_cmd60_get_dco[] = "/usr/bin/hdparm --verbose --dco-identify";
+    char path_hdparm_cmd61_get_dco[] = "/usr/sbin/hdparm --verbose --dco-identify";
 
     char pipe_std_err[] = "2>&1";
 
@@ -78,8 +80,8 @@ int hpa_dco_status( nwipe_context_t* ptr )
     /* Use the longest of the 'path_hdparm_cmd.....' strings above to
      *determine size in the strings below
      */
-    char hdparm_cmd_get_hpa[sizeof( path_hdparm_cmd3_get_hpa ) + sizeof( c->device_name ) + sizeof( pipe_std_err )];
-    char hdparm_cmd_get_dco[sizeof( path_hdparm_cmd6_get_dco ) + sizeof( c->device_name ) + sizeof( pipe_std_err )];
+    char hdparm_cmd_get_hpa[sizeof( path_hdparm_cmd30_get_hpa ) + sizeof( c->device_name ) + sizeof( pipe_std_err )];
+    char hdparm_cmd_get_dco[sizeof( path_hdparm_cmd60_get_dco ) + sizeof( c->device_name ) + sizeof( pipe_std_err )];
 
     /* Initialise return value */
     set_return_value = 0;
@@ -96,25 +98,43 @@ int hpa_dco_status( nwipe_context_t* ptr )
         {
             if( system( "which /usr/bin/hdparm > /dev/null 2>&1" ) )
             {
-                nwipe_log( NWIPE_LOG_WARNING, "hdparm command not found." );
-                nwipe_log( NWIPE_LOG_WARNING,
-                           "Required by nwipe for HPA/DCO detection & correction and ATA secure erase." );
-                nwipe_log( NWIPE_LOG_WARNING, "** Please install hdparm **\n" );
-                cleanup();
-                exit( 1 );
+                if( system( "which /usr/sbin/hdparm > /dev/null 2>&1" ) )
+                {
+                    nwipe_log( NWIPE_LOG_WARNING, "hdparm command not found." );
+                    nwipe_log( NWIPE_LOG_WARNING,
+                               "Required by nwipe for HPA/DCO detection & correction and ATA secure erase." );
+                    nwipe_log( NWIPE_LOG_WARNING, "** Please install hdparm **\n" );
+                    cleanup();
+                    exit( 1 );
+                }
+                else
+                {
+                    snprintf( hdparm_cmd_get_hpa,
+                              sizeof( hdparm_cmd_get_hpa ),
+                              "%s %s %s\n",
+                              path_hdparm_cmd31_get_hpa,
+                              c->device_name,
+                              pipe_std_err );
+                    snprintf( hdparm_cmd_get_dco,
+                              sizeof( hdparm_cmd_get_dco ),
+                              "%s %s %s\n",
+                              path_hdparm_cmd61_get_dco,
+                              c->device_name,
+                              pipe_std_err );
+                }
             }
             else
             {
                 snprintf( hdparm_cmd_get_hpa,
                           sizeof( hdparm_cmd_get_hpa ),
                           "%s %s %s\n",
-                          path_hdparm_cmd3_get_hpa,
+                          path_hdparm_cmd30_get_hpa,
                           c->device_name,
                           pipe_std_err );
                 snprintf( hdparm_cmd_get_dco,
                           sizeof( hdparm_cmd_get_dco ),
                           "%s %s %s\n",
-                          path_hdparm_cmd6_get_dco,
+                          path_hdparm_cmd60_get_dco,
                           c->device_name,
                           pipe_std_err );
             }
@@ -124,13 +144,13 @@ int hpa_dco_status( nwipe_context_t* ptr )
             snprintf( hdparm_cmd_get_hpa,
                       sizeof( hdparm_cmd_get_hpa ),
                       "%s %s %s\n",
-                      path_hdparm_cmd2_get_hpa,
+                      path_hdparm_cmd20_get_hpa,
                       c->device_name,
                       pipe_std_err );
             snprintf( hdparm_cmd_get_dco,
                       sizeof( hdparm_cmd_get_dco ),
                       "%s %s %s\n",
-                      path_hdparm_cmd5_get_dco,
+                      path_hdparm_cmd50_get_dco,
                       c->device_name,
                       pipe_std_err );
         }
@@ -140,13 +160,13 @@ int hpa_dco_status( nwipe_context_t* ptr )
         snprintf( hdparm_cmd_get_hpa,
                   sizeof( hdparm_cmd_get_hpa ),
                   "%s %s %s\n",
-                  path_hdparm_cmd1_get_hpa,
+                  path_hdparm_cmd10_get_hpa,
                   c->device_name,
                   pipe_std_err );
         snprintf( hdparm_cmd_get_dco,
                   sizeof( hdparm_cmd_get_dco ),
                   "%s %s %s\n",
-                  path_hdparm_cmd4_get_dco,
+                  path_hdparm_cmd40_get_dco,
                   c->device_name,
                   pipe_std_err );
     }

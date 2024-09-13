@@ -526,6 +526,7 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, i
     char smartctl_command[] = "smartctl -i %s";
     char smartctl_command2[] = "/sbin/smartctl -i %s";
     char smartctl_command3[] = "/usr/bin/smartctl -i %s";
+    char smartctl_command4[] = "/usr/sbin/smartctl -i %s";
     char device_shortform[50];
     char result[512];
     char final_cmd_readlink[sizeof( readlink_command ) + sizeof( device_shortform )];
@@ -706,7 +707,14 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, i
         {
             if( system( "which /usr/bin/smartctl > /dev/null 2>&1" ) )
             {
-                nwipe_log( NWIPE_LOG_WARNING, "Command not found. Install smartmontools !" );
+                if( system( "which /usr/sbin/smartctl > /dev/null 2>&1" ) )
+                {
+                    nwipe_log( NWIPE_LOG_WARNING, "Command not found. Install smartmontools !" );
+                }
+                else
+                {
+                    sprintf( final_cmd_smartctl, smartctl_command4, device );
+                }
             }
             else
             {
