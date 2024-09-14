@@ -369,7 +369,6 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
 
         case NWIPE_DEVICE_SAS:
             strcpy( next_device->device_type_str, " SAS" );
-            check_HPA = 1;
             break;
 
         case NWIPE_DEVICE_MMC:
