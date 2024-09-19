@@ -1,5 +1,5 @@
 # Include directories and linker flags for OpenSSL
-AM_CFLAGS = -I$(top_srcdir)/external/openssl/build/include
+AM_CFLAGS = -I$(top_srcdir)/external/openssl/build/include -Wl,--gc-sections -flto -Os -s -fno-ident 
 AM_LDFLAGS = -L$(top_srcdir)/external/openssl/build/lib64 -l:libssl.a -l:libcrypto.a
 
 # List of binaries to be built
