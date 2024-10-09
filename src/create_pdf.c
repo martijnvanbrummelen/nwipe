@@ -52,8 +52,10 @@
 #include <openssl/err.h>
 #include <qrencode.h>
 #include <openssl/bio.h>
+
+/* Misc Headers */
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
+#include "../external/stb/stb_image_write.h"
 
 #define text_size_data 10
 
