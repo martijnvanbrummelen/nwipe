@@ -23,8 +23,8 @@
  * ensuring compliance with OpenSSL's licensing terms.
  */
 
-#ifndef AES_CTR_RNG_H
-#define AES_CTR_RNG_H
+#ifndef AES_CTR_PRNG_H
+#define AES_CTR_PRNG_H
 
 #include <stdint.h>
 #include <openssl/aes.h>
@@ -39,13 +39,40 @@ typedef struct
     unsigned char ecount[AES_BLOCK_SIZE];
 } aes_ctr_state_t;
 
-// Initializes the AES-CTR random number generator
-int aes_ctr_prng_init( aes_ctr_state_t* state, unsigned long init_key[], unsigned long key_length );
+/**
+ * Initializes the AES-CTR random number generator.
+ *
+ * @param state Pointer to the AES CTR PRNG state structure.
+ * @param init_key Array containing the seed for key generation.
+ * @param key_length Length of the seed array.
+ * @return int Returns 0 on success, -1 on failure.
+ */
+int aes_ctr_prng_init(aes_ctr_state_t* state, unsigned long init_key[], unsigned long key_length);
 
-// Generates a 256-bit random number using AES-CTR and stores it directly in the output buffer
-int aes_ctr_prng_genrand_uint256_to_buf( aes_ctr_state_t* state, unsigned char* bufpos );
+/**
+ * Generates a 256-bit random number using AES-CTR and stores it directly in the output buffer.
+ *
+ * @param state Pointer to the initialized AES CTR PRNG state.
+ * @param bufpos Target buffer where the pseudorandom numbers will be written.
+ * @return int Returns 0 on success, -1 on failure.
+ */
+int aes_ctr_prng_genrand_uint256_to_buf(aes_ctr_state_t* state, unsigned char* bufpos);
 
-// General cleanup function for AES CTR PRNG
-int aes_ctr_prng_general_cleanup( aes_ctr_state_t* state );
+/**
+ * Validates the pseudorandom data generation by generating test data and performing statistical tests.
+ *
+ * @param state Pointer to the initialized AES CTR PRNG state.
+ * @return int Returns 0 on success, -1 on failure.
+ */
+int aes_ctr_prng_validate(aes_ctr_state_t* state);
 
-#endif  // AES_CTR_RNG_H
+/**
+ * General cleanup function for AES CTR PRNG.
+ *
+ * @param state Pointer to the AES CTR PRNG state structure.
+ * @return int Returns 0 on success.
+ */
+int aes_ctr_prng_general_cleanup(aes_ctr_state_t* state);
+
+#endif  // AES_CTR_PRNG_H
+

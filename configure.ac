@@ -90,8 +90,15 @@ AC_CHECK_LIB([uuid], [uuid_generate])    # needed to statically link libparted, 
 PKG_CHECK_MODULES([PARTED], [libparted])
 AC_CHECK_LIB([pthread], [main], ,[AC_MSG_ERROR([pthread development library not found])])
 
+# Überprüft die Math-Bibliothek.
+AC_CHECK_LIB([m], [log2], [
+    LIBS="$LIBS -lm"
+], [
+    AC_MSG_ERROR([Math library not found. Please install the math library (libm).])
+])
+
 # Checks for header files.
-AC_CHECK_HEADERS([libconfig.h fcntl.h inttypes.h netinet/in.h stddef.h stdint.h stdlib.h string.h sys/file.h sys/ioctl.h unistd.h])
+AC_CHECK_HEADERS([libconfig.h fcntl.h inttypes.h netinet/in.h stddef.h stdint.h stdlib.h string.h sys/file.h sys/ioctl.h unistd.h math.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T
@@ -99,6 +106,7 @@ AC_CHECK_MEMBERS([struct stat.st_blksize])
 
 # Checks for library functions.
 AC_FUNC_MALLOC
-AC_CHECK_FUNCS([fdatasync memset regcomp strdup strerror])
+AC_CHECK_FUNCS([fdatasync memset regcomp strdup strerror log2 fabs])
 
 AC_OUTPUT
+

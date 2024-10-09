@@ -347,18 +347,17 @@ int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE )
 }
 
 /**
- * EPERIMENTAL implementation of AES-256 in counter mode to provide high-quality random numbers.
- * Initializes the AES CTR PRNG state.
+ * Initializes the AES-256-CTR PRNG using OpenSSL and validates its output.
+ *
  * @param state A double pointer to the PRNG state structure. If the pointed state is NULL,
  *        memory will be allocated and initialized for it.
  * @param seed A pointer to a seed structure containing the seed data and its length.
- * @return int Returns 0 on success, -1 on failure (e.g., memory allocation failure).
+ * @return int Returns 0 on success, -1 on failure.
  */
-
 int nwipe_aes_ctr_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
 {
     // Log the start of the PRNG initialization process.
-    nwipe_log( NWIPE_LOG_DEBUG, "Initialising AES CTR PRNG" );
+    nwipe_log( NWIPE_LOG_NOTICE, "Initializing AES-256-CTR PRNG" );
 
     // Check if the state pointer is NULL, indicating that it hasn't been allocated yet.
     if( *state == NULL )
@@ -376,13 +375,28 @@ int nwipe_aes_ctr_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
     }
 
     // Initialize the PRNG state with the provided seed.
-    if( aes_ctr_prng_init( (aes_ctr_state_t*) *state, (uint64_t*) ( seed->s ), seed->length / sizeof( uint64_t ) )
+    if( aes_ctr_prng_init(
+            (aes_ctr_state_t*) *state, (unsigned long*) ( seed->s ), seed->length / sizeof( unsigned long ) )
         != 0 )
     {
-        nwipe_log( NWIPE_LOG_SANITY, "Fatal error occured during PRNG init in OpenSSL." );
+        nwipe_log( NWIPE_LOG_FATAL, "Fatal error occurred during PRNG initialization in OpenSSL." );
+        aes_ctr_prng_general_cleanup( (aes_ctr_state_t*) *state );
+        free( *state );
+        *state = NULL;
         return -1;
     }
 
+    // Validate the PRNG output to ensure it is functioning correctly.
+    if( aes_ctr_prng_validate( (aes_ctr_state_t*) *state ) != 0 )
+    {
+        nwipe_log( NWIPE_LOG_FATAL, "AES CTR PRNG validation failed." );
+        aes_ctr_prng_general_cleanup( (aes_ctr_state_t*) *state );
+        free( *state );
+        *state = NULL;
+        return -1;
+    }
+
+    nwipe_log( NWIPE_LOG_NOTICE, "AES CTR PRNG successfully initialized and validated." );
     return 0;  // Indicate success.
 }
 
@@ -392,7 +406,7 @@ int nwipe_aes_ctr_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
  * @param state A double pointer to the PRNG state structure.
  * @param buffer A pointer to the buffer where the generated random data will be stored.
  * @param count The number of bytes of random data to generate.
- * @return int Returns 0 on success.
+ * @return int Returns 0 on success, -1 on failure.
  */
 int nwipe_aes_ctr_prng_read( NWIPE_PRNG_READ_SIGNATURE )
 {
@@ -408,7 +422,7 @@ int nwipe_aes_ctr_prng_read( NWIPE_PRNG_READ_SIGNATURE )
         // Generate a 256-bit block and write it directly to the buffer.
         if( aes_ctr_prng_genrand_uint256_to_buf( (aes_ctr_state_t*) *state, bufpos ) != 0 )
         {
-            nwipe_log( NWIPE_LOG_SANITY, "Fatal error occured during RNG generation in OpenSSL." );
+            nwipe_log( NWIPE_LOG_ERROR, "Error occurred during RNG generation in OpenSSL." );
             return -1;
         }
 
@@ -423,11 +437,15 @@ int nwipe_aes_ctr_prng_read( NWIPE_PRNG_READ_SIGNATURE )
     if( remain > 0 )
     {
         // Temporary buffer for the last block of random data.
-        unsigned char temp_output[32];
+        unsigned char temp_output[SIZE_OF_AES_CTR_PRNG];
         memset( temp_output, 0, sizeof( temp_output ) );
 
         // Generate one more block of random data.
-        aes_ctr_prng_genrand_uint256_to_buf( (aes_ctr_state_t*) *state, temp_output );
+        if( aes_ctr_prng_genrand_uint256_to_buf( (aes_ctr_state_t*) *state, temp_output ) != 0 )
+        {
+            nwipe_log( NWIPE_LOG_ERROR, "Error occurred during RNG generation in OpenSSL." );
+            return -1;
+        }
 
         // Copy only the necessary remaining bytes to the output buffer.
         memcpy( bufpos, temp_output, remain );
