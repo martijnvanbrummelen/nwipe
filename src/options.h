@@ -73,4 +73,18 @@ typedef struct
 
 extern nwipe_options_t nwipe_options;
 
+/*
+ * The cpuid function executes the CPUID instruction and returns the processor feature information.
+ * Parameters:
+ *  - eax: Input value for the EAX register, specifies the CPUID function to be executed.
+ *  - *eax_out, *ebx_out, *ecx_out, *edx_out: Pointers to variables to store the output of the CPUID instruction.
+ */
+void cpuid( uint32_t eax, uint32_t* eax_out, uint32_t* ebx_out, uint32_t* ecx_out, uint32_t* edx_out );
+
+/*
+ * Checks if the AES-NI instruction set is supported on the processor.
+ * Returns 1 (true) if AES-NI is supported, otherwise 0 (false).
+ */
+int has_aes_ni( void );
+
 #endif /* OPTIONS_H_ */
