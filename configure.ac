@@ -85,6 +85,22 @@ PKG_CHECK_MODULES(
 	    ], [AC_MSG_ERROR([libconfig library not found])])]
 )
 
+PKG_CHECK_MODULES(
+    [QRENCODE],
+    [qrencode],
+    [
+        CFLAGS="${CFLAGS} ${QRENCODE_CFLAGS}"
+        LIBS="${LIBS} ${QRENCODE_LIBS}"
+    ],
+    [AC_CHECK_LIB([qrencode], [QRcode_encodeString], [
+        LIBS="-lqrencode $LIBS"
+        AC_CHECK_HEADERS(qrencode.h,, [
+            AC_MSG_ERROR([QRencode headers not found])
+        ])
+    ], [AC_MSG_ERROR([QRencode library not found])]
+    )]
+)
+
 AC_CHECK_LIB([intl], [libintl_dgettext]) # needed to statically link libparted, but not given in its pkgconfig file
 AC_CHECK_LIB([uuid], [uuid_generate])    # needed to statically link libparted, but not given in its pkgconfig file
 PKG_CHECK_MODULES([PARTED], [libparted])
@@ -102,3 +118,4 @@ AC_FUNC_MALLOC
 AC_CHECK_FUNCS([fdatasync memset regcomp strdup strerror])
 
 AC_OUTPUT
+

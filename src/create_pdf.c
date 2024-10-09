@@ -50,6 +50,10 @@
 #include <openssl/pem.h>
 #include <openssl/x509.h>
 #include <openssl/err.h>
+#include <qrencode.h>
+#include <openssl/bio.h>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
 
 #define text_size_data 10
 
@@ -1157,28 +1161,114 @@ int sign_pdf( const char* pdf_filename, EVP_PKEY* pkey, unsigned char** signatur
     return 1; /* Success */
 }
 
-/* Function to add the signature to the PDF */
 void add_signature_to_pdf( struct pdf_doc* pdf, nwipe_context_t* c, unsigned char* signature, size_t signature_len )
 {
-    char* signature_hex = malloc( signature_len * 2 + 1 );
-    for( size_t i = 0; i < signature_len; i++ )
+    /* Convert signature to Base64 */
+    BIO *bio, *b64;
+    BUF_MEM* bufferPtr;
+
+    /* Create a Base64 filter */
+    b64 = BIO_new( BIO_f_base64() );
+    bio = BIO_new( BIO_s_mem() ); /* Create a memory BIO */
+    bio = BIO_push( b64, bio ); /* Chain the Base64 filter and memory BIO */
+
+    /* Write the signature into the BIO (this will be Base64 encoded) */
+    BIO_write( bio, signature, signature_len );
+    BIO_flush( bio ); /* Ensure all data is written */
+
+    /* Get a pointer to the memory buffer that contains the Base64-encoded data */
+    BIO_get_mem_ptr( bio, &bufferPtr );
+
+    /* Allocate memory for the Base64-encoded text and copy it */
+    char* b64text = (char*) malloc( bufferPtr->length + 1 );
+    memcpy( b64text, bufferPtr->data, bufferPtr->length );
+    b64text[bufferPtr->length] = '\0'; /* Null-terminate the string */
+
+    /* Free the BIOs */
+    BIO_free_all( bio );
+
+    /* Generate a QR code from the Base64-encoded signature */
+    QRcode* qrcode = QRcode_encodeString8bit( b64text, 0, QR_ECLEVEL_L );
+
+    if( !qrcode )
     {
-        sprintf( &signature_hex[i * 2], "%02x", signature[i] );
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to generate QR code" );
+        free( b64text );
+        return;
     }
-    signature_hex[signature_len * 2] = '\0';
+
+    /* Scale the QR code */
+    int qr_width = qrcode->width;
+    int scale = 10; /* Increase scaling factor to improve resolution */
+    int img_width = qr_width * scale;
+    int img_height = qr_width * scale;
+
+    /* Allocate memory for the image buffer */
+    unsigned char* img_data = malloc( img_width * img_height );
+    if( !img_data )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to allocate memory for QR code image" );
+        QRcode_free( qrcode );
+        free( b64text );
+        return;
+    }
+
+    /* Initialize the image data (white background) */
+    memset( img_data, 255, img_width * img_height );
+
+    /* Copy QR code data into the image buffer */
+    for( int y = 0; y < qr_width; y++ )
+    {
+        for( int x = 0; x < qr_width; x++ )
+        {
+            if( qrcode->data[y * qr_width + x] & 1 )
+            {
+                /* Set the corresponding pixels to black */
+                for( int dy = 0; dy < scale; dy++ )
+                {
+                    for( int dx = 0; dx < scale; dx++ )
+                    {
+                        int img_x = x * scale + dx;
+                        int img_y = y * scale + dy;
+                        img_data[img_y * img_width + img_x] = 0;
+                    }
+                }
+            }
+        }
+    }
+
+    /* Write the image data to PNG format in memory */
+    int png_len;
+    unsigned char* png_data = stbi_write_png_to_mem( img_data, img_width, img_width, img_height, 1, &png_len );
+
+    if( !png_data )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to write QR code image to PNG format" );
+        free( img_data );
+        QRcode_free( qrcode );
+        free( b64text );
+        return;
+    }
 
     /* Add a new page to display the signature */
     struct pdf_object* signature_page = pdf_append_page( pdf );
 
     /* Create header and footer for the signature page */
     char page_title[50];
-    snprintf( page_title, sizeof( page_title ), "Digital Signature" );
+    snprintf( page_title, sizeof( page_title ), "Signature" );
     create_header_and_footer( c, page_title );
 
-    /* Add signature as text */
-    pdf_set_font( pdf, "Courier" );
-    pdf_add_text( pdf, NULL, "Digital Signature (Hex):", 12, 50, 600, PDF_BLACK );
-    pdf_add_text_wrap( pdf, NULL, signature_hex, 10, 50, 580, PDF_BLACK, 500, PDF_ALIGN_LEFT, &height );
+    /* Add the QR code image to the PDF */
+    pdf_add_image_data( pdf, NULL, 50, 200, 200, 200, png_data, png_len );
 
-    free( signature_hex );
+    /* Optionally: Add the Base64-encoded signature as text */
+    pdf_set_font( pdf, "Courier" );
+    pdf_add_text( pdf, NULL, "Digital Signature (Base64):", 12, 50, 600, PDF_BLACK );
+    pdf_add_text_wrap( pdf, NULL, b64text, 10, 50, 580, PDF_BLACK, 500, PDF_ALIGN_LEFT, &height );
+
+    /* Free resources */
+    free( png_data );
+    free( img_data );
+    QRcode_free( qrcode );
+    free( b64text );
 }
