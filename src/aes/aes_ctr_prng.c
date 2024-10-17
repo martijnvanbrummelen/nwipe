@@ -29,8 +29,28 @@
 #include <openssl/err.h>
 #include <string.h>
 #include <stdlib.h>
-#include <assert.h>
 #include <math.h>
+#include <stdarg.h>
+
+// Define the custom assert macro
+#ifndef NWIPE_ASSERT_H
+#define NWIPE_ASSERT_H
+
+
+// Custom assert macro that logs a message before aborting
+#ifdef NDEBUG
+    #define NWIPE_ASSERT(cond, level, fmt, ...) ((void)0)
+#else
+    #define NWIPE_ASSERT(cond, level, fmt, ...)                                \
+        do {                                                                   \
+            if (!(cond)) {                                                     \
+                nwipe_log(level, "Assertion failed: " fmt, ##__VA_ARGS__);     \
+                abort();                                                       \
+            }                                                                  \
+        } while (0)
+#endif // NWIPE_ASSERT_H
+
+#endif // NWIPE_ASSERT_H
 
 typedef enum {
     NWIPE_LOG_NONE = 0,
@@ -60,7 +80,11 @@ static double calculate_shannon_entropy(const unsigned int* byte_counts, size_t 
    - key_length: Length of the seed array. */
 int aes_ctr_prng_init(aes_ctr_state_t* state, unsigned long init_key[], unsigned long key_length)
 {
-    assert(state != NULL && init_key != NULL && key_length > 0);  // Validate inputs
+    // Replace assert with NWIPE_ASSERT
+    NWIPE_ASSERT(state != NULL && init_key != NULL && key_length > 0,
+                NWIPE_LOG_FATAL,
+                "Invalid parameters: state=%p, init_key=%p, key_length=%lu",
+                (void*)state, (void*)init_key, key_length);
 
     unsigned char key[32];  // Storage for the 256-bit key
     memset(state->ivec, 0, AES_BLOCK_SIZE);  // Clear IV buffer
@@ -142,7 +166,11 @@ int aes_ctr_prng_init(aes_ctr_state_t* state, unsigned long init_key[], unsigned
    Returns 0 on success, -1 on failure. */
 int aes_ctr_prng_validate(aes_ctr_state_t* state)
 {
-    assert(state != NULL);
+    // Replace assert with NWIPE_ASSERT
+    NWIPE_ASSERT(state != NULL,
+                NWIPE_LOG_FATAL,
+                "Invalid parameter: state=%p",
+                (void*)state);
 
     const size_t test_data_size = 4096;  // 4KB of data
     unsigned char* test_buffer = malloc(test_data_size);
@@ -270,7 +298,11 @@ static double calculate_shannon_entropy(const unsigned int* byte_counts, size_t 
    Returns 0 on success, -1 on failure. */
 int aes_ctr_prng_genrand_uint256_to_buf(aes_ctr_state_t* state, unsigned char* bufpos)
 {
-    assert(state != NULL && bufpos != NULL);  // Validate inputs
+    // Replace assert with NWIPE_ASSERT
+    NWIPE_ASSERT(state != NULL && bufpos != NULL,
+                NWIPE_LOG_FATAL,
+                "Invalid parameters: state=%p, bufpos=%p",
+                (void*)state, (void*)bufpos);
 
     unsigned char temp_buffer[32];  // Temporary storage for pseudorandom bytes
     memset(temp_buffer, 0, sizeof(temp_buffer));  // Zero out temporary buffer
