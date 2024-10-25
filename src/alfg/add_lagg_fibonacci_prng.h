@@ -29,15 +29,46 @@
 
 #include <stdint.h>
 
-// State definition for the Additive Lagged Fibonacci Generator
-typedef struct
-{
-    uint64_t s[64];  // State array
-    unsigned int index;  // Current index in the state array
+/* 
+ * Constants defining the state size and lag values.
+ * STATE_SIZE must be a power of two for efficient indexing using bitmasking.
+ */
+#define STATE_SIZE 64           // Size of the state array, ensuring a long period
+#define LAG_BIG 55              // Larger lag value for the Fibonacci operation
+#define LAG_SMALL 24            // Smaller lag value for the Fibonacci operation
+#define MASK 0xFFFFFFFFUL       // Mask to enforce 32-bit overflow
+
+/*
+ * Structure representing the state of the ALFG.
+ * - s: Array holding the state values.
+ * - index: Current position in the state array.
+ */
+typedef struct {
+    uint32_t s[STATE_SIZE];    // State array containing the internal state
+    uint32_t index;            // Current index for generating the next number
 } add_lagg_fibonacci_state_t;
 
-// Function prototypes
-void add_lagg_fibonacci_init( add_lagg_fibonacci_state_t* state, uint64_t init_key[], unsigned long key_length );
-void add_lagg_fibonacci_genrand_uint256_to_buf( add_lagg_fibonacci_state_t* state, unsigned char* bufpos );
+/*
+ * Initializes the ALFG state with a given key.
+ * If the key length is insufficient to fill the state array, a linear congruential generator (LCG)
+ * is used to populate the remaining state values.
+ *
+ * Parameters:
+ * - state: Pointer to the ALFG state structure to be initialized.
+ * - init_key: Array of 64-bit integers used as the initial key.
+ * - key_length: Number of elements in the init_key array.
+ */
+void add_lagg_fibonacci_init(add_lagg_fibonacci_state_t* state, uint64_t init_key[], unsigned long key_length);
 
-#endif  // ADD_LAGG_FIBONACCI_PRNG_H
+/*
+ * Generates 256 bits (32 bytes) of pseudorandom data and writes it to the provided buffer.
+ * The function produces eight 32-bit random numbers, concatenating them to form the 256-bit output.
+ *
+ * Parameters:
+ * - state: Pointer to the initialized ALFG state structure.
+ * - bufpos: Pointer to the buffer where the generated random data will be stored.
+ */
+void add_lagg_fibonacci_genrand_uint256_to_buf(add_lagg_fibonacci_state_t* state, unsigned char* bufpos);
+
+#endif // ADD_LAGG_FIBONACCI_PRNG_H
+
