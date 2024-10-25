@@ -25,55 +25,108 @@
  */
 
 #include "add_lagg_fibonacci_prng.h"
-#include <stdint.h>
-#include <string.h>
+#include <string.h> // For memset, if needed
 
-#define STATE_SIZE 64  // Size of the state array, sufficient for a high period
-#define LAG_BIG 55  // Large lag, e.g., 55
-#define LAG_SMALL 24  // Small lag, e.g., 24
-#define MODULUS ( 1ULL << 48 )  // Modulus for the operations, here 2^48 for simple handling
-
-void add_lagg_fibonacci_init( add_lagg_fibonacci_state_t* state, uint64_t init_key[], unsigned long key_length )
+/*
+ * Initializes the ALFG state with a given key.
+ * If the key length is insufficient to fill the state array, a linear congruential generator (LCG)
+ * is used to populate the remaining state values.
+ *
+ * Parameters:
+ * - state: Pointer to the ALFG state structure to be initialized.
+ * - init_key: Array of 64-bit integers used as the initial key.
+ * - key_length: Number of elements in the init_key array.
+ */
+void add_lagg_fibonacci_init(add_lagg_fibonacci_state_t* state, uint64_t init_key[], unsigned long key_length)
 {
-    // Simple initialization: Fill the state with the key values and then with a linear combination of them
-    for( unsigned long i = 0; i < STATE_SIZE; i++ )
+    unsigned long i;
+    uint32_t seed = 19650218UL;  // Default seed value if no key is provided
+
+    /*
+     * Initialize the state array with the provided key.
+     * Each 64-bit key is split into two 32-bit values to populate the state array.
+     */
+    if (key_length > 0)
     {
-        if( i < key_length )
+        for (i = 0; i < key_length && i < STATE_SIZE; i++)
         {
-            state->s[i] = init_key[i];
-        }
-        else
-        {
-            // Simple method to generate further state values. Should be improved for serious applications.
-            state->s[i] = ( 6364136223846793005ULL * state->s[i - 1] + 1 ) % MODULUS;
+            /* Extract the lower 32 bits of the current key and assign to the state */
+            state->s[i] = (uint32_t)(init_key[i] & 0xFFFFFFFFUL);
+            
+            /* If there's room, extract the upper 32 bits of the current key for the next state element */
+            if (++i < STATE_SIZE)
+                state->s[i] = (uint32_t)(init_key[i - 1] >> 32);
         }
     }
-    state->index = 0;  // Initialize the index for the first generation
+    else
+    {
+        /* If no key is provided, initialize the first state element with the default seed */
+        state->s[0] = seed;
+        i = 1;
+    }
+
+    /*
+     * Populate the remaining state array using a linear congruential generator (LCG).
+     * The LCG parameters are chosen to suit 32-bit systems for efficient computation.
+     */
+    for (; i < STATE_SIZE; i++)
+    {
+        /* Apply the LCG formula: s[i] = (1812433253 * (s[i-1] ^ (s[i-1] >> 30)) + i) modulo 2^32 */
+        state->s[i] = (1812433253UL * (state->s[i - 1] ^ (state->s[i - 1] >> 30)) + i) & MASK;
+    }
+
+    /* Initialize the index to start generating random numbers from the beginning of the state array */
+    state->index = 0;
 }
 
-void add_lagg_fibonacci_genrand_uint256_to_buf( add_lagg_fibonacci_state_t* state, unsigned char* bufpos )
+/*
+ * Generates 256 bits (32 bytes) of pseudorandom data and writes it to the provided buffer.
+ * The function produces eight 32-bit random numbers, concatenating them to form the 256-bit output.
+ *
+ * Parameters:
+ * - state: Pointer to the initialized ALFG state structure.
+ * - bufpos: Pointer to the buffer where the generated random data will be stored.
+ */
+void add_lagg_fibonacci_genrand_uint256_to_buf(add_lagg_fibonacci_state_t* state, unsigned char* bufpos)
 {
-    uint64_t* buf_as_uint64 = (uint64_t*) bufpos;  // Interprets bufpos as a uint64_t array for direct assignment
-    int64_t result;  // Use signed integer to handle potential negative results from subtraction
+    uint32_t* buf_as_uint32 = (uint32_t*)bufpos;  // Cast buffer position to a 32-bit integer pointer
 
-    for (int i = 0; i < 4; i++) {
-        // Subtract the two previous numbers in the sequence
-        result = (int64_t)state->s[(state->index + LAG_BIG) % STATE_SIZE] - (int64_t)state->s[(state->index + LAG_SMALL) % STATE_SIZE];
+    /* 
+     * Generate eight 32-bit random numbers to form 256 bits of random data.
+     * Each iteration computes a new state value and stores it in both the state array and the output buffer.
+     */
+    for (int i = 0; i < 8; i++)
+    {
+        /*
+         * Calculate the indices for the two lagged values using bitmasking for efficient modulo operation.
+         * This is possible because STATE_SIZE is a power of two.
+         */
+        int idx_a = (state->index + LAG_BIG) & (STATE_SIZE - 1);    // Index for the larger lag
+        int idx_b = (state->index + LAG_SMALL) & (STATE_SIZE - 1);  // Index for the smaller lag
 
-        // Handle borrow if result is negative
-        if (result < 0) {
-            result += MODULUS;
-            // Optionally set a borrow flag or adjust the next operation based on borrow logic
-        }
+        /* 
+         * Perform the additive Fibonacci operation:
+         * new_value = (s[idx_a] + s[idx_b]) modulo 2^32
+         */
+        uint32_t result = (state->s[idx_a] + state->s[idx_b]) & MASK;
 
-        // Store the result (after adjustment) back into the state, ensuring it's positive and within range
-        state->s[state->index] = (uint64_t)result;
+        /* 
+         * Update the current state with the newly generated value.
+         * This maintains the state array for future random number generations.
+         */
+        state->s[state->index] = result;
 
-        // Write the result into buf_as_uint64
-        buf_as_uint64[i] = state->s[state->index];
+        /* 
+         * Store the generated 32-bit random number into the output buffer.
+         * This is done by writing directly to the buffer interpreted as a 32-bit integer array.
+         */
+        buf_as_uint32[i] = result;
 
-        // Update the index for the next round
-        state->index = (state->index + 1) % STATE_SIZE;
+        /* 
+         * Advance the index, wrapping around using bitmasking to maintain it within STATE_SIZE.
+         * This prepares the generator for the next round of random number generation.
+         */
+        state->index = (state->index + 1) & (STATE_SIZE - 1);
     }
 }
 
