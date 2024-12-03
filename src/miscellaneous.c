@@ -629,17 +629,70 @@ void fix_endian_model_names( char* model )
     int idx2 = 0;
     unsigned int length = 0;
     char* tmp_string;
+    char* model_lower_case;
+    int swap_endian_flag = 0;
 
-    length = strlen( model );
+    length = strlen( model ) + 1;
+    nwipe_log( NWIPE_LOG_INFO, " length = %i", length );
 
     tmp_string = calloc( length, 1 );
+    model_lower_case = calloc( length, 1 );
+
+    strncpy( model_lower_case, model, length + 1 );
+    model_lower_case[length + 1] = 0; /* makesure it's terminated */
+    strlower( model_lower_case ); /* convert to lower case for comparison */
 
     /* "ASSMNU G" = "SAMSUNG ", tested against model Samsung HM160HC so that
      * "ASSMNU G MH61H0 C" becomes "SAMSUNG HM160HC ")
      */
-    if( !( strncmp( model, "ASSMNU G", 8 ) ) )
+    if( !( strncmp( model_lower_case, "assmnu g", 8 ) ) )
     {
-        while( model[idx] != 0 )
+        swap_endian_flag = 1;
+    }
+    else
+    {
+        /* Hitachi */
+        if( !( strncmp( model_lower_case, "ihathc i", 8 ) ) )
+        {
+            swap_endian_flag = 1;
+        }
+        else
+        {
+            /* Toshiba */
+            if( !( strncmp( model_lower_case, "othsbi a", 8 ) ) )
+            {
+                swap_endian_flag = 1;
+            }
+            else
+            {
+                /* WDC (Western Digital Corporation) */
+                if( !( strncmp( model_lower_case, "dw c", 4 ) ) )
+                {
+                    swap_endian_flag = 1;
+                }
+                else
+                {
+                    /* Seagate */
+                    if( !( strncmp( model_lower_case, "esgata e", 8 ) ) )
+                    {
+                        swap_endian_flag = 1;
+                    }
+                    else
+                    {
+                        /* Seagate models starting ST */
+                        if( !( strncmp( model_lower_case, "ts", 2 ) ) )
+                        {
+                            swap_endian_flag = 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if( swap_endian_flag == 1 )
+    {
+        while( model[idx] != 0 && idx < length )
         {
             tmp_string[idx2 + 1] = model[idx];
             if( model[idx + 1] != 0 )
@@ -663,4 +716,6 @@ void fix_endian_model_names( char* model )
         tmp_string[idx2 + 1] = 0;
         strcpy( model, tmp_string );
     }
+    free( tmp_string );
+    free( model_lower_case );
 }
