@@ -635,11 +635,11 @@ void fix_endian_model_names( char* model )
     length = strlen( model ) + 1;
     nwipe_log( NWIPE_LOG_INFO, " length = %i", length );
 
-    tmp_string = calloc( length, 1 );
-    model_lower_case = calloc( length, 1 );
+    tmp_string = calloc( length + 1, 1 );
+    model_lower_case = calloc( length + 1, 1 );
 
-    strncpy( model_lower_case, model, length + 1 );
-    model_lower_case[length + 1] = 0; /* makesure it's terminated */
+    strncpy( model_lower_case, model, length );
+    model_lower_case[length] = 0; /* makesure it's terminated */
     strlower( model_lower_case ); /* convert to lower case for comparison */
 
     /* "ASSMNU G" = "SAMSUNG ", tested against model Samsung HM160HC so that
@@ -713,8 +713,9 @@ void fix_endian_model_names( char* model )
             idx2 += 2;
         }
 
-        tmp_string[idx2 + 1] = 0;
-        strcpy( model, tmp_string );
+        tmp_string[length] = 0; /* terminate */
+        strncpy( model, tmp_string, length );
+        model[length] = 0; /* terminate */
     }
     free( tmp_string );
     free( model_lower_case );
