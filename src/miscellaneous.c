@@ -632,8 +632,7 @@ void fix_endian_model_names( char* model )
     char* model_lower_case;
     int swap_endian_flag = 0;
 
-    length = strlen( model ) + 1;
-    nwipe_log( NWIPE_LOG_INFO, " length = %i", length );
+    length = strlen( model );
 
     tmp_string = calloc( length + 1, 1 );
     model_lower_case = calloc( length + 1, 1 );
@@ -645,6 +644,7 @@ void fix_endian_model_names( char* model )
     /* "ASSMNU G" = "SAMSUNG ", tested against model Samsung HM160HC so that
      * "ASSMNU G MH61H0 C" becomes "SAMSUNG HM160HC ")
      */
+
     if( !( strncmp( model_lower_case, "assmnu g", 8 ) ) )
     {
         swap_endian_flag = 1;
@@ -694,13 +694,16 @@ void fix_endian_model_names( char* model )
     {
         while( model[idx] != 0 && idx < length )
         {
-            tmp_string[idx2 + 1] = model[idx];
             if( model[idx + 1] != 0 )
             {
+                /* Swap the bytes */
+                tmp_string[idx2 + 1] = model[idx];
                 tmp_string[idx2] = model[idx + 1];
             }
             else
             {
+                /* Copy the last odd byte and exit while loop */
+                tmp_string[idx2] = model[idx];
                 break;
             }
 
