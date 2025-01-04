@@ -147,6 +147,9 @@ const char* stats_title = " Statistics ";
 /* Footer labels. */
 const char* main_window_footer =
     "S=Start m=Method p=PRNG v=Verify r=Rounds b=Blanking Space=Select c=Config CTRL+C=Quit";
+const char* shredos_main_window_footer =
+    "S=Start m=Method p=PRNG v=Verify r=Rounds b=Blanking Space=Select f=Font size c=Config CTRL+C=Quit";
+char** p_main_window_footer;
 const char* main_window_footer_warning_lower_case_s = "  WARNING: To start the wipe press SHIFT+S (uppercase S)  ";
 
 const char* main_window_footer_warning_no_blanking_with_ops2 =
@@ -166,9 +169,14 @@ const char* selection_footer_preview_prior_to_drive_selection =
     "A=Accept & display drives J=Down K=Up Space=Select Backspace=Cancel Ctrl+C=Quit";
 const char* selection_footer_add_customer = "S=Save J=Down K=Up Space=Select Backspace=Cancel Ctrl+C=Quit";
 const char* selection_footer_add_customer_yes_no = "Save Customer Details Y/N";
+char** p_end_wipe_footer; /* Contains a pointer to either end_wipe_footer or shredos_end_wipe_footer */
 const char* end_wipe_footer = "B=[Toggle between dark\\blank\\blue screen] Ctrl+C=Quit";
+const char* shredos_end_wipe_footer = "b=[Toggle dark\\blank\\blue screen] f=Font size Ctrl+C=Quit";
 const char* rounds_footer = "Left=Erase Esc=Cancel Ctrl+C=Quit";
 const char* selection_footer_text_entry = "Esc=Cancel Return=Submit Ctrl+C=Quit";
+
+/* Keeps track of whether font is standard or double size (applicable to ShredOS only) */
+int toggle_font_flag = 0;
 
 /* The number of lines available in the terminal */
 int stdscr_lines;
@@ -312,6 +320,17 @@ void nwipe_gui_init( void )
     /* Enable most special keys. */
     keypad( stdscr, TRUE );
 
+    /* Initialiase pointer to default end_wipe_footer text */
+    if( access( "/usr/bin/shredos_toggle_font_size.sh", F_OK ) == 0 )
+    {
+        p_end_wipe_footer = (char**) &shredos_end_wipe_footer;
+        p_main_window_footer = (char**) &shredos_main_window_footer;
+    }
+    else
+    {
+        p_end_wipe_footer = (char**) &end_wipe_footer;
+        p_main_window_footer = (char**) &main_window_footer;
+    }
     /* Create the text/background color pairs */
     nwipe_init_pairs();
 
@@ -322,7 +341,7 @@ void nwipe_gui_init( void )
     nwipe_gui_create_header_window();
 
     /* Create the footer window and panel */
-    nwipe_gui_create_footer_window( main_window_footer );
+    nwipe_gui_create_footer_window( *p_main_window_footer );
 
     /* Create the options window and panel */
     nwipe_gui_create_options_window();
@@ -672,7 +691,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
     do
     {
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, main_window_footer );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, *p_main_window_footer );
 
         /* There is one slot per line. */
         getmaxyx( main_window, wlines, wcols );
@@ -720,7 +739,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
 
         /* If the user selected an option the footer text would have changed.
          * Here we set it back to the main key help text */
-        nwipe_gui_create_footer_window( main_window_footer );
+        nwipe_gui_create_footer_window( *p_main_window_footer );
 
         /* Refresh the stats window */
         wnoutrefresh( stats_window );
@@ -1209,7 +1228,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                         wattroff( footer_window, COLOR_PAIR( 10 ) );
 
                         /* After the delay return footer text back to key help */
-                        nwipe_gui_amend_footer_window( main_window_footer );
+                        nwipe_gui_amend_footer_window( *p_main_window_footer );
                         doupdate();
 
                         break;
@@ -1225,7 +1244,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                         wattroff( footer_window, COLOR_PAIR( 10 ) );
 
                         /* After the delay return footer text back to key help */
-                        nwipe_gui_amend_footer_window( main_window_footer );
+                        nwipe_gui_amend_footer_window( *p_main_window_footer );
                         doupdate();
 
                         break;
@@ -1269,7 +1288,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                         wattroff( footer_window, COLOR_PAIR( 10 ) );
 
                         /* After the delay return footer text back to key help */
-                        nwipe_gui_amend_footer_window( main_window_footer );
+                        nwipe_gui_amend_footer_window( *p_main_window_footer );
                         doupdate();
 
                         /* Remove any repeated S key strokes, without this the gui would hang
@@ -1301,7 +1320,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                     wattroff( footer_window, COLOR_PAIR( 10 ) );
 
                     /* After the delay return footer text back to key help */
-                    nwipe_gui_amend_footer_window( main_window_footer );
+                    nwipe_gui_amend_footer_window( *p_main_window_footer );
                     doupdate();
 
                     /* Remove any repeated s key strokes, without this the gui would hang
@@ -1350,9 +1369,9 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
 
                     break;
 
-                case 'd':
+                case 'f':
 
-                    /* The d key is only meaningful for ShredOS, it toggles the fontsize */
+                    /* The f key is only meaningful for ShredOS, it toggles the fontsize */
                     if( access( "/usr/bin/shredos_toggle_font_size.sh", F_OK ) == 0 )
                     {
                         if( system( "/usr/bin/shredos_toggle_font_size.sh > /dev/null 2>&1" ) == 0 )
@@ -1389,7 +1408,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
     {
         /* If user has pressed S to start wipe change status line */
         werase( footer_window );
-        nwipe_gui_title( footer_window, end_wipe_footer );
+        nwipe_gui_title( footer_window, *p_end_wipe_footer );
         wnoutrefresh( footer_window );
     }
 
@@ -3866,7 +3885,7 @@ void nwipe_gui_list( int count, char* window_title, char** list, int* selected_e
     do
     {
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, main_window_footer );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, *p_main_window_footer );
 
         /* There is one slot per line. */
         getmaxyx( main_window, wlines, wcols );
@@ -6319,7 +6338,7 @@ void* nwipe_gui_status( void* ptr )
         nwipe_time_start = time( NULL ) - 1;
     }
 
-    nwipe_gui_title( footer_window, end_wipe_footer );
+    nwipe_gui_title( footer_window, *p_end_wipe_footer );
 
     loop_control = 1;
 
@@ -6392,7 +6411,7 @@ void* nwipe_gui_status( void* ptr )
             if( nwipe_active != 0 )
             {
                 /* if resizing the terminal during a wipe a specific footer is required */
-                nwipe_gui_create_all_windows_on_terminal_resize( 0, end_wipe_footer );
+                nwipe_gui_create_all_windows_on_terminal_resize( 0, *p_end_wipe_footer );
             }
             else
             {
@@ -6430,7 +6449,7 @@ void* nwipe_gui_status( void* ptr )
         {
             tft_saver = 0;
             nwipe_init_pairs();
-            nwipe_gui_create_all_windows_on_terminal_resize( 1, end_wipe_footer );
+            nwipe_gui_create_all_windows_on_terminal_resize( 1, *p_end_wipe_footer );
 
             /* Show screen */
             nwipe_gui_blank = 0;
@@ -6447,7 +6466,7 @@ void* nwipe_gui_status( void* ptr )
             show_panel( main_panel );
 
             /* Reprint the footer */
-            nwipe_gui_title( footer_window, end_wipe_footer );
+            nwipe_gui_title( footer_window, *p_end_wipe_footer );
 
             // Refresh the footer_window ;
             wnoutrefresh( footer_window );
@@ -6470,7 +6489,7 @@ void* nwipe_gui_status( void* ptr )
                         /* grey text on black background */
                         tft_saver = 1;
                         nwipe_init_pairs();
-                        nwipe_gui_create_all_windows_on_terminal_resize( 1, end_wipe_footer );
+                        nwipe_gui_create_all_windows_on_terminal_resize( 1, *p_end_wipe_footer );
                     }
                     else
                     {
@@ -6534,6 +6553,19 @@ void* nwipe_gui_status( void* ptr )
                     if( !nwipe_active || terminate_signal == 1 )
                     {
                         loop_control = 0;
+                    }
+
+                    break;
+
+                case 'f':
+
+                    /* The f key is only meaningful for ShredOS, it toggles the fontsize */
+                    if( access( "/usr/bin/shredos_toggle_font_size.sh", F_OK ) == 0 )
+                    {
+                        if( system( "/usr/bin/shredos_toggle_font_size.sh > /dev/null 2>&1" ) == 0 )
+                        {
+                            nwipe_log( NWIPE_LOG_INFO, "Toggle font size" );
+                        }
                     }
 
                     break;
