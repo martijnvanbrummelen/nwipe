@@ -669,6 +669,10 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
     /* Control A toggle status -1=indefined, 0=all drives delected, 1=all drives selected */
     int select_all_toggle_status = -1;
 
+    /* This is a flag used to exit this function once drives are selected and S is pressed 0=do not start wipe, 1=start
+     * wipe */
+    int startwipe = 0;
+
     /* Get the terminal size */
     getmaxyx( stdscr, stdscr_lines, stdscr_cols );
 
@@ -1304,6 +1308,10 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                         /* Remove the S from keystroke, which allows us to stay within the selection menu loop */
                         keystroke = 0;
                     }
+                    else
+                    {
+                        startwipe = 1;
+                    }
 
                     break;
 
@@ -1402,9 +1410,9 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
         while( validkeyhit == 0 && terminate_signal != 1 && stdscr_cols_previous == stdscr_cols
                && stdscr_lines_previous == stdscr_lines );
 
-    } while( keystroke != 'S' && terminate_signal != 1 );
+    } while( startwipe == 0 && terminate_signal != 1 );
 
-    if( keystroke == 'S' )
+    if( startwipe == 1 )
     {
         /* If user has pressed S to start wipe change status line */
         werase( footer_window );
