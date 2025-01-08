@@ -1,6 +1,19 @@
 RELEASE NOTES
 =============
 
+v0.38
+-----------------------
+includes the following changes:
+
+- Fixes type error, relevant to i686 (32 bit) only. Fixes a compile error on some distros. [#588](https://github.com/martijnvanbrummelen/nwipe/pull/588) Thanks @Knogle 
+- Added feature relevant to ShredOS only, the f key will toggle the font size, standard size to double size, has no action for other xorg/wayland distributions. The f key is available in the drive selection and progress screens only. Note that in earlier commits in this release the d key was programmed however this is now the f key to toggle font size. [#589](https://github.com/martijnvanbrummelen/nwipe/pull/589)  [#635](https://github.com/martijnvanbrummelen/nwipe/pull/635)  Thanks @PartialVolume 
+- Fixes a issue where SAS drives always respond with hidden sectors = ???, i.e warning. This patch fixes the problem so that a SAS drive responds with hidden sectors = not applicable. A SATA drive connected to a SAS interface should still respond with yes or no subject to the interface passing HPA and DCO-identify commands. [#605](https://github.com/martijnvanbrummelen/nwipe/pull/605) Thanks @PartialVolume 
+- On some distros, nwipe may not be able to find hdparm or smartctl even when they are installed. This is due to a symbolic link issue with the distro. The patch fixes this issue by adding a new search location when looking for hdparm and smartctl. The new search location is /usr/sbin/. Previously we searched /sbin/ and /usr/bin/ but /sbin is symbolically linked to /usr/sbin/ so just in case there was some issue with the symbolic link we also now search /usr/sbin/ [#606](https://github.com/martijnvanbrummelen/nwipe/pull/606) Thanks @PartialVolume 
+- The hidden sector check for SAS drives has been disabled as it is believed that SAS drives do not support the SCSI commands to adjust the drives size as reported to the O.S. [#607](https://github.com/martijnvanbrummelen/nwipe/pull/607) Thanks @PartialVolume 
+- Some USB adapters report the model name and serial number with the incorrect endian, so adjacent characters in the model name are swapped with each other. This patch detects and fixes model names for Hitachi, Toshiba, WDC Western Digital Corporation and Seagate/ST drives. Mainly some older adapters and drive interfaces might have this issue. [#630](https://github.com/martijnvanbrummelen/nwipe/pull/630) Thanks @PartialVolume 
+- Fixes the `s shift s bug` as reported here https://github.com/PartialVolume/shredos.x86_64/issues/301 To summarize, if no drives are selected and then the user presses s (lower case) a warning appears indicating that the user should press S (upper case) to start the wipe. This warning appears for about 3 seconds but during this time if the user presses S (upper case) nwipe would immediately complete, having wiped no drives and requesting the user to press the spacebar to exit. The is incorrect behaviour.
+The bug doesn't appear if the user pressed S after the 3 seconds elapsed and the warning message disappeared. This patch fixes this so that it does not exit but displays the warning for 3 seconds and then waits for input. [#636](https://github.com/martijnvanbrummelen/nwipe/pull/636)
+
 v0.37
 -----------------------
 includes the following changes:
