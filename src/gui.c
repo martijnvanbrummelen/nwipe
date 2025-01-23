@@ -1643,11 +1643,12 @@ void nwipe_gui_prng( void )
     extern nwipe_prng_t nwipe_aes_ctr_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
+    extern nwipe_prng_t nwipe_rc4_prng;
 
     extern int terminate_signal;
 
     /* The number of implemented PRNGs. */
-    const int count = 5;
+    const int count = 6;
 
     /* The first tabstop. */
     const int tab1 = 2;
@@ -1689,6 +1690,10 @@ void nwipe_gui_prng( void )
     {
         focus = 4;
     }
+    if( nwipe_options.prng == &nwipe_rc4_prng )
+    {
+        focus = 5;
+    }
     do
     {
         /* Clear the main window. */
@@ -1705,6 +1710,7 @@ void nwipe_gui_prng( void )
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_isaac64.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_add_lagg_fibonacci_prng.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_xoroshiro256_prng.label );
+        mvwprintw( main_window, yy++, tab1, "  %s", nwipe_rc4_prng.label );
         yy++;
 
         /* Print the cursor. */
@@ -1879,6 +1885,38 @@ void nwipe_gui_prng( void )
                            tab1,
                            "especially for legacy systems, due to its efficiency and minimal demands.  " );
                 break;
+
+            case 5:
+
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "RC4, originally designed by Ron Rivest, is a widely used symmetric stream cipher       " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "algorithm that can also function as a pseudo-random number generator (PRNG).          " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "Although it was primarily intended for encryption, RC4 has been adapted for various    " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "applications that require random number generation. The algorithm features a variable  " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "key length and generates numbers in a fast, byte-oriented manner. It is suitable for   " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "scenarios requiring simplicity and speed, but newer PRNGs may offer better randomness  " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "for cryptographic purposes.                                                           " );
+                break;
         }
 
         /* switch */
@@ -1948,6 +1986,10 @@ void nwipe_gui_prng( void )
                 if( focus == 4 )
                 {
                     nwipe_options.prng = &nwipe_xoroshiro256_prng;
+                }
+                if( focus == 5 )
+                {
+                    nwipe_options.prng = &nwipe_rc4_prng;
                 }
                 return;
 
