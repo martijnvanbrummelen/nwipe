@@ -684,6 +684,22 @@ void fix_endian_model_names( char* model )
                         {
                             swap_endian_flag = 1;
                         }
+                        else
+                        {
+                            /* Sundisk - Sandisk SSD from Sun AXI */
+                            if( !( strncmp( model_lower_case, "usdnsi k", 8 ) ) )
+                            {
+                                swap_endian_flag = 1;
+                            }
+                            else
+                            {
+                                /* Sandisk */
+                                if( !( strncmp( model_lower_case, "asdnsi k", 8 ) ) )
+                                {
+                                    swap_endian_flag = 1;
+                                }
+                            }
+                        }
                     }
                 }
             }
