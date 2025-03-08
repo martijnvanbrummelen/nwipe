@@ -2305,7 +2305,7 @@ void nwipe_gui_method( void )
     extern int terminate_signal;
 
     /* The number of implemented methods. */
-    const int count = 10;
+    const int count = 11;
 
     /* The first tabstop. */
     const int tab1 = 2;
@@ -2367,6 +2367,10 @@ void nwipe_gui_method( void )
     {
         focus = 9;
     }
+    if( nwipe_options.method == &nwipe_bruce7 )
+    {
+        focus = 10;
+    }
 
     do
     {
@@ -2389,6 +2393,7 @@ void nwipe_gui_method( void )
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_verify_zero ) );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_verify_one ) );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_is5enh ) );
+        mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_bruce7 ) );
         mvwprintw( main_window, yy++, tab1, "                                             " );
 
         /* Print the cursor. */
@@ -2524,6 +2529,19 @@ void nwipe_gui_method( void )
                 mvwprintw( main_window, 10, tab2, "device to verify the PRNG stream was             " );
                 mvwprintw( main_window, 11, tab2, "successfully written.                            " );
                 break;
+            case 10:
+
+                mvwprintw( main_window, 2, tab2, "Security Level: very high (7 passes)" );
+
+                mvwprintw( main_window, 4, tab2, "Bruce Schneier 7-Pass Wiping Method:              " );
+                mvwprintw( main_window, 5, tab2, "A secure erasure technique developed by the       " );
+                mvwprintw( main_window, 6, tab2, "renowned cryptographer Bruce Schneier.            " );
+                mvwprintw( main_window, 7, tab2, "                                                 " );
+                mvwprintw( main_window, 8, tab2, "This method first overwrites the device with      " );
+                mvwprintw( main_window, 9, tab2, "ones (0xFF), followed by zeroes (0x00). Then,     " );
+                mvwprintw( main_window, 10, tab2, "it performs five additional passes of PRNG-       " );
+                mvwprintw( main_window, 11, tab2, "generated random data to maximize security.       " );
+                break;
 
         } /* switch */
 
@@ -2618,6 +2636,10 @@ void nwipe_gui_method( void )
 
         case 9:
             nwipe_options.method = &nwipe_is5enh;
+            break;
+
+        case 10:
+            nwipe_options.method = &nwipe_bruce7;
             break;
     }
 

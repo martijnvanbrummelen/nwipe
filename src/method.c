@@ -68,6 +68,7 @@ const char* nwipe_one_label = "Fill With Ones";
 const char* nwipe_verify_zero_label = "Verify Zeros (0x00)";
 const char* nwipe_verify_one_label = "Verify Ones  (0xFF)";
 const char* nwipe_is5enh_label = "HMG IS5 Enhanced";
+const char* nwipe_bruce7_label = "Bruce Schneier 7-Pass";
 
 const char* nwipe_unknown_label = "Unknown Method (FIXME)";
 
@@ -117,6 +118,10 @@ const char* nwipe_method_label( void* method )
     if( method == &nwipe_is5enh )
     {
         return nwipe_is5enh_label;
+    }
+    if( method == &nwipe_bruce7 )
+    {
+        return nwipe_bruce7_label;
     }
 
     /* else */
@@ -749,6 +754,50 @@ void* nwipe_random( void* ptr )
 
     return NULL;
 } /* nwipe_random */
+
+void* nwipe_bruce7( void* ptr )
+{
+    /**
+     * Bruce Schneier 7-Pass wiping method.
+     *
+     * Pass 1: Overwrite the drive with all ones (0xFF).
+     * Pass 2: Overwrite the drive with all zeroes (0x00).
+     * Pass 3-7: Overwrite the drive with five passes of random data.
+     */
+
+    nwipe_context_t* c = (nwipe_context_t*) ptr;
+
+    /* Get current time at the start of the wipe */
+    time( &c->start_time );
+
+    /* Set wipe in progress flag for GUI */
+    c->wipe_status = 1;
+
+    /* Setup for Bruce Schneier 7-Pass method */
+    char onefill[1] = { '\xFF' };
+    char zerofill[1] = { '\x00' };
+    nwipe_pattern_t patterns[] = {
+        { 1, &onefill[0] },  // Pass 1: Overwrite with ones
+        { 1, &zerofill[0] },  // Pass 2: Overwrite with zeroes
+        { -1, "" },  // Pass 3: Random data
+        { -1, "" },  // Pass 4: Random data
+        { -1, "" },  // Pass 5: Random data
+        { -1, "" },  // Pass 6: Random data
+        { -1, "" },  // Pass 7: Random data
+        { 0, NULL }  // Terminate pattern array
+    };
+
+    /* Run the Bruce Schneier 7-Pass method */
+    c->result = nwipe_runmethod( c, patterns );
+
+    /* Finished. Set the wipe_status flag so that the GUI knows */
+    c->wipe_status = 0;
+
+    /* Get current time at the end of the wipe */
+    time( &c->end_time );
+
+    return NULL;
+}
 
 int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 {

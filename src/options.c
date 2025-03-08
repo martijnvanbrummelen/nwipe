@@ -386,6 +386,11 @@ int nwipe_options_parse( int argc, char** argv )
                     nwipe_options.method = &nwipe_is5enh;
                     break;
                 }
+                if( strcmp( optarg, "bruce7" ) == 0 )
+                {
+                    nwipe_options.method = &nwipe_bruce7;
+                    break;
+                }
 
                 /* Else we do not know this wipe method. */
                 fprintf( stderr, "Error: Unknown wipe method '%s'.\n", optarg );
@@ -710,7 +715,8 @@ void display_help()
     puts( "                          one                    - Overwrite with ones (0xFF)" );
     puts( "                          verify_zero            - Verifies disk is zero filled" );
     puts( "                          verify_one             - Verifies disk is 0xFF filled" );
-    puts( "                          is5enh                 - HMG IS5 enhanced\n" );
+    puts( "                          is5enh                 -  HMG IS5 enhanced\n" );
+    puts( "                          bruce7                 -  Schneier Bruce 7-pass mixed pattern\n" );
     puts( "  -l, --logfile=FILE      Filename to log to. Default is STDOUT\n" );
     puts( "  -P, --PDFreportpath=PATH Path to write PDF reports to. Default is \".\"" );
     puts( "                           If set to \"noPDF\" no PDF reports are written.\n" );
