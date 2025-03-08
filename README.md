@@ -1,88 +1,87 @@
 # nwipe
+
 ![GitHub CI badge](https://github.com/martijnvanbrummelen/nwipe/workflows/ci_ubuntu_latest/badge.svg)
 [![GitHub release](https://img.shields.io/github/release/martijnvanbrummelen/nwipe)](https://github.com/martijnvanbrummelen/nwipe/releases/)
 
-nwipe is a fork of the dwipe command originally used by Darik's Boot and Nuke (DBAN). nwipe was created out of a need to run the DBAN dwipe command outside of DBAN, in order to allow its use with any host distribution, thus giving better hardware support.
-
-nwipe is a program that will securely erase the entire contents of disks. It can wipe a single drive or multiple disks simultaneously. It can operate as both a command line tool without a GUI or with a ncurses GUI as shown in the example below:
+**nwipe** is a command-line utility designed to securely erase disks. It is a fork of the `dwipe` command used by Darik's Boot and Nuke ([DBAN](https://dban.org/)), created to allow disk wiping on any host distribution for better hardware support. nwipe can erase single or multiple disks simultaneously, either through a command-line interface or a user-friendly ncurses GUI.
 
 > **Warning**
-> For some of nwipes features such as smart data in the PDF certificate, HPA/DCO detection and other uses, nwipe utilises smartmontools and hdparm. Therefore both hdparm & smartmontools are a mandatory requirement if you want all of nwipes features to be fully available. If you do not install smartmontools and hdparm, nwipe will provide a warning in the log that these programs cannot be found but will still run but many important features may not work as they should do.
+> For some features, such as SMART data in the PDF certificate and HPA/DCO detection, nwipe utilizes `smartmontools` and `hdparm`. Both are mandatory requirements for full functionality. Without them, nwipe will display warnings and some features may not work as intended.
 
-![Example wipe](/images/example_wipe.gif)
+![Example wipe](https://raw.githubusercontent.com/martijnvanbrummelen/nwipe/master/images/example_wipe.gif)
 
-<i>The video above shows six drives being simultaneously erased. It skips to the completion of all six wipes and shows five drives that were successfully erased and one drive that failed due to an I/O error. The drive that failed would then normally be physically destroyed. The five drives that were successfully wiped with zero errors or failures can then be redeployed.</i>
+*The video above shows six drives being simultaneously erased. It skips to the completion of all six wipes, showing five drives successfully erased and one failed due to an I/O error. The failed drive would typically be physically destroyed. The successfully wiped drives can be redeployed.*
 
-![nwipe_certificate_0 35_5s](https://github.com/martijnvanbrummelen/nwipe/assets/22084881/cf181a9c-af2d-4bca-a6ed-15a4726cb12b)
-<i>The snapshot above shows nwipe's three page PDF certificate, drive identifiable information such as serial numbers have been anonymised using the nwipe command line option -q</i>
+![nwipe_certificate](https://github.com/martijnvanbrummelen/nwipe/assets/22084881/cf181a9c-af2d-4bca-a6ed-15a4726cb12b)
 
-## Erasure methods
-The user can select from a variety of recognised secure erase methods which include:
+*The snapshot above shows nwipe's three-page PDF certificate. Drive identifiable information like serial numbers has been anonymized using the `-q` option.*
 
-* Fill With Zeros    - Fills the device with zeros (0x00), one round only.
-* Fill With Ones     - Fills the device with ones  (0xFF), one round only.
-* RCMP TSSIT OPS-II  - Royal Candian Mounted Police Technical Security Standard, OPS-II
-* DoD Short          - The American Department of Defense 5220.22-M short 3 pass wipe (passes 1, 2 & 7).
-* DoD 5220.22M       - The American Department of Defense 5220.22-M full 7 pass wipe.
-* Gutmann Wipe       - Peter Gutmann's method (Secure Deletion of Data from Magnetic and Solid-State Memory).
-* PRNG Stream        - Fills the device with a stream from the PRNG.
-* Verify Zeros       - This method only reads the device and checks that it is filled with zeros (0x00).
-* Verify Ones        - This method only reads the device and checks that it is filled with ones (0xFF).
-* HMG IS5 enhanced   - Secure Sanitisation of Protectively Marked Information or Sensitive Information
+## Table of Contents
 
-nwipe also includes the following pseudo random number generators (prng):
-* Mersenne Twister
-* ISAAC
+- [Features](#features)
+- [Erasure Methods](#erasure-methods)
+- [Limitations with Solid State Drives](#limitations-with-solid-state-drives)
+- [Installation](#installation)
+  - [Prerequisites](#prerequisites)
+    - [Debian & Ubuntu](#debian--ubuntu)
+    - [Fedora](#fedora)
+  - [Compilation](#compilation)
+- [Usage](#usage)
+- [Development](#development)
+- [Automated Installation Script](#automated-installation-script)
+- [Bootable Version](#bootable-version)
+- [Distributions Including nwipe](#distributions-including-nwipe)
+- [Reporting Bugs](#reporting-bugs)
+- [License](#license)
 
-  In addition to the above, the following prngs will be available in v0.37  
-* XORoshiro-256
-* Lagged Fibonacci
-* AES-CTR (openssl)
+## Features
 
-These can be used to overwrite a drive with a stream of randomly generated characters.
+- Securely erase entire disks, single or multiple simultaneously.
+- Supports various recognized secure erase methods.
+- Operates via command-line interface or ncurses GUI.
+- Generates a detailed three-page PDF certificate documenting the erase process.
+- Detects and handles Host Protected Area (HPA) and Device Configuration Overlay (DCO).
+- Retrieves SMART data for drives.
 
-nwipe can be found in many [Linux distro repositories](#which-linux-distro-uses-the-latest-nwipe).
+## Erasure Methods
 
-nwipe is also included in [ShredOS](https://github.com/PartialVolume/shredos.x86_64) which was developed in particular to showcase nwipe as a fast-to-boot standalone method similar to DBAN. ShredOS always contains the latest nwipe version.
+Users can select from a variety of recognized secure erase methods:
 
-## Limitations regarding solid state drives
-In the current form nwipe does not sanitize solid state drives (hereinafter referred to as SSDs)
-of any form (SAS / Sata / NVME) and / or form factor (2.5" / 3.5" / PCI) fully due to their nature:  
-SSDs, as the transistors contained in the memory modules are subject to wear, contain in most cases
-additional memory modules installed as failover for broken sectors outside
-of the host accessible space (frequently referred to as "overprovisioning") and for garbage collection.
-Some manufacturers reserve access to these areas only to disk's own controller and firmware.
-It is therefor always advised to use nwipe / shredOS in conjunction with the manufacturer's or hardware vendor's own tools for sanitization to assure
-full destruction of the information contained on the disk.
-Given that most vendors and manufacturers do not provide open source tools, it is advised to validate the outcome by comparing the data on the disk before and after sanitization.
-A list of the most common tools and instructions for SSD wipes can be found in the [SSD Guide](ssd-guide.md).
+- **Fill With Zeros**: Fills the device with zeros (`0x00`), one pass.
+- **Fill With Ones**: Fills the device with ones (`0xFF`), one pass.
+- **RCMP TSSIT OPS-II**: Royal Canadian Mounted Police standard, OPS-II.
+- **DoD Short**: U.S. Department of Defense 5220.22-M short 3-pass wipe (passes 1, 2 & 7).
+- **DoD 5220.22-M**: U.S. Department of Defense 5220.22-M full 7-pass wipe.
+- **Gutmann Wipe**: Peter Gutmann's method for secure deletion.
+- **PRNG Stream**: Fills the device with data from a Pseudo-Random Number Generator.
+- **Verify Zeros**: Reads the device to verify it's filled with zeros.
+- **Verify Ones**: Reads the device to verify it's filled with ones.
+- **HMG IS5 Enhanced**: Secure sanitization for sensitive information.
 
-## Compiling & Installing
+### Pseudo-Random Number Generators (PRNGs)
 
-For a development setup, see the [Hacking section](#hacking) below. For a bootable version of the very latest nwipe master that you can write to an USB flash drive or CD/DVD, see the [Quick and easy bootable version of nwipe master section](#quick--easy-usb-bootable-version-of-nwipe-master-for-x86_64-systems) below.
+- **Mersenne Twister**
+- **ISAAC**
+- **XORoshiro-256** (Available in v0.37 and later)
+- **Lagged Fibonacci** (Available in v0.37 and later)
+- **AES-CTR (OpenSSL)** (Available in v0.37 and later)
 
-`nwipe` requires the following libraries to be installed:
+These PRNGs can be used to overwrite a drive with randomly generated data.
 
-* ncurses
-* pthreads
-* parted
-* libconfig
+## Limitations with Solid State Drives
 
-`nwipe` also requires the following program to be installed, it will abort with a warning if not found:
+nwipe does not fully sanitize Solid State Drives (SSDs) due to their architecture, which includes overprovisioning and wear-leveling mechanisms that reserve parts of the memory inaccessible to the host system. It's recommended to use nwipe alongside the manufacturer's or hardware vendor's tools for SSD sanitization to ensure complete data destruction. For more information and tools for SSD wipes, refer to the [SSD Guide](ssd-guide.md).
 
-* hdparm (as of current master and v0.35+)
+## Installation
 
-and optionally, but recommended, the following programs:
+### Prerequisites
 
-* dmidecode
-* readlink
-* smartmontools
+#### Debian & Ubuntu
 
-### Debian & Ubuntu prerequisites
-
-If you are compiling `nwipe` from source, the following libraries will need to be installed first:
+Before compiling nwipe from source, install the following dependencies:
 
 ```bash
+sudo apt update
 sudo apt install \
   build-essential \
   pkg-config \
@@ -92,152 +91,151 @@ sudo apt install \
   libparted-dev \
   libconfig-dev \
   libconfig++-dev \
+  hdparm \
+  smartmontools \
   dmidecode \
   coreutils \
-  smartmontools \
-  hdparm
+  git
 ```
 
-### Fedora prerequisites
+#### Fedora
 
 ```bash
-sudo bash
-dnf update
-dnf groupinstall "Development Tools"
-dnf groupinstall "C Development Tools and Libraries"
-yum install ncurses-devel
-yum install parted-devel
-yum install libconfig-devel
-yum install libconfig++-devel
-yum install dmidecode
-yum install coreutils
-yum install smartmontools
-yum install hdparm
+sudo dnf groupinstall "Development Tools"
+sudo dnf install \
+  ncurses-devel \
+  parted-devel \
+  libconfig-devel \
+  libconfig++-devel \
+  hdparm \
+  smartmontools \
+  dmidecode \
+  coreutils \
+  git
 ```
-Note. The following programs are optionally installed although recommended. 1. dmidecode 2. readlink 3. smartmontools.
-
-#### hdparm [REQUIRED]
-hdparm provides some of the information regarding disk size in sectors as related to the host protected area (HPA) and device configuration overlay (DCO). We do however have our own function that directly access the DCO to obtain the 'real max sectors' so reliance on hdparm may be removed at a future date.
-
-#### dmidecode [RECOMMENDED]
-dmidecode provides SMBIOS/DMI host data to stdout or the log file. If you don't install it you won't see the SMBIOS/DMI host data at the beginning of nwipes log.
-
-#### coreutils (provides readlink) [RECOMMENDED]
-readlink determines the bus type, i.e. ATA, USB etc. Without it the --nousb option won't work and bus type information will be missing from nwipes selection and wipe windows. The coreutils package is often automatically installed as default in most if not all distros.
-
-#### smartmontools [REQUIRED]
-smartmontools obtains serial number information for supported USB to IDE/SATA adapters. Without it, drives plugged into USB ports will not show serial number information.
-
-If you want a quick and easy way to keep your copy of nwipe running the latest master release of nwipe see the [automating the download and compilation](#automating-the-download-and-compilation-process-for-debian-based-distros) section.
 
 ### Compilation
 
-First create all the autoconf files:
-```
+First, create all the autoconf files:
+
+```bash
 ./autogen.sh
 ```
 
-Then compile & install using the following standard commands:
-```
+Then compile and install:
+
+```bash
 ./configure
-make format (only required if submitting pull requests)
 make
-make install
+sudo make install
 ```
 
-Then run nwipe !
-```
-cd src
-sudo ./nwipe
-```
-or
-```
+Run nwipe:
+
+```bash
 sudo nwipe
 ```
 
-### Hacking
+## Usage
 
-If you wish to submit pull requests to this code we would prefer you enable all warnings when compiling.
-This can be done using the following compile commands:
+To start nwipe with the ncurses GUI:
 
+```bash
+sudo nwipe
 ```
+
+For command-line options:
+
+```bash
+nwipe --help
+```
+
+## Development
+
+If you wish to contribute to nwipe, please enable all warnings when compiling:
+
+```bash
 ./configure --prefix=/usr CFLAGS='-O0 -g -Wall -Wextra'
-make format (necessary if submitting pull requests)
+make format  # Necessary if submitting pull requests
 make
-make install
+sudo make install
 ```
 
-The `-O0 -g` flags disable optimisations. This is required if you're debugging with `gdb` in an IDE such as Kdevelop. With these optimisations enabled you won't be able to see the values of many variables in nwipe, not to mention the IDE won't step through the code properly.
+- The `-O0 -g` flags disable optimizations for debugging.
+- The `-Wall` and `-Wextra` flags enable all compiler warnings.
+- Use `make format` to ensure code style consistency as defined in the `.clang-format` file (requires `clang-format`).
 
-The `-Wall` and `-Wextra` flags enable all compiler warnings. Please submit code with zero warnings.
+After development, you can compile with optimizations:
 
-Also make sure that your changes are consistent with the coding style defined in the `.clang-format` file, using:
-```
-make format
-```
-You will need `clang-format` installed to use the `format` command.
-
-Once done with your coding then the released/patch/fixed code can be compiled, with all the normal optimisations, using:
-```
-./configure --prefix=/usr && make && make install
+```bash
+./configure --prefix=/usr
+make
+sudo make install
 ```
 
-## Automating the download and compilation process for Debian based distros.
+## Automated Installation Script
 
-Here's a script that will do just that! It will create a directory in your home folder called 'nwipe_master'. It installs all the libraries required to compile the software (build-essential) and all the libraries that nwipe requires (libparted etc). It downloads the latest master copy of nwipe from github. It then compiles the software and then runs the latest nwipe. It doesn't write over the version of nwipe that's installed in the repository (If you had nwipe already installed). To run the latest master version of nwipe manually you would run it like this `sudo ~/nwipe_master/nwipe/src/nwipe`
+For Debian-based distributions, automate the download and compilation with the following script:
 
-You can run the script multiple times; the first time it's run it will install all the libraries; subsequent times it will just say the libraries are up to date. As it always downloads a fresh copy of the nwipe master from Github, you can always stay up to date. Just run it to get the latest version of nwipe. It only takes 11 seconds to compile on my i7.
-
-If you already have nwipe installed from the repository, you need to take care which version you are running. If you typed `nwipe` from any directory it will always run the original repository copy of nwipe. To run the latest nwipe you have to explicitly tell it where the new copy is, e.g in the directory `~/nwipe_master/nwipe/src`. That's why you would run it by typing `sudo ~/nwipe_master/nwipe/src/nwipe` alternatively you could cd to the directory and run it like this:
-
-```
-cd ~/nwipe_master/nwipe/src
-./nwipe
-```
-
-Note the ./, that means only look in the current directory for nwipe. if you forgot to type ./ the computer would run the older repository version of nwipe.
-
-Once you have copied the script below into a file called buildnwipe, you need to give the file execute permissions `chmod +x buildnwipe` before you can run it.
-```
+```bash
 #!/bin/bash
 cd "$HOME"
 nwipe_directory="nwipe_master"
-mkdir $nwipe_directory
+mkdir -p $nwipe_directory
 cd $nwipe_directory
-sudo apt install build-essential pkg-config automake libncurses5-dev autotools-dev libparted-dev libconfig-dev libconfig++-dev dmidecode readlink smartmontools git
+sudo apt update
+sudo apt install -y \
+  build-essential \
+  pkg-config \
+  automake \
+  libncurses5-dev \
+  autotools-dev \
+  libparted-dev \
+  libconfig-dev \
+  libconfig++-dev \
+  hdparm \
+  smartmontools \
+  dmidecode \
+  coreutils \
+  git
 rm -rf nwipe
 git clone https://github.com/martijnvanbrummelen/nwipe.git
-cd "nwipe"
+cd nwipe
 ./autogen.sh
 ./configure
 make
-cd "src"
+cd src
 sudo ./nwipe
 ```
 
-## Quick & Easy, USB bootable version of nwipe master for x86_64 systems.
-If you want to just try out a bootable version of nwipe you can download [ShredOS](https://github.com/PartialVolume/shredos.x86_64). The ShredOS image is around 60MB and can be written to an USB flash drive in seconds, allowing you to boot straight into the latest version of nwipe. ShredOS is available for x86_64 (64-bit) and i686 (32-bit) CPU architectures and will boot both legacy BIOS and UEFI devices. It comes as .IMG (bootable USB flash drive image) or .ISO (for CD-R/DVD-R). Instructions and download can be found [here](https://github.com/PartialVolume/shredos.x86_64#obtaining-and-writing-shredos-to-a-usb-flash-drive-the-easy-way-).
+Save this script as `buildnwipe.sh`, give it execute permissions with `chmod +x buildnwipe.sh`, and run it to compile and start nwipe.
 
-## Which Linux distro uses the latest nwipe?
-See [Repology](https://repology.org/project/nwipe/versions)
+## Bootable Version
 
-And in addition checkout the following distros that all include nwipe:
+To try a bootable version of nwipe, download [ShredOS](https://github.com/PartialVolume/shredos.x86_64). ShredOS is a small (~60MB) bootable image containing the latest nwipe version. It supports both BIOS and UEFI boot modes and can be written to a USB flash drive or CD/DVD.
 
-- [ShredOS](https://github.com/PartialVolume/shredos.x86_64) Always has the latest nwipe release.
-- [netboot.xyz](https://github.com/netbootxyz/netboot.xyz) Can network-boot ShredOS.
-- [DiskDump](https://github.com/Awire9966/DiskDump) nwipe on Debian livecd, can wipe eMMC chips.
-- [partedmagic](https://partedmagic.com)
-- [SystemRescueCD](https://www.system-rescue.org)
-- [gparted live](https://sourceforge.net/projects/gparted/files/gparted-live-testing/1.2.0-2/)
-- [grml](https://grml.org/)
+Instructions and downloads are available [here](https://github.com/PartialVolume/shredos.x86_64#obtaining-and-writing-shredos-to-a-usb-flash-drive-the-easy-way-).
 
-Know of other distros that include nwipe? Then please let us know or issue a PR on this README.md. Thanks.
+## Distributions Including nwipe
 
-## Bugs
+nwipe is included in many Linux distributions. For the latest version availability, see [Repology](https://repology.org/project/nwipe/versions).
 
-Bugs can be reported on GitHub:
-https://github.com/martijnvanbrummelen/nwipe
+Distributions that include nwipe:
+
+- [ShredOS](https://github.com/PartialVolume/shredos.x86_64) - Always has the latest nwipe release.
+- [netboot.xyz](https://github.com/netbootxyz/netboot.xyz) - Can network-boot ShredOS.
+- [DiskDump](https://github.com/Awire9966/DiskDump) - nwipe on Debian live CD, can wipe eMMC chips.
+- [Parted Magic](https://partedmagic.com)
+- [SystemRescue](https://www.system-rescue.org)
+- [GParted Live](https://gparted.org/livecd.php)
+- [Grml](https://grml.org/)
+
+If you know of other distributions that include nwipe, please let us know or submit a pull request to update this README.
+
+## Reporting Bugs
+
+Report bugs on GitHub: [nwipe Issues](https://github.com/martijnvanbrummelen/nwipe/issues)
 
 ## License
 
-GNU General Public License v2.0
+This project is licensed under the **GNU General Public License v3.0**. See the [LICENSE](LICENSE) file for details.
