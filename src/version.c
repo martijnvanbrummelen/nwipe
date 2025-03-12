@@ -4,7 +4,7 @@
  * used by configure to dynamically assign those values
  * to documentation files.
  */
-const char* version_string = "0.38";
+const char* version_string = "0.38.1";
 const char* program_name = "nwipe";
 const char* author_name = "Martijn van Brummelen";
 const char* email_address = "git@brumit.nl";
@@ -15,4 +15,4 @@ Nick Law <shredos.eraser@gmail.com> (@PartialVolume) and others\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty; not even for MERCHANTABILITY or FITNESS\n\
 FOR A PARTICULAR PURPOSE.\n";
-const char* banner = "nwipe 0.38";
+const char* banner = "nwipe 0.38.1";
