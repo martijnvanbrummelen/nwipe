@@ -31,6 +31,9 @@
 #include "pass.h"
 #include "logging.h"
 #include "gui.h"
+#include "chacha/chacha20_prng.h"
+
+extern nwipe_prng_t nwipe_chacha20_prng;
 
 int nwipe_random_verify( nwipe_context_t* c )
 {
@@ -214,6 +217,14 @@ int nwipe_random_verify( nwipe_context_t* c )
     /* Release the buffers. */
     free( b );
     free( d );
+
+    // Cleanup PRNG state at the end of function
+    // Check before cleaning up ChaCha20 PRNG state
+    if( c->prng == &nwipe_chacha20_prng )
+    {
+        chacha20_prng_general_cleanup( (chacha20_state_t*) c->prng_state );
+        nwipe_log( NWIPE_LOG_DEBUG, "Called chacha20_general_cleanup(), and cleaned up ChaCha20 context." );
+    }
 
     /* We're done. */
     return 0;
@@ -463,6 +474,14 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
             c->bytes_erased = c->device_size - z - blocksize;
         }
         return -1;
+    }
+
+    // Cleanup PRNG state at the end of function
+    // Check before cleaning up ChaCha20 PRNG state
+    if( c->prng == &nwipe_chacha20_prng )
+    {
+        chacha20_prng_general_cleanup( (chacha20_state_t*) c->prng_state );
+        nwipe_log( NWIPE_LOG_DEBUG, "Called chacha20_prng_general_cleanup(), and cleaned up ChaCha20 context." );
     }
 
     /* We're done. */

@@ -411,6 +411,10 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
     {
         fprintf( stderr, "nwipe_log: pthread_mutex_unlock failed. Code %i \n", r );
     }
+    if( level == NWIPE_LOG_SANITY )
+    {
+        nwipe_log( NWIPE_LOG_NOTICE, "Please report this bug to %s." NWIPE_GITHUB_ISSUE_URL );
+    }
     return;
 
 } /* nwipe_log */

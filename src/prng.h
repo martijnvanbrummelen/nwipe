@@ -63,6 +63,10 @@ int nwipe_add_lagg_fibonacci_prng_read( NWIPE_PRNG_READ_SIGNATURE );
 int nwipe_xoroshiro256_prng_init( NWIPE_PRNG_INIT_SIGNATURE );
 int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE );
 
+/* ChaCha20 prototypes. */
+int nwipe_chacha20_prng_init( NWIPE_PRNG_INIT_SIGNATURE );
+int nwipe_chacha20_prng_read( NWIPE_PRNG_READ_SIGNATURE );
+
 /* Size of the twister is not derived from the architecture, but it is strictly 4 bytes */
 #define SIZE_OF_TWISTER 4
 
@@ -75,5 +79,8 @@ int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE );
 
 /* Size of the XOROSHIRO-256 is not derived from the architecture, but it is strictly 32 bytes */
 #define SIZE_OF_XOROSHIRO256_PRNG 32
+
+/* Size of the ChaCha20 is not derived from the architecture, but it is strictly 64 bytes */
+#define SIZE_OF_CHACHA20_PRNG 64
 
 #endif /* PRNG_H_ */
