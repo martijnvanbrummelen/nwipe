@@ -610,37 +610,25 @@ void nwipe_options_log( void )
     {
         nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Mersenne Twister" );
     }
+    else if( nwipe_options.prng == &nwipe_add_lagg_fibonacci_prng )
+    {
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Lagged Fibonacci generator (EXPERIMENTAL!)" );
+    }
+    else if( nwipe_options.prng == &nwipe_xoroshiro256_prng )
+    {
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = XORoshiro-256 (EXPERIMENTAL!)" );
+    }
+    else if( nwipe_options.prng == &nwipe_isaac )
+    {
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Isaac" );
+    }
+    else if( nwipe_options.prng == &nwipe_isaac64 )
+    {
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Isaac64" );
+    }
     else
     {
-        if( nwipe_options.prng == &nwipe_add_lagg_fibonacci_prng )
-        {
-            nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Lagged Fibonacci generator (EXPERIMENTAL!)" );
-        }
-        else
-        {
-            if( nwipe_options.prng == &nwipe_xoroshiro256_prng )
-            {
-                nwipe_log( NWIPE_LOG_NOTICE, "  prng     = XORoshiro-256 (EXPERIMENTAL!)" );
-            }
-            else
-            {
-                if( nwipe_options.prng == &nwipe_isaac )
-                {
-                    nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Isaac" );
-                }
-                else
-                {
-                    if( nwipe_options.prng == &nwipe_isaac64 )
-                    {
-                        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Isaac64" );
-                    }
-                    else
-                    {
-                        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Undefined" );
-                    }
-                }
-            }
-        }
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Undefined" );
     }
 
     nwipe_log( NWIPE_LOG_NOTICE, "  method   = %s", nwipe_method_label( nwipe_options.method ) );
@@ -720,7 +708,8 @@ void display_help()
     puts( "  -l, --logfile=FILE      Filename to log to. Default is STDOUT\n" );
     puts( "  -P, --PDFreportpath=PATH Path to write PDF reports to. Default is \".\"" );
     puts( "                           If set to \"noPDF\" no PDF reports are written.\n" );
-    puts( "  -p, --prng=METHOD       PRNG option (mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng)\n" );
+    puts( "  -p, --prng=METHOD       PRNG option "
+          "(mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng|xoroshiro256_prng)\n" );
     puts( "  -q, --quiet             Anonymize logs and the GUI by removing unique data, i.e." );
     puts( "                          serial numbers, LU WWN Device ID, and SMBIOS/DMI data" );
     puts( "                          XXXXXX = S/N exists, ????? = S/N not obtainable\n" );
