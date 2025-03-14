@@ -260,7 +260,7 @@ int nwipe_isaac64_read( NWIPE_PRNG_READ_SIGNATURE )
     return 0;
 }
 
-/* EXPERIMENTAL implementation of Lagged Fibonacci generator a lot of random numbers */
+/* Implementation of Lagged Fibonacci generator a lot of random numbers */
 int nwipe_add_lagg_fibonacci_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
 {
     if( *state == NULL )
@@ -274,7 +274,7 @@ int nwipe_add_lagg_fibonacci_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
     return 0;
 }
 
-/* EXPERIMENTAL implementation of XORoroshiro256 algorithm to provide high-quality, but a lot of random numbers */
+/* Implementation of XORoroshiro256 algorithm to provide high-quality, but a lot of random numbers */
 int nwipe_xoroshiro256_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
 {
     nwipe_log( NWIPE_LOG_NOTICE, "Initialising XORoroshiro-256 PRNG" );

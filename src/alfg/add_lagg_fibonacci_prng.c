@@ -20,6 +20,9 @@
  * damages, or other liability, whether in an action of contract, tort, or otherwise, arising
  * from, out of, or in connection with the software or the use or other dealings in the software.
  *
+ * Actually it uses subtraction as the core operation, making it conceptually closer to a
+ * "Subtractive Lagged Fibonacci Generator" (SLFG) variant, but well..
+ *
  * Note: This implementation is designed for non-cryptographic applications and should not be
  * used where cryptographic security is required.
  */
