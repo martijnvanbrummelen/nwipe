@@ -67,8 +67,14 @@ PKG_CHECK_MODULES(
 	    ], [AC_MSG_ERROR([libconfig library not found])])]
 )
 
-AC_CHECK_LIB([intl], [libintl_dgettext]) # needed to statically link libparted, but not given in its pkgconfig file
-AC_CHECK_LIB([uuid], [uuid_generate])    # needed to statically link libparted, but not given in its pkgconfig file
+# Libraries needed for static linking with parted
+if echo "$LDFLAGS" | grep -q "static"; then
+	AC_CHECK_LIB([intl], [libintl_dgettext])
+	AC_CHECK_LIB([uuid], [uuid_generate])
+	AC_CHECK_LIB([devmapper], [dm_task_create], [LIBS="-ldevmapper $LIBS"], [AC_MSG_ERROR([devmapper library not found])])
+	AC_CHECK_LIB([blkid], [blkid_new_probe], [LIBS="-lblkid $LIBS"], [AC_MSG_ERROR([blkid library not found])])
+fi
+
 PKG_CHECK_MODULES([PARTED], [libparted])
 AC_CHECK_LIB([pthread], [main], ,[AC_MSG_ERROR([pthread development library not found])])
 
