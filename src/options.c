@@ -635,7 +635,7 @@ void nwipe_options_log( void )
     }
     else if( nwipe_options.prng == &nwipe_ascon_prf_prng )
     {
-     	nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Ascon-PRF v1.3 (40 B/perm)" );
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Ascon-PRF v1.3 (40 B/perm)" );
     }
     else
     {

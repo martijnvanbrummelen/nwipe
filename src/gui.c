@@ -1885,7 +1885,7 @@ void nwipe_gui_prng( void )
                            tab1,
                            "especially for legacy systems, due to its efficiency and minimal demands.  " );
                 break;
-                            case 5:
+            case 5:
 
                 mvwprintw( main_window,
                            yy++,
@@ -1936,7 +1936,6 @@ void nwipe_gui_prng( void )
                            tab1,
                            "on the official Ascon reference code.                                     " );
                 break;
-
         }
 
         /* switch */
