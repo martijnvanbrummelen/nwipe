@@ -1643,11 +1643,12 @@ void nwipe_gui_prng( void )
     extern nwipe_prng_t nwipe_aes_ctr_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
+    extern nwipe_prng_t nwipe_ascon_prf_prng;
 
     extern int terminate_signal;
 
     /* The number of implemented PRNGs. */
-    const int count = 5;
+    const int count = 6;
 
     /* The first tabstop. */
     const int tab1 = 2;
@@ -1689,6 +1690,10 @@ void nwipe_gui_prng( void )
     {
         focus = 4;
     }
+    if( nwipe_options.prng == &nwipe_ascon_prf_prng )
+    {
+        focus = 5;
+    }
     do
     {
         /* Clear the main window. */
@@ -1705,6 +1710,7 @@ void nwipe_gui_prng( void )
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_isaac64.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_add_lagg_fibonacci_prng.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_xoroshiro256_prng.label );
+        mvwprintw( main_window, yy++, tab1, "  %s", nwipe_ascon_prf_prng.label );
         yy++;
 
         /* Print the cursor. */
@@ -1879,6 +1885,58 @@ void nwipe_gui_prng( void )
                            tab1,
                            "especially for legacy systems, due to its efficiency and minimal demands.  " );
                 break;
+                            case 5:
+
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "Ascon-PRF v1.3 is a cryptographic pseudorandom function selected by NIST   " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "as part of the lightweight cryptography standardization project. Designed " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "for efficiency and robustness even on constrained devices, it provides     " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "secure and deterministic output with a compact implementation footprint.   " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "                                                                            " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "In nwipe, Ascon-PRF is repurposed as a keystream generator that uses a    " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "64-bit counter and a 128-bit key (seed) to generate high-entropy output.  " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "The resulting stream is cryptographically secure and resistant to attack, " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "making it ideal for secure data erasure on modern storage devices.        " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "                                                                            " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "This implementation was integrated by Fabian Druschke in 2025 and builds  " );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "on the official Ascon reference code.                                     " );
+                break;
+
         }
 
         /* switch */
@@ -1948,6 +2006,10 @@ void nwipe_gui_prng( void )
                 if( focus == 4 )
                 {
                     nwipe_options.prng = &nwipe_xoroshiro256_prng;
+                }
+                if( focus == 5 )
+                {
+                    nwipe_options.prng = &nwipe_ascon_prf_prng;
                 }
                 return;
 

@@ -27,6 +27,7 @@
 #include "isaac_rand/isaac64.h"
 #include "alfg/add_lagg_fibonacci_prng.h"  //Lagged Fibonacci generator prototype
 #include "xor/xoroshiro256_prng.h"  //XORoshiro-256 prototype
+#include "ascon/ascon_prf_prng.h"   /* ASCON framework PRNG wrapper             */
 
 nwipe_prng_t nwipe_twister = { "Mersenne Twister (mt19937ar-cok)", nwipe_twister_init, nwipe_twister_read };
 
@@ -39,6 +40,9 @@ nwipe_prng_t nwipe_add_lagg_fibonacci_prng = { "Lagged Fibonacci generator",
                                                nwipe_add_lagg_fibonacci_prng_read };
 /* XOROSHIRO-256 PRNG Structure */
 nwipe_prng_t nwipe_xoroshiro256_prng = { "XORoshiro-256", nwipe_xoroshiro256_prng_init, nwipe_xoroshiro256_prng_read };
+
+/* ASCON-NIST PRNG Structure */
+nwipe_prng_t nwipe_ascon_prf_prng = { "Ascon-PRF v1.3 (40 B/perm)", nwipe_ascon_prf_prng_init, nwipe_ascon_prf_prng_read };
 
 /* Print given number of bytes from unsigned integer number to a byte stream buffer starting with low-endian. */
 static inline void u32_to_buffer( u8* restrict buffer, u32 val, const int len )
@@ -340,3 +344,78 @@ int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE )
 
     return 0;  // Success
 }
+
+/* ---------------------------------------------------------------------------
+ *  Ascon-PRF v1.3  (40-byte-per-perm)  wrapper for nwipe
+ *  ----------------------------------------------------
+ *  It re-uses the generic “init / read” pattern already present in nwipe for
+ *  other PRNGs, so no core code needs to change.
+ * -------------------------------------------------------------------------*/
+
+/* ------------------------------------------------------------------ */
+/* 1.  Initialisation                                                 */
+/*      NWIPE_PRNG_INIT_SIGNATURE expands to                          */
+/*          (void **state, const nwipe_seed_t *seed) or similar       */
+int nwipe_ascon_prf_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
+{
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising Ascon-PRF v1.3 PRNG" );
+
+    /* First call → allocate private state structure */
+    if ( *state == NULL )
+    {
+        *state = malloc( sizeof( ascon_prf_prng_state_t ) );
+        if ( *state == NULL )
+            return -1;                           /* allocation failed */
+    }
+
+    /* ---- Seed handling ------------------------------------------------- *
+     * Ascon-PRF uses exactly 16 bytes of key material.  If nwipe provides  *
+     * fewer bytes we zero-pad; if it provides more we truncate.            */
+    uint8_t key[16] = {0};
+
+    if ( seed->length >= 16 )
+        memcpy( key, seed->s, 16 );
+    else
+        memcpy( key, seed->s, seed->length );
+
+    /* ---- Actual initialisation ---------------------------------------- */
+    ascon_prf_prng_init( (ascon_prf_prng_state_t*) *state, key );
+
+    return 0;                                   /* success */
+}
+
+/* ------------------------------------------------------------------ */
+/* 2.  Generator / read function                                      */
+/*      NWIPE_PRNG_READ_SIGNATURE expands to                          */
+/*          (void **state, uint8_t *buffer, size_t count)             */
+int nwipe_ascon_prf_prng_read( NWIPE_PRNG_READ_SIGNATURE )
+{
+    /* Pointer into caller-supplied buffer */
+    uint8_t *restrict bufpos = buffer;
+
+    /* How many *full* 40-byte blocks fit? */
+    size_t blocks = count / SIZE_OF_ASCON_PRF_PRNG;
+
+    /* Emit one full block per iteration – keeps symmetry with other PRNGs */
+    for ( size_t i = 0; i < blocks; ++i )
+    {
+        ascon_prf_prng_gen( (ascon_prf_prng_state_t*) *state,
+                             bufpos,
+                             SIZE_OF_ASCON_PRF_PRNG );
+        bufpos += SIZE_OF_ASCON_PRF_PRNG;
+    }
+
+    /* Handle tail bytes that don’t fill an entire 40-byte block */
+    const size_t remain = count % SIZE_OF_ASCON_PRF_PRNG;
+    if ( remain )
+    {
+        uint8_t tmp[SIZE_OF_ASCON_PRF_PRNG];
+        ascon_prf_prng_gen( (ascon_prf_prng_state_t*) *state,
+                             tmp,
+                             SIZE_OF_ASCON_PRF_PRNG );
+        memcpy( bufpos, tmp, remain );
+    }
+
+    return 0;                                   /* success */
+}
+
