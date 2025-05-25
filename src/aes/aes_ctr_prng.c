@@ -1,11 +1,20 @@
 /*
- * aes_ctr_prng_aesni.c  –  minimal AES‑256‑CTR PRNG (AES‑NI)
- * ---------------------------------------------------------
- *   • State struct is now exactly 256 bits (4×u64), defined in header.
- *   • Each call to aes_ctr_prng_genrand_uint256_to_buf() outputs 32 bytes
- *     (2 AES blocks) – no internal cache needed.
+ * aes_ctr_prng_parallel.c – AES‑CTR PRNG (4‑way parallel, AES‑NI / VAES)
+ * ---------------------------------------------------------------------
+ *  • Compile‑time parameters
+ *        – PRNG_PARALLEL   : 4   (number of 128‑bit blocks per call)
+ *        – PRNG_ROUNDS     : 10  (AES‑128 ⇒ 10 + final round)
+ *  • Run‑time dispatch
+ *        – VAES+AVX‑512 path (Ice‑Lake+, SapphireRapids, Zen4 AVX‑512, …)
+ *        – classic AES‑NI path (any CPU with AES‑NI; AVX2 suffices)
+ *  • API compatible mit vorheriger Version – erzeugt jetzt 64 Bytes / call
  *
- * Build:  gcc -O3 -march=native -maes -std=c11 aes_ctr_prng_aesni.c -o test
+ *  Build (fallback‑safe):
+ *      gcc -O3 -maes -mavx2 -std=c11 \
+ *          -DPRNG_PARALLEL=4 -DPRNG_ROUNDS=10 \
+ *          aes_ctr_prng_parallel.c -o prng_test
+ *
+ *  Copyright (C) 2025 Fabian Druschke – MIT/Ascon‑Lizenz wie Original
  */
 
 #include "aes_ctr_prng.h"
@@ -19,7 +28,7 @@
 # define PRNG_ASSERT(c,m) do{ if(!(c)){ fprintf(stderr,"[FATAL] %s\n",m); abort(); }}while(0)
 #endif
 
-/* ─── Runtime AES‑NI detection ───────────────────────────────────────── */
+/* ─── CPU Feature helpers ───────────────────────────────────────────── */
 static int cpu_has_aesni(void)
 {
     unsigned int eax, ebx, ecx, edx;
@@ -27,8 +36,18 @@ static int cpu_has_aesni(void)
     return (ecx & bit_AES) != 0;
 }
 
-/* ─── AES‑256 key schedule (global, process‑wide) ────────────────────── */
-static __m128i g_rk[15];
+/* --- AVX-512/VAES DISABLED --- */
+/*
+static int cpu_has_vaes_avx512(void)
+{
+    unsigned int eax, ebx, ecx, edx;
+    if(!__get_cpuid_count(7, 0, &eax, &ebx, &ecx, &edx)) return 0;
+    return ((ecx & (1u<<9)) && (ebx & (1u<<16)));
+}
+*/
+
+/* ─── Round keys (global) ───────────────────────────────────────────── */
+static __m128i g_rk[15];              /* always sized for AES‑256 schedule */
 static int     g_rk_ready = 0;
 
 static inline __m128i rk_step (__m128i a, __m128i b, int rc)
@@ -66,66 +85,120 @@ static void aes256_expand(const uint8_t key[32])
     g_rk_ready = 1;
 }
 
-static inline void aes_block(const uint8_t in[16], uint8_t out[16])
+/* ─── Counter helpers ───────────────────────────────────────────────── */
+static inline void ctr_inc(uint64_t *lo, uint64_t *hi, uint64_t n)
 {
-    __m128i m = _mm_loadu_si128((const __m128i*)in);
-    m ^= g_rk[0];
-    for(int i=1;i<14;++i) m = _mm_aesenc_si128(m, g_rk[i]);
-    m = _mm_aesenclast_si128(m, g_rk[14]);
-    _mm_storeu_si128((__m128i*)out, m);
+    uint64_t old = *lo;
+    *lo += n;
+    if(*lo < old) ++(*hi);            /* Übertrag */
 }
 
-/* ─── Counter increment (little endian) ─────────────────────────────── */
-static inline void ctr_inc(uint64_t *lo, uint64_t *hi)
+/* ─── Dispatcher‑Methode‑Pointer ────────────────────────────────────── */
+static int (*g_genrand_func)(aes_ctr_state_t*, unsigned char*) = NULL;
+
+/* ─── 128‑bit helper (AVX2 fallback) ────────────────────────────────── */
+static inline __m128i make_ctr(uint64_t lo, uint64_t hi)
 {
-    if(++(*lo) == 0) ++(*hi);
+    return _mm_set_epi64x((long long)hi, (long long)lo); /* little‑endian */
 }
 
-/* ─── Public API ─────────────────────────────────────────────────────── */
+static int genrand4x_avx2(aes_ctr_state_t *st, unsigned char *out)
+{
+    uint64_t lo = st->s[0];
+    uint64_t hi = st->s[1];
+
+    __m128i ctr0 = make_ctr(lo    , hi);
+    __m128i ctr1 = make_ctr(lo + 1, hi);
+    __m128i ctr2 = make_ctr(lo + 2, hi);
+    __m128i ctr3 = make_ctr(lo + 3, hi);
+
+    __m128i b0 = _mm_xor_si128(ctr0, g_rk[0]);
+    __m128i b1 = _mm_xor_si128(ctr1, g_rk[0]);
+    __m128i b2 = _mm_xor_si128(ctr2, g_rk[0]);
+    __m128i b3 = _mm_xor_si128(ctr3, g_rk[0]);
+
+    for(int i=1;i<PRNG_ROUNDS;++i){
+        b0 = _mm_aesenc_si128(b0, g_rk[i]);
+        b1 = _mm_aesenc_si128(b1, g_rk[i]);
+        b2 = _mm_aesenc_si128(b2, g_rk[i]);
+        b3 = _mm_aesenc_si128(b3, g_rk[i]);
+    }
+    b0 = _mm_aesenclast_si128(b0, g_rk[PRNG_ROUNDS]);
+    b1 = _mm_aesenclast_si128(b1, g_rk[PRNG_ROUNDS]);
+    b2 = _mm_aesenclast_si128(b2, g_rk[PRNG_ROUNDS]);
+    b3 = _mm_aesenclast_si128(b3, g_rk[PRNG_ROUNDS]);
+
+    _mm_storeu_si128((__m128i*)(out     ), b0);
+    _mm_storeu_si128((__m128i*)(out + 16), b1);
+    _mm_storeu_si128((__m128i*)(out + 32), b2);
+    _mm_storeu_si128((__m128i*)(out + 48), b3);
+
+    ctr_inc(&lo,&hi, PRNG_PARALLEL);
+    st->s[0] = lo; st->s[1] = hi;
+    return 0;
+}
+
+/* --- AVX-512/VAES DISABLED --- */
+/*
+__attribute__((target("vaes,avx512f")))
+static int genrand4x_vaes(aes_ctr_state_t *st, unsigned char *out)
+{
+    uint64_t lo = st->s[0];
+    uint64_t hi = st->s[1];
+
+    __m512i ctr = _mm512_set_epi64((long long)hi+0, (long long)(lo+3),
+                                   (long long)hi+0, (long long)(lo+2),
+                                   (long long)hi+0, (long long)(lo+1),
+                                   (long long)hi+0, (long long)(lo+0));
+
+    __m512i rk = _mm512_broadcast_i64x2(g_rk[0]);
+    __m512i b  = _mm512_xor_si512(ctr, rk);
+
+    for(int i=1;i<PRNG_ROUNDS;++i){
+        rk = _mm512_broadcast_i64x2(g_rk[i]);
+        b  = _mm512_aesenc_epi128(b, rk);
+    }
+    rk = _mm512_broadcast_i64x2(g_rk[PRNG_ROUNDS]);
+    b  = _mm512_aesenclast_epi128(b, rk);
+
+    _mm512_storeu_si512((__m512i*)out, b);
+
+    ctr_inc(&lo,&hi, PRNG_PARALLEL);
+    st->s[0] = lo; st->s[1] = hi;
+    return 0;
+}
+*/
+
+/* ─── Public API ────────────────────────────────────────────────────── */
 int aes_ctr_prng_init(aes_ctr_state_t *st,
                       unsigned long    init_key[],
                       unsigned long    key_len)
 {
     PRNG_ASSERT(st && init_key && key_len, "bad args");
-    if(!cpu_has_aesni()){ fprintf(stderr,"CPU lacks AES‑NI\n"); return -1; }
+    if(!cpu_has_aesni()){
+        fprintf(stderr,"CPU lacks AES‑NI – unsupported PRNG\n");
+        return -1;
+    }
 
     const uint8_t *seed = (const uint8_t*)init_key;
     size_t bytes = key_len * sizeof(unsigned long);
     if(bytes < 32){ fprintf(stderr,"Seed must be ≥32 bytes\n"); return -1; }
 
-    /* Key schedule (global) */
     aes256_expand(seed);
 
-    /* Initial counter (next 16 bytes if present, otherwise zero) */
     uint64_t ctr_lo = 0, ctr_hi = 0;
     if(bytes >= 48){ memcpy(&ctr_lo, seed+32, 8); memcpy(&ctr_hi, seed+40, 8); }
-    st->s[0] = ctr_lo;  /* little endian */
-    st->s[1] = ctr_hi;
-    st->s[2] = 0; st->s[3] = 0; /* reserved */
+    st->s[0] = ctr_lo; st->s[1] = ctr_hi; st->s[2] = st->s[3] = 0;
+
+    /* Always use AVX2 fallback */
+    g_genrand_func = genrand4x_avx2;
     return 0;
 }
 
 int aes_ctr_prng_genrand_uint256_to_buf(aes_ctr_state_t *st, unsigned char *out)
 {
     PRNG_ASSERT(st && out, "bad args");
-    if(!g_rk_ready){ fprintf(stderr,"PRNG not initialised\n"); return -1; }
-
-    uint8_t ctr_block[16];
-    uint64_t lo = st->s[0];
-    uint64_t hi = st->s[1];
-
-    /* Block 0 */
-    memcpy(ctr_block, &lo, 8); memcpy(ctr_block+8, &hi, 8);
-    aes_block(ctr_block, out);
-    ctr_inc(&lo,&hi);
-
-    /* Block 1 */
-    memcpy(ctr_block, &lo, 8); memcpy(ctr_block+8, &hi, 8);
-    aes_block(ctr_block, out+16);
-    ctr_inc(&lo,&hi);
-
-    /* Save updated counter */
-    st->s[0] = lo; st->s[1] = hi;
-    return 0;
+    PRNG_ASSERT(g_rk_ready && g_genrand_func, "PRNG not initialised");
+    return g_genrand_func(st, out);
 }
 

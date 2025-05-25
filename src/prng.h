@@ -81,6 +81,6 @@ int nwipe_aes_ctr_prng_read( NWIPE_PRNG_READ_SIGNATURE );
 #define SIZE_OF_XOROSHIRO256_PRNG 32
 
 /* Size of the AES-CTR is not derived from the architecture, but it is strictly 32 bytes */
-#define SIZE_OF_AES_CTR_PRNG 32
+#define SIZE_OF_AES_CTR_PRNG 64
 
 #endif /* PRNG_H_ */
