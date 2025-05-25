@@ -27,6 +27,7 @@
 #include "isaac_rand/isaac64.h"
 #include "alfg/add_lagg_fibonacci_prng.h"  //Lagged Fibonacci generator prototype
 #include "xor/xoroshiro256_prng.h"  //XORoshiro-256 prototype
+#include "aes/aes_ctr_prng.h"  // AES-NI prototype
 
 nwipe_prng_t nwipe_twister = { "Mersenne Twister (mt19937ar-cok)", nwipe_twister_init, nwipe_twister_read };
 
@@ -39,6 +40,9 @@ nwipe_prng_t nwipe_add_lagg_fibonacci_prng = { "Lagged Fibonacci generator",
                                                nwipe_add_lagg_fibonacci_prng_read };
 /* XOROSHIRO-256 PRNG Structure */
 nwipe_prng_t nwipe_xoroshiro256_prng = { "XORoshiro-256", nwipe_xoroshiro256_prng_init, nwipe_xoroshiro256_prng_read };
+
+/* AES-CTR-NI PRNG Structure */
+nwipe_prng_t nwipe_aes_ctr_prng = { "AES-CTR (Kernel)", nwipe_aes_ctr_prng_init, nwipe_aes_ctr_prng_read };
 
 /* Print given number of bytes from unsigned integer number to a byte stream buffer starting with low-endian. */
 static inline void u32_to_buffer( u8* restrict buffer, u32 val, const int len )
@@ -339,4 +343,122 @@ int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE )
     }
 
     return 0;  // Success
+}
+
+/**
+ * Initialize the AES-CTR PRNG state.
+ *
+ * Signature: int nwipe_aes_ctr_prng_init(NWIPE_PRNG_INIT_SIGNATURE);
+ *
+ * - Allocates state if *state is NULL.
+ * - Calls underlying aes_ctr_prng_init() with provided seed.
+ * - Logs errors on failure.
+ */
+/*
+ * high‑throughput wrapper with pre‑fetch buffer
+ * --------------------------------------------------------------------------
+ * Provides NWIPE_PRNG_INIT / NWIPE_PRNG_READ glue around the persistent
+ * kernel‑AES PRNG.  Adds a 64 KiB stash buffer so that typical small requests
+ * from nwipe (e.g. 32 B, 512 B) do **not** trigger a syscall each time.
+ */
+
+/* Thread‑local specifier that works in C11 and GNU C */
+#if defined( __STDC_VERSION__ ) && __STDC_VERSION__ >= 201112L
+#define NW_THREAD_LOCAL _Thread_local
+#else
+#define NW_THREAD_LOCAL __thread
+#endif
+
+/* -------------------------------------------------------------------------
+ * Thread‑local stash implementation
+ * ------------------------------------------------------------------------- */
+NW_THREAD_LOCAL static unsigned char stash[STASH_CAPACITY];
+NW_THREAD_LOCAL static size_t stash_pos = 0; /* next unread byte   */
+NW_THREAD_LOCAL static size_t stash_valid = 0; /* bytes currently in stash */
+
+/* Ensure at least `need` bytes are available in the stash.
+ * Returns 0 on success, -1 on PRNG failure.                         */
+static int refill_stash_thread_local( void* state, size_t need )
+{
+    while( stash_valid - stash_pos < need )
+    {
+        /* If buffer empty, reset indices to front. */
+        if( stash_pos == stash_valid )
+        {
+            stash_pos = stash_valid = 0;
+        }
+
+        /* Ensure there is space for next 16 KiB chunk. */
+        if( stash_valid + SIZE_OF_AES_CTR_PRNG > STASH_CAPACITY )
+        {
+            /* Slide remaining unread bytes to front. */
+            size_t remaining = stash_valid - stash_pos;
+            memmove( stash, stash + stash_pos, remaining );
+            stash_pos = 0;
+            stash_valid = remaining;
+        }
+
+        /* Generate another 16 KiB of keystream. */
+        if( aes_ctr_prng_genrand_16k_to_buf( (aes_ctr_state_t*) state, stash + stash_valid ) != 0 )
+        {
+            return -1;
+        }
+        stash_valid += SIZE_OF_AES_CTR_PRNG;
+    }
+    return 0;
+}
+
+/* ---------------- PRNG INIT ---------------- */
+int nwipe_aes_ctr_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
+{
+    nwipe_log( NWIPE_LOG_NOTICE, "Initializing AES‑CTR PRNG (thread‑local stash)" );
+
+    if( *state == NULL )
+    {
+        *state = calloc( 1, sizeof( aes_ctr_state_t ) );
+        if( *state == NULL )
+        {
+            nwipe_log( NWIPE_LOG_FATAL, "calloc() failed for PRNG state" );
+            return -1;
+        }
+    }
+
+    int rc = aes_ctr_prng_init(
+        (aes_ctr_state_t*) *state, (unsigned long*) seed->s, seed->length / sizeof( unsigned long ) );
+    if( rc != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "aes_ctr_prng_init() failed" );
+        return -1;
+    }
+
+    /* Reset this thread's stash */
+    stash_pos = stash_valid = 0;
+    return 0;
+}
+
+/* ---------------- PRNG READ ---------------- */
+int nwipe_aes_ctr_prng_read( NWIPE_PRNG_READ_SIGNATURE )
+{
+    unsigned char* out = buffer;
+    size_t bytes_left = count;
+
+    while( bytes_left > 0 )
+    {
+        /* Refill stash if necessary. */
+        if( refill_stash_thread_local( *state, 1 ) != 0 )
+        {
+            nwipe_log( NWIPE_LOG_ERROR, "PRNG refill failed" );
+            return -1;
+        }
+
+        /* Copy as much as possible from stash to user buffer. */
+        size_t available = stash_valid - stash_pos;
+        size_t chunk = ( bytes_left < available ) ? bytes_left : available;
+
+        memcpy( out, stash + stash_pos, chunk );
+        stash_pos += chunk;
+        out += chunk;
+        bytes_left -= chunk;
+    }
+    return 0;
 }

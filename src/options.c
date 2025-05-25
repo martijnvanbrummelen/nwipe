@@ -32,6 +32,40 @@
 /* The global options struct. */
 nwipe_options_t nwipe_options;
 
+/*
+ * Executes the CPUID instruction and fills out the provided variables with the results.
+ * eax: The function/subfunction number to query with CPUID.
+ * *eax_out, *ebx_out, *ecx_out, *edx_out: Pointers to variables where the CPUID output will be stored.
+ */
+void cpuid( uint32_t eax, uint32_t* eax_out, uint32_t* ebx_out, uint32_t* ecx_out, uint32_t* edx_out )
+{
+#if defined( _MSC_VER )  // Microsoft compiler
+    int registers[4];
+    __cpuid( registers, eax );
+    *eax_out = registers[0];
+    *ebx_out = registers[1];
+    *ecx_out = registers[2];
+    *edx_out = registers[3];
+#elif defined( __GNUC__ )  // GCC and Clang
+    __asm__ __volatile__( "cpuid"
+                          : "=a"( *eax_out ), "=b"( *ebx_out ), "=c"( *ecx_out ), "=d"( *edx_out )
+                          : "a"( eax ) );
+#else
+#error "Unsupported compiler"
+#endif
+}
+
+/*
+ * Checks if the AES-NI instruction set is supported by the processor.
+ * Returns 1 (true) if supported, 0 (false) otherwise.
+ */
+int has_aes_ni( void )
+{
+    uint32_t eax, ebx, ecx, edx;
+    cpuid( 1, &eax, &ebx, &ecx, &edx );
+    return ( ecx & ( 1 << 25 ) ) != 0;  // Check if bit 25 in ECX is set
+}
+
 int nwipe_options_parse( int argc, char** argv )
 {
     extern char* optarg;  // The working getopt option argument.
@@ -44,6 +78,7 @@ int nwipe_options_parse( int argc, char** argv )
     extern nwipe_prng_t nwipe_isaac64;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
+    extern nwipe_prng_t nwipe_aes_ctr_prng;
 
     /* The getopt() result holder. */
     int nwipe_opt;
@@ -130,8 +165,26 @@ int nwipe_options_parse( int argc, char** argv )
     nwipe_options.autonuke = 0;
     nwipe_options.autopoweroff = 0;
     nwipe_options.method = &nwipe_random;
-    nwipe_options.prng =
-        ( sizeof( unsigned long int ) >= 8 ) ? &nwipe_xoroshiro256_prng : &nwipe_add_lagg_fibonacci_prng;
+    /*
+     * Determines and sets the default PRNG based on AES-NI support and system architecture.
+     * It selects AES-CTR PRNG if AES-NI is supported, xoroshiro256 for 64-bit systems without AES-NI,
+     * and add lagged Fibonacci for 32-bit systems.
+     */
+
+    if( has_aes_ni() )
+    {
+        nwipe_options.prng = &nwipe_aes_ctr_prng;
+    }
+    else if( sizeof( unsigned long int ) >= 8 )
+    {
+        nwipe_options.prng = &nwipe_xoroshiro256_prng;
+        nwipe_log( NWIPE_LOG_WARNING, "CPU doesn't support AES New Instructions, opting for XORoshiro-256 instead." );
+    }
+    else
+    {
+        nwipe_options.prng = &nwipe_add_lagg_fibonacci_prng;
+    }
+
     nwipe_options.rounds = 1;
     nwipe_options.noblank = 0;
     nwipe_options.nousb = 0;
@@ -508,6 +561,11 @@ int nwipe_options_parse( int argc, char** argv )
                     nwipe_options.prng = &nwipe_xoroshiro256_prng;
                     break;
                 }
+                if( strcmp( optarg, "aes_ctr_prng" ) == 0 )
+                {
+                    nwipe_options.prng = &nwipe_aes_ctr_prng;
+                    break;
+                }
 
                 /* Else we do not know this PRNG. */
                 fprintf( stderr, "Error: Unknown prng '%s'.\n", optarg );
@@ -559,6 +617,7 @@ void nwipe_options_log( void )
     extern nwipe_prng_t nwipe_isaac64;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
+    extern nwipe_prng_t nwipe_aes_ctr_prng;
 
     /**
      *  Prints a manifest of options to the log.
@@ -617,6 +676,10 @@ void nwipe_options_log( void )
     else if( nwipe_options.prng == &nwipe_xoroshiro256_prng )
     {
         nwipe_log( NWIPE_LOG_NOTICE, "  prng     = XORoshiro-256 (EXPERIMENTAL!)" );
+    }
+    else if( nwipe_options.prng == &nwipe_aes_ctr_prng )
+    {
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = AES-CTR New Instructions (EXPERIMENTAL!)" );
     }
     else if( nwipe_options.prng == &nwipe_isaac )
     {
@@ -703,13 +766,13 @@ void display_help()
     puts( "                          one                    - Overwrite with ones (0xFF)" );
     puts( "                          verify_zero            - Verifies disk is zero filled" );
     puts( "                          verify_one             - Verifies disk is 0xFF filled" );
-    puts( "                          is5enh                 -  HMG IS5 enhanced\n" );
-    puts( "                          bruce7                 -  Schneier Bruce 7-pass mixed pattern\n" );
+    puts( "                          is5enh                 - HMG IS5 enhanced\n" );
+    puts( "                          bruce7                 - Schneier Bruce 7-pass mixed pattern\n" );
     puts( "  -l, --logfile=FILE      Filename to log to. Default is STDOUT\n" );
     puts( "  -P, --PDFreportpath=PATH Path to write PDF reports to. Default is \".\"" );
     puts( "                           If set to \"noPDF\" no PDF reports are written.\n" );
     puts( "  -p, --prng=METHOD       PRNG option "
-          "(mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng|xoroshiro256_prng)\n" );
+          "(mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng|xoroshiro256_prng|aes_ctr_prng)\n" );
     puts( "  -q, --quiet             Anonymize logs and the GUI by removing unique data, i.e." );
     puts( "                          serial numbers, LU WWN Device ID, and SMBIOS/DMI data" );
     puts( "                          XXXXXX = S/N exists, ????? = S/N not obtainable\n" );
