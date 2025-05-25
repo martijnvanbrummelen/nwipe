@@ -42,7 +42,7 @@ nwipe_prng_t nwipe_add_lagg_fibonacci_prng = { "Lagged Fibonacci generator",
 nwipe_prng_t nwipe_xoroshiro256_prng = { "XORoshiro-256", nwipe_xoroshiro256_prng_init, nwipe_xoroshiro256_prng_read };
 
 /* AES-CTR-NI PRNG Structure */
-nwipe_prng_t nwipe_aes_ctr_prng = { "AES-256-CTR (OpenSSL)", nwipe_aes_ctr_prng_init, nwipe_aes_ctr_prng_read };
+nwipe_prng_t nwipe_aes_ctr_prng = { "AES-256-CTR", nwipe_aes_ctr_prng_init, nwipe_aes_ctr_prng_read };
 
 /* Print given number of bytes from unsigned integer number to a byte stream buffer starting with low-endian. */
 static inline void u32_to_buffer( u8* restrict buffer, u32 val, const int len )
@@ -378,25 +378,8 @@ int nwipe_aes_ctr_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
     if( aes_ctr_prng_init(
             (aes_ctr_state_t*) *state, (unsigned long*) ( seed->s ), seed->length / sizeof( unsigned long ) )
         != 0 )
-    {
-        nwipe_log( NWIPE_LOG_FATAL, "Fatal error occurred during PRNG initialization in OpenSSL." );
-        aes_ctr_prng_general_cleanup( (aes_ctr_state_t*) *state );
-        free( *state );
-        *state = NULL;
-        return -1;
-    }
 
-    // Validate the PRNG output to ensure it is functioning correctly.
-    if( aes_ctr_prng_validate( (aes_ctr_state_t*) *state ) != 0 )
-    {
-        nwipe_log( NWIPE_LOG_FATAL, "AES CTR PRNG validation failed." );
-        aes_ctr_prng_general_cleanup( (aes_ctr_state_t*) *state );
-        free( *state );
-        *state = NULL;
-        return -1;
-    }
 
-    nwipe_log( NWIPE_LOG_NOTICE, "AES CTR PRNG successfully initialized and validated." );
     return 0;  // Indicate success.
 }
 

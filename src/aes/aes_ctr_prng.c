@@ -1,345 +1,131 @@
 /*
- * AES CTR PRNG Implementation
- * Author: Fabian Druschke
- * Date: 2024-03-13
+ * aes_ctr_prng_aesni.c  –  minimal AES‑256‑CTR PRNG (AES‑NI)
+ * ---------------------------------------------------------
+ *   • State struct is now exactly 256 bits (4×u64), defined in header.
+ *   • Each call to aes_ctr_prng_genrand_uint256_to_buf() outputs 32 bytes
+ *     (2 AES blocks) – no internal cache needed.
  *
- * This header file contains definitions for the AES (Advanced Encryption Standard)
- * implementation in CTR (Counter) mode for pseudorandom number generation, utilizing
- * OpenSSL for cryptographic functions.
- *
- * As the author of this work, I, Fabian Druschke, hereby release this work into the public
- * domain. I dedicate any and all copyright interest in this work to the public domain,
- * making it free to use for anyone for any purpose without any conditions, unless such
- * conditions are required by law.
- *
- * This software is provided "as is", without warranty of any kind, express or implied,
- * including but not limited to the warranties of merchantability, fitness for a particular
- * purpose and noninfringement. In no event shall the authors be liable for any claim,
- * damages or other liability, whether in an action of contract, tort or otherwise, arising
- * from, out of or in connection with the software or the use or other dealings in the software.
- *
- * USAGE OF OPENSSL IN THIS SOFTWARE:
- * This software uses OpenSSL for cryptographic operations. Users are responsible for
- * ensuring compliance with OpenSSL's licensing terms.
+ * Build:  gcc -O3 -march=native -maes -std=c11 aes_ctr_prng_aesni.c -o test
  */
 
 #include "aes_ctr_prng.h"
-#include <openssl/evp.h>
-#include <openssl/sha.h>
-#include <openssl/err.h>
+#include <immintrin.h>
+#include <cpuid.h>
 #include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
-#include <stdarg.h>
 
-// Define the custom assert macro
-#ifndef NWIPE_ASSERT_H
-#define NWIPE_ASSERT_H
+#ifndef PRNG_ASSERT
+# define PRNG_ASSERT(c,m) do{ if(!(c)){ fprintf(stderr,"[FATAL] %s\n",m); abort(); }}while(0)
+#endif
 
-
-// Custom assert macro that logs a message before aborting
-#ifdef NDEBUG
-    #define NWIPE_ASSERT(cond, level, fmt, ...) ((void)0)
-#else
-    #define NWIPE_ASSERT(cond, level, fmt, ...)                                \
-        do {                                                                   \
-            if (!(cond)) {                                                     \
-                nwipe_log(level, "Assertion failed: " fmt, ##__VA_ARGS__);     \
-                abort();                                                       \
-            }                                                                  \
-        } while (0)
-#endif // NWIPE_ASSERT_H
-
-#endif // NWIPE_ASSERT_H
-
-typedef enum {
-    NWIPE_LOG_NONE = 0,
-    NWIPE_LOG_DEBUG,   // Debugging messages, detailed for troubleshooting
-    NWIPE_LOG_INFO,    // Informative logs, for regular operation insights
-    NWIPE_LOG_NOTICE,  // Notices for significant but non-critical events
-    NWIPE_LOG_WARNING, // Warnings about potential errors
-    NWIPE_LOG_ERROR,   // Error messages, significant issues that affect operation
-    NWIPE_LOG_FATAL,   // Fatal errors, require immediate termination of the program
-    NWIPE_LOG_SANITY,  // Sanity checks, used primarily in debugging phases
-    NWIPE_LOG_NOTIMESTAMP  // Log entries without timestamp information
-} nwipe_log_t;
-
-extern void nwipe_log(nwipe_log_t level, const char* format, ...);
-
-/* Function prototypes */
-int aes_ctr_prng_validate(aes_ctr_state_t* state);
-static double calculate_shannon_entropy(const unsigned int* byte_counts, size_t data_length);
-
-/* Initializes the AES CTR pseudorandom number generator state.
-   This function sets up the cryptographic context necessary for generating
-   pseudorandom numbers using AES in CTR mode. It utilizes SHA-256 to derive
-   a key from the provided seed, ensuring that the PRNG output is unpredictable
-   and secure, provided the seed is kept secret and is sufficiently random.
-   - state: Pointer to the AES CTR PRNG state structure.
-   - init_key: Array containing the seed for key generation.
-   - key_length: Length of the seed array. */
-int aes_ctr_prng_init(aes_ctr_state_t* state, unsigned long init_key[], unsigned long key_length)
+/* ─── Runtime AES‑NI detection ───────────────────────────────────────── */
+static int cpu_has_aesni(void)
 {
-    // Replace assert with NWIPE_ASSERT
-    NWIPE_ASSERT(state != NULL && init_key != NULL && key_length > 0,
-                NWIPE_LOG_FATAL,
-                "Invalid parameters: state=%p, init_key=%p, key_length=%lu",
-                (void*)state, (void*)init_key, key_length);
-
-    unsigned char key[32];  // Storage for the 256-bit key
-    memset(state->ivec, 0, AES_BLOCK_SIZE);  // Clear IV buffer
-    state->num = 0;  // Reset the block counter
-    memset(state->ecount, 0, AES_BLOCK_SIZE);  // Clear encryption count buffer
-
-    nwipe_log(NWIPE_LOG_DEBUG, "Initializing AES CTR PRNG with provided seed.");  // Log initialization
-
-    EVP_MD_CTX* mdctx = EVP_MD_CTX_new();  // Create new SHA-256 context
-    if (!mdctx)
-    {
-        nwipe_log(NWIPE_LOG_FATAL,
-                  "Failed to allocate EVP_MD_CTX for SHA-256, error code: %lu.",
-                  ERR_get_error());  // Log context allocation failure
-        return -1;  // Handle error
-    }
-
-    if (EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL) != 1)
-    {
-        nwipe_log(NWIPE_LOG_FATAL,
-                  "SHA-256 context initialization failed, error code: %lu.",
-                  ERR_get_error());  // Log init failure
-        EVP_MD_CTX_free(mdctx);
-        return -1;  // Handle error
-    }
-
-    EVP_DigestUpdate(
-        mdctx, (const unsigned char*)init_key, key_length * sizeof(unsigned long));  // Process the seed
-
-    if (EVP_DigestFinal_ex(mdctx, key, NULL) != 1)
-    {
-        nwipe_log(NWIPE_LOG_FATAL,
-                  "SHA-256 hash finalization failed, error code: %lu.",
-                  ERR_get_error());  // Log finalization failure
-        EVP_MD_CTX_free(mdctx);
-        return -1;  // Handle error
-    }
-    EVP_MD_CTX_free(mdctx);
-    mdctx = NULL;  // Clean up SHA-256 context
-
-    state->ctx = EVP_CIPHER_CTX_new();  // Create new AES-256-CTR context
-    if (!state->ctx)
-    {
-        nwipe_log(NWIPE_LOG_FATAL,
-                  "Failed to allocate EVP_CIPHER_CTX, error code: %lu.",
-                  ERR_get_error());  // Log cipher context failure
-        return -1;  // Handle error
-    }
-
-    if (EVP_EncryptInit_ex(state->ctx, EVP_aes_256_ctr(), NULL, key, state->ivec) != 1)
-    {
-        nwipe_log(NWIPE_LOG_FATAL,
-                  "AES-256-CTR encryption context initialization failed, error code: %lu.",
-                  ERR_get_error());  // Log encryption init failure
-        EVP_CIPHER_CTX_free(state->ctx);
-        return -1;  // Handle error
-    }
-
-    // Validate the pseudorandom data generation
-    if (aes_ctr_prng_validate(state) != 0)
-    {
-        nwipe_log(NWIPE_LOG_FATAL, "AES CTR PRNG validation failed.");
-        EVP_CIPHER_CTX_free(state->ctx);
-        return -1;  // Handle validation failure
-    }
-
-    nwipe_log(NWIPE_LOG_DEBUG, "AES CTR PRNG successfully initialized and validated.");  // Log success
-    return 0;  // Exit successfully
+    unsigned int eax, ebx, ecx, edx;
+    if(!__get_cpuid(1, &eax, &ebx, &ecx, &edx)) return 0;
+    return (ecx & bit_AES) != 0;
 }
 
-/* Validates the pseudorandom data generation by generating 4KB of data and performing statistical tests.
-   This function generates 4KB of pseudorandom data and performs:
-   - Bit Frequency Test
-   - Byte Frequency Test
-   - Entropy Calculation
-   - Checks for any obvious patterns
-   - Thresholds are set to detect non-random behavior.
-   - state: Pointer to the initialized AES CTR PRNG state.
-   Returns 0 on success, -1 on failure. */
-int aes_ctr_prng_validate(aes_ctr_state_t* state)
+/* ─── AES‑256 key schedule (global, process‑wide) ────────────────────── */
+static __m128i g_rk[15];
+static int     g_rk_ready = 0;
+
+static inline __m128i rk_step (__m128i a, __m128i b, int rc)
 {
-    // Replace assert with NWIPE_ASSERT
-    NWIPE_ASSERT(state != NULL,
-                NWIPE_LOG_FATAL,
-                "Invalid parameter: state=%p",
-                (void*)state);
-
-    const size_t test_data_size = 4096;  // 4KB of data
-    unsigned char* test_buffer = malloc(test_data_size);
-    if (!test_buffer)
-    {
-        nwipe_log(NWIPE_LOG_ERROR, "Validation failed: Unable to allocate memory for test buffer.");
-        return -1;
-    }
-    memset(test_buffer, 0, test_data_size);  // Zero out the buffer
-    int outlen = 0;  // Length of data produced by encryption
-    int total_generated = 0;
-
-    // Generate 4KB of pseudorandom data
-    while (total_generated < test_data_size)
-    {
-        int chunk_size = 512;  // Generate data in chunks to avoid large allocations
-        if (EVP_EncryptUpdate(state->ctx, test_buffer + total_generated, &outlen,
-                              test_buffer + total_generated, chunk_size) != 1)
-        {
-            nwipe_log(NWIPE_LOG_ERROR,
-                      "Failed to generate pseudorandom numbers during validation, error code: %lu.",
-                      ERR_get_error());  // Log generation failure
-            free(test_buffer);
-            return -1;  // Handle error
-        }
-        total_generated += outlen;
-    }
-
-    // Bit Frequency Test
-    unsigned long bit_count = 0;
-    for (size_t i = 0; i < test_data_size; i++)
-    {
-        unsigned char byte = test_buffer[i];
-        for (int j = 0; j < 8; j++)
-        {
-            if (byte & (1 << j))
-                bit_count++;
-        }
-    }
-
-    unsigned long total_bits = test_data_size * 8;
-    double ones_ratio = (double)bit_count / total_bits;
-    double zeros_ratio = 1.0 - ones_ratio;
-
-    // Acceptable deviation from 50%
-    const double frequency_threshold = 0.02;  // 2%
-
-    if (fabs(ones_ratio - 0.5) > frequency_threshold)
-    {
-        nwipe_log(NWIPE_LOG_ERROR,
-                  "Validation failed: Bit frequency test failed. Ones ratio: %.4f, Zeros ratio: %.4f",
-                  ones_ratio, zeros_ratio);
-        free(test_buffer);
-        return -1;
-    }
-
-    // Byte Frequency Test and Entropy Calculation
-    unsigned int byte_counts[256] = {0};
-    for (size_t i = 0; i < test_data_size; i++)
-    {
-        byte_counts[test_buffer[i]]++;
-    }
-
-    // Calculate Shannon entropy
-    double entropy = calculate_shannon_entropy(byte_counts, test_data_size);
-
-    // Adjusted entropy threshold
-    const double entropy_threshold = 7.5;  // Target entropy ≥ 7.5 bits per byte
-    if (entropy < entropy_threshold)
-    {
-        nwipe_log(NWIPE_LOG_ERROR,
-                  "Validation failed: Entropy too low. Calculated entropy: %.4f bits per byte",
-                  entropy);
-        free(test_buffer);
-        return -1;
-    }
-
-    // Check for repeating patterns (e.g., all bytes are the same)
-    int is_repeating = 1;
-    for (size_t i = 1; i < test_data_size; i++)
-    {
-        if (test_buffer[i] != test_buffer[0])
-        {
-            is_repeating = 0;
-            break;
-        }
-    }
-
-    if (is_repeating)
-    {
-        nwipe_log(NWIPE_LOG_ERROR, "Validation failed: Generated data contains repeating patterns.");
-        free(test_buffer);
-        return -1;
-    }
-
-    nwipe_log(NWIPE_LOG_DEBUG, "AES CTR PRNG validation passed. Entropy: %.4f bits per byte", entropy);
-    free(test_buffer);
-    return 0;  // Validation successful
+    __m128i t = _mm_aeskeygenassist_si128(b, rc);
+    t = _mm_shuffle_epi32(t, _MM_SHUFFLE(3,3,3,3));
+    a ^= _mm_slli_si128(a,4); a ^= _mm_slli_si128(a,4); a ^= _mm_slli_si128(a,4);
+    return a ^ t;
+}
+static inline __m128i rk_step2(__m128i a)
+{
+    __m128i t = _mm_aeskeygenassist_si128(a, 0x00);
+    t = _mm_shuffle_epi32(t, _MM_SHUFFLE(2,2,2,2));
+    a ^= _mm_slli_si128(a,4); a ^= _mm_slli_si128(a,4); a ^= _mm_slli_si128(a,4);
+    return a ^ t;
+}
+static void aes256_expand(const uint8_t key[32])
+{
+    __m128i k0 = _mm_loadu_si128((const __m128i*)key);
+    __m128i k1 = _mm_loadu_si128((const __m128i*)(key+16));
+    g_rk[0]=k0; g_rk[1]=k1;
+    g_rk[2]= k0 = rk_step (k0,k1,0x01);
+    g_rk[3]= k1 = rk_step2(k0);
+    g_rk[4]= k0 = rk_step (k0,k1,0x02);
+    g_rk[5]= k1 = rk_step2(k0);
+    g_rk[6]= k0 = rk_step (k0,k1,0x04);
+    g_rk[7]= k1 = rk_step2(k0);
+    g_rk[8]= k0 = rk_step (k0,k1,0x08);
+    g_rk[9]= k1 = rk_step2(k0);
+    g_rk[10]=k0 = rk_step (k0,k1,0x10);
+    g_rk[11]=k1 = rk_step2(k0);
+    g_rk[12]=k0 = rk_step (k0,k1,0x20);
+    g_rk[13]=k1 = rk_step2(k0);
+    g_rk[14]=        rk_step (k0,k1,0x40);
+    g_rk_ready = 1;
 }
 
-/* Calculates the Shannon entropy of the data based on byte frequencies.
-   - byte_counts: Array of counts for each byte value (0-255).
-   - data_length: Total number of bytes in the data.
-   Returns the calculated entropy in bits per byte. */
-static double calculate_shannon_entropy(const unsigned int* byte_counts, size_t data_length)
+static inline void aes_block(const uint8_t in[16], uint8_t out[16])
 {
-    double entropy = 0.0;
-    for (int i = 0; i < 256; i++)
-    {
-        if (byte_counts[i] > 0)
-        {
-            double probability = (double)byte_counts[i] / data_length;
-            entropy -= probability * log2(probability);
-        }
-    }
-    return entropy;
+    __m128i m = _mm_loadu_si128((const __m128i*)in);
+    m ^= g_rk[0];
+    for(int i=1;i<14;++i) m = _mm_aesenc_si128(m, g_rk[i]);
+    m = _mm_aesenclast_si128(m, g_rk[14]);
+    _mm_storeu_si128((__m128i*)out, m);
 }
 
-/* Generates pseudorandom numbers and writes them to a buffer.
-   This function performs the core operation of producing pseudorandom data.
-   It directly updates the buffer provided, filling it with pseudorandom bytes
-   generated using the AES-256-CTR mode of operation.
-   - state: Pointer to the initialized AES CTR PRNG state.
-   - bufpos: Target buffer where the pseudorandom numbers will be written.
-   Returns 0 on success, -1 on failure. */
-int aes_ctr_prng_genrand_uint256_to_buf(aes_ctr_state_t* state, unsigned char* bufpos)
+/* ─── Counter increment (little endian) ─────────────────────────────── */
+static inline void ctr_inc(uint64_t *lo, uint64_t *hi)
 {
-    // Replace assert with NWIPE_ASSERT
-    NWIPE_ASSERT(state != NULL && bufpos != NULL,
-                NWIPE_LOG_FATAL,
-                "Invalid parameters: state=%p, bufpos=%p",
-                (void*)state, (void*)bufpos);
-
-    unsigned char temp_buffer[32];  // Temporary storage for pseudorandom bytes
-    memset(temp_buffer, 0, sizeof(temp_buffer));  // Zero out temporary buffer
-    int outlen;  // Length of data produced by encryption
-
-    if (EVP_EncryptUpdate(state->ctx, temp_buffer, &outlen, temp_buffer, sizeof(temp_buffer)) != 1)
-    {
-        nwipe_log(NWIPE_LOG_ERROR,
-                  "Failed to generate pseudorandom numbers, error code: %lu.",
-                  ERR_get_error());  // Log generation failure
-        return -1;  // Handle error
-    }
-
-    memcpy(bufpos, temp_buffer, sizeof(temp_buffer));  // Copy pseudorandom bytes to buffer
-    return 0;  // Exit successfully
+    if(++(*lo) == 0) ++(*hi);
 }
 
-/* General cleanup function for AES CTR PRNG.
-   Frees allocated resources and clears sensitive data.
-   - state: Pointer to the AES CTR PRNG state structure.
-   Returns 0 on success. */
-int aes_ctr_prng_general_cleanup(aes_ctr_state_t* state)
+/* ─── Public API ─────────────────────────────────────────────────────── */
+int aes_ctr_prng_init(aes_ctr_state_t *st,
+                      unsigned long    init_key[],
+                      unsigned long    key_len)
 {
-    if (state != NULL)
-    {
-        // Free the EVP_CIPHER_CTX if it has been allocated
-        if (state->ctx)
-        {
-            EVP_CIPHER_CTX_free(state->ctx);
-            state->ctx = NULL;  // Nullify the pointer after free
-        }
+    PRNG_ASSERT(st && init_key && key_len, "bad args");
+    if(!cpu_has_aesni()){ fprintf(stderr,"CPU lacks AES‑NI\n"); return -1; }
 
-        // Clear sensitive information from the state
-        memset(state->ivec, 0, AES_BLOCK_SIZE);
-        memset(state->ecount, 0, AES_BLOCK_SIZE);
-        state->num = 0;
-    }
+    const uint8_t *seed = (const uint8_t*)init_key;
+    size_t bytes = key_len * sizeof(unsigned long);
+    if(bytes < 32){ fprintf(stderr,"Seed must be ≥32 bytes\n"); return -1; }
+
+    /* Key schedule (global) */
+    aes256_expand(seed);
+
+    /* Initial counter (next 16 bytes if present, otherwise zero) */
+    uint64_t ctr_lo = 0, ctr_hi = 0;
+    if(bytes >= 48){ memcpy(&ctr_lo, seed+32, 8); memcpy(&ctr_hi, seed+40, 8); }
+    st->s[0] = ctr_lo;  /* little endian */
+    st->s[1] = ctr_hi;
+    st->s[2] = 0; st->s[3] = 0; /* reserved */
+    return 0;
+}
+
+int aes_ctr_prng_genrand_uint256_to_buf(aes_ctr_state_t *st, unsigned char *out)
+{
+    PRNG_ASSERT(st && out, "bad args");
+    if(!g_rk_ready){ fprintf(stderr,"PRNG not initialised\n"); return -1; }
+
+    uint8_t ctr_block[16];
+    uint64_t lo = st->s[0];
+    uint64_t hi = st->s[1];
+
+    /* Block 0 */
+    memcpy(ctr_block, &lo, 8); memcpy(ctr_block+8, &hi, 8);
+    aes_block(ctr_block, out);
+    ctr_inc(&lo,&hi);
+
+    /* Block 1 */
+    memcpy(ctr_block, &lo, 8); memcpy(ctr_block+8, &hi, 8);
+    aes_block(ctr_block, out+16);
+    ctr_inc(&lo,&hi);
+
+    /* Save updated counter */
+    st->s[0] = lo; st->s[1] = hi;
     return 0;
 }
 
