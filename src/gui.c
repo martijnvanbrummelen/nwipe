@@ -1640,7 +1640,6 @@ void nwipe_gui_prng( void )
     extern nwipe_prng_t nwipe_twister;
     extern nwipe_prng_t nwipe_isaac;
     extern nwipe_prng_t nwipe_isaac64;
-    extern nwipe_prng_t nwipe_aes_ctr_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
@@ -1979,6 +1978,11 @@ void nwipe_gui_prng( void )
                 {
                     nwipe_options.prng = &nwipe_xoroshiro256_prng;
                 }
+                if( focus == 5 )
+                {
+                    nwipe_options.prng = &nwipe_aes_ctr_prng;
+                }
+
                 return;
 
             case KEY_BACKSPACE:
