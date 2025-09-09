@@ -612,11 +612,11 @@ void nwipe_options_log( void )
     }
     else if( nwipe_options.prng == &nwipe_add_lagg_fibonacci_prng )
     {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Lagged Fibonacci generator (EXPERIMENTAL!)" );
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Lagged Fibonacci generator" );
     }
     else if( nwipe_options.prng == &nwipe_xoroshiro256_prng )
     {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = XORoshiro-256 (EXPERIMENTAL!)" );
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = XORoshiro-256" );
     }
     else if( nwipe_options.prng == &nwipe_isaac )
     {
