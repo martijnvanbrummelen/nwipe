@@ -11,6 +11,7 @@ AC_CONFIG_HEADERS([config.h])
 
 # Checks for programs.
 AC_PROG_CC
+AC_PROG_CXX
 PKG_PROG_PKG_CONFIG
 
 # Checks for libraries.
