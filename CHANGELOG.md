@@ -1,7 +1,7 @@
 RELEASE NOTES
 =============
 
-v0.38.1
+v0.39
 -----------------------
 - Removed EXPERIMENTAL! comments for ALFG and Xoroshiro. [#652](https://github.com/martijnvanbrummelen/nwipe/pull/652) Thanks @Knogle   
 - Fix: some declaration changes to satisfy gcc 15. [#663]((https://github.com/martijnvanbrummelen/nwipe/pull/663) Thanks @Knogle   
