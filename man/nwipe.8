@@ -98,17 +98,17 @@ ops2                   \- RCMP TSSIT OPS\-II
 .IP
 random / prng / stream \- PRNG Stream
 .IP
-zero / quick           \- Overwrite with zeros 0x00
+zero / quick           \- Overwrite with zeros (0x00)
 .IP
-one                    \- Overwrite with ones 0xFF
+one                    \- Overwrite with ones (0xFF)
 .IP
-verify_zero            \- Verifies disk is zero filled
+verify_zero            \- Verifies disk is zero (0x00) filled
 .IP
-verify_one             \- Verifies disk is 0xFF filled
+verify_one             \- Verifies disk is one (0xFF) filled
 .IP
 is5enh                 \- HMG IS5 enhanced
 .IP
-bruce7                 \- Bruce Schneier's algorithm
+bruce7                 \- Schneier Bruce 7-pass mixed pattern
 .TP
 \fB\-l\fR, \fB\-\-logfile\fR=\fIFILE\fR
 Filename to log to. Default is STDOUT
@@ -127,7 +127,7 @@ Anonymize serial numbers, Gui & logs display:
  ???????? = S/N not available.
 .TP
 \fB\-r\fR, \fB\-\-rounds\fR=\fINUM\fR
-Number of times to wipe the device using the selected method (default: 1)
+Number of times to wipe the device using the selected method. (default: 1)
 .TP
 \fB\-e\fR, \fB\-\-exclude\fR=\fIDEVICES\fR
 Up to ten comma separated devices to be excluded, examples:
