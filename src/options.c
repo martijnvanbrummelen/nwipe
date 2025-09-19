@@ -696,13 +696,13 @@ void display_help()
     puts( "                           (default: dodshort)" );
     puts( "                           dod522022m / dod       - 7 pass DOD 5220.22-M method" );
     puts( "                           dodshort / dod3pass    - 3 pass DOD method" );
-    puts( "                           gutmann                - Peter Gutmann's Algorithm" );
+    puts( "                           gutmann                - Peter Gutmann's algorithm" );
     puts( "                           ops2                   - RCMP TSSIT OPS-II" );
     puts( "                           random / prng / stream - PRNG Stream" );
     puts( "                           zero / quick           - Overwrite with zeros (0x00)" );
     puts( "                           one                    - Overwrite with ones (0xFF)" );
-    puts( "                           verify_zero            - Verifies disk is zero filled" );
-    puts( "                           verify_one             - Verifies disk is 0xFF filled" );
+    puts( "                           verify_zero            - Verifies disk is zero (0x00) filled" );
+    puts( "                           verify_one             - Verifies disk is one (0xFF) filled" );
     puts( "                           is5enh                 - HMG IS5 enhanced\n" );
     puts( "                           bruce7                 - Schneier Bruce 7-pass mixed pattern\n" );
     puts( "  -l, --logfile=FILE       Filename to log to. Default is STDOUT\n" );
