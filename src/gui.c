@@ -1837,7 +1837,7 @@ void nwipe_gui_prng( void )
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "Xoroshiro256**, originally designed by David Blackman and Sebastiano Vigna    " );
+                           "XORoshiro256**, originally designed by David Blackman and Sebastiano Vigna    " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
@@ -1869,7 +1869,7 @@ void nwipe_gui_prng( void )
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "Xoroshiro256** ensure low computational complexity. This, combined with       " );
+                           "XORoshiro256** ensure low computational complexity. This, combined with       " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
