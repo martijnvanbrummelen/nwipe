@@ -1717,27 +1717,27 @@ void nwipe_gui_prng( void )
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "The Mersenne Twister, by Makoto Matsumoto and Takuji Nishimura, is a        " );
+                           "The Mersenne Twister, by Makoto Matsumoto and Takuji Nishimura, is a          " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "generalized feedback shift register PRNG that is uniform and                " );
+                           "generalized feedback shift register PRNG that is uniform and                  " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "equidistributed in 623-dimensions with a proven period of 2^19937-1.        " );
+                           "equidistributed in 623-dimensions with a proven period of 2^19937-1.          " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "                                                                            " );
+                           "                                                                              " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "This implementation passes the Marsaglia Diehard test suite.                " );
+                           "This implementation passes the Marsaglia Diehard test suite.                  " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "                                                                            " );
+                           "                                                                              " );
                 break;
 
             case 1:
@@ -1745,23 +1745,23 @@ void nwipe_gui_prng( void )
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "ISAAC, by Bob Jenkins, is a PRNG derived from RC4 with a minimum period of  " );
+                           "ISAAC, by Bob Jenkins, is a PRNG derived from RC4 with a minimum period of    " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "2^40 and an expected period of 2^8295.  It is difficult to recover the      " );
+                           "2^40 and an expected period of 2^8295.  It is difficult to recover the        " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "initial PRNG state by cryptanalysis of the ISAAC stream.                    " );
+                           "initial PRNG state by cryptanalysis of the ISAAC stream.                      " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "                                                                            " );
+                           "                                                                              " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "Performs best on a 32-bit CPU. Use ISAAC-64 if this system has a 64-bit CPU." );
+                           "Performs best on a 32-bit CPU. Use ISAAC-64 if this system has a 64-bit CPU.  " );
                 break;
 
             case 2:
@@ -1769,23 +1769,23 @@ void nwipe_gui_prng( void )
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "ISAAC-64, by Bob Jenkins, is like 32-bit ISAAC, but with a minimum period of" );
+                           "ISAAC-64, by Bob Jenkins, is like 32-bit ISAAC, but with a minimum period of  " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "2^77 and an expected period of 2^16583. It is difficult to recover the      " );
+                           "2^77 and an expected period of 2^16583. It is difficult to recover the        " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "initial PRNG state by cryptanalysis of the ISAAC-64 stream.                 " );
+                           "initial PRNG state by cryptanalysis of the ISAAC-64 stream.                   " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "                                                                            " );
+                           "                                                                              " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "Performs best on a 64-bit CPU. Use ISAAC if this system has a 32-bit CPU.   " );
+                           "Performs best on a 64-bit CPU. Use ISAAC if this system has a 32-bit CPU.     " );
                 break;
 
             case 3:
@@ -1793,11 +1793,11 @@ void nwipe_gui_prng( void )
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "ALFG (Additive Lagged Fibonacci Generator), is a class of PRNGs utilizing" );
+                           "ALFG (Additive Lagged Fibonacci Generator), is a class of PRNGs utilizing     " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "the Fibonacci sequence with additive operations between lagged values. While" );
+                           "the Fibonacci sequence with additive operations between lagged values. While  " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
@@ -1805,31 +1805,31 @@ void nwipe_gui_prng( void )
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "that they provide lower levels of security, making them less suitable for" );
+                           "that they provide lower levels of security, making them less suitable for     " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "cryptographic applications. Their periodicity depends on the choice of lags" );
+                           "cryptographic applications. Their periodicity depends on the choice of lags   " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "and arithmetic operations, potentially achieving large values, often 2^N or" );
+                           "and arithmetic operations, potentially achieving large values, often 2^N or   " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "higher, where N is the bit length of the states.                                " );
+                           "higher, where N is the bit length of the states.                              " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "                                                                                " );
+                           "                                                                              " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "Efficient on CPUs of any bit width, particularly suited for non-cryptographic" );
+                           "Efficient on CPUs of any bit width, particularly suited for non-cryptographic " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "applications requiring long sequences with a good speed-randomness trade-off.   " );
+                           "applications requiring long sequences with a good speed-randomness trade-off. " );
                 break;
 
             case 4:
@@ -1837,47 +1837,47 @@ void nwipe_gui_prng( void )
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "Xoroshiro256**, originally designed by David Blackman and Sebastiano Vigna" );
+                           "Xoroshiro256**, originally designed by David Blackman and Sebastiano Vigna    " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "for 128 bits, was adapted to 256 bits by Fabian Druschke. This adaptation  " );
+                           "for 128 bits, was adapted to 256 bits by Fabian Druschke. This adaptation     " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "enhances its capability for fast, high-quality generation of pseudo-random " );
+                           "enhances its capability for fast, high-quality generation of pseudo-random    " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "numbers with a state size of 256 bits. It boasts an extremely long period  " );
+                           "numbers with a state size of 256 bits. It boasts an extremely long period     " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "of 2^256-1 without sacrificing performance, suitable for a wide range of   " );
+                           "of 2^256-1 without sacrificing performance, suitable for a wide range of      " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "applications.                                                              " );
+                           "applications.                                                                 " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "                                                                            " );
+                           "                                                                              " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "The simple arithmetic operations (shifts, rotations, and XORs) of          " );
+                           "The simple arithmetic operations (shifts, rotations, and XORs) of             " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "Xoroshiro256** ensure low computational complexity. This, combined with    " );
+                           "Xoroshiro256** ensure low computational complexity. This, combined with       " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "the adaptation for 256 bits by Fabian Druschke, allows efficient use       " );
+                           "the adaptation for 256 bits by Fabian Druschke, allows efficient use          " );
                 mvwprintw( main_window,
                            yy++,
                            tab1,
-                           "especially for legacy systems, due to its efficiency and minimal demands.  " );
+                           "especially for legacy systems, due to its efficiency and minimal demands.     " );
                 break;
         }
 
@@ -2405,105 +2405,105 @@ void nwipe_gui_method( void )
 
                 mvwprintw( main_window, 2, tab2, "Security Level: high (1 pass)" );
 
-                mvwprintw( main_window, 4, tab2, "This method fills the device with zeros. Note    " );
-                mvwprintw( main_window, 5, tab2, "that the rounds option does not apply to this    " );
-                mvwprintw( main_window, 6, tab2, "method. This method always runs one round.       " );
-                mvwprintw( main_window, 7, tab2, "                                                 " );
-                mvwprintw( main_window, 8, tab2, "There is no publicly available evidence that   " );
-                mvwprintw( main_window, 9, tab2, "data can be recovered from a modern traditional  " );
-                mvwprintw( main_window, 10, tab2, "hard drive (HDD) that has been zero wiped,       " );
-                mvwprintw( main_window, 11, tab2, "however a wipe that includes a prng may be       " );
-                mvwprintw( main_window, 12, tab2, "preferable.                                      " );
+                mvwprintw( main_window, 4, tab2, "This method fills the device with zeros. Note     " );
+                mvwprintw( main_window, 5, tab2, "that the rounds option does not apply to this     " );
+                mvwprintw( main_window, 6, tab2, "method. This method always runs one round.        " );
+                mvwprintw( main_window, 7, tab2, "                                                  " );
+                mvwprintw( main_window, 8, tab2, "There is no publicly available evidence that      " );
+                mvwprintw( main_window, 9, tab2, "data can be recovered from a modern traditional   " );
+                mvwprintw( main_window, 10, tab2, "hard drive (HDD) that has been zero wiped,        " );
+                mvwprintw( main_window, 11, tab2, "however a wipe that includes a prng may be        " );
+                mvwprintw( main_window, 12, tab2, "preferable.                                       " );
                 break;
 
             case 1:
 
                 mvwprintw( main_window, 2, tab2, "Security Level: high (1 pass)" );
 
-                mvwprintw( main_window, 4, tab2, "This method fills the device with ones. Note that" );
-                mvwprintw( main_window, 5, tab2, "the rounds option does not apply to this method. " );
-                mvwprintw( main_window, 6, tab2, "This method always runs one round.               " );
-                mvwprintw( main_window, 7, tab2, "                                                 " );
-                mvwprintw( main_window, 8, tab2, "This method might be used when wiping a solid    " );
-                mvwprintw( main_window, 9, tab2, "state drive if an additional level of security is" );
-                mvwprintw( main_window, 10, tab2, "required beyond using the drives internal secure " );
-                mvwprintw( main_window, 11, tab2, "erase features. Alternatively PRNG may be        " );
-                mvwprintw( main_window, 12, tab2, "preferable.                                      " );
+                mvwprintw( main_window, 4, tab2, "This method fills the device with ones. Note that " );
+                mvwprintw( main_window, 5, tab2, "the rounds option does not apply to this method.  " );
+                mvwprintw( main_window, 6, tab2, "This method always runs one round.                " );
+                mvwprintw( main_window, 7, tab2, "                                                  " );
+                mvwprintw( main_window, 8, tab2, "This method might be used when wiping a solid     " );
+                mvwprintw( main_window, 9, tab2, "state drive if an additional level of security is " );
+                mvwprintw( main_window, 10, tab2, "required beyond using the drives internal secure  " );
+                mvwprintw( main_window, 11, tab2, "erase features. Alternatively PRNG may be         " );
+                mvwprintw( main_window, 12, tab2, "preferable.                                       " );
                 break;
 
             case 2:
 
                 mvwprintw( main_window, 2, tab2, "Security Level: higher (8 passes)" );
 
-                mvwprintw( main_window, 4, tab2, "The Royal Canadian Mounted Police Technical      " );
-                mvwprintw( main_window, 5, tab2, "Security Standard for Information Technology.    " );
-                mvwprintw( main_window, 6, tab2, "Appendix OPS-II: Media Sanitization.             " );
-                mvwprintw( main_window, 7, tab2, "                                                 " );
-                mvwprintw( main_window, 8, tab2, "This implementation, with regards to paragraph 2 " );
-                mvwprintw( main_window, 9, tab2, "section A of the standard, uses a pattern that is" );
-                mvwprintw( main_window, 10, tab2, "one random byte and that is changed each round.  " );
+                mvwprintw( main_window, 4, tab2, "The Royal Canadian Mounted Police Technical       " );
+                mvwprintw( main_window, 5, tab2, "Security Standard for Information Technology.     " );
+                mvwprintw( main_window, 6, tab2, "Appendix OPS-II: Media Sanitization.              " );
+                mvwprintw( main_window, 7, tab2, "                                                  " );
+                mvwprintw( main_window, 8, tab2, "This implementation, with regards to paragraph 2  " );
+                mvwprintw( main_window, 9, tab2, "section A of the standard, uses a pattern that is " );
+                mvwprintw( main_window, 10, tab2, "one random byte and that is changed each round.   " );
                 break;
 
             case 3:
 
                 mvwprintw( main_window, 2, tab2, "Security Level: higher (3 passes)" );
 
-                mvwprintw( main_window, 4, tab2, "The US Department of Defense 5220.22-M short wipe" );
-                mvwprintw( main_window, 5, tab2, "This method is composed of passes 1, 2 & 7 from  " );
-                mvwprintw( main_window, 6, tab2, "the standard DoD 5220.22-M wipe.                 " );
-                mvwprintw( main_window, 7, tab2, "                                                 " );
-                mvwprintw( main_window, 8, tab2, "Pass 1: A random character                       " );
-                mvwprintw( main_window, 9, tab2, "Pass 2: The bitwise complement of pass 1.        " );
-                mvwprintw( main_window, 10, tab2, "Pass 3: A random number generated data stream    " );
+                mvwprintw( main_window, 4, tab2, "The US Department of Defense 5220.22-M short wipe." );
+                mvwprintw( main_window, 5, tab2, "This method is composed of passes 1, 2 & 7 from   " );
+                mvwprintw( main_window, 6, tab2, "the standard DoD 5220.22-M wipe.                  " );
+                mvwprintw( main_window, 7, tab2, "                                                  " );
+                mvwprintw( main_window, 8, tab2, "Pass 1: A random character.                       " );
+                mvwprintw( main_window, 9, tab2, "Pass 2: The bitwise complement of pass 1.         " );
+                mvwprintw( main_window, 10, tab2, "Pass 3: A random number generated data stream.    " );
                 break;
 
             case 4:
 
                 mvwprintw( main_window, 2, tab2, "Security Level: higher (7 passes)" );
 
-                mvwprintw( main_window, 3, tab2, "The American Department of Defense 5220.22-M     " );
-                mvwprintw( main_window, 4, tab2, "standard wipe.                                   " );
-                mvwprintw( main_window, 5, tab2, "                                                 " );
-                mvwprintw( main_window, 6, tab2, "Pass 1: A Random character                       " );
-                mvwprintw( main_window, 7, tab2, "Pass 2: The bitwise complement of pass 1         " );
-                mvwprintw( main_window, 8, tab2, "Pass 3: A random number generated data stream    " );
-                mvwprintw( main_window, 9, tab2, "Pass 4: A Random character                       " );
-                mvwprintw( main_window, 10, tab2, "Pass 5: A Random character                       " );
-                mvwprintw( main_window, 11, tab2, "Pass 6: The bitwise complement of pass 5         " );
-                mvwprintw( main_window, 12, tab2, "Pass 7: A random number generated data stream    " );
+                mvwprintw( main_window, 3, tab2, "The American Department of Defense 5220.22-M      " );
+                mvwprintw( main_window, 4, tab2, "standard wipe.                                    " );
+                mvwprintw( main_window, 5, tab2, "                                                  " );
+                mvwprintw( main_window, 6, tab2, "Pass 1: A random character.                       " );
+                mvwprintw( main_window, 7, tab2, "Pass 2: The bitwise complement of pass 1.         " );
+                mvwprintw( main_window, 8, tab2, "Pass 3: A random number generated data stream.    " );
+                mvwprintw( main_window, 9, tab2, "Pass 4: A random character.                       " );
+                mvwprintw( main_window, 10, tab2, "Pass 5: A random character.                       " );
+                mvwprintw( main_window, 11, tab2, "Pass 6: The bitwise complement of pass 5.         " );
+                mvwprintw( main_window, 12, tab2, "Pass 7: A random number generated data stream.    " );
                 break;
 
             case 5:
 
-                mvwprintw( main_window, 2, tab2, "Security Level: Paranoid ! (35 passes)           " );
-                mvwprintw( main_window, 3, tab2, "Don't waste your time with this on a modern drive" );
+                mvwprintw( main_window, 2, tab2, "Security Level: Paranoid ! (35 passes)            " );
+                mvwprintw( main_window, 3, tab2, "Don't waste your time with this on a modern drive!" );
 
-                mvwprintw( main_window, 5, tab2, "This is the method described by Peter Gutmann in " );
-                mvwprintw( main_window, 6, tab2, "the paper entitled \"Secure Deletion of Data from" );
-                mvwprintw( main_window, 7, tab2, "Magnetic and Solid-State Memory\", however not   " );
-                mvwprintw( main_window, 8, tab2, "relevant in regards to modern hard disk drives.  " );
+                mvwprintw( main_window, 5, tab2, "This is the method described by Peter Gutmann in  " );
+                mvwprintw( main_window, 6, tab2, "the paper entitled \"Secure Deletion of Data from " );
+                mvwprintw( main_window, 7, tab2, "Magnetic and Solid-State Memory\", however not    " );
+                mvwprintw( main_window, 8, tab2, "relevant in regards to modern hard disk drives.   " );
                 break;
 
             case 6:
 
                 mvwprintw( main_window, 2, tab2, "Security Level: Depends on Rounds" );
 
-                mvwprintw( main_window, 4, tab2, "This method fills the device with a stream from  " );
-                mvwprintw( main_window, 5, tab2, "the PRNG. It is probably the best method to use  " );
-                mvwprintw( main_window, 6, tab2, "on modern hard disk drives due to variation in   " );
-                mvwprintw( main_window, 7, tab2, "encoding methods.                                " );
-                mvwprintw( main_window, 8, tab2, "                                                 " );
-                mvwprintw( main_window, 9, tab2, "This method has a high security level with 1     " );
-                mvwprintw( main_window, 10, tab2, "round and an increasingly higher security level " );
-                mvwprintw( main_window, 11, tab2, "as rounds are increased." );
+                mvwprintw( main_window, 4, tab2, "This method fills the device with a stream from   " );
+                mvwprintw( main_window, 5, tab2, "the PRNG. It is probably the best method to use   " );
+                mvwprintw( main_window, 6, tab2, "on modern hard disk drives due to variation in    " );
+                mvwprintw( main_window, 7, tab2, "encoding methods.                                 " );
+                mvwprintw( main_window, 8, tab2, "                                                  " );
+                mvwprintw( main_window, 9, tab2, "This method has a high security level with 1      " );
+                mvwprintw( main_window, 10, tab2, "round and an increasingly higher security level   " );
+                mvwprintw( main_window, 11, tab2, "as rounds are increased.                          " );
                 break;
 
             case 7:
 
                 mvwprintw( main_window, 2, tab2, "Security Level: Not applicable" );
 
-                mvwprintw( main_window, 4, tab2, "This method only reads the device and checks     " );
-                mvwprintw( main_window, 5, tab2, "that it is all zero.                             " );
+                mvwprintw( main_window, 4, tab2, "This method only reads the device and checks      " );
+                mvwprintw( main_window, 5, tab2, "that it is all zeros (0x00).                      " );
 
                 break;
 
@@ -2511,8 +2511,8 @@ void nwipe_gui_method( void )
 
                 mvwprintw( main_window, 2, tab2, "Security Level: Not applicable" );
 
-                mvwprintw( main_window, 4, tab2, "This method only reads the device and checks     " );
-                mvwprintw( main_window, 5, tab2, "that it is all ones (0xFF)." );
+                mvwprintw( main_window, 4, tab2, "This method only reads the device and checks      " );
+                mvwprintw( main_window, 5, tab2, "that it is all ones (0xFF).                       " );
 
                 break;
 
@@ -2520,14 +2520,14 @@ void nwipe_gui_method( void )
 
                 mvwprintw( main_window, 2, tab2, "Security Level: higher (3 passes)" );
 
-                mvwprintw( main_window, 4, tab2, "HMG IA/IS 5 (Infosec Standard 5): Secure         " );
-                mvwprintw( main_window, 5, tab2, "Sanitisation of Protectively Marked Information  " );
-                mvwprintw( main_window, 6, tab2, "or Sensitive Information                         " );
-                mvwprintw( main_window, 7, tab2, "                                                 " );
-                mvwprintw( main_window, 8, tab2, "This method fills the device with 0s, then with  " );
-                mvwprintw( main_window, 9, tab2, "1s, then with a PRNG stream, then reads the      " );
-                mvwprintw( main_window, 10, tab2, "device to verify the PRNG stream was             " );
-                mvwprintw( main_window, 11, tab2, "successfully written.                            " );
+                mvwprintw( main_window, 4, tab2, "HMG IA/IS 5 (Infosec Standard 5): Secure          " );
+                mvwprintw( main_window, 5, tab2, "Sanitisation of Protectively Marked Information   " );
+                mvwprintw( main_window, 6, tab2, "or Sensitive Information                          " );
+                mvwprintw( main_window, 7, tab2, "                                                  " );
+                mvwprintw( main_window, 8, tab2, "This method fills the device with 0s, then with   " );
+                mvwprintw( main_window, 9, tab2, "1s, then with a PRNG stream, then reads the       " );
+                mvwprintw( main_window, 10, tab2, "device to verify the PRNG stream was              " );
+                mvwprintw( main_window, 11, tab2, "successfully written.                             " );
                 break;
             case 10:
 
@@ -2536,9 +2536,9 @@ void nwipe_gui_method( void )
                 mvwprintw( main_window, 4, tab2, "Bruce Schneier 7-Pass Wiping Method:              " );
                 mvwprintw( main_window, 5, tab2, "A secure erasure technique developed by the       " );
                 mvwprintw( main_window, 6, tab2, "renowned cryptographer Bruce Schneier.            " );
-                mvwprintw( main_window, 7, tab2, "                                                 " );
+                mvwprintw( main_window, 7, tab2, "                                                  " );
                 mvwprintw( main_window, 8, tab2, "This method first overwrites the device with      " );
-                mvwprintw( main_window, 9, tab2, "ones (0xFF), followed by zeroes (0x00). Then,     " );
+                mvwprintw( main_window, 9, tab2, "ones (0xFF), followed by zeros (0x00). Then,      " );
                 mvwprintw( main_window, 10, tab2, "it performs five additional passes of PRNG-       " );
                 mvwprintw( main_window, 11, tab2, "generated random data to maximize security.       " );
                 break;
@@ -2715,73 +2715,73 @@ void nwipe_gui_config( void )
                     mvwprintw( main_window, 2, tab2, "PDF Report = DISABLED" );
                 }
 
-                mvwprintw( main_window, 4, tab2, "Enable or Disable creation of the PDF " );
-                mvwprintw( main_window, 5, tab2, "report/certificate                    " );
+                mvwprintw( main_window, 4, tab2, "Enable or disable creation of the PDF  " );
+                mvwprintw( main_window, 5, tab2, "report/certificate.                    " );
                 break;
 
             case 1:
 
-                mvwprintw( main_window, 2, tab2, "PDF Report - Edit Organisation" );
+                mvwprintw( main_window, 2, tab2, "PDF Report - Edit Organisation         " );
 
-                mvwprintw( main_window, 4, tab2, "This option allows you to edit details" );
-                mvwprintw( main_window, 5, tab2, "of the organisation that is performing" );
-                mvwprintw( main_window, 6, tab2, "the erasure. This includes: business  " );
-                mvwprintw( main_window, 7, tab2, "name, business address, contact name  " );
-                mvwprintw( main_window, 8, tab2, "and contact phone.                    " );
+                mvwprintw( main_window, 4, tab2, "This option allows you to edit details " );
+                mvwprintw( main_window, 5, tab2, "of the organisation that is performing " );
+                mvwprintw( main_window, 6, tab2, "the erasure. This includes: business   " );
+                mvwprintw( main_window, 7, tab2, "name, business address, contact name   " );
+                mvwprintw( main_window, 8, tab2, "and contact phone.                     " );
                 break;
 
             case 2:
-                mvwprintw( main_window, 2, tab2, "PDF Report - Select Customer" );
+                mvwprintw( main_window, 2, tab2, "PDF Report - Select Customer           " );
 
-                mvwprintw( main_window, 4, tab2, "Allows selection of a customer as     " );
-                mvwprintw( main_window, 5, tab2, "displayed on the PDF report. Customer " );
-                mvwprintw( main_window, 6, tab2, "information includes Name (This can be" );
-                mvwprintw( main_window, 7, tab2, "a personal or business name), address " );
-                mvwprintw( main_window, 8, tab2, "contact name and contact phone.       " );
-                mvwprintw( main_window, 9, tab2, "                                      " );
-                mvwprintw( main_window, 10, tab2, "Customer data is located in:         " );
-                mvwprintw( main_window, 11, tab2, "/etc/nwipe/nwipe_customers.csv       " );
+                mvwprintw( main_window, 4, tab2, "Allows selection of a customer as      " );
+                mvwprintw( main_window, 5, tab2, "displayed on the PDF report. Customer  " );
+                mvwprintw( main_window, 6, tab2, "information includes Name (This can be " );
+                mvwprintw( main_window, 7, tab2, "a personal or business name), address  " );
+                mvwprintw( main_window, 8, tab2, "contact name and contact phone.        " );
+                mvwprintw( main_window, 9, tab2, "                                       " );
+                mvwprintw( main_window, 10, tab2, "Customer data is located in:           " );
+                mvwprintw( main_window, 11, tab2, "/etc/nwipe/nwipe_customers.csv         " );
                 break;
 
             case 3:
 
-                mvwprintw( main_window, 2, tab2, "PDF Report - Add Customer     " );
+                mvwprintw( main_window, 2, tab2, "PDF Report - Add Customer              " );
 
-                mvwprintw( main_window, 4, tab2, "This option allows you to add a new   " );
-                mvwprintw( main_window, 5, tab2, "customer. A customer can be optionally" );
-                mvwprintw( main_window, 6, tab2, "displayed on the PDF report. Customer " );
-                mvwprintw( main_window, 7, tab2, "information includes Name (This can be" );
-                mvwprintw( main_window, 8, tab2, "a personal or business name), address " );
-                mvwprintw( main_window, 9, tab2, "contact name and contact phone.       " );
-                mvwprintw( main_window, 10, tab2, "                                      " );
-                mvwprintw( main_window, 11, tab2, "Customer data is saved in:            " );
-                mvwprintw( main_window, 12, tab2, "/etc/nwipe/nwipe_customers.csv        " );
+                mvwprintw( main_window, 4, tab2, "This option allows you to add a new    " );
+                mvwprintw( main_window, 5, tab2, "customer. A customer can be optionally " );
+                mvwprintw( main_window, 6, tab2, "displayed on the PDF report. Customer  " );
+                mvwprintw( main_window, 7, tab2, "information includes Name (This can be " );
+                mvwprintw( main_window, 8, tab2, "a personal or business name), address  " );
+                mvwprintw( main_window, 9, tab2, "contact name and contact phone.        " );
+                mvwprintw( main_window, 10, tab2, "                                       " );
+                mvwprintw( main_window, 11, tab2, "Customer data is saved in:             " );
+                mvwprintw( main_window, 12, tab2, "/etc/nwipe/nwipe_customers.csv         " );
                 break;
 
             case 4:
 
-                mvwprintw( main_window, 2, tab2, "PDF Report - Delete Customer  " );
+                mvwprintw( main_window, 2, tab2, "PDF Report - Delete Customer           " );
 
-                mvwprintw( main_window, 4, tab2, "This option allows you to delete a    " );
-                mvwprintw( main_window, 5, tab2, "customer. A customer can be optionally" );
-                mvwprintw( main_window, 6, tab2, "displayed on the PDF report. Customer " );
-                mvwprintw( main_window, 7, tab2, "information includes Name (This can be" );
-                mvwprintw( main_window, 8, tab2, "a personal or business name), address " );
-                mvwprintw( main_window, 9, tab2, "contact name and contact phone.       " );
-                mvwprintw( main_window, 10, tab2, "                                      " );
-                mvwprintw( main_window, 11, tab2, "Customer data is saved in:            " );
-                mvwprintw( main_window, 12, tab2, "/etc/nwipe/nwipe_customers.csv        " );
+                mvwprintw( main_window, 4, tab2, "This option allows you to delete a     " );
+                mvwprintw( main_window, 5, tab2, "customer. A customer can be optionally " );
+                mvwprintw( main_window, 6, tab2, "displayed on the PDF report. Customer  " );
+                mvwprintw( main_window, 7, tab2, "information includes Name (This can be " );
+                mvwprintw( main_window, 8, tab2, "a personal or business name), address  " );
+                mvwprintw( main_window, 9, tab2, "contact name and contact phone.        " );
+                mvwprintw( main_window, 10, tab2, "                                       " );
+                mvwprintw( main_window, 11, tab2, "Customer data is saved in:             " );
+                mvwprintw( main_window, 12, tab2, "/etc/nwipe/nwipe_customers.csv         " );
                 break;
 
             case 5:
 
-                mvwprintw( main_window, 2, tab2, "PDF Report - Preview Organisation,    " );
-                mvwprintw( main_window, 3, tab2, "Customer and Date/Time details        " );
+                mvwprintw( main_window, 2, tab2, "PDF Report - Preview Organisation,     " );
+                mvwprintw( main_window, 3, tab2, "Customer and Date/Time details         " );
 
-                mvwprintw( main_window, 5, tab2, "This allows the above information to  " );
-                mvwprintw( main_window, 6, tab2, "be checked prior to starting the wipe " );
-                mvwprintw( main_window, 7, tab2, "so that the information is correct on " );
-                mvwprintw( main_window, 8, tab2, "the pdf report.                       " );
+                mvwprintw( main_window, 5, tab2, "This allows the above information to   " );
+                mvwprintw( main_window, 6, tab2, "be checked prior to starting the wipe  " );
+                mvwprintw( main_window, 7, tab2, "so that the information is correct on  " );
+                mvwprintw( main_window, 8, tab2, "the PDF report.                        " );
                 break;
 
             case 6:
@@ -2794,22 +2794,22 @@ void nwipe_gui_config( void )
                 {
                     mvwprintw( main_window, 2, tab2, "Preview Org. & Customer at start = DISABLED" );
                 }
-                mvwprintw( main_window, 4, tab2, "A preview prior to the drive selection" );
-                mvwprintw( main_window, 5, tab2, "of the organisation that is performing" );
-                mvwprintw( main_window, 6, tab2, "the wipe, the customer details and the" );
-                mvwprintw( main_window, 7, tab2, "current date and time in order to     " );
-                mvwprintw( main_window, 8, tab2, "confirm that the information is       " );
-                mvwprintw( main_window, 9, tab2, "correct on the pdf report prior to    " );
-                mvwprintw( main_window, 10, tab2, "drive selection and starting the erase" );
+                mvwprintw( main_window, 4, tab2, "A preview prior to the drive selection " );
+                mvwprintw( main_window, 5, tab2, "of the organisation that is performing " );
+                mvwprintw( main_window, 6, tab2, "the wipe, the customer details and the " );
+                mvwprintw( main_window, 7, tab2, "current date and time in order to      " );
+                mvwprintw( main_window, 8, tab2, "confirm that the information is        " );
+                mvwprintw( main_window, 9, tab2, "correct on the PDF report prior to     " );
+                mvwprintw( main_window, 10, tab2, "drive selection and starting the erase." );
                 break;
 
             case 8:
 
-                mvwprintw( main_window, 2, tab2, "Set System Date & Time                " );
+                mvwprintw( main_window, 2, tab2, "Set System Date & Time                 " );
 
-                mvwprintw( main_window, 4, tab2, "Useful when host is not connected to  " );
-                mvwprintw( main_window, 5, tab2, "the internet and not running the 'ntp'" );
-                mvwprintw( main_window, 6, tab2, "(network time protocol).              " );
+                mvwprintw( main_window, 4, tab2, "Useful when host is not connected to   " );
+                mvwprintw( main_window, 5, tab2, "the internet and not running the 'NTP' " );
+                mvwprintw( main_window, 6, tab2, "(Network Time Protocol).               " );
                 break;
         } /* switch */
 
