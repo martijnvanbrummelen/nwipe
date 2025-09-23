@@ -67,10 +67,24 @@ PKG_CHECK_MODULES(
 	    ], [AC_MSG_ERROR([libconfig library not found])])]
 )
 
-AC_CHECK_LIB([intl], [libintl_dgettext]) # needed to statically link libparted, but not given in its pkgconfig file
-AC_CHECK_LIB([uuid], [uuid_generate])    # needed to statically link libparted, but not given in its pkgconfig file
+# Extra libs needed by parted static linkage but missing from its .pc
+AC_CHECK_LIB([intl], [libintl_dgettext])
+AC_CHECK_LIB([uuid], [uuid_generate])
 PKG_CHECK_MODULES([PARTED], [libparted])
+
 AC_CHECK_LIB([pthread], [main], ,[AC_MSG_ERROR([pthread development library not found])])
+
+# --- NEW: GnuTLS is required for PDF signing (OpenSSL replacement) ---
+PKG_CHECK_MODULES(
+	[GNUTLS],
+	[gnutls >= 3.6],
+	[
+		CFLAGS="${CFLAGS} ${GNUTLS_CFLAGS}"
+		LIBS="${LIBS} ${GNUTLS_LIBS}"
+	],
+	[AC_MSG_ERROR([GnuTLS (>= 3.6) development files not found.
+Install e.g. Debian/Ubuntu: libgnutls28-dev   Fedora/RHEL: gnutls-devel])]
+)
 
 # Checks for header files.
 AC_CHECK_HEADERS([libconfig.h fcntl.h inttypes.h netinet/in.h stddef.h stdint.h stdlib.h string.h sys/file.h sys/ioctl.h unistd.h])
@@ -84,3 +98,4 @@ AC_FUNC_MALLOC
 AC_CHECK_FUNCS([fdatasync memset regcomp strdup strerror])
 
 AC_OUTPUT
+
