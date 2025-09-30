@@ -1,4 +1,4 @@
-.TH NWIPE "8" "Jan 2025" "nwipe version 0.38" "User Commands"
+.TH NWIPE "8" "Sep 2025" "nwipe version 0.39" "User Commands"
 .SH NAME
 nwipe \- securely erase disks
 .SH SYNOPSIS
@@ -6,28 +6,30 @@ nwipe \- securely erase disks
 [\fIoptions\fR] [\fIdevice1\fR] [\fIdevice2\fR] ...
 .SH DESCRIPTION
 nwipe is a command that will securely erase disks using a variety of
-recognised methods.  It is a fork of the dwipe command used by Darik's Boot
-and Nuke (dban).  nwipe is included with partedmagic if you want a quick and
+recognized methods.  It is a fork of the dwipe command used by Darik's Boot
+and Nuke (DBAN).  nwipe is included with partedmagic if you want a quick and
 easy bootable CD version.  nwipe was created out of a need to run the DBAN
 dwipe command outside of DBAN, in order to allow its use with any host
 distribution, thus giving better hardware support.  It is essentially the
 same as dwipe, with a few changes:
 .TP
-- pthreads is used instead of fork
+- pthreads is used instead of fork.
 .TP
-- The parted library is used to detect drives
+- The parted library is used to detect drives.
 .TP
-- The code is designed to be compiled with gcc
+- The code is designed to be compiled with gcc.
 .TP
-- SIGUSR1 can be used to log the stats of the current wipe
+- SIGUSR1 can be used to log the stats of the current wipe.
+.TP
+- Additional wiping methods and PRNGs.
 
 .SH OPTIONS
 .TP
 \fB\-V\fR, \fB\-\-version\fR
-Prints the version number
+Prints the version number.
 .TP
 \fB\-h\fR, \fB\-\-help\fR
-Prints a help summary
+Prints a help summary.
 .TP
 \fB\-\-autonuke\fR
 If no devices have been specified on the command line, starts wiping all
@@ -39,17 +41,17 @@ Power off system on completion of wipe delayed for one minute. During
 this one minute delay you can abort the shutdown by typing sudo shutdown -c
 .TP
 \fB\-\-sync\fR=\fINUM\fR
-Will perform a syn after NUM writes (default: 100000)
+Will perform a syn after NUM writes (default: 100000).
 .IP
 0    \- fdatasync after the disk is completely written
        fdatasync errors not detected until completion.
        0 is not recommended as disk errors may cause nwipe
-       to appear to hang
+       to appear to hang.
 .IP
-1    \- fdatasync after every write
+1    \- fdatasync after every write.
        Warning: Lower values will reduce wipe speeds.
 .IP
-1000 \- fdatasync after 1000 writes
+1000 \- fdatasync after 1000 writes.
 .TP
 \fB\-\-noblank\fR
 Do not perform the final blanking pass after the wipe (default is to blank,
@@ -74,13 +76,13 @@ SIGUSR1 can be used to retrieve the current wiping statistics.
 Log more messages, useful for debugging.
 .TP
 \fB\-\-verify\fR=\fITYPE\fR
-Whether to perform verification of erasure (default: last)
+Whether to perform verification of erasure (default: last).
 .IP
-off   \- Do not verify
+off   \- Do not verify.
 .IP
-last  \- Verify after the last pass
+last  \- Verify after the last pass.
 .IP
-all   \- Verify every pass
+all   \- Verify every pass.
 .IP
 Please mind that HMG IS5 enhanced always verifies the last (PRNG) pass
 regardless of this option.
@@ -92,24 +94,26 @@ dod522022m / dod       \- 7 pass DOD 5220.22\-M method
 .IP
 dodshort / dod3pass    \- 3 pass DOD method
 .IP
-gutmann                \- Peter Gutmann's Algorithm
+gutmann                \- Peter Gutmann's algorithm
 .IP
 ops2                   \- RCMP TSSIT OPS\-II
 .IP
 random / prng / stream \- PRNG Stream
 .IP
-zero / quick           \- Overwrite with zeros 0x00
+zero / quick           \- Overwrite with zeros (0x00)
 .IP
-one                    \- Overwrite with ones 0xFF
+one                    \- Overwrite with ones (0xFF)
 .IP
-verify_zero            \- Verifies disk is zero filled
+verify_zero            \- Verifies disk is zero (0x00) filled
 .IP
-verify_one             \- Verifies disk is 0xFF filled
+verify_one             \- Verifies disk is one (0xFF) filled
 .IP
 is5enh                 \- HMG IS5 enhanced
+.IP
+bruce7                 \- Schneier Bruce 7-pass mixed pattern
 .TP
 \fB\-l\fR, \fB\-\-logfile\fR=\fIFILE\fR
-Filename to log to. Default is STDOUT
+Filename to log to. Default is STDOUT.
 .TP
 \fB\-P\fR, \fB\-\-PDFreportpath\fR=\fIDIR\fR
 Directory to write the PDF nwipe reports/certificates to.
@@ -117,15 +121,16 @@ Defaults to ".".
 If \fIDIR\fR is set to \fInoPDF\fR no report PDF files are written.
 .TP
 \fB\-p\fR, \fB\-\-prng\fR=\fIMETHOD\fR
-PRNG option (mersenne|twister|isaac|isaac64)
+The PRNG option (default: xoroshiro256_prng).
+(mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng|xoroshiro256_prng)
 .TP
 \fB\-q\fR, \fB\-\-quiet\fR
-Anonymize serial numbers, Gui & logs display:
+Anonymize serial numbers, GUI & logs display:
  XXXXXXXX = S/N obtained & anonymized.
  ???????? = S/N not available.
 .TP
 \fB\-r\fR, \fB\-\-rounds\fR=\fINUM\fR
-Number of times to wipe the device using the selected method (default: 1)
+Number of times to wipe the device using the selected method (default: 1).
 .TP
 \fB\-e\fR, \fB\-\-exclude\fR=\fIDEVICES\fR
 Up to ten comma separated devices to be excluded, examples:
@@ -133,10 +138,10 @@ Up to ten comma separated devices to be excluded, examples:
  --exclude=/dev/sdc,/dev/sdd
  --exclude=/dev/sdc,/dev/sdd,/dev/mapper/cryptswap1
 .SH BUGS
-Please see the GitHub site for the latest list
+Please see the GitHub site for the latest list:
 (https://github.com/martijnvanbrummelen/nwipe/issues)
 .SH AUTHOR
-Nwipe is developed by Martijn van Brummelen <github@brumit.nl>
+nwipe is developed by Martijn van Brummelen <github@brumit.nl>.
 .SH "SEE ALSO"
 .BR shred (1),
 .BR dwipe (1),

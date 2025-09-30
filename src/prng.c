@@ -320,7 +320,7 @@ int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE )
     u8* restrict bufpos = buffer;
     size_t words = count / SIZE_OF_XOROSHIRO256_PRNG;
 
-    /* Loop to fill the buffer with blocks directly from the XORoroshiro256 algorithm */
+    /* Loop to fill the buffer with blocks directly from the XORoshiro256 algorithm */
     for( size_t ii = 0; ii < words; ++ii )
     {
         xoroshiro256_genrand_uint256_to_buf( (xoroshiro256_state_t*) *state, bufpos );

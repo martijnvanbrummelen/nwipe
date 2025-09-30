@@ -21,23 +21,24 @@ The user can select from a variety of recognised secure erase methods which incl
 
 * Fill With Zeros    - Fills the device with zeros (0x00), one round only.
 * Fill With Ones     - Fills the device with ones  (0xFF), one round only.
-* RCMP TSSIT OPS-II  - Royal Candian Mounted Police Technical Security Standard, OPS-II
+* RCMP TSSIT OPS-II  - Royal Canadian Mounted Police Technical Security Standard, OPS-II.
 * DoD Short          - The American Department of Defense 5220.22-M short 3 pass wipe (passes 1, 2 & 7).
 * DoD 5220.22M       - The American Department of Defense 5220.22-M full 7 pass wipe.
 * Gutmann Wipe       - Peter Gutmann's method (Secure Deletion of Data from Magnetic and Solid-State Memory).
 * PRNG Stream        - Fills the device with a stream from the PRNG.
 * Verify Zeros       - This method only reads the device and checks that it is filled with zeros (0x00).
 * Verify Ones        - This method only reads the device and checks that it is filled with ones (0xFF).
-* HMG IS5 enhanced   - Secure Sanitisation of Protectively Marked Information or Sensitive Information
+* HMG IS5 enhanced   - Secure Sanitisation of Protectively Marked Information or Sensitive Information.
+* Schneier Wipe      - Bruce Schneier's method (7-pass mixed pattern).
 
-nwipe also includes the following pseudo random number generators (prng):
+nwipe also includes the following pseudo random number generators (PRNG):
 * Mersenne Twister
 * ISAAC
-
-  In addition to the above, the following prngs will be available in v0.37  
+* ISAAC-64
+* Additive Lagged Fibonacci Generator
 * XORoshiro-256
-* Lagged Fibonacci
-* AES-CTR (openssl)
+  In addition to the above, the following PRNG will be available in future versions:
+* AES-256-CTR
 
 These can be used to overwrite a drive with a stream of randomly generated characters.
 
@@ -46,13 +47,13 @@ nwipe can be found in many [Linux distro repositories](#which-linux-distro-uses-
 nwipe is also included in [ShredOS](https://github.com/PartialVolume/shredos.x86_64) which was developed in particular to showcase nwipe as a fast-to-boot standalone method similar to DBAN. ShredOS always contains the latest nwipe version.
 
 ## Limitations regarding solid state drives
-In the current form nwipe does not sanitize solid state drives (hereinafter referred to as SSDs)
-of any form (SAS / Sata / NVME) and / or form factor (2.5" / 3.5" / PCI) fully due to their nature:  
+In the current form nwipe does not sanitize solid-state drives (hereinafter referred to as SSDs)
+of any form (SAS / SATA / NVMe) and / or form factor (2.5" / 3.5" / PCI) fully due to their nature:  
 SSDs, as the transistors contained in the memory modules are subject to wear, contain in most cases
 additional memory modules installed as failover for broken sectors outside
 of the host accessible space (frequently referred to as "overprovisioning") and for garbage collection.
 Some manufacturers reserve access to these areas only to disk's own controller and firmware.
-It is therefor always advised to use nwipe / shredOS in conjunction with the manufacturer's or hardware vendor's own tools for sanitization to assure
+It is therefor always advised to use nwipe / ShredOS in conjunction with the manufacturer's or hardware vendor's own tools for sanitization to assure
 full destruction of the information contained on the disk.
 Given that most vendors and manufacturers do not provide open source tools, it is advised to validate the outcome by comparing the data on the disk before and after sanitization.
 A list of the most common tools and instructions for SSD wipes can be found in the [SSD Guide](ssd-guide.md).
@@ -114,7 +115,7 @@ yum install coreutils
 yum install smartmontools
 yum install hdparm
 ```
-Note. The following programs are optionally installed although recommended. 1. dmidecode 2. readlink 3. smartmontools.
+Note: The following programs are optionally installed although recommended. 1. dmidecode 2. readlink 3. smartmontools.
 
 #### hdparm [REQUIRED]
 hdparm provides some of the information regarding disk size in sectors as related to the host protected area (HPA) and device configuration overlay (DCO). We do however have our own function that directly access the DCO to obtain the 'real max sectors' so reliance on hdparm may be removed at a future date.
@@ -145,7 +146,7 @@ make
 make install
 ```
 
-Then run nwipe !
+Then run nwipe!
 ```
 cd src
 sudo ./nwipe
@@ -184,9 +185,9 @@ Once done with your coding then the released/patch/fixed code can be compiled, w
 
 ## Automating the download and compilation process for Debian based distros.
 
-Here's a script that will do just that! It will create a directory in your home folder called 'nwipe_master'. It installs all the libraries required to compile the software (build-essential) and all the libraries that nwipe requires (libparted etc). It downloads the latest master copy of nwipe from github. It then compiles the software and then runs the latest nwipe. It doesn't write over the version of nwipe that's installed in the repository (If you had nwipe already installed). To run the latest master version of nwipe manually you would run it like this `sudo ~/nwipe_master/nwipe/src/nwipe`
+Here's a script that will do just that! It will create a directory in your home folder called 'nwipe_master'. It installs all the libraries required to compile the software (build-essential) and all the libraries that nwipe requires (libparted etc). It downloads the latest master copy of nwipe from GitHub. It then compiles the software and then runs the latest nwipe. It doesn't write over the version of nwipe that's installed in the repository (If you had nwipe already installed). To run the latest master version of nwipe manually you would run it like this `sudo ~/nwipe_master/nwipe/src/nwipe`
 
-You can run the script multiple times; the first time it's run it will install all the libraries; subsequent times it will just say the libraries are up to date. As it always downloads a fresh copy of the nwipe master from Github, you can always stay up to date. Just run it to get the latest version of nwipe. It only takes 11 seconds to compile on my i7.
+You can run the script multiple times; the first time it's run it will install all the libraries; subsequent times it will just say the libraries are up to date. As it always downloads a fresh copy of the nwipe master from GitHub, you can always stay up to date. Just run it to get the latest version of nwipe. It only takes 11 seconds to compile on my i7.
 
 If you already have nwipe installed from the repository, you need to take care which version you are running. If you typed `nwipe` from any directory it will always run the original repository copy of nwipe. To run the latest nwipe you have to explicitly tell it where the new copy is, e.g in the directory `~/nwipe_master/nwipe/src`. That's why you would run it by typing `sudo ~/nwipe_master/nwipe/src/nwipe` alternatively you could cd to the directory and run it like this:
 
