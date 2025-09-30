@@ -2412,7 +2412,7 @@ void nwipe_gui_method( void )
                 mvwprintw( main_window, 8, tab2, "There is no publicly available evidence that      " );
                 mvwprintw( main_window, 9, tab2, "data can be recovered from a modern traditional   " );
                 mvwprintw( main_window, 10, tab2, "hard drive (HDD) that has been zero wiped,        " );
-                mvwprintw( main_window, 11, tab2, "however a wipe that includes a prng may be        " );
+                mvwprintw( main_window, 11, tab2, "however a wipe that includes a PRNG may be        " );
                 mvwprintw( main_window, 12, tab2, "preferable.                                       " );
                 break;
 
