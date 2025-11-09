@@ -391,6 +391,11 @@ int nwipe_options_parse( int argc, char** argv )
                     nwipe_options.method = &nwipe_bruce7;
                     break;
                 }
+                if( strcmp( optarg, "bmb" ) == 0 )
+                {
+                    nwipe_options.method = &nwipe_bmb;
+                    break;
+                }
 
                 /* Else we do not know this wipe method. */
                 fprintf( stderr, "Error: Unknown wipe method '%s'.\n", optarg );
@@ -666,46 +671,47 @@ void display_help()
     printf( "Options:\n" );
     /* Limit line length to a maximum of 80 characters so it looks good in 80x25 terminals i.e shredos */
     /*  ___12345678901234567890123456789012345678901234567890123456789012345678901234567890< Do not exceed */
-    puts( "  -V, --version            Prints the version number\n" );
-    puts( "  -v, --verbose            Prints more messages to the log\n" );
-    puts( "  -h, --help               Prints this help\n" );
-    puts( "      --autonuke           If no devices have been specified on the command line," );
-    puts( "                           starts wiping all devices immediately. If devices have" );
-    puts( "                           been specified, starts wiping only those specified" );
-    puts( "                           devices immediately.\n" );
-    puts( "      --autopoweroff       Power off system on completion of wipe delayed for" );
-    puts( "                           for one minute. During this one minute delay you can" );
-    puts( "                           abort the shutdown by typing sudo shutdown -c\n" );
-    printf( "      --sync=NUM         Will perform a sync after NUM writes (default: %d)\n", DEFAULT_SYNC_RATE );
-    puts( "                           0    - fdatasync after the disk is completely written." );
-    puts( "                                  fdatasync errors not detected until completion." );
-    puts( "                                  0 is not recommended as disk errors may cause" );
-    puts( "                                  nwipe to appear to hang." );
-    puts( "                           1    - fdatasync after every write." );
-    puts( "                                  Warning: Lower values will reduce wipe speeds." );
-    puts( "                           1000 - fdatasync after 1000 writes etc.\n" );
-    puts( "      --verify=TYPE        Whether to perform verification of erasure" );
-    puts( "                           (default: last)" );
-    puts( "                           off   - Do not verify." );
-    puts( "                           last  - Verify after the last pass." );
-    puts( "                           all   - Verify every pass." );
-    puts( "                           " );
-    puts( "                           Please mind that HMG IS5 enhanced always verifies the" );
-    puts( "                           last (PRNG) pass regardless of this option.\n" );
-    puts( "  -m, --method=METHOD      The wiping method. See man page for more details." );
-    puts( "                           (default: dodshort)" );
-    puts( "                           dod522022m / dod       - 7 pass DOD 5220.22-M method" );
-    puts( "                           dodshort / dod3pass    - 3 pass DOD method" );
-    puts( "                           gutmann                - Peter Gutmann's algorithm" );
-    puts( "                           ops2                   - RCMP TSSIT OPS-II" );
-    puts( "                           random / prng / stream - PRNG Stream" );
-    puts( "                           zero / quick           - Overwrite with zeros (0x00)" );
-    puts( "                           one                    - Overwrite with ones (0xFF)" );
-    puts( "                           verify_zero            - Verifies disk is zero (0x00) filled" );
-    puts( "                           verify_one             - Verifies disk is one (0xFF) filled" );
-    puts( "                           is5enh                 - HMG IS5 enhanced\n" );
-    puts( "                           bruce7                 - Schneier Bruce 7-pass mixed pattern\n" );
-    puts( "  -l, --logfile=FILE       Filename to log to. Default is STDOUT\n" );
+    puts( "  -V, --version           Prints the version number\n" );
+    puts( "  -v, --verbose           Prints more messages to the log\n" );
+    puts( "  -h, --help              Prints this help\n" );
+    puts( "      --autonuke          If no devices have been specified on the command line," );
+    puts( "                          starts wiping all devices immediately. If devices have" );
+    puts( "                          been specified, starts wiping only those specified" );
+    puts( "                          devices immediately.\n" );
+    puts( "      --autopoweroff      Power off system on completion of wipe delayed for" );
+    puts( "                          for one minute. During this one minute delay you can" );
+    puts( "                          abort the shutdown by typing sudo shutdown -c\n" );
+    printf( "      --sync=NUM          Will perform a sync after NUM writes (default: %d)\n", DEFAULT_SYNC_RATE );
+    puts( "                          0    - fdatasync after the disk is completely written" );
+    puts( "                                 fdatasync errors not detected until completion." );
+    puts( "                                 0 is not recommended as disk errors may cause" );
+    puts( "                                 nwipe to appear to hang" );
+    puts( "                          1    - fdatasync after every write" );
+    puts( "                                 Warning: Lower values will reduce wipe speeds." );
+    puts( "                          1000 - fdatasync after 1000 writes etc.\n" );
+    puts( "      --verify=TYPE       Whether to perform verification of erasure" );
+    puts( "                          (default: last)" );
+    puts( "                          off   - Do not verify" );
+    puts( "                          last  - Verify after the last pass" );
+    puts( "                          all   - Verify every pass" );
+    puts( "                          " );
+    puts( "                          Please mind that HMG IS5 enhanced always verifies the" );
+    puts( "                          last (PRNG) pass regardless of this option.\n" );
+    puts( "  -m, --method=METHOD     The wiping method. See man page for more details." );
+    puts( "                          (default: dodshort)" );
+    puts( "                          dod522022m / dod       - 7 pass DOD 5220.22-M method" );
+    puts( "                          dodshort / dod3pass    - 3 pass DOD method" );
+    puts( "                          gutmann                - Peter Gutmann's Algorithm" );
+    puts( "                          ops2                   - RCMP TSSIT OPS-II" );
+    puts( "                          random / prng / stream - PRNG Stream" );
+    puts( "                          zero / quick           - Overwrite with zeros" );
+    puts( "                          one                    - Overwrite with ones (0xFF)" );
+    puts( "                          verify_zero            - Verifies disk is zero filled" );
+    puts( "                          verify_one             - Verifies disk is 0xFF filled" );
+    puts( "                          is5enh                 -  HMG IS5 enhanced\n" );
+    puts( "                          bruce7                 -  Schneier Bruce 7-pass mixed pattern\n" );
+    puts( "                          bmb                    -  BMB21-2019 mixed pattern\n" );
+    puts( "  -l, --logfile=FILE      Filename to log to. Default is STDOUT\n" );
     puts( "  -P, --PDFreportpath=PATH Path to write PDF reports to. Default is \".\"" );
     puts( "                           If set to \"noPDF\" no PDF reports are written.\n" );
     puts( "  -p, --prng=METHOD        PRNG option "

@@ -69,6 +69,7 @@ const char* nwipe_verify_zero_label = "Verify Zeros (0x00)";
 const char* nwipe_verify_one_label = "Verify Ones  (0xFF)";
 const char* nwipe_is5enh_label = "HMG IS5 Enhanced";
 const char* nwipe_bruce7_label = "Bruce Schneier 7-Pass";
+const char* nwipe_bmb_label = "BMB21-2019";
 
 const char* nwipe_unknown_label = "Unknown Method (FIXME)";
 
@@ -122,6 +123,10 @@ const char* nwipe_method_label( void* method )
     if( method == &nwipe_bruce7 )
     {
         return nwipe_bruce7_label;
+    }
+    if( method == &nwipe_bmb )
+    {
+        return nwipe_bmb_label;
     }
 
     /* else */
@@ -794,6 +799,42 @@ void* nwipe_bruce7( void* ptr )
     c->wipe_status = 0;
 
     /* Get current time at the end of the wipe */
+    time( &c->end_time );
+
+    return NULL;
+}
+
+void* nwipe_bmb( void* ptr )
+{
+    /**
+     * BMB Secure Wipe Method:
+     * Pass 1: 0xFF
+     * Pass 2: 0x00
+     * Pass 3-5: 3× Random
+     * Pass 6: 0xFF
+     */
+
+    nwipe_context_t* c = (nwipe_context_t*) ptr;
+
+    time( &c->start_time );
+    c->wipe_status = 1;
+
+    char onefill[1] = { '\xFF' };
+    char zerofill[1] = { '\x00' };
+
+    nwipe_pattern_t patterns[] = {
+        { 1, &onefill[0] },  // 0xFF
+        { 1, &zerofill[0] },  // 0x00
+        { -1, "" },  // RANDOM
+        { -1, "" },  // RANDOM
+        { -1, "" },  // RANDOM
+        { 1, &onefill[0] },  // 0xFF
+        { 0, NULL }  // 0X00
+    };
+
+    c->result = nwipe_runmethod( c, patterns );
+
+    c->wipe_status = 0;
     time( &c->end_time );
 
     return NULL;

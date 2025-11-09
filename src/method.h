@@ -55,6 +55,7 @@ void* nwipe_one( void* ptr );
 void* nwipe_verify_zero( void* ptr );
 void* nwipe_verify_one( void* ptr );
 void* nwipe_bruce7( void* ptr );
+void* nwipe_bmb( void* ptr );
 
 void calculate_round_size( nwipe_context_t* );
 
