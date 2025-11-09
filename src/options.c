@@ -617,11 +617,11 @@ void nwipe_options_log( void )
     }
     else if( nwipe_options.prng == &nwipe_add_lagg_fibonacci_prng )
     {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Lagged Fibonacci generator (EXPERIMENTAL!)" );
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Lagged Fibonacci generator" );
     }
     else if( nwipe_options.prng == &nwipe_xoroshiro256_prng )
     {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = XORoshiro-256 (EXPERIMENTAL!)" );
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = XORoshiro-256" );
     }
     else if( nwipe_options.prng == &nwipe_isaac )
     {
@@ -714,28 +714,28 @@ void display_help()
     puts( "  -l, --logfile=FILE      Filename to log to. Default is STDOUT\n" );
     puts( "  -P, --PDFreportpath=PATH Path to write PDF reports to. Default is \".\"" );
     puts( "                           If set to \"noPDF\" no PDF reports are written.\n" );
-    puts( "  -p, --prng=METHOD       PRNG option "
+    puts( "  -p, --prng=METHOD        PRNG option "
           "(mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng|xoroshiro256_prng)\n" );
-    puts( "  -q, --quiet             Anonymize logs and the GUI by removing unique data, i.e." );
-    puts( "                          serial numbers, LU WWN Device ID, and SMBIOS/DMI data" );
-    puts( "                          XXXXXX = S/N exists, ????? = S/N not obtainable\n" );
-    puts( "  -r, --rounds=NUM        Number of times to wipe the device using the selected" );
-    puts( "                          method (default: 1)\n" );
-    puts( "      --noblank           Do NOT blank disk after wipe" );
-    puts( "                          (default is to complete a final blank pass)\n" );
-    puts( "      --nowait            Do NOT wait for a key before exiting" );
-    puts( "                          (default is to wait)\n" );
-    puts( "      --nosignals         Do NOT allow signals to interrupt a wipe" );
-    puts( "                          (default is to allow)\n" );
-    puts( "      --nogui             Do NOT show the GUI interface. Automatically invokes" );
-    puts( "                          the nowait option. Must be used with the --autonuke" );
-    puts( "                          option. Send SIGUSR1 to log current stats\n" );
-    puts( "      --nousb             Do NOT show or wipe any USB devices whether in GUI" );
-    puts( "                          mode, --nogui or --autonuke modes.\n" );
-    puts( "  -e, --exclude=DEVICES   Up to ten comma separated devices to be excluded" );
-    puts( "                          --exclude=/dev/sdc" );
-    puts( "                          --exclude=/dev/sdc,/dev/sdd" );
-    puts( "                          --exclude=/dev/sdc,/dev/sdd,/dev/mapper/cryptswap1\n" );
+    puts( "  -q, --quiet              Anonymize logs and the GUI by removing unique data, i.e." );
+    puts( "                           serial numbers, LU WWN Device ID, and SMBIOS/DMI data." );
+    puts( "                           XXXXXX = S/N exists, ????? = S/N not obtainable\n" );
+    puts( "  -r, --rounds=NUM         Number of times to wipe the device using the selected" );
+    puts( "                           method. (default: 1)\n" );
+    puts( "      --noblank            Do NOT blank disk after wipe." );
+    puts( "                           (default is to complete a final blank pass)\n" );
+    puts( "      --nowait             Do NOT wait for a key before exiting." );
+    puts( "                           (default is to wait)\n" );
+    puts( "      --nosignals          Do NOT allow signals to interrupt a wipe." );
+    puts( "                           (default is to allow)\n" );
+    puts( "      --nogui              Do NOT show the GUI interface. Automatically invokes" );
+    puts( "                           the nowait option. Must be used with the --autonuke" );
+    puts( "                           option. Send SIGUSR1 to log current stats.\n" );
+    puts( "      --nousb              Do NOT show or wipe any USB devices whether in GUI" );
+    puts( "                           mode, --nogui or --autonuke modes.\n" );
+    puts( "  -e, --exclude=DEVICES    Up to ten comma separated devices to be excluded." );
+    puts( "                           --exclude=/dev/sdc" );
+    puts( "                           --exclude=/dev/sdc,/dev/sdd" );
+    puts( "                           --exclude=/dev/sdc,/dev/sdd,/dev/mapper/cryptswap1\n" );
     puts( "" );
     exit( EXIT_SUCCESS );
 }
