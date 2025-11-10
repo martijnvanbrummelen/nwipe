@@ -32,6 +32,14 @@
 #include "context.h"
 #include "logging.h"
 #include "miscellaneous.h"
+#include <string.h>
+#include <stdlib.h>
+#include <dirent.h>
+#include <unistd.h>
+#include <limits.h>
+#include <errno.h>
+#include <ctype.h>  // for isspace()
+#include <stddef.h>  // for NULL
 
 /* Convert string to upper case
  */
@@ -738,4 +746,151 @@ void fix_endian_model_names( char* model )
     }
     free( tmp_string );
     free( model_lower_case );
+}
+
+/*
+ * get_device_uuid - Find the UUID corresponding to a given block device
+ * @device_path: e.g., "/dev/sda1"
+ * @uuid_buf: pointer to a 40-byte buffer where the UUID string will be stored
+ *
+ * Returns 0 on success, -1 on failure.
+ */
+int get_device_uuid( const char* device_path, char* uuid_buf )
+{
+    const char* uuid_dir = "/dev/disk/by-uuid";
+    struct dirent* entry;
+    DIR* dir;
+    char link_path[PATH_MAX];
+    char resolved_path[PATH_MAX];
+    ssize_t len;
+
+    if( !device_path || !uuid_buf )
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    dir = opendir( uuid_dir );
+    if( !dir )
+    {
+        perror( "opendir" );
+        return -1;
+    }
+
+    while( ( entry = readdir( dir ) ) != NULL )
+    {
+        // Skip "." and ".."
+        if( strcmp( entry->d_name, "." ) == 0 || strcmp( entry->d_name, ".." ) == 0 )
+            continue;
+
+        snprintf( link_path, sizeof( link_path ), "%s/%s", uuid_dir, entry->d_name );
+
+        // readlink() doesn't null-terminate, so we must handle that
+        len = readlink( link_path, resolved_path, sizeof( resolved_path ) - 1 );
+        if( len == -1 )
+            continue;  // skip unreadable links
+
+        resolved_path[len] = '\0';
+
+        // Construct full path (readlink gives a relative path, usually "../../sda1")
+        char full_path[PATH_MAX + strlen( uuid_dir ) + 1];
+        if( resolved_path[0] != '/' )
+        {
+            // Resolve relative symlink path
+            snprintf( full_path, sizeof( full_path ), "%s/%s", uuid_dir, resolved_path );
+            if( realpath( full_path, full_path ) == NULL )
+            {
+                closedir( dir );
+                return -1;
+            }
+        }
+        else
+        {
+            strncpy( full_path, resolved_path, sizeof( full_path ) );
+            full_path[sizeof( full_path ) - 1] = '\0';
+        }
+
+        // Compare with the given device path
+        if( strcmp( full_path, device_path ) == 0 )
+        {
+            strncpy( uuid_buf, entry->d_name, 40 );
+            uuid_buf[39] = '\0';
+            closedir( dir );
+            return 0;
+        }
+    }
+
+    closedir( dir );
+    errno = ENOENT;
+    return -1;  // not found
+}
+
+/**
+ * find_base_device - searches /sys/block for a device that matches
+ *                    the prefix of the provided name.
+ *
+ * @devname: the input device name (e.g. "sda1", "sdb2")
+ * @result:  buffer to store the matched base device name
+ * @size:    size of the result buffer
+ *
+ * Returns: 0 on success (match found), -1 on failure (no match or error)
+ */
+int find_base_device( const char* devname, char* result, size_t size )
+{
+    if( !devname || !result || size == 0 )
+    {
+        fprintf( stderr, "Invalid argument(s)\n" );
+        return -1;
+    }
+
+    DIR* dir = opendir( "/sys/block" );
+    if( !dir )
+    {
+        perror( "opendir" );
+        return -1;
+    }
+
+    struct dirent* entry;
+    int found = -1;
+
+    while( ( entry = readdir( dir ) ) != NULL )
+    {
+        // Skip "." and ".."
+        if( entry->d_name[0] == '.' )
+            continue;
+
+        // Check if the given devname starts with the block device name
+        size_t len = strlen( entry->d_name );
+        if( strncmp( devname, entry->d_name, len ) == 0 )
+        {
+            // Match found
+            strncpy( result, entry->d_name, size - 1 );
+            result[size - 1] = '\0';
+            found = 0;
+            break;
+        }
+    }
+
+    closedir( dir );
+    return found;
+}
+
+/**
+ * skip_whitespace - Returns a pointer to the first non-whitespace character
+ *                   in a given string.
+ *
+ * @str: input string
+ *
+ * Returns: pointer to the first non-whitespace character,
+ *          or NULL if str is NULL or the string contains only whitespace.
+ */
+const char* skip_whitespace( const char* str )
+{
+    if( !str )
+        return NULL;
+
+    while( *str && isspace( (unsigned char) *str ) )
+        str++;
+
+    return *str ? str : NULL;
 }
