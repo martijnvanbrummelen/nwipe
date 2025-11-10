@@ -216,6 +216,19 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     /* remove /dev/ from device, right justify and prefix name so string length is eight characters */
     nwipe_strip_path( next_device->device_name_without_path, next_device->device_name );
 
+    const char* device_name_terse;
+    device_name_terse = skip_whitespace( next_device->device_name_without_path );
+    if( device_name_terse != NULL )
+    {
+        /* remove the leading whitespace and save result, we use the device without path and no leading or trailing
+         * space in pdf file creation later */
+        strcpy( next_device->device_name_terse, device_name_terse );
+    }
+    else
+    {
+        strcpy( next_device->device_name_terse, "_" );
+    }
+
     /* To maintain column alignment in the gui we have to remove /dev/ from device names that
      * exceed eight characters including the /dev/ path.
      */
@@ -426,6 +439,20 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     if( check_HPA == 1 )
     {
         hpa_dco_status( next_device );
+    }
+
+    /*************************************
+     * Check whether the device has a UUID
+     */
+    char uuid[UUID_SIZE] = "";
+    if( get_device_uuid( next_device->device_name, uuid ) == 0 )
+    {
+        strncpy( next_device->device_UUID, uuid, UUID_SIZE );
+        nwipe_log( NWIPE_LOG_INFO, "UUID for %s is: %s\n", next_device->device_name, next_device->device_UUID );
+    }
+    else
+    {
+        nwipe_log( NWIPE_LOG_INFO, "No UUID available for %s\n", next_device->device_name );
     }
 
     /* print an empty line to separate the drives in the log */
