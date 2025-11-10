@@ -38,12 +38,12 @@ int aes_ctr_prng_init(aes_ctr_state_t *state,
                       unsigned long    init_key[],
                       unsigned long    key_length);
 
-/* Generate one 16 KiB chunk of random data into bufpos.
+/* Generate one 128 KiB chunk of random data into bufpos.
  *
  * Returns 0 on success, -1 on failure.
  * Uses the persistent AF_ALG socket.
  */
-int aes_ctr_prng_genrand_16k_to_buf(aes_ctr_state_t *state,
+int aes_ctr_prng_genrand_128k_to_buf(aes_ctr_state_t *state,
                                     unsigned char   *bufpos);
 
 /* Optional: Close the persistent AF_ALG socket at program shutdown.

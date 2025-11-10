@@ -80,8 +80,10 @@ int nwipe_aes_ctr_prng_read( NWIPE_PRNG_READ_SIGNATURE );
 /* Size of the XOROSHIRO-256 is not derived from the architecture, but it is strictly 32 bytes */
 #define SIZE_OF_XOROSHIRO256_PRNG 32
 
-/* Size of the AES-CTR is not derived from the architecture, but it is strictly 16k bytes */
-#define SIZE_OF_AES_CTR_PRNG 16384u
-#define STASH_CAPACITY 65536u /* 64 KiB local pre‑fetch buffer */
+/* AES-CTR generation chunk size: fixed 128 KiB (not architecture-dependent) */
+#define SIZE_OF_AES_CTR_PRNG ( 128 * 1024 )
+
+/* Thread-local prefetch ring buffer capacity: 1 MiB */
+#define STASH_CAPACITY ( 1024 * 1024 )
 
 #endif /* PRNG_H_ */
