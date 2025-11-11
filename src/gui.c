@@ -2525,14 +2525,14 @@ void nwipe_gui_method( void )
 
                 mvwprintw( main_window, 2, tab2, "Security Level: higher (3 passes)" );
 
-                mvwprintw( main_window, 4, tab2, "HMG IA/IS 5 (Infosec Standard 5): Secure          " );
+                mvwprintw( main_window, 4, tab2, "U.K. HMG IA/IS 5 (Infosec Standard 5): Secure     " );
                 mvwprintw( main_window, 5, tab2, "Sanitisation of Protectively Marked Information   " );
-                mvwprintw( main_window, 6, tab2, "or Sensitive Information                          " );
+                mvwprintw( main_window, 6, tab2, "or Sensitive Information.                         " );
                 mvwprintw( main_window, 7, tab2, "                                                  " );
-                mvwprintw( main_window, 8, tab2, "This method fills the device with 0s, then with   " );
-                mvwprintw( main_window, 9, tab2, "1s, then with a PRNG stream, then reads the       " );
-                mvwprintw( main_window, 10, tab2, "device to verify the PRNG stream was              " );
-                mvwprintw( main_window, 11, tab2, "successfully written.                             " );
+                mvwprintw( main_window, 8, tab2, "Pass 1 : Zeros (0x00).                            " );
+                mvwprintw( main_window, 9, tab2, "Pass 2 : Ones (0xFF).                             " );
+                mvwprintw( main_window, 10, tab2, "Pass 3 : A random number generated data stream.   " );
+                mvwprintw( main_window, 11, tab2, "Pass 4 : Last Pass Verification of PRNG stream    " );
                 break;
             case 10:
 
@@ -2552,17 +2552,15 @@ void nwipe_gui_method( void )
                 mvwprintw( main_window, 2, tab2, "Security Level: very high (6 passes)" );
 
                 mvwprintw( main_window, 4, tab2, "BMB21-2019 Chinese State Secrets Bureau standard  " );
-                mvwprintw( main_window, 5, tab2, "Technical Requirement for Data Sanitization       " );
-                mvwprintw( main_window, 6, tab2, ". of Storage Media Involving State Secrets           " );
-                mvwprintw(
-                    main_window,
-                    7,
-                    tab2,
-                    "This method first overwrites the device with                                                 " );
-                mvwprintw( main_window, 8, tab2, "ones (0xFF), followed by zeroes (0x00). Then,      " );
-                mvwprintw( main_window, 9, tab2, "it performs three additional passes of PRNG-     " );
-                mvwprintw( main_window, 10, tab2, "generated random data to maximize security.       " );
-                mvwprintw( main_window, 11, tab2, "finally overwrites  ones (0xFF)      " );
+                mvwprintw( main_window, 5, tab2, "Technical Requirement for Data Sanitization of    " );
+                mvwprintw( main_window, 6, tab2, "Storage Media Involving State Secrets.            " );
+                mvwprintw( main_window, 7, tab2, "                                                  " );
+                mvwprintw( main_window, 8, tab2, "Pass 1 : Ones (0xFF).                             " );
+                mvwprintw( main_window, 9, tab2, "Pass 2 : Zeros (0x00).                            " );
+                mvwprintw( main_window, 10, tab2, "Pass 3 : A random number generated data stream.   " );
+                mvwprintw( main_window, 11, tab2, "Pass 4 : A random number generated data stream.   " );
+                mvwprintw( main_window, 12, tab2, "Pass 5 : A random number generated data stream.   " );
+                mvwprintw( main_window, 13, tab2, "Pass 6 : Ones (0xFF).                             " );
                 break;
 
         } /* switch */
