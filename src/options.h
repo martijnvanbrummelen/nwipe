@@ -24,7 +24,6 @@
 #define OPTIONS_H_
 
 /* Program knobs. */
-#define NWIPE_KNOB_ENTROPY "/dev/urandom"
 #define NWIPE_KNOB_IDENTITY_SIZE 512
 #define NWIPE_KNOB_LABEL_SIZE 128
 #define NWIPE_KNOB_LOADAVG "/proc/loadavg"

@@ -97,9 +97,6 @@ int main( int argc, char** argv )
     char module_shortform[50];
     char final_cmd_modprobe[sizeof( modprobe_command ) + sizeof( module_shortform )];
 
-    /* The entropy source file handle. */
-    int nwipe_entropy;
-
     /* The generic index variables. */
     int i;
     int j;
@@ -256,21 +253,6 @@ int main( int argc, char** argv )
         exit( 1 );
     }
 
-    /* Open the entropy source. */
-    nwipe_entropy = open( NWIPE_KNOB_ENTROPY, O_RDONLY );
-
-    /* Check the result. */
-    if( nwipe_entropy < 0 )
-    {
-        nwipe_perror( errno, __FUNCTION__, "open" );
-        nwipe_log( NWIPE_LOG_FATAL, "Unable to open entropy source %s.", NWIPE_KNOB_ENTROPY );
-        cleanup();
-        free( c2 );
-        return errno;
-    }
-
-    nwipe_log( NWIPE_LOG_NOTICE, "Opened entropy source '%s'.", NWIPE_KNOB_ENTROPY );
-
     /* Block relevant signals in main thread. Any other threads that are     */
     /*        created after this will also block those signals.              */
     sigset_t sigset;
@@ -358,9 +340,6 @@ int main( int argc, char** argv )
     /* Now set specific nwipe options */
     for( i = 0; i < nwipe_enumerated; i++ )
     {
-
-        /* Set the entropy source. */
-        c1[i]->entropy_fd = nwipe_entropy;
 
         if( nwipe_options.autonuke )
         {
