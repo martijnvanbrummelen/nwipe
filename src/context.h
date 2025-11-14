@@ -128,7 +128,6 @@ typedef struct nwipe_context_t_
     int device_target;  // The device target.
 
     u64 eta;  // The estimated number of seconds until method completion.
-    int entropy_fd;  // The entropy source. Usually /dev/urandom.
     int pass_count;  // The number of passes performed by the working wipe method.
     u64 pass_done;  // The number of bytes that have already been i/o'd in this pass.
     u64 pass_errors;  // The number of errors across all passes.

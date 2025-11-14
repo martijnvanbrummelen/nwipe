@@ -47,6 +47,52 @@
 #include "options.h"
 #include "pass.h"
 #include "logging.h"
+#include <errno.h>
+#include <unistd.h>
+#include <sys/syscall.h> /* SYS_getrandom */
+#if defined( __linux__ )
+/* On glibc/musl with <sys/random.h> available, it's fine (optional). */
+/* #include <sys/random.h> */
+#endif
+
+/**
+ * @brief Fill a buffer with cryptographically secure random bytes using getrandom(2).
+ *
+ * This wrapper blocks until the kernel CRNG is initialized, then loops until
+ * @p len bytes are written (handling short reads and EINTR/EAGAIN).
+ *
+ * @param[out] buf  Destination buffer.
+ * @param[in]  len  Number of bytes to generate.
+ * @return On success, returns (ssize_t)len.
+ *         On error, returns -errno and leaves errno set.
+ */
+static ssize_t nwipe_read_entropy( void* buf, size_t len )
+{
+    unsigned char* p = (unsigned char*) buf;
+    size_t n = len;
+
+    while( n > 0 )
+    {
+        /* Prefer the raw syscall to avoid libc version pitfalls. */
+        ssize_t r = syscall( SYS_getrandom, p, n, 0 /* blocking */ );
+        if( r < 0 )
+        {
+            if( errno == EINTR || errno == EAGAIN )
+            {
+                continue; /* retry */
+            }
+            return -errno;
+        }
+        if( r == 0 )
+        {
+            /* Extremely unlikely: treat as transient and retry. */
+            continue;
+        }
+        p += r;
+        n -= (size_t) r;
+    }
+    return (ssize_t) len;
+}
 
 /*
  * Comment Legend
@@ -292,7 +338,7 @@ void* nwipe_dod522022m( void* ptr )
                                    { 0, NULL } };
 
     /* Load the array with random characters. */
-    r = read( c->entropy_fd, &dod, sizeof( dod ) );
+    r = nwipe_read_entropy( &dod, sizeof( dod ) );
 
     /* NOTE: Only the random data in dod[0], dod[3], and dod[4] is actually used. */
 
@@ -363,7 +409,7 @@ void* nwipe_dodshort( void* ptr )
                                    { 0, NULL } };
 
     /* Load the array with random characters. */
-    r = read( c->entropy_fd, &dod, sizeof( dod ) );
+    r = nwipe_read_entropy( &dod, sizeof( dod ) );
 
     /* NOTE: Only the random data in dod[0] is actually used. */
 
@@ -463,7 +509,7 @@ void* nwipe_gutmann( void* ptr )
     u16 s[27];
 
     /* Load the array with random characters. */
-    ssize_t r = read( c->entropy_fd, &s, sizeof( s ) );
+    ssize_t r = nwipe_read_entropy( &s, sizeof( s ) );
     if( r != sizeof( s ) )
     {
         r = errno;
@@ -621,7 +667,7 @@ void* nwipe_ops2( void* ptr )
     }
 
     /* Load the array of random characters. */
-    r = read( c->entropy_fd, s, u );
+    r = nwipe_read_entropy( s, u );
 
     if( r != u )
     {
@@ -1001,13 +1047,13 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
                 c->pass_type = NWIPE_PASS_WRITE;
 
                 /* Seed the PRNG. */
-                r = read( c->entropy_fd, c->prng_seed.s, c->prng_seed.length );
+                r = nwipe_read_entropy( c->prng_seed.s, c->prng_seed.length );
 
                 /* Check the result. */
                 if( r < 0 )
                 {
                     c->pass_type = NWIPE_PASS_NONE;
-                    nwipe_perror( errno, __FUNCTION__, "read" );
+                    nwipe_perror( errno, __FUNCTION__, "getrandom" );
                     nwipe_log( NWIPE_LOG_FATAL, "Unable to seed the PRNG." );
                     return -1;
                 }
@@ -1104,12 +1150,12 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
         c->pass_type = NWIPE_PASS_FINAL_OPS2;
 
         /* Seed the PRNG. */
-        r = read( c->entropy_fd, c->prng_seed.s, c->prng_seed.length );
+        r = nwipe_read_entropy( c->prng_seed.s, c->prng_seed.length );
 
         /* Check the result. */
         if( r < 0 )
         {
-            nwipe_perror( errno, __FUNCTION__, "read" );
+            nwipe_perror( errno, __FUNCTION__, "getrandom" );
             nwipe_log( NWIPE_LOG_FATAL, "Unable to seed the PRNG." );
             return -1;
         }
