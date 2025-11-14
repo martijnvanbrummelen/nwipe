@@ -553,6 +553,13 @@ int nwipe_options_parse( int argc, char** argv )
 
     } /* command line options */
 
+    /* Disable blanking for ops2 and verify methods */
+    if( nwipe_options.method == &nwipe_ops2 || nwipe_options.method == &nwipe_verify_zero
+        || nwipe_options.method == &nwipe_verify_one )
+    {
+        nwipe_options.noblank = 1;
+    }
+
     /* Return the number of options that were processed. */
     return optind;
 }
