@@ -133,7 +133,7 @@ int create_pdf( nwipe_context_t* ptr )
      * Create header and footer on page 1, with the exception of the green
      * tick/red icon which is set from the 'status' section below
      */
-    pdf_header_footer_text( c, "1" );
+    pdf_header_footer_text( c, "Page 1 - Erasure Status" );
 
     /* ------------------------ */
     /* Organisation Information */
