@@ -19,8 +19,8 @@ nwipe is a program that will securely erase the entire contents of disks. It can
 ## Erasure methods
 The user can select from a variety of recognised secure erase methods which include:
 
-* Fill With Zeros    - Fills the device with zeros (0x00), one round only.
-* Fill With Ones     - Fills the device with ones  (0xFF), one round only.
+* Fill With Zeros    - Fills the device with zeros (0x00).
+* Fill With Ones     - Fills the device with ones  (0xFF).
 * RCMP TSSIT OPS-II  - Royal Canadian Mounted Police Technical Security Standard, OPS-II.
 * DoD Short          - The American Department of Defense 5220.22-M short 3 pass wipe (passes 1, 2 & 7).
 * DoD 5220.22M       - The American Department of Defense 5220.22-M full 7 pass wipe.
