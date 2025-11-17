@@ -27,6 +27,11 @@
 #define _POSIX_SOURCE
 #endif
 
+/* Enable GNU extensions so that O_DIRECT is visible from <fcntl.h>. */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,6 +64,7 @@
 #include "hpa_dco.h"
 #include "conf.h"
 #include <libconfig.h>
+#include <fcntl.h> /* O_DIRECT, O_RDWR, ... */
 
 int terminate_signal;
 int user_abort;
@@ -478,8 +484,34 @@ int main( int argc, char** argv )
             /* Initialise the wipe_status flag, -1 = wipe not yet started */
             c2[i]->wipe_status = -1;
 
-            /* Open the file for reads and writes. */
-            c2[i]->device_fd = open( c2[i]->device_name, O_RDWR );
+            /* Open the file for reads and writes. Optionally use O_DIRECT. */
+            int open_flags = O_RDWR;
+#ifdef NWIPE_USE_DIRECT_IO
+            open_flags |= O_DIRECT;
+#endif
+
+            c2[i]->device_fd = open( c2[i]->device_name, open_flags );
+
+#ifdef NWIPE_USE_DIRECT_IO
+            /* If O_DIRECT is not supported (or rejected by the FS), fall back to buffered I/O. */
+            if( c2[i]->device_fd < 0 && ( errno == EINVAL || errno == EOPNOTSUPP ) )
+            {
+                nwipe_log( NWIPE_LOG_WARNING,
+                           "O_DIRECT not supported on '%s', retrying without O_DIRECT.",
+                           c2[i]->device_name );
+                open_flags &= ~O_DIRECT;
+                c2[i]->device_fd = open( c2[i]->device_name, open_flags );
+            }
+#endif
+
+            /* Check the open() result. */
+            if( c2[i]->device_fd < 0 )
+            {
+                nwipe_perror( errno, __FUNCTION__, "open" );
+                nwipe_log( NWIPE_LOG_WARNING, "Unable to open device '%s'.", c2[i]->device_name );
+                c2[i]->select = NWIPE_SELECT_DISABLED;
+                continue;
+            }
 
             /* Check the open() result. */
             if( c2[i]->device_fd < 0 )
