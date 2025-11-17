@@ -493,14 +493,16 @@ int main( int argc, char** argv )
             c2[i]->device_fd = open( c2[i]->device_name, open_flags );
 
 #ifdef NWIPE_USE_DIRECT_IO
-            /* If O_DIRECT is not supported (or rejected by the FS), fall back to buffered I/O. */
             if( c2[i]->device_fd < 0 && ( errno == EINVAL || errno == EOPNOTSUPP ) )
             {
-                nwipe_log( NWIPE_LOG_WARNING,
-                           "O_DIRECT not supported on '%s', retrying without O_DIRECT.",
-                           c2[i]->device_name );
+                nwipe_log( NWIPE_LOG_WARNING, "O_DIRECT not supported on '%s', retrying without.", c2[i]->device_name );
+
                 open_flags &= ~O_DIRECT;
                 c2[i]->device_fd = open( c2[i]->device_name, open_flags );
+            }
+            else if( c2[i]->device_fd >= 0 && ( open_flags & O_DIRECT ) )
+            {
+                nwipe_log( NWIPE_LOG_NOTICE, "Using O_DIRECT on device '%s'.", c2[i]->device_name );
             }
 #endif
 
