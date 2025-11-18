@@ -50,8 +50,9 @@
 struct pdf_doc* pdf;
 struct pdf_object* page;
 
-char model_header[50] = ""; /* Model text in the header */
-char serial_header[30] = ""; /* Serial number text in the header */
+char model_header[55] = ""; /* Model text in the header */
+char serial_header[35] = ""; /* Serial number text in the header */
+char hostid_header[DMIDECODE_RESULT_LENGTH + 15] = ""; /* host identification, UUID, serial number, system tag */
 char barcode[100] = ""; /* Contents of the barcode, i.e model:serial */
 char pdf_footer[MAX_PDF_FOOTER_TEXT_LENGTH];
 float height;
@@ -129,10 +130,19 @@ int create_pdf( nwipe_context_t* ptr )
     /* Obtain page page_width */
     page_width = pdf_page_width( page_1 );
 
+    /**********************************************
+     * Initialise serial no. to unknown if empty
+     */
+    if( c->device_serial_no[0] == 0 )
+    {
+        snprintf( c->device_serial_no, sizeof( c->device_serial_no ), "Unknown" );
+    }
+
     /*********************************************************************
      * Create header and footer on page 1, with the exception of the green
      * tick/red icon which is set from the 'status' section below
      */
+
     pdf_header_footer_text( c, "Page 1 - Erasure Status" );
 
     /* ------------------------ */
@@ -228,10 +238,6 @@ int create_pdf( nwipe_context_t* ptr )
      * Serial no.
      */
     pdf_add_text( pdf, NULL, "Serial:", 12, 340, 410, PDF_GRAY );
-    if( c->device_serial_no[0] == 0 )
-    {
-        snprintf( c->device_serial_no, sizeof( c->device_serial_no ), "Unknown" );
-    }
     pdf_set_font( pdf, "Helvetica-Bold" );
     pdf_add_text( pdf, NULL, c->device_serial_no, text_size_data, 380, 410, PDF_BLACK );
     pdf_set_font( pdf, "Helvetica" );
@@ -994,19 +1000,38 @@ void create_header_and_footer( nwipe_context_t* c, char* page_title )
 
 void pdf_header_footer_text( nwipe_context_t* c, char* page_title )
 {
+    extern char dmidecode_system_serial_number[DMIDECODE_RESULT_LENGTH];
+    extern char dmidecode_system_uuid[DMIDECODE_RESULT_LENGTH];
+
     pdf_add_text_wrap( pdf, NULL, pdf_footer, 12, 0, 30, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
-    pdf_add_line( pdf, NULL, 50, 50, 550, 50, 3, PDF_BLACK );
-    pdf_add_line( pdf, NULL, 50, 650, 550, 650, 3, PDF_BLACK );
+    pdf_add_line( pdf, NULL, 50, 50, 550, 50, 3, PDF_BLACK );  // Footer full width Line
+    pdf_add_line( pdf, NULL, 50, 650, 550, 650, 3, PDF_BLACK );  // Header full width Line
+    pdf_add_line( pdf, NULL, 175, 728, 425, 728, 3, PDF_BLACK );  // Header Page number, disk model divider line
     pdf_add_image_data( pdf, NULL, 45, 665, 100, 100, bin2c_shred_db_jpg, 27063 );
     pdf_set_font( pdf, "Helvetica-Bold" );
-    snprintf( model_header, sizeof( model_header ), " %s: %s ", "Model", c->device_model );
-    pdf_add_text_wrap( pdf, NULL, model_header, 14, 0, 755, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
-    snprintf( serial_header, sizeof( serial_header ), " %s: %s ", "S/N", c->device_serial_no );
-    pdf_add_text_wrap( pdf, NULL, serial_header, 14, 0, 735, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
+
+    if( nwipe_options.PDFtag )
+    {
+        snprintf( model_header, sizeof( model_header ), " %s: %s ", "Disk Model", c->device_model );
+        pdf_add_text_wrap( pdf, NULL, model_header, 11, 0, 710, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
+        snprintf( serial_header, sizeof( serial_header ), " %s: %s ", "Disk S/N", c->device_serial_no );
+        pdf_add_text_wrap( pdf, NULL, serial_header, 11, 0, 695, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
+        snprintf( hostid_header, sizeof( hostid_header ), " %s: %s ", "System S/N", dmidecode_system_serial_number );
+        pdf_add_text_wrap( pdf, NULL, hostid_header, 11, 0, 680, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
+        snprintf( hostid_header, sizeof( hostid_header ), " %s: %s ", "System uuid", dmidecode_system_uuid );
+        pdf_add_text_wrap( pdf, NULL, hostid_header, 11, 0, 665, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
+    }
+    else
+    {
+        snprintf( model_header, sizeof( model_header ), " %s: %s ", "Disk Model", c->device_model );
+        pdf_add_text_wrap( pdf, NULL, model_header, 11, 0, 695, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
+        snprintf( serial_header, sizeof( serial_header ), " %s: %s ", "Disk S/N", c->device_serial_no );
+        pdf_add_text_wrap( pdf, NULL, serial_header, 11, 0, 680, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
+    }
     pdf_set_font( pdf, "Helvetica" );
 
-    pdf_add_text_wrap( pdf, NULL, "Disk Erasure Report", 24, 0, 695, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
+    pdf_add_text_wrap( pdf, NULL, "Disk Erasure Report", 24, 0, 760, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
     snprintf( barcode, sizeof( barcode ), "%s:%s", c->device_model, c->device_serial_no );
-    pdf_add_text_wrap( pdf, NULL, page_title, 14, 0, 670, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
+    pdf_add_text_wrap( pdf, NULL, page_title, 14, 0, 740, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
     pdf_add_barcode( pdf, NULL, PDF_BARCODE_128A, 100, 790, 400, 25, barcode, PDF_BLACK );
 }

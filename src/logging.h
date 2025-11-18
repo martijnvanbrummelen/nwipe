@@ -29,6 +29,8 @@
 #define OS_info_Line_offset 31 /* OS_info line offset in log */
 #define OS_info_Line_Length 48 /* OS_info line length */
 
+#define DMIDECODE_RESULT_LENGTH 64
+
 typedef enum nwipe_log_t_ {
     NWIPE_LOG_NONE = 0,
     NWIPE_LOG_DEBUG,  // Output only when --verbose option used on cmd line.

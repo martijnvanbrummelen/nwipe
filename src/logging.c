@@ -507,6 +507,11 @@ void nwipe_log_OSinfo()
     return;
 }
 
+/* Globally accessable dmidecode host identifiable data. */
+char dmidecode_system_serial_number[DMIDECODE_RESULT_LENGTH];
+char dmidecode_system_uuid[DMIDECODE_RESULT_LENGTH];
+char dmidecode_baseboard_serial_number[DMIDECODE_RESULT_LENGTH];
+
 int nwipe_log_sysinfo()
 {
     FILE* fp;
@@ -559,8 +564,15 @@ int nwipe_log_sysinfo()
     char cmd[sizeof( dmidecode_keywords ) + sizeof( dmidecode_command2 )];
 
     unsigned int keywords_idx;
+    unsigned int i;
 
     keywords_idx = 0;
+
+    /* Initialise every character in the string with zero */
+    for( i = 0; i < DMIDECODE_RESULT_LENGTH; i++ )
+    {
+        dmidecode_system_serial_number[i] = 0;
+    }
 
     p_dmidecode_command = 0;
 
@@ -619,11 +631,35 @@ int nwipe_log_sysinfo()
                     else
                     {
                         nwipe_log( NWIPE_LOG_INFO, "%s = %s", &dmidecode_keywords[keywords_idx][0][0], path );
+
+                        /* if system-serial-number copy result to extern string */
+                        if( keywords_idx == 5 )
+                        {
+                            strncpy( dmidecode_system_serial_number, path, DMIDECODE_RESULT_LENGTH );
+                            dmidecode_system_serial_number[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        }
+                        if( keywords_idx == 6 )
+                        {
+                            strncpy( dmidecode_system_uuid, path, DMIDECODE_RESULT_LENGTH );
+                            dmidecode_system_uuid[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        }
                     }
                 }
                 else
                 {
                     nwipe_log( NWIPE_LOG_INFO, "%s = %s", &dmidecode_keywords[keywords_idx][0][0], path );
+
+                    /* if system-serial-number copy result to extern string */
+                    if( keywords_idx == 5 )
+                    {
+                        strncpy( dmidecode_system_serial_number, path, DMIDECODE_RESULT_LENGTH );
+                        dmidecode_system_serial_number[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                    }
+                    if( keywords_idx == 6 )
+                    {
+                        strncpy( dmidecode_system_uuid, path, DMIDECODE_RESULT_LENGTH );
+                        dmidecode_system_uuid[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                    }
                 }
             }
             /* close */
