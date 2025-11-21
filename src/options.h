@@ -47,6 +47,13 @@ void nwipe_options_log( void );
 /* Function to display help text */
 void display_help();
 
+/* I/O mode for data path: auto, direct, or cached. */
+typedef enum {
+    NWIPE_IO_MODE_AUTO = 0, /* Try O_DIRECT, fall back to cached I/O if not supported. */
+    NWIPE_IO_MODE_DIRECT, /* Force O_DIRECT, fail if not supported. */
+    NWIPE_IO_MODE_CACHED /* Force cached I/O, never attempt O_DIRECT. */
+} nwipe_io_mode_t;
+
 typedef struct
 {
     int autonuke;  // Do not prompt the user for confirmation when set.
@@ -69,6 +76,7 @@ typedef struct
     int PDF_enable;  // 0=PDF creation disabled, 1=PDF creation enabled
     int PDF_preview_details;  // 0=Disable preview Org/Cust/date/time before drive selection, 1=Enable Preview
     nwipe_verify_t verify;  // A flag to indicate whether writes should be verified.
+    nwipe_io_mode_t io_mode;  // Runtime I/O mode selection (auto/direct/cached).
 } nwipe_options_t;
 
 extern nwipe_options_t nwipe_options;
