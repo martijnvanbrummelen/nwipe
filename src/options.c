@@ -789,6 +789,8 @@ void display_help()
     puts( "                           --exclude=/dev/sdc" );
     puts( "                           --exclude=/dev/sdc,/dev/sdd" );
     puts( "                           --exclude=/dev/sdc,/dev/sdd,/dev/mapper/cryptswap1\n" );
+    puts( "                           --exclude=/dev/disk/by-id/ata-XXXXXXXX" );
+    puts( "                           --exclude=/dev/disk/by-path/pci-0000:00:17.0-ata-1\n" );
     puts( "" );
     exit( EXIT_SUCCESS );
 }
