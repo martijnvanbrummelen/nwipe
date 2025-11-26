@@ -27,6 +27,7 @@
 #include "isaac_rand/isaac64.h"
 #include "alfg/add_lagg_fibonacci_prng.h"  //Lagged Fibonacci generator prototype
 #include "xor/xoroshiro256_prng.h"  //XORoshiro-256 prototype
+#include "aes/aes_ctr_prng.h"  // AES-NI prototype
 
 nwipe_prng_t nwipe_twister = { "Mersenne Twister (mt19937ar-cok)", nwipe_twister_init, nwipe_twister_read };
 
@@ -39,6 +40,9 @@ nwipe_prng_t nwipe_add_lagg_fibonacci_prng = { "Lagged Fibonacci generator",
                                                nwipe_add_lagg_fibonacci_prng_read };
 /* XOROSHIRO-256 PRNG Structure */
 nwipe_prng_t nwipe_xoroshiro256_prng = { "XORoshiro-256", nwipe_xoroshiro256_prng_init, nwipe_xoroshiro256_prng_read };
+
+/* AES-CTR-NI PRNG Structure */
+nwipe_prng_t nwipe_aes_ctr_prng = { "AES-CTR (Kernel)", nwipe_aes_ctr_prng_init, nwipe_aes_ctr_prng_read };
 
 /* Print given number of bytes from unsigned integer number to a byte stream buffer starting with low-endian. */
 static inline void u32_to_buffer( u8* restrict buffer, u32 val, const int len )
@@ -339,4 +343,341 @@ int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE )
     }
 
     return 0;  // Success
+}
+
+/**
+ * @brief Initialize the AES-CTR PRNG state for this thread.
+ *
+ * @details
+ * Initializes the thread-local PRNG based on the supplied seed and resets the
+ * ring-buffer prefetch cache. The underlying AES-CTR implementation uses a
+ * persistent AF_ALG operation socket per thread, opened lazily by
+ * aes_ctr_prng_init(). The public state only stores a 128-bit counter while
+ * the kernel keeps the expanded AES key schedule.
+ *
+ * @param[in,out] state  Pointer to an opaque PRNG state handle. If `*state` is
+ *                       `NULL`, this function allocates it with `calloc()`.
+ * @param[in]     seed   Seed material (must contain at least 32 bytes).
+ * @param[in]     ...    Remaining parameters as defined by NWIPE_PRNG_INIT_SIGNATURE.
+ *
+ * @note
+ * The ring is intentionally left empty to keep init fast. Callers may choose to
+ * "prefill" by invoking refill_stash_thread_local(*state, SIZE_OF_AES_CTR_PRNG)
+ * once to amortize first-use latency for tiny reads.
+ *
+ * @retval 0  Success.
+ * @retval -1 Allocation or initialization failure (already logged).
+ */
+
+/*
+ * High-throughput wrapper with a thread-local ring-buffer prefetch
+ * ----------------------------------------------------------------
+ * This glue layer implements NWIPE_PRNG_INIT / NWIPE_PRNG_READ around the
+ * persistent kernel-AES PRNG. It maintains a lock-free, thread-local ring
+ * buffer ("stash") that caches keystream blocks produced in fixed-size chunks
+ * (SIZE_OF_AES_CTR_PRNG; e.g., 16 KiB or 256 KiB).
+ *
+ * Rationale:
+ *  - Nwipe frequently requests small slices (e.g., 32 B, 512 B, 4 KiB). Issuing
+ *    one kernel call per small read would be syscall- and copy-bound.
+ *  - By fetching larger chunks and serving small reads from the ring buffer,
+ *    we reduce syscall rate and memory traffic and approach memcpy-limited
+ *    throughput on modern CPUs with AES acceleration.
+ *
+ * Why a ring buffer (over a linear stash + memmove):
+ *  - No O(n) memmove() when the buffer fills with a tail of unread bytes.
+ *  - Constant-time head/tail updates via modulo arithmetic.
+ *  - Better cache locality and fewer TLB/cache misses; improved prefetching.
+ */
+
+/** @def NW_THREAD_LOCAL
+ *  @brief Portable thread-local specifier for C11 and GNU C.
+ *
+ *  The ring buffer and its indices are thread-local, so no synchronization
+ *  (locks/atomics) is required. Do not share this state across threads.
+ */
+#if defined( __STDC_VERSION__ ) && __STDC_VERSION__ >= 201112L
+#define NW_THREAD_LOCAL _Thread_local
+#else
+#define NW_THREAD_LOCAL __thread
+#endif
+
+/** @def NW_ALIGN
+ *  @brief Minimal alignment helper for hot buffers/structures.
+ *
+ *  64-byte alignment targets typical cacheline boundaries to reduce false
+ *  sharing and improve hardware prefetch effectiveness for linear scans.
+ */
+#if defined( __GNUC__ ) || defined( __clang__ )
+#define NW_ALIGN( N ) __attribute__( ( aligned( N ) ) )
+#else
+#define NW_ALIGN( N ) _Alignas( N )
+#endif
+
+/**
+ * @def STASH_CAPACITY
+ * @brief Ring capacity in bytes (power-of-two; multiple of CHUNK).
+ *
+ * @details
+ * Defaults to 1 MiB. Must be:
+ *   - a power of two (allows modulo via bitmask),
+ *   - a multiple of SIZE_OF_AES_CTR_PRNG, so each produced chunk fits whole.
+ *
+ * @note
+ * Practical choices: 512 KiB … 4 MiB depending on CHUNK size and workload.
+ * For SIZE_OF_AES_CTR_PRNG = 256 KiB, 1 MiB yields four in-flight chunks and
+ * works well for nwipe’s small-read patterns.
+ */
+#ifndef STASH_CAPACITY
+#define STASH_CAPACITY ( 1u << 20 ) /* 1 MiB */
+#endif
+
+#if defined( __STDC_VERSION__ ) && __STDC_VERSION__ >= 201112L
+_Static_assert( ( STASH_CAPACITY & ( STASH_CAPACITY - 1 ) ) == 0, "STASH_CAPACITY must be a power of two" );
+_Static_assert( ( STASH_CAPACITY % SIZE_OF_AES_CTR_PRNG ) == 0,
+                "STASH_CAPACITY must be a multiple of SIZE_OF_AES_CTR_PRNG" );
+#endif
+
+/** @brief Thread-local ring buffer storage for prefetched keystream. */
+NW_THREAD_LOCAL static unsigned char stash[STASH_CAPACITY] NW_ALIGN( 64 );
+
+/**
+ * @name Ring indices (thread-local)
+ * @{
+ * @var rb_head  Next read position (consumer cursor).
+ * @var rb_tail  Next write position (producer cursor).
+ * @var rb_count Number of valid bytes currently stored.
+ *
+ * @invariant
+ *   - 0 <= rb_count <= STASH_CAPACITY
+ *   - rb_head, rb_tail in [0, STASH_CAPACITY)
+ *   - (rb_tail - rb_head) mod STASH_CAPACITY == rb_count
+ *
+ * @warning
+ * These variables are TLS and must not be accessed from or shared with other
+ * threads. One PRNG instance per thread.
+ * @}
+ */
+NW_THREAD_LOCAL static size_t rb_head = 0; /* next byte to read */
+NW_THREAD_LOCAL static size_t rb_tail = 0; /* next byte to write */
+NW_THREAD_LOCAL static size_t rb_count = 0; /* occupied bytes */
+
+/**
+ * @brief Free space available in the ring (bytes).
+ * @return Number of free bytes (0 … STASH_CAPACITY).
+ */
+static inline size_t rb_free( void )
+{
+    return STASH_CAPACITY - rb_count;
+}
+
+/**
+ * @brief Contiguous readable bytes starting at @c rb_head (no wrap).
+ * @return Number of contiguous bytes available to read without split memcpy.
+ */
+static inline size_t rb_contig_used( void )
+{
+    size_t to_end = STASH_CAPACITY - rb_head;
+    return ( rb_count < to_end ) ? rb_count : to_end;
+}
+
+/**
+ * @brief Contiguous writable bytes starting at @c rb_tail (no wrap).
+ * @return Number of contiguous bytes available to write without wrap.
+ */
+static inline size_t rb_contig_free( void )
+{
+    size_t to_end = STASH_CAPACITY - rb_tail;
+    size_t free = rb_free();
+    return ( free < to_end ) ? free : to_end;
+}
+
+/**
+ * @brief Ensure at least @p need bytes are buffered in the ring.
+ *
+ * @details
+ * Production model:
+ *  - The kernel PRNG produces keystream in fixed-size chunks
+ *    (SIZE_OF_AES_CTR_PRNG bytes; e.g., 16 KiB or 256 KiB).
+ *  - We only ever append *whole* chunks. If total free space is less than one
+ *    chunk, no production occurs (non-blocking style); the caller should first
+ *    consume data and try again.
+ *
+ * Wrap handling:
+ *  - Fast path: if a contiguous free region of at least one chunk exists at
+ *    @c rb_tail, generate directly into @c stash + rb_tail (zero extra copies).
+ *  - Wrap path: otherwise, generate one chunk into a small temporary buffer and
+ *    split-copy into [rb_tail..end) and [0..rest). This case is infrequent and
+ *    still cheaper than memmoving ring contents.
+ *
+ * @param[in] state  Pointer to the AES-CTR state (per-thread).
+ * @param[in] need   Minimum number of bytes the caller would like to have ready.
+ *
+ * @retval 0  Success (or no space to produce yet).
+ * @retval -1 PRNG failure (aes_ctr_prng_genrand_128k_to_buf() error).
+ *
+ * @warning
+ * Thread-local only. Do not call concurrently from multiple threads that share
+ * the same TLS variables.
+ */
+static int refill_stash_thread_local( void* state, size_t need )
+{
+    while( rb_count < need )
+    {
+        /* Not enough total free space for a full CHUNK → let the caller read first. */
+        if( rb_free() < SIZE_OF_AES_CTR_PRNG )
+            break;
+
+        size_t cf = rb_contig_free();
+        if( cf >= SIZE_OF_AES_CTR_PRNG )
+        {
+            /* Fast path: generate straight into the ring. */
+            if( aes_ctr_prng_genrand_128k_to_buf( (aes_ctr_state_t*) state, stash + rb_tail ) != 0 )
+                return -1;
+            rb_tail = ( rb_tail + SIZE_OF_AES_CTR_PRNG ) & ( STASH_CAPACITY - 1 );
+            rb_count += SIZE_OF_AES_CTR_PRNG;
+        }
+        else
+        {
+            /* Wrap path: temporary production, then split-copy. */
+            unsigned char tmp[SIZE_OF_AES_CTR_PRNG];
+            if( aes_ctr_prng_genrand_128k_to_buf( (aes_ctr_state_t*) state, tmp ) != 0 )
+                return -1;
+            size_t first = STASH_CAPACITY - rb_tail; /* bytes to physical end */
+            memcpy( stash + rb_tail, tmp, first );
+            memcpy( stash, tmp + first, SIZE_OF_AES_CTR_PRNG - first );
+            rb_tail = ( rb_tail + SIZE_OF_AES_CTR_PRNG ) & ( STASH_CAPACITY - 1 );
+            rb_count += SIZE_OF_AES_CTR_PRNG;
+        }
+    }
+    return 0;
+}
+
+/* ---------------- PRNG INIT ---------------- */
+
+/**
+ * @brief Thread-local initialization wrapper around @c aes_ctr_prng_init().
+ *
+ * @param[in,out] state  Address of the caller’s PRNG state pointer. If `*state`
+ *                       is `NULL`, this function allocates one `aes_ctr_state_t`.
+ * @param[in]     seed   Seed descriptor as defined by NWIPE_PRNG_INIT_SIGNATURE.
+ *
+ * @retval 0  Success.
+ * @retval -1 Allocation or backend initialization failure (logged).
+ *
+ * @note
+ * Resets the ring buffer to empty. Consider a one-time prefill if your workload
+ * is dominated by tiny reads.
+ */
+int nwipe_aes_ctr_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
+{
+    nwipe_log( NWIPE_LOG_NOTICE, "Initializing AES-CTR PRNG (thread-local ring buffer)" );
+
+    if( *state == NULL )
+    {
+        *state = calloc( 1, sizeof( aes_ctr_state_t ) );
+        if( *state == NULL )
+        {
+            nwipe_log( NWIPE_LOG_FATAL, "calloc() failed for PRNG state" );
+            return -1;
+        }
+    }
+
+    int rc = aes_ctr_prng_init(
+        (aes_ctr_state_t*) *state, (unsigned long*) seed->s, seed->length / sizeof( unsigned long ) );
+    if( rc != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "aes_ctr_prng_init() failed" );
+        return -1;
+    }
+
+    /* Reset ring to empty. */
+    rb_head = rb_tail = rb_count = 0;
+    return 0;
+}
+
+/* ---------------- PRNG READ ---------------- */
+
+/**
+ * @brief Copy @p count bytes of keystream into @p buffer.
+ *
+ * @details
+ * Strategy:
+ *  - If the request is "large" (>= CHUNK) and the ring is empty, use the
+ *    direct-fill fast path and generate full CHUNKs directly into the output
+ *    buffer to avoid an extra memcpy.
+ *  - Otherwise, serve from the ring:
+ *      * Ensure at least one byte is available via @c refill_stash_thread_local
+ *        (non-blocking; production occurs only if one full CHUNK fits).
+ *      * Copy the largest contiguous block starting at @c rb_head.
+ *      * Opportunistically prefetch when sufficient free space exists to keep
+ *        latency low for upcoming small reads.
+ *
+ * @param[out] buffer     Destination buffer to receive keystream.
+ * @param[in]  count      Number of bytes to generate and copy.
+ * @param[in]  ...        Remaining parameters as defined by NWIPE_PRNG_READ_SIGNATURE.
+ *
+ * @retval 0  Success (exactly @p count bytes written).
+ * @retval -1 Backend/IO failure (already logged).
+ *
+ * @warning
+ * Per-thread API: do not share this state across threads.
+ */
+int nwipe_aes_ctr_prng_read( NWIPE_PRNG_READ_SIGNATURE )
+{
+    unsigned char* out = buffer;
+    size_t bytes_left = count;
+
+    /* Fast path: for large reads, bypass the ring if currently empty.
+     * Generate full CHUNKs directly into the destination to save one memcpy. */
+    while( bytes_left >= SIZE_OF_AES_CTR_PRNG && rb_count == 0 )
+    {
+        if( aes_ctr_prng_genrand_128k_to_buf( (aes_ctr_state_t*) *state, out ) != 0 )
+        {
+            nwipe_log( NWIPE_LOG_ERROR, "PRNG direct fill failed" );
+            return -1;
+        }
+        out += SIZE_OF_AES_CTR_PRNG;
+        bytes_left -= SIZE_OF_AES_CTR_PRNG;
+    }
+
+    /* General path: serve from ring, refilling as needed. */
+    while( bytes_left > 0 )
+    {
+        /* Ensure at least one byte is available for tiny reads. Refill only
+         * produces if a full CHUNK fits; otherwise we try again once consumer
+         * progress frees enough space. */
+        if( rb_count == 0 )
+        {
+            if( refill_stash_thread_local( *state, 1 ) != 0 )
+            {
+                nwipe_log( NWIPE_LOG_ERROR, "PRNG refill failed" );
+                return -1;
+            }
+            if( rb_count == 0 )
+                continue; /* still no room for a CHUNK yet */
+        }
+
+        /* Copy the largest contiguous span starting at rb_head. */
+        size_t avail = rb_contig_used();
+        size_t take = ( bytes_left < avail ) ? bytes_left : avail;
+
+        memcpy( out, stash + rb_head, take );
+
+        rb_head = ( rb_head + take ) & ( STASH_CAPACITY - 1 );
+        rb_count -= take;
+        out += take;
+        bytes_left -= take;
+
+        /* Opportunistic prefetch to hide latency of future small reads. */
+        if( rb_free() >= ( 2 * SIZE_OF_AES_CTR_PRNG ) )
+        {
+            if( refill_stash_thread_local( *state, SIZE_OF_AES_CTR_PRNG ) != 0 )
+            {
+                nwipe_log( NWIPE_LOG_ERROR, "PRNG opportunistic refill failed" );
+                return -1;
+            }
+        }
+    }
+    return 0;
 }
