@@ -161,6 +161,9 @@ int nwipe_options_parse( int argc, char** argv )
         /* Verify that wipe patterns are being written to the device. */
         { "verify", required_argument, 0, 0 },
 
+        /* Enables a field on the PDF that holds a tag that identifies the host computer */
+        { "pdftag", no_argument, 0, 0 },
+
         /* Display program version. */
         { "verbose", no_argument, 0, 'v' },
 
@@ -204,11 +207,12 @@ int nwipe_options_parse( int argc, char** argv )
     nwipe_options.sync = DEFAULT_SYNC_RATE;
     nwipe_options.verbose = 0;
     nwipe_options.verify = NWIPE_VERIFY_LAST;
+    nwipe_options.PDFtag = 0;
     memset( nwipe_options.logfile, '\0', sizeof( nwipe_options.logfile ) );
     memset( nwipe_options.PDFreportpath, '\0', sizeof( nwipe_options.PDFreportpath ) );
     strncpy( nwipe_options.PDFreportpath, ".", 2 );
 
-    /* Read PDF settings from nwipe.conf if available  */
+    /* Read PDF Enable/Disable settings from nwipe.conf if available  */
     if( ( ret = nwipe_conf_read_setting( "PDF_Certificate.PDF_Enable", &read_value ) ) )
     {
         /* error occurred */
@@ -238,6 +242,40 @@ int nwipe_options_parse( int argc, char** argv )
                     NWIPE_LOG_ERROR,
                     "PDF_Certificate.PDF_Enable in nwipe.conf returned a value that was neither ENABLED or DISABLED" );
                 nwipe_options.PDF_enable = 1;  // Default to Enabled
+            }
+        }
+    }
+
+    /* Read PDF tag Enable/Disable settings from nwipe.conf if available  */
+    if( ( ret = nwipe_conf_read_setting( "PDF_Certificate.PDF_tag", &read_value ) ) )
+    {
+        /* error occurred */
+        nwipe_log( NWIPE_LOG_ERROR,
+                   "nwipe_conf_read_setting():Error reading PDF_Certificate.PDF_tag from nwipe.conf, ret code %i",
+                   ret );
+
+        /* Use default values */
+        nwipe_options.PDFtag = 1;
+    }
+    else
+    {
+        if( !strcmp( read_value, "ENABLED" ) )
+        {
+            nwipe_options.PDFtag = 1;
+        }
+        else
+        {
+            if( !strcmp( read_value, "DISABLED" ) )
+            {
+                nwipe_options.PDFtag = 0;
+            }
+            else
+            {
+                // error occurred
+                nwipe_log(
+                    NWIPE_LOG_ERROR,
+                    "PDF_Certificate.PDF_tag in nwipe.conf returned a value that was neither ENABLED or DISABLED" );
+                nwipe_options.PDFtag = 0;  // Default to Enabled
             }
         }
     }
@@ -383,6 +421,12 @@ int nwipe_options_parse( int argc, char** argv )
                     exit( EINVAL );
                 }
 
+                if( strcmp( nwipe_options_long[i].name, "pdftag" ) == 0 )
+                {
+                    nwipe_options.PDFtag = 1;
+                    break;
+                }
+
                 /* getopt_long should raise on invalid option, so we should never get here. */
                 exit( EINVAL );
 
@@ -451,6 +495,11 @@ int nwipe_options_parse( int argc, char** argv )
                 if( strcmp( optarg, "bruce7" ) == 0 )
                 {
                     nwipe_options.method = &nwipe_bruce7;
+                    break;
+                }
+                if( strcmp( optarg, "bmb" ) == 0 )
+                {
+                    nwipe_options.method = &nwipe_bmb;
                     break;
                 }
 
@@ -615,6 +664,13 @@ int nwipe_options_parse( int argc, char** argv )
 
     } /* command line options */
 
+    /* Disable blanking for ops2 and verify methods */
+    if( nwipe_options.method == &nwipe_ops2 || nwipe_options.method == &nwipe_verify_zero
+        || nwipe_options.method == &nwipe_verify_one )
+    {
+        nwipe_options.noblank = 1;
+    }
+
     /* Return the number of options that were processed. */
     return optind;
 }
@@ -680,11 +736,11 @@ void nwipe_options_log( void )
     }
     else if( nwipe_options.prng == &nwipe_add_lagg_fibonacci_prng )
     {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Lagged Fibonacci generator (EXPERIMENTAL!)" );
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Lagged Fibonacci generator" );
     }
     else if( nwipe_options.prng == &nwipe_xoroshiro256_prng )
     {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = XORoshiro-256 (EXPERIMENTAL!)" );
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = XORoshiro-256" );
     }
     else if( nwipe_options.prng == &nwipe_aes_ctr_prng )
     {
@@ -775,33 +831,38 @@ void display_help()
     puts( "                          one                    - Overwrite with ones (0xFF)" );
     puts( "                          verify_zero            - Verifies disk is zero filled" );
     puts( "                          verify_one             - Verifies disk is 0xFF filled" );
-    puts( "                          is5enh                 - HMG IS5 enhanced\n" );
-    puts( "                          bruce7                 - Schneier Bruce 7-pass mixed pattern\n" );
+    puts( "                          is5enh                 -  HMG IS5 enhanced\n" );
+    puts( "                          bruce7                 -  Schneier Bruce 7-pass mixed pattern\n" );
+    puts( "                          bmb                    -  BMB21-2019 mixed pattern\n" );
     puts( "  -l, --logfile=FILE      Filename to log to. Default is STDOUT\n" );
     puts( "  -P, --PDFreportpath=PATH Path to write PDF reports to. Default is \".\"" );
     puts( "                           If set to \"noPDF\" no PDF reports are written.\n" );
-    puts( "  -p, --prng=METHOD       PRNG option "
+    puts( "  -p, --prng=METHOD        PRNG option "
           "(mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng|xoroshiro256_prng|aes_ctr_prng)\n" );
-    puts( "  -q, --quiet             Anonymize logs and the GUI by removing unique data, i.e." );
-    puts( "                          serial numbers, LU WWN Device ID, and SMBIOS/DMI data" );
-    puts( "                          XXXXXX = S/N exists, ????? = S/N not obtainable\n" );
-    puts( "  -r, --rounds=NUM        Number of times to wipe the device using the selected" );
-    puts( "                          method (default: 1)\n" );
-    puts( "      --noblank           Do NOT blank disk after wipe" );
-    puts( "                          (default is to complete a final blank pass)\n" );
-    puts( "      --nowait            Do NOT wait for a key before exiting" );
-    puts( "                          (default is to wait)\n" );
-    puts( "      --nosignals         Do NOT allow signals to interrupt a wipe" );
-    puts( "                          (default is to allow)\n" );
-    puts( "      --nogui             Do NOT show the GUI interface. Automatically invokes" );
-    puts( "                          the nowait option. Must be used with the --autonuke" );
-    puts( "                          option. Send SIGUSR1 to log current stats\n" );
-    puts( "      --nousb             Do NOT show or wipe any USB devices whether in GUI" );
-    puts( "                          mode, --nogui or --autonuke modes.\n" );
-    puts( "  -e, --exclude=DEVICES   Up to ten comma separated devices to be excluded" );
-    puts( "                          --exclude=/dev/sdc" );
-    puts( "                          --exclude=/dev/sdc,/dev/sdd" );
-    puts( "                          --exclude=/dev/sdc,/dev/sdd,/dev/mapper/cryptswap1\n" );
+    puts( "  -q, --quiet              Anonymize logs and the GUI by removing unique data, i.e." );
+    puts( "                           serial numbers, LU WWN Device ID, and SMBIOS/DMI data." );
+    puts( "                           XXXXXX = S/N exists, ????? = S/N not obtainable\n" );
+    puts( "  -r, --rounds=NUM         Number of times to wipe the device using the selected" );
+    puts( "                           method. (default: 1)\n" );
+    puts( "      --noblank            Do NOT blank disk after wipe." );
+    puts( "                           (default is to complete a final blank pass)\n" );
+    puts( "      --nowait             Do NOT wait for a key before exiting." );
+    puts( "                           (default is to wait)\n" );
+    puts( "      --nosignals          Do NOT allow signals to interrupt a wipe." );
+    puts( "                           (default is to allow)\n" );
+    puts( "      --nogui              Do NOT show the GUI interface. Automatically invokes" );
+    puts( "                           the nowait option. Must be used with the --autonuke" );
+    puts( "                           option. Send SIGUSR1 to log current stats.\n" );
+    puts( "      --nousb              Do NOT show or wipe any USB devices whether in GUI" );
+    puts( "                           mode, --nogui or --autonuke modes.\n" );
+    puts( "      --pdftag             Enables a field on the PDF that holds a tag that\n" );
+    puts( "                           identifies the host computer\n" );
+    puts( "  -e, --exclude=DEVICES    Up to ten comma separated devices to be excluded." );
+    puts( "                           --exclude=/dev/sdc" );
+    puts( "                           --exclude=/dev/sdc,/dev/sdd" );
+    puts( "                           --exclude=/dev/sdc,/dev/sdd,/dev/mapper/cryptswap1\n" );
+    puts( "                           --exclude=/dev/disk/by-id/ata-XXXXXXXX" );
+    puts( "                           --exclude=/dev/disk/by-path/pci-0000:00:17.0-ata-1\n" );
     puts( "" );
     exit( EXIT_SUCCESS );
 }

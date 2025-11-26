@@ -82,6 +82,12 @@ typedef struct nwipe_speedring_t_
 // 20 chracters for serial number plus null Byte
 #define NWIPE_SERIALNUMBER_LENGTH 20
 
+// UUID size
+#define UUID_SIZE 40
+
+// Device name max size including /dev/ path
+#define DEVICE_NAME_MAX_SIZE 100
+
 typedef struct nwipe_context_t_
 {
     /*
@@ -99,8 +105,9 @@ typedef struct nwipe_context_t_
     int device_minor;  // The minor device number.
     int device_part;  // The device partition or slice number.
     char* device_name;  // The device file name.
-    char device_name_without_path[100];
-    char gui_device_name[100];
+    char device_name_without_path[DEVICE_NAME_MAX_SIZE];
+    char gui_device_name[DEVICE_NAME_MAX_SIZE];
+    char device_name_terse[DEVICE_NAME_MAX_SIZE];
     unsigned long long device_size;  // The device size in bytes.
     u64 device_size_in_sectors;  // The device size in number of logical sectors, this may be 512 or 4096 sectors
     u64 device_size_in_512byte_sectors;  // The device size in number of 512byte sectors, irrespective of logical sector
@@ -117,10 +124,10 @@ typedef struct nwipe_context_t_
     int device_is_ssd;  // 0 = no SSD, 1 = is a SSD
     char device_serial_no[NWIPE_SERIALNUMBER_LENGTH
                           + 1];  // Serial number(processed, 20 characters plus null termination) of the device.
+    char device_UUID[UUID_SIZE];  // Only populated with the UUID if device is a partition
     int device_target;  // The device target.
 
     u64 eta;  // The estimated number of seconds until method completion.
-    int entropy_fd;  // The entropy source. Usually /dev/urandom.
     int pass_count;  // The number of passes performed by the working wipe method.
     u64 pass_done;  // The number of bytes that have already been i/o'd in this pass.
     u64 pass_errors;  // The number of errors across all passes.

@@ -129,4 +129,36 @@ int write_system_datetime( char*, char*, char*, char*, char*, char* );
  */
 void fix_endian_model_names( char* model );
 
+/**
+ * Obtains the UUID of the drive partition
+ *
+ * @param constchar* device path, example /dev/sda1
+ * @param char* pointer to UUID string UUID_SIZE long
+ * @return 0 = success, -1 = failure.
+ */
+int get_device_uuid( const char*, char* );
+
+/**
+ * find_base_device - searches /sys/block for a device that matches
+ *                    the prefix of the provided name.
+ *
+ * @devname: the input device name (e.g. "sda1", "sdb2")
+ * @result:  buffer to store the matched base device name
+ * @size:    size of the result buffer
+ *
+ * Returns: 0 on success (match found), -1 on failure (no match or error)
+ */
+int find_base_device( const char*, char*, size_t );
+
+/**
+ * skip_whitespace - Returns a pointer to the first non-whitespace character
+ *                   in a given string.
+ *
+ * @str: input string
+ *
+ * Returns: pointer to the first non-whitespace character,
+ *          or NULL if str is NULL or the string contains only whitespace.
+ */
+const char* skip_whitespace( const char* );
+
 #endif /* HPA_DCO_H_ */

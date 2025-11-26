@@ -47,6 +47,52 @@
 #include "options.h"
 #include "pass.h"
 #include "logging.h"
+#include <errno.h>
+#include <unistd.h>
+#include <sys/syscall.h> /* SYS_getrandom */
+#if defined( __linux__ )
+/* On glibc/musl with <sys/random.h> available, it's fine (optional). */
+/* #include <sys/random.h> */
+#endif
+
+/**
+ * @brief Fill a buffer with cryptographically secure random bytes using getrandom(2).
+ *
+ * This wrapper blocks until the kernel CRNG is initialized, then loops until
+ * @p len bytes are written (handling short reads and EINTR/EAGAIN).
+ *
+ * @param[out] buf  Destination buffer.
+ * @param[in]  len  Number of bytes to generate.
+ * @return On success, returns (ssize_t)len.
+ *         On error, returns -errno and leaves errno set.
+ */
+static ssize_t nwipe_read_entropy( void* buf, size_t len )
+{
+    unsigned char* p = (unsigned char*) buf;
+    size_t n = len;
+
+    while( n > 0 )
+    {
+        /* Prefer the raw syscall to avoid libc version pitfalls. */
+        ssize_t r = syscall( SYS_getrandom, p, n, 0 /* blocking */ );
+        if( r < 0 )
+        {
+            if( errno == EINTR || errno == EAGAIN )
+            {
+                continue; /* retry */
+            }
+            return -errno;
+        }
+        if( r == 0 )
+        {
+            /* Extremely unlikely: treat as transient and retry. */
+            continue;
+        }
+        p += r;
+        n -= (size_t) r;
+    }
+    return (ssize_t) len;
+}
 
 /*
  * Comment Legend
@@ -69,6 +115,7 @@ const char* nwipe_verify_zero_label = "Verify Zeros (0x00)";
 const char* nwipe_verify_one_label = "Verify Ones  (0xFF)";
 const char* nwipe_is5enh_label = "HMG IS5 Enhanced";
 const char* nwipe_bruce7_label = "Bruce Schneier 7-Pass";
+const char* nwipe_bmb_label = "BMB21-2019";
 
 const char* nwipe_unknown_label = "Unknown Method (FIXME)";
 
@@ -122,6 +169,10 @@ const char* nwipe_method_label( void* method )
     if( method == &nwipe_bruce7 )
     {
         return nwipe_bruce7_label;
+    }
+    if( method == &nwipe_bmb )
+    {
+        return nwipe_bmb_label;
     }
 
     /* else */
@@ -287,7 +338,7 @@ void* nwipe_dod522022m( void* ptr )
                                    { 0, NULL } };
 
     /* Load the array with random characters. */
-    r = read( c->entropy_fd, &dod, sizeof( dod ) );
+    r = nwipe_read_entropy( &dod, sizeof( dod ) );
 
     /* NOTE: Only the random data in dod[0], dod[3], and dod[4] is actually used. */
 
@@ -358,7 +409,7 @@ void* nwipe_dodshort( void* ptr )
                                    { 0, NULL } };
 
     /* Load the array with random characters. */
-    r = read( c->entropy_fd, &dod, sizeof( dod ) );
+    r = nwipe_read_entropy( &dod, sizeof( dod ) );
 
     /* NOTE: Only the random data in dod[0] is actually used. */
 
@@ -458,7 +509,7 @@ void* nwipe_gutmann( void* ptr )
     u16 s[27];
 
     /* Load the array with random characters. */
-    ssize_t r = read( c->entropy_fd, &s, sizeof( s ) );
+    ssize_t r = nwipe_read_entropy( &s, sizeof( s ) );
     if( r != sizeof( s ) )
     {
         r = errno;
@@ -616,7 +667,7 @@ void* nwipe_ops2( void* ptr )
     }
 
     /* Load the array of random characters. */
-    r = read( c->entropy_fd, s, u );
+    r = nwipe_read_entropy( s, u );
 
     if( r != u )
     {
@@ -799,6 +850,42 @@ void* nwipe_bruce7( void* ptr )
     return NULL;
 }
 
+void* nwipe_bmb( void* ptr )
+{
+    /**
+     * BMB Secure Wipe Method:
+     * Pass 1: 0xFF
+     * Pass 2: 0x00
+     * Pass 3-5: 3× Random
+     * Pass 6: 0xFF
+     */
+
+    nwipe_context_t* c = (nwipe_context_t*) ptr;
+
+    time( &c->start_time );
+    c->wipe_status = 1;
+
+    char onefill[1] = { '\xFF' };
+    char zerofill[1] = { '\x00' };
+
+    nwipe_pattern_t patterns[] = {
+        { 1, &onefill[0] },  // 0xFF
+        { 1, &zerofill[0] },  // 0x00
+        { -1, "" },  // RANDOM
+        { -1, "" },  // RANDOM
+        { -1, "" },  // RANDOM
+        { 1, &onefill[0] },  // 0xFF
+        { 0, NULL }  // 0X00
+    };
+
+    c->result = nwipe_runmethod( c, patterns );
+
+    c->wipe_status = 0;
+    time( &c->end_time );
+
+    return NULL;
+}
+
 int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 {
     /**
@@ -960,13 +1047,13 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
                 c->pass_type = NWIPE_PASS_WRITE;
 
                 /* Seed the PRNG. */
-                r = read( c->entropy_fd, c->prng_seed.s, c->prng_seed.length );
+                r = nwipe_read_entropy( c->prng_seed.s, c->prng_seed.length );
 
                 /* Check the result. */
                 if( r < 0 )
                 {
                     c->pass_type = NWIPE_PASS_NONE;
-                    nwipe_perror( errno, __FUNCTION__, "read" );
+                    nwipe_perror( errno, __FUNCTION__, "getrandom" );
                     nwipe_log( NWIPE_LOG_FATAL, "Unable to seed the PRNG." );
                     return -1;
                 }
@@ -1063,12 +1150,12 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
         c->pass_type = NWIPE_PASS_FINAL_OPS2;
 
         /* Seed the PRNG. */
-        r = read( c->entropy_fd, c->prng_seed.s, c->prng_seed.length );
+        r = nwipe_read_entropy( c->prng_seed.s, c->prng_seed.length );
 
         /* Check the result. */
         if( r < 0 )
         {
-            nwipe_perror( errno, __FUNCTION__, "read" );
+            nwipe_perror( errno, __FUNCTION__, "getrandom" );
             nwipe_log( NWIPE_LOG_FATAL, "Unable to seed the PRNG." );
             return -1;
         }
