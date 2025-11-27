@@ -342,6 +342,32 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
     u64 z = c->device_size; /* bytes remaining */
 
     int syncRate = nwipe_options.sync;
+
+    /* For direct I/O we do not need periodic fdatasync(), I/O errors are detected
+     * at write() time. Keep sync for cached I/O only. */
+    if( nwipe_options.io_mode == NWIPE_IO_MODE_DIRECT )
+    {
+        syncRate = 0;
+    }
+
+    /* Preserve the original "bytes between syncs" behaviour:
+     * previously: sync writes every `sync` * st_blksize bytes.
+     * now that we use large io_blocksize, adjust syncRate accordingly. */
+    if( syncRate > 0 )
+    {
+        unsigned long long bytes_between_sync =
+            (unsigned long long) syncRate * (unsigned long long) c->device_stat.st_blksize;
+
+        if( bytes_between_sync > 0 && io_blocksize > 0 )
+        {
+            syncRate = (int) ( bytes_between_sync / io_blocksize );
+            if( syncRate < 1 )
+            {
+                syncRate = 1;
+            }
+        }
+    }
+
     int i = 0;
     int idx;
 
