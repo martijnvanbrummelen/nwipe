@@ -656,12 +656,12 @@ static void nwipe_normalize_serial( char* serial )
         {
             *dst++ = (char) ch;
         }
-        /* Alle anderen Zeichen (Steuerzeichen, >0x7F) werden verworfen */
+        /* Alle remaining control characters will be dropped ( >0x7F) */
     }
 
     *dst = '\0';
 
-    /* Vorhandene trim()-Logik wiederverwenden */
+    /* Use existing trim() function */
     trim( serial );
 }
 
