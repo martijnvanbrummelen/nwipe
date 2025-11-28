@@ -49,6 +49,7 @@
 
 int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount );
 char* trim( char* str );
+static void nwipe_normalize_serial( char* serial );
 
 /*
  * Resolve a device path (including /dev/disk/by-* symlinks) to its
@@ -360,22 +361,26 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     next_device->device_size_text = next_device->device_size_txt;
     next_device->result = -2;
 
-    /* Attempt to get serial number of device.
-     */
-    next_device->device_serial_no[0] = 0; /* initialise the serial number */
+    /* Attempt to get serial number of device. */
+    next_device->device_serial_no[0] = '\0'; /* initialise the serial number */
 
-    if( ( fd = open( next_device->device_name = dev->path, O_RDONLY ) ) == ERR )
+    fd = open( next_device->device_name = dev->path, O_RDONLY );
+    if( fd == ERR )
     {
         nwipe_log( NWIPE_LOG_WARNING, "Unable to open device %s to obtain serial number", next_device->device_name );
     }
-
-    /*
-     * We don't check the ioctl return status because there are plenty of situations where a serial number may not be
-     * returned by ioctl such as USB drives, logical volumes, encryted volumes, so the log file would have multiple
-     * benign ioctl errors reported which isn't necessarily a problem.
-     */
-    ioctl( fd, HDIO_GET_IDENTITY, &next_device->identity );
-    close( fd );
+    else
+    {
+        /*
+         * We don't check the ioctl return status because there are plenty of
+         * situations where a serial number may not be returned by ioctl such as
+         * USB drives, logical volumes, encrypted volumes, so the log file
+         * would have multiple benign ioctl errors reported which isn't
+         * necessarily a problem.
+         */
+        ioctl( fd, HDIO_GET_IDENTITY, &next_device->identity );
+        close( fd );
+    }
 
     for( idx = 0; idx < NWIPE_SERIALNUMBER_LENGTH; idx++ )
     {
@@ -424,6 +429,9 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     /* strncpy would have copied the null terminator BUT just to be sure, just in case somebody changes the length
      * of those strings we should explicitly terminate the string */
     next_device->device_serial_no[NWIPE_SERIALNUMBER_LENGTH] = 0;
+
+    /* Ensure the serial number cannot break the ncurses UI. */
+    nwipe_normalize_serial( next_device->device_serial_no );
 
     /* Initialise the variables that toggle the [size][temp c] with [HPA status]
      * Not currently used, but may be used in the future or for other purposes
@@ -624,6 +632,39 @@ char* trim( char* str )
     return str;
 }
 
+/*
+ * Remove non-ASCII and control characters from a serial number string,
+ * then trim leading/trailing whitespace and left-justify it in-place.
+ * This keeps the value safe for ncurses output.
+ */
+static void nwipe_normalize_serial( char* serial )
+{
+    unsigned char ch;
+    char* src;
+    char* dst;
+
+    if( serial == NULL )
+    {
+        return;
+    }
+
+    src = dst = serial;
+
+    while( ( ch = (unsigned char) *src++ ) != '\0' )
+    {
+        if( isascii( ch ) && !iscntrl( ch ) )
+        {
+            *dst++ = (char) ch;
+        }
+        /* Alle remaining control characters will be dropped ( >0x7F) */
+    }
+
+    *dst = '\0';
+
+    /* Use existing trim() function */
+    trim( serial );
+}
+
 int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, int* is_ssd, char* serialnumber )
 {
     /* The caller provides a string that contains the device, i.e. /dev/sdc, also a pointer
@@ -670,6 +711,14 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, i
     char smartctl_labels_to_anonymize[][18] = {
         "serial number:", "lu wwn device id:", "logical unit id:", "" /* Don't remove this empty string !, important */
     };
+
+    /* Ensure the serialnumber buffer is in a defined state even if we
+     * never find a "serial number:" line in smartctl output.
+     */
+    if( serialnumber != NULL )
+    {
+        memset( serialnumber, 0, NWIPE_SERIALNUMBER_LENGTH + 1 );
+    }
 
     /* Initialise return value */
     set_return_value = 0;
