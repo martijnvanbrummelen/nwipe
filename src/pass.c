@@ -393,6 +393,9 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
         syncRate = 0;
     }
 
+    /* Select effective I/O block size (e.g. 4 MiB, never smaller than st_blksize). */
+    io_blocksize = nwipe_effective_io_blocksize( c );
+
     /* Compute the per-write sync rate based on io_blocksize and old semantics. */
     syncRate = nwipe_compute_sync_rate_for_device( c, io_blocksize );
 
@@ -410,9 +413,6 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
         nwipe_log( NWIPE_LOG_SANITY, "__FUNCTION__: The entropy length member is %i.", c->prng_seed.length );
         return -1;
     }
-
-    /* Select effective I/O block size (e.g. 4 MiB, never smaller than st_blksize). */
-    io_blocksize = nwipe_effective_io_blocksize( c );
 
     /*
      * Allocate a generic 16 MiB buffer (by default) that is used as the
