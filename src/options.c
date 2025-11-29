@@ -460,7 +460,7 @@ int nwipe_options_parse( int argc, char** argv )
                         fprintf( stderr, "Error: Unknown I/O mode '%s' (expected auto|direct|cached).\n", optarg );
                         exit( EINVAL );
                     }
-		}
+                }
                 if( strcmp( nwipe_options_long[i].name, "pdftag" ) == 0 )
                 {
                     nwipe_options.PDFtag = 1;
