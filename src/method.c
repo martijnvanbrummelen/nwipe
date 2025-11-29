@@ -50,6 +50,8 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/syscall.h> /* SYS_getrandom */
+#include <stdlib.h> /* for system() */
+#include <errno.h>
 #if defined( __linux__ )
 /* On glibc/musl with <sys/random.h> available, it's fine (optional). */
 /* #include <sys/random.h> */
@@ -116,6 +118,7 @@ const char* nwipe_verify_one_label = "Verify Ones  (0xFF)";
 const char* nwipe_is5enh_label = "HMG IS5 Enhanced";
 const char* nwipe_bruce7_label = "Bruce Schneier 7-Pass";
 const char* nwipe_bmb_label = "BMB21-2019";
+const char* nwipe_secure_erase_label = "Secure Erase (ATA/NVMe)";
 
 const char* nwipe_unknown_label = "Unknown Method (FIXME)";
 
@@ -174,11 +177,173 @@ const char* nwipe_method_label( void* method )
     {
         return nwipe_bmb_label;
     }
+    if( method == &nwipe_secure_erase )
+    {
+        return nwipe_secure_erase_label;
+    }
 
     /* else */
     return nwipe_unknown_label;
 
 } /* nwipe_method_label */
+
+/*
+ * Execute ATA Secure Erase using the external hdparm(8) utility.
+ *
+ * This implementation assumes:
+ *   - Linux with glibc
+ *   - hdparm is installed and available in the system PATH
+ *
+ * We deliberately do not re-implement the low-level ATA SECURITY
+ * commands here (SECURITY_SET_PASSWORD, SECURITY_ERASE_UNIT, etc.)
+ * because that logic is complex, hardware-specific and already
+ * well-tested in hdparm.
+ *
+ * Returns 0 on success, -1 on failure.
+ */
+static int nwipe_execute_ata_secure_erase( nwipe_context_t* c )
+{
+    char cmd[512];
+    int rc;
+
+    if( c == NULL || c->device_name == NULL )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "ATA Secure Erase: invalid context or device name." );
+        return -1;
+    }
+
+    /*
+     * Build a hdparm command line:
+     *
+     *   hdparm --user-master u --security-erase NULL /dev/sdX
+     *
+     * Notes:
+     *   - We redirect all output to /dev/null to keep the GUI clean.
+     *   - The password "NULL" is arbitrary but consistent with common
+     *     hdparm usage for temporary erase passwords.
+     *   - The user is expected to run nwipe as root, so hdparm will
+     *     have the necessary privileges.
+     */
+    rc = snprintf( cmd,
+                   sizeof( cmd ),
+                   "hdparm --yes-i-know-what-i-am-doing "
+                   "--user-master u --security-erase NULL '%s' >/dev/null 2>&1",
+                   c->device_name );
+
+    if( rc < 0 || (size_t) rc >= sizeof( cmd ) )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "ATA Secure Erase: command line for device %s is too long.", c->device_name );
+        return -1;
+    }
+
+    nwipe_log( NWIPE_LOG_NOTICE, "Starting ATA Secure Erase via hdparm on %s.", c->device_name );
+
+    errno = 0;
+    rc = system( cmd );
+
+    if( rc == -1 )
+    {
+        /*
+         * system() itself failed (fork/exec or similar). This usually
+         * indicates a serious problem (e.g. no memory, no /bin/sh).
+         */
+        nwipe_perror( errno, __FUNCTION__, "system" );
+        nwipe_log( NWIPE_LOG_ERROR, "ATA Secure Erase: failed to invoke hdparm for %s.", c->device_name );
+        return -1;
+    }
+
+    /*
+     * We treat any non-zero return code from system() as a failure of
+     * the secure erase operation. Detailed diagnostics are available
+     * by running hdparm manually without redirection.
+     */
+    if( rc != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "ATA Secure Erase: hdparm reported failure on %s (rc=%d).", c->device_name, rc );
+        return -1;
+    }
+
+    nwipe_log( NWIPE_LOG_NOTICE, "ATA Secure Erase completed successfully on %s.", c->device_name );
+
+    return 0;
+}
+
+/*
+ * Execute NVMe Secure Erase using the external nvme(1) utility.
+ *
+ * This implementation assumes:
+ *   - Linux with glibc
+ *   - nvme-cli is installed and provides the "nvme" binary
+ *
+ * We use the "nvme format" command with a secure erase setting.
+ * The exact sanitize/format behaviour is controller-specific; for
+ * most consumer devices, "nvme format -s1" triggers a user-data
+ * erase suitable for secure wipe purposes.
+ *
+ * Returns 0 on success, -1 on failure.
+ */
+static int nwipe_execute_nvme_secure_erase( nwipe_context_t* c )
+{
+    char cmd[512];
+    int rc;
+
+    if( c == NULL || c->device_name == NULL )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "NVMe Secure Erase: invalid context or device name." );
+        return -1;
+    }
+
+    /*
+     * Build an nvme command line:
+     *
+     *   nvme format /dev/nvmeXnY -s1
+     *
+     * Notes:
+     *   - We assume c->device_name points at the namespace device node
+     *     (e.g. /dev/nvme0n1). For controller nodes the syntax is
+     *     slightly different; that can be extended later if needed.
+     *   - "-s1" requests a secure erase of user data where supported.
+     *   - Output is redirected to /dev/null to keep the GUI clean.
+     */
+    rc = snprintf( cmd, sizeof( cmd ), "nvme format '%s' -s1 >/dev/null 2>&1", c->device_name );
+
+    if( rc < 0 || (size_t) rc >= sizeof( cmd ) )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "NVMe Secure Erase: command line for device %s is too long.", c->device_name );
+        return -1;
+    }
+
+    nwipe_log( NWIPE_LOG_NOTICE, "Starting NVMe Secure Erase via nvme format on %s.", c->device_name );
+
+    errno = 0;
+    rc = system( cmd );
+
+    if( rc == -1 )
+    {
+        /*
+         * system() itself failed (fork/exec or similar). This usually
+         * indicates a serious problem (e.g. no memory, no /bin/sh).
+         */
+        nwipe_perror( errno, __FUNCTION__, "system" );
+        nwipe_log( NWIPE_LOG_ERROR, "NVMe Secure Erase: failed to invoke nvme for %s.", c->device_name );
+        return -1;
+    }
+
+    /*
+     * As with the ATA case, any non-zero return code is treated as a
+     * failure of the secure erase operation.
+     */
+    if( rc != 0 )
+    {
+        nwipe_log(
+            NWIPE_LOG_ERROR, "NVMe Secure Erase: nvme format reported failure on %s (rc=%d).", c->device_name, rc );
+        return -1;
+    }
+
+    nwipe_log( NWIPE_LOG_NOTICE, "NVMe Secure Erase completed successfully on %s.", c->device_name );
+
+    return 0;
+}
 
 void* nwipe_zero( void* ptr )
 {
@@ -885,6 +1050,112 @@ void* nwipe_bmb( void* ptr )
 
     return NULL;
 }
+void* nwipe_secure_erase( void* ptr )
+{
+    /**
+     * Perform a drive-internal secure erase (ATA/NVMe) and then verify
+     * that the device reads back as all zeros.
+     *
+     * This method does NOT write patterns itself. Instead it:
+     *   1) issues the appropriate secure-erase operation for the bus type
+     *   2) performs a full-device zero verification pass using nwipe_static_verify()
+     */
+
+    nwipe_context_t* c;
+    int op_result = -1;
+
+    c = (nwipe_context_t*) ptr;
+
+    /* get current time at the start of the wipe  */
+    time( &c->start_time );
+
+    /* set wipe in progress flag for GUI */
+    c->wipe_status = 1;
+
+    /*
+     * Step 1: Execute the drive's internal secure erase, depending on bus type.
+     */
+    switch( c->device_type )
+    {
+        case NWIPE_DEVICE_NVME:
+            nwipe_log(
+                NWIPE_LOG_NOTICE, "Attempting NVMe Secure Erase on %s (%s).", c->device_name, c->device_type_str );
+            op_result = nwipe_execute_nvme_secure_erase( c );
+            break;
+
+        case NWIPE_DEVICE_ATA:
+        case NWIPE_DEVICE_SAS:
+            nwipe_log(
+                NWIPE_LOG_NOTICE, "Attempting ATA Secure Erase on %s (%s).", c->device_name, c->device_type_str );
+            op_result = nwipe_execute_ata_secure_erase( c );
+            break;
+
+        default:
+            /*
+             * For other bus types we currently do not support a drive-internal
+             * secure erase operation.
+             */
+            nwipe_log( NWIPE_LOG_WARNING,
+                       "Secure Erase method is not supported on bus type %s (device %s).",
+                       c->device_type_str,
+                       c->device_name );
+            op_result = -1;
+            break;
+    }
+
+    /*
+     * If the secure-erase operation failed, we do not attempt verification.
+     */
+    if( op_result != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Secure Erase could not be executed on %s. Aborting method.", c->device_name );
+        c->result = -1;
+
+        c->wipe_status = 0;
+        time( &c->end_time );
+        return NULL;
+    }
+
+    /*
+     * Step 2: Verify that the device now reads back as all zeros.
+     * We reuse nwipe_static_verify() with a single 0x00 pattern and
+     * set up the progress counters so that the GUI shows a single
+     * full-device verify pass.
+     */
+
+    /* Single-byte zero pattern. */
+    nwipe_pattern_t pattern_zero = { 1, "\x00" };
+
+    /* Initialize progress accounting for a single verify pass. */
+    c->round_count = 1;
+    c->round_working = 1;
+    c->round_done = 0;
+    c->round_size = c->device_size;
+
+    c->pass_count = 1;
+    c->pass_working = 1;
+    c->pass_done = 0;
+    c->pass_size = c->device_size;
+
+    /* Mark this pass as a verification pass. */
+    c->pass_type = NWIPE_PASS_VERIFY;
+
+    nwipe_log( NWIPE_LOG_NOTICE, "Secure erase completed for %s, starting zero verification pass.", c->device_name );
+
+    /* Perform the verification. */
+    c->result = nwipe_static_verify( c, &pattern_zero );
+
+    /* Reset pass type. */
+    c->pass_type = NWIPE_PASS_NONE;
+
+    /* Finished. Clear the wipe_status flag so that the GUI knows */
+    c->wipe_status = 0;
+
+    /* get current time at the end of the wipe  */
+    time( &c->end_time );
+
+    return NULL;
+} /* nwipe_secure_erase */
 
 int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 {
