@@ -27,6 +27,11 @@
 #define _POSIX_SOURCE
 #endif
 
+/* Enable GNU extensions so that O_DIRECT is visible from <fcntl.h>. */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,6 +64,18 @@
 #include "hpa_dco.h"
 #include "conf.h"
 #include <libconfig.h>
+#include <fcntl.h> /* O_DIRECT, O_RDWR, ... */
+
+#ifdef NWIPE_USE_DIRECT_IO
+#ifndef O_DIRECT
+/*
+ * Some platforms or libcs do not define O_DIRECT at all. Defining it
+ * as 0 makes the flag a no-op and keeps the code buildable.
+ * On Linux/glibc, <fcntl.h> via nwipe.h will provide a real O_DIRECT.
+ */
+#define O_DIRECT 0
+#endif
+#endif
 
 int terminate_signal;
 int user_abort;
@@ -478,8 +495,80 @@ int main( int argc, char** argv )
             /* Initialise the wipe_status flag, -1 = wipe not yet started */
             c2[i]->wipe_status = -1;
 
-            /* Open the file for reads and writes. */
-            c2[i]->device_fd = open( c2[i]->device_name, O_RDWR );
+            /* Open the file for reads and writes, honoring the configured I/O mode. */
+            int open_flags = O_RDWR;
+
+#ifdef NWIPE_USE_DIRECT_IO
+            /*
+             * Decide whether to request O_DIRECT based on the runtime I/O mode:
+             *   auto   -> try O_DIRECT, fall back to cached I/O if needed
+             *   direct -> force O_DIRECT, fail hard if not supported
+             *   cached -> do not request O_DIRECT at all
+             */
+            if( nwipe_options.io_mode == NWIPE_IO_MODE_DIRECT || nwipe_options.io_mode == NWIPE_IO_MODE_AUTO )
+            {
+                open_flags |= O_DIRECT;
+            }
+#endif
+
+            c2[i]->device_fd = open( c2[i]->device_name, open_flags );
+
+#ifdef NWIPE_USE_DIRECT_IO
+            if( c2[i]->device_fd < 0 && ( errno == EINVAL || errno == EOPNOTSUPP ) )
+            {
+                if( nwipe_options.io_mode == NWIPE_IO_MODE_DIRECT )
+                {
+                    /*
+                     * User explicitly requested direct I/O: do not silently
+                     * fall back. Mark the device as unusable and continue.
+                     */
+                    nwipe_perror( errno, __FUNCTION__, "open" );
+                    nwipe_log( NWIPE_LOG_FATAL,
+                               "O_DIRECT requested via --directio but not supported on '%s'.",
+                               c2[i]->device_name );
+                    c2[i]->select = NWIPE_SELECT_DISABLED;
+                    continue;
+                }
+                else if( nwipe_options.io_mode == NWIPE_IO_MODE_AUTO )
+                {
+                    /*
+                     * Auto mode: transparently fall back to cached I/O and
+                     * log a warning.
+                     */
+                    nwipe_log( NWIPE_LOG_WARNING,
+                               "O_DIRECT not supported on '%s', falling back to cached I/O.",
+                               c2[i]->device_name );
+
+                    open_flags &= ~O_DIRECT;
+                    c2[i]->device_fd = open( c2[i]->device_name, open_flags );
+                }
+            }
+
+            if( c2[i]->device_fd >= 0 )
+            {
+                const char* io_desc;
+
+                if( open_flags & O_DIRECT )
+                {
+                    io_desc = "direct I/O (O_DIRECT)";
+                }
+                else
+                {
+                    io_desc = "cached I/O";
+                }
+
+                nwipe_log( NWIPE_LOG_NOTICE, "Using %s on device '%s'.", io_desc, c2[i]->device_name );
+            }
+#endif /* NWIPE_USE_DIRECT_IO */
+
+            /* Check the open() result (after any fallback logic). */
+            if( c2[i]->device_fd < 0 )
+            {
+                nwipe_perror( errno, __FUNCTION__, "open" );
+                nwipe_log( NWIPE_LOG_WARNING, "Unable to open device '%s'.", c2[i]->device_name );
+                c2[i]->select = NWIPE_SELECT_DISABLED;
+                continue;
+            }
 
             /* Check the open() result. */
             if( c2[i]->device_fd < 0 )

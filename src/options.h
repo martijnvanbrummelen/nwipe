@@ -38,6 +38,7 @@
 #define MAX_DRIVE_PATH_LENGTH 200  // e.g. /dev/sda is only 8 characters long, so 200 should be plenty.
 #define DEFAULT_SYNC_RATE 100000
 #define PATHNAME_MAX 2048
+#define NWIPE_USE_DIRECT_IO
 
 /* Function prototypes for loading options from the environment and command line. */
 int nwipe_options_parse( int argc, char** argv );
@@ -45,6 +46,13 @@ void nwipe_options_log( void );
 
 /* Function to display help text */
 void display_help();
+
+/* I/O mode for data path: auto, direct, or cached. */
+typedef enum {
+    NWIPE_IO_MODE_AUTO = 0, /* Try O_DIRECT, fall back to cached I/O if not supported. */
+    NWIPE_IO_MODE_DIRECT, /* Force O_DIRECT, fail if not supported. */
+    NWIPE_IO_MODE_CACHED /* Force cached I/O, never attempt O_DIRECT. */
+} nwipe_io_mode_t;
 
 typedef struct
 {
@@ -69,6 +77,7 @@ typedef struct
     int PDF_preview_details;  // 0=Disable preview Org/Cust/date/time before drive selection, 1=Enable Preview
     int PDFtag;  // Enable display of hostID, such as UUID or serial no. on PDF report.
     nwipe_verify_t verify;  // A flag to indicate whether writes should be verified.
+    nwipe_io_mode_t io_mode;  // Runtime I/O mode selection (auto/direct/cached).
 } nwipe_options_t;
 
 extern nwipe_options_t nwipe_options;

@@ -161,6 +161,11 @@ int nwipe_options_parse( int argc, char** argv )
         /* Verify that wipe patterns are being written to the device. */
         { "verify", required_argument, 0, 0 },
 
+        /* I/O mode selection: auto/direct/cached. */
+        { "directio", no_argument, 0, 0 },
+        { "cachedio", no_argument, 0, 0 },
+        { "io-mode", required_argument, 0, 0 },
+
         /* Enables a field on the PDF that holds a tag that identifies the host computer */
         { "pdftag", no_argument, 0, 0 },
 
@@ -207,6 +212,7 @@ int nwipe_options_parse( int argc, char** argv )
     nwipe_options.sync = DEFAULT_SYNC_RATE;
     nwipe_options.verbose = 0;
     nwipe_options.verify = NWIPE_VERIFY_LAST;
+    nwipe_options.io_mode = NWIPE_IO_MODE_AUTO; /* Default: auto-select I/O mode. */
     nwipe_options.PDFtag = 0;
     memset( nwipe_options.logfile, '\0', sizeof( nwipe_options.logfile ) );
     memset( nwipe_options.PDFreportpath, '\0', sizeof( nwipe_options.PDFreportpath ) );
@@ -421,6 +427,40 @@ int nwipe_options_parse( int argc, char** argv )
                     exit( EINVAL );
                 }
 
+                /* I/O mode selection options. */
+
+                if( strcmp( nwipe_options_long[i].name, "directio" ) == 0 )
+                {
+                    nwipe_options.io_mode = NWIPE_IO_MODE_DIRECT;
+                    break;
+                }
+
+                if( strcmp( nwipe_options_long[i].name, "cachedio" ) == 0 )
+                {
+                    nwipe_options.io_mode = NWIPE_IO_MODE_CACHED;
+                    break;
+                }
+
+                if( strcmp( nwipe_options_long[i].name, "io-mode" ) == 0 )
+                {
+                    if( strcmp( optarg, "auto" ) == 0 )
+                    {
+                        nwipe_options.io_mode = NWIPE_IO_MODE_AUTO;
+                    }
+                    else if( strcmp( optarg, "direct" ) == 0 )
+                    {
+                        nwipe_options.io_mode = NWIPE_IO_MODE_DIRECT;
+                    }
+                    else if( strcmp( optarg, "cached" ) == 0 )
+                    {
+                        nwipe_options.io_mode = NWIPE_IO_MODE_CACHED;
+                    }
+                    else
+                    {
+                        fprintf( stderr, "Error: Unknown I/O mode '%s' (expected auto|direct|cached).\n", optarg );
+                        exit( EINVAL );
+                    }
+                }
                 if( strcmp( nwipe_options_long[i].name, "pdftag" ) == 0 )
                 {
                     nwipe_options.PDFtag = 1;
@@ -818,6 +858,9 @@ void display_help()
     puts( "                          last  - Verify after the last pass" );
     puts( "                          all   - Verify every pass" );
     puts( "                          " );
+    puts( "      --directio          Force direct I/O (O_DIRECT); fail if not supported" );
+    puts( "      --cachedio          Force kernel cached I/O; never attempt O_DIRECT" );
+    puts( "      --io-mode=MODE      I/O mode: auto (default), direct, cached\n" );
     puts( "                          Please mind that HMG IS5 enhanced always verifies the" );
     puts( "                          last (PRNG) pass regardless of this option.\n" );
     puts( "  -m, --method=METHOD     The wiping method. See man page for more details." );
