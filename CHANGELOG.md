@@ -1,10 +1,30 @@
 RELEASE NOTES
 =============
+v0.40
+-----------------------
+includes the following changes:
+
+- Only checks the static libraries when -static is specified and removed libintl which is no longer required by parted 3.6. A statically linked nwipe can be built with
+sh autogen.sh && ./configure LDFLAGS=-static && make All the static libraries need to be built before this step, alternatively use the buildah script from https://github.com/deamen/nwipe-static-builder/blob/master/README.md [#655](https://github.com/martijnvanbrummelen/nwipe/pull/655) Thanks @deamen
+- Implement high-performance AES-256-CTR PRNG via Linux kernel AF_ALG socket [#660](https://github.com/martijnvanbrummelen/nwipe/pull/660) Thanks @Knogle
+- BMB21-2019 Chinese State Secrets Bureau standard Technical Requirement for Data Sanitization [668](https://github.com/martijnvanbrummelen/nwipe/pull/668) Thanks @xicaixiaokeke
+- Add the Bruce Schneier 7 pass method in the man page text. https://github.com/martijnvanbrummelen/nwipe/commit/342fb03c1d9ef3343254783133aa7b5c962c65c7 Thanks @Extloga
+- Fixes for formatting and consistency. Thanks @Extloga
+- Added device name, e.g sda, SD etc to PDF to fix obscure issue where the file might get overwritten if devices with no model name and no serial number complete in the same second. i.e very small virtual devices) [#676](https://github.com/martijnvanbrummelen/nwipe/pull/676) Thanks @PartialVolume
+- Added direct I/O and 16MB write buffers to improve I/O performance and reduce CPU load, with optional command line switches --directio and --cachedio [683](https://github.com/martijnvanbrummelen/nwipe/pull/683) Thanks @Knogle
+- Added user-selectable host information, UUID and serial number, which can be included in the PDF report using the --pdftag command-line option.
+- Fixes an issue where blanking was applied to a method that shouldn't have a blanking pass when in --nogui mode. Require respect for no-blanking methods in --nogui mode. [682](https://github.com/martijnvanbrummelen/nwipe/pull/682) Thanks @desertwitch
+- Enhances the --exclude option to match devices by /dev/disk/by-id/ and /dev/disk/by-path/ [686]https://github.com/martijnvanbrummelen/nwipe/pull/686
+- Add option to include static linking libraries that are required by parted 3.6 ./configure LDFLAGS=-static [655](https://github.com/martijnvanbrummelen/nwipe/pull/655) Thanks @deamen 
 
 v0.39
 -----------------------
+includes the following changes:
+- Fix model name Endian for Sandisk-SunDisk drives by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/643
+- Implement Bruce Schneier 7-Pass wiping method by @Knogle in https://github.com/martijnvanbrummelen/nwipe/pull/648
+- Some cleanup in options.c, added missing xoroshiro256_prng argument i… by @Knogle in https://github.com/martijnvanbrummelen/nwipe/pull/651
 - Removed EXPERIMENTAL! comments for ALFG and Xoroshiro. [#652](https://github.com/martijnvanbrummelen/nwipe/pull/652) Thanks @Knogle   
-- Fix: some declaration changes to satisfy gcc 15. [#663]((https://github.com/martijnvanbrummelen/nwipe/pull/663) Thanks @Knogle   
+- Fix: some declaration changes to satisfy gcc 15. [#663](https://github.com/martijnvanbrummelen/nwipe/pull/663) Thanks @Knogle   
 
 v0.38
 -----------------------
