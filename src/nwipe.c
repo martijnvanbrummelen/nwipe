@@ -96,7 +96,7 @@ int devnamecmp( const void* a, const void* b )
     return ( ret );
 }
 
-#define NWIPE_PDF_DIR_MODE (S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
+#define NWIPE_PDF_DIR_MODE ( S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH )
 /* -> 0755: rwx for owner, r-x for group and others */
 
 /* Helper: try to create and remove a temporary file inside the directory.
@@ -104,19 +104,17 @@ int devnamecmp( const void* a, const void* b )
  * but the underlying filesystem does not allow creating regular files,
  * e.g. /proc or other pseudo/readonly filesystems.
  */
-static int nwipe_probe_directory_writable( const char *path )
+static int nwipe_probe_directory_writable( const char* path )
 {
-    const char *suffix = "/.nwipe_pdf_testXXXXXX";
+    const char* suffix = "/.nwipe_pdf_testXXXXXX";
     size_t path_len = strlen( path );
     size_t suffix_len = strlen( suffix );
     size_t total_len = path_len + suffix_len + 1; /* +1 for '\0' */
 
-    char *tmpl = (char *)malloc( total_len );
+    char* tmpl = (char*) malloc( total_len );
     if( tmpl == NULL )
     {
-        nwipe_log( NWIPE_LOG_ERROR,
-                   "Failed to allocate memory to probe PDFreportpath '%s'.",
-                   path );
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to allocate memory to probe PDFreportpath '%s'.", path );
         return -1;
     }
 
@@ -128,7 +126,8 @@ static int nwipe_probe_directory_writable( const char *path )
     {
         nwipe_log( NWIPE_LOG_ERROR,
                    "PDFreportpath '%s' is not writable (cannot create test file): %s.",
-                   path, strerror( errno ) );
+                   path,
+                   strerror( errno ) );
         free( tmpl );
         return -1;
     }
@@ -140,18 +139,20 @@ static int nwipe_probe_directory_writable( const char *path )
         /* Not fatal for our check, but log it anyway. */
         nwipe_log( NWIPE_LOG_WARNING,
                    "Failed to remove temporary test file '%s' in PDFreportpath '%s': %s.",
-                   tmpl, path, strerror( errno ) );
+                   tmpl,
+                   path,
+                   strerror( errno ) );
     }
 
     free( tmpl );
     return 0;
 }
 
-static int nwipe_ensure_directory( const char *path )
+static int nwipe_ensure_directory( const char* path )
 {
     struct stat st;
-    char *tmp;
-    char *p;
+    char* tmp;
+    char* p;
     size_t len;
 
     if( path == NULL || path[0] == '\0' )
@@ -166,9 +167,7 @@ static int nwipe_ensure_directory( const char *path )
         /* Path exists; make sure it's a directory. */
         if( !S_ISDIR( st.st_mode ) )
         {
-            nwipe_log( NWIPE_LOG_ERROR,
-                       "PDFreportpath '%s' exists but is not a directory.",
-                       path );
+            nwipe_log( NWIPE_LOG_ERROR, "PDFreportpath '%s' exists but is not a directory.", path );
             return -1;
         }
 
@@ -187,21 +186,17 @@ static int nwipe_ensure_directory( const char *path )
     /* stat() failed: if this is not "does not exist", propagate the error. */
     if( errno != ENOENT )
     {
-        nwipe_log( NWIPE_LOG_ERROR,
-                   "Failed to stat PDFreportpath '%s': %s.",
-                   path, strerror( errno ) );
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to stat PDFreportpath '%s': %s.", path, strerror( errno ) );
         return -1;
     }
 
     /* 2. Directory does not exist -> create it recursively (mkdir -p style). */
 
     len = strlen( path );
-    tmp = (char *)malloc( len + 1 );
+    tmp = (char*) malloc( len + 1 );
     if( tmp == NULL )
     {
-        nwipe_log( NWIPE_LOG_ERROR,
-                   "Failed to allocate memory to create PDFreportpath '%s'.",
-                   path );
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to allocate memory to create PDFreportpath '%s'.", path );
         return -1;
     }
 
@@ -229,7 +224,9 @@ static int nwipe_ensure_directory( const char *path )
                 {
                     nwipe_log( NWIPE_LOG_ERROR,
                                "Failed to create directory '%s' for PDFreportpath '%s': %s.",
-                               tmp, path, strerror( errno ) );
+                               tmp,
+                               path,
+                               strerror( errno ) );
                     free( tmp );
                     return -1;
                 }
@@ -244,9 +241,11 @@ static int nwipe_ensure_directory( const char *path )
     {
         nwipe_log( NWIPE_LOG_ERROR,
                    "Failed to create directory '%s' for PDFreportpath '%s': %s.",
-                   tmp, path, strerror( errno ) );
+                   tmp,
+                   path,
+                   strerror( errno ) );
         free( tmp );
-            return -1;
+        return -1;
     }
 
     free( tmp );
