@@ -26,6 +26,7 @@
 #include <stdlib.h> /* posix_memalign, malloc, free */
 #include <string.h> /* memset, memcpy, memcmp */
 #include <errno.h>
+#include <limits.h>
 
 #include "nwipe.h"
 #include "context.h"
@@ -151,6 +152,48 @@ static void* nwipe_alloc_io_buffer( const nwipe_context_t* c, size_t size, int c
     }
 
     return ptr;
+}
+
+/*
+ * Compute the per-write sync rate for a given device and I/O block size.
+ *
+ * Historically, --sync=N meant "fdatasync() every N * st_blksize bytes".
+ * Now that we use large I/O blocks, we convert that into "sync every K writes",
+ * where each write is of size io_blocksize.
+ *
+ * For O_DIRECT we return 0 because write() already reports I/O errors directly.
+ */
+static int nwipe_compute_sync_rate_for_device( const nwipe_context_t* c, size_t io_blocksize )
+{
+    int syncRate = nwipe_options.sync;
+
+    /* No periodic sync in direct I/O mode. */
+    if( nwipe_options.io_mode == NWIPE_IO_MODE_DIRECT )
+        return 0;
+
+    if( syncRate <= 0 )
+        return 0;
+
+    if( io_blocksize == 0 )
+        return 0;
+
+    /* Old semantics: bytes between syncs = sync * st_blksize. */
+    unsigned long long bytes_between_sync =
+        (unsigned long long) syncRate * (unsigned long long) c->device_stat.st_blksize;
+
+    if( bytes_between_sync == 0 )
+        return 0;
+
+    /* Convert to "writes between syncs". */
+    unsigned long long tmp = bytes_between_sync / (unsigned long long) io_blocksize;
+
+    if( tmp == 0 )
+        return 1; /* at least every write */
+
+    if( tmp > (unsigned long long) INT_MAX )
+        return INT_MAX; /* just in case */
+
+    return (int) tmp;
 }
 
 /*
@@ -342,6 +385,20 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
     u64 z = c->device_size; /* bytes remaining */
 
     int syncRate = nwipe_options.sync;
+
+    /* For direct I/O we do not need periodic fdatasync(), I/O errors are detected
+     * at write() time. Keep sync for cached I/O only. */
+    if( nwipe_options.io_mode == NWIPE_IO_MODE_DIRECT )
+    {
+        syncRate = 0;
+    }
+
+    /* Select effective I/O block size (e.g. 4 MiB, never smaller than st_blksize). */
+    io_blocksize = nwipe_effective_io_blocksize( c );
+
+    /* Compute the per-write sync rate based on io_blocksize and old semantics. */
+    syncRate = nwipe_compute_sync_rate_for_device( c, io_blocksize );
+
     int i = 0;
     int idx;
 
@@ -356,9 +413,6 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
         nwipe_log( NWIPE_LOG_SANITY, "__FUNCTION__: The entropy length member is %i.", c->prng_seed.length );
         return -1;
     }
-
-    /* Select effective I/O block size (e.g. 4 MiB, never smaller than st_blksize). */
-    io_blocksize = nwipe_effective_io_blocksize( c );
 
     /*
      * Allocate a generic 16 MiB buffer (by default) that is used as the
@@ -840,6 +894,9 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
     }
 
     io_blocksize = nwipe_effective_io_blocksize( c );
+
+    /* Compute per-write sync rate (same semantics as random pass). */
+    syncRate = nwipe_compute_sync_rate_for_device( c, io_blocksize );
 
     /*
      * For static patterns we want enough buffer space to always have a

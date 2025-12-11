@@ -49,6 +49,120 @@
 
 int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount );
 char* trim( char* str );
+static void nwipe_normalize_serial( char* serial );
+
+/*
+ * Resolve a device path (including /dev/disk/by-* symlinks) to its
+ * underlying block device id (dev_t).
+ *
+ * Returns 0 on success and fills *out_rdev.
+ * Returns -1 on error or if the path is not a block device.
+ */
+static int nwipe_path_to_rdev( const char* path, dev_t* out_rdev )
+{
+    struct stat st;
+
+    if( path == NULL || out_rdev == NULL )
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    /*
+     * stat() follows symlinks by default, which is what we want for
+     * persistent names in /dev/disk/by-id, /dev/disk/by-path, etc.
+     */
+    if( stat( path, &st ) != 0 )
+    {
+        return -1;
+    }
+
+    if( !S_ISBLK( st.st_mode ) )
+    {
+        /* Not a block device node. */
+        errno = ENOTBLK;
+        return -1;
+    }
+
+    *out_rdev = st.st_rdev;
+    return 0;
+}
+
+/*
+ * Check whether a candidate device node should be excluded based on the
+ * --exclude list. Matching is done primarily by device identity
+ * (major/minor via st_rdev), so persistent names like /dev/disk/by-id/*
+ * are safe. We keep legacy string-based matching as a fallback.
+ *
+ * Returns 1 if the candidate should be excluded, 0 otherwise.
+ */
+static int nwipe_is_excluded_device( const char* candidate_devnode )
+{
+    dev_t cand_rdev;
+    int have_cand_rdev;
+    int i;
+
+    /* Try to resolve the candidate device to a dev_t. */
+    have_cand_rdev = ( nwipe_path_to_rdev( candidate_devnode, &cand_rdev ) == 0 );
+
+    for( i = 0; i < MAX_NUMBER_EXCLUDED_DRIVES; i++ )
+    {
+        const char* ex = nwipe_options.exclude[i];
+        dev_t ex_rdev;
+        int have_ex_rdev;
+        const char* base;
+
+        /* Empty slot in the exclude array. */
+        if( ex == NULL || ex[0] == 0 )
+        {
+            continue;
+        }
+
+        /*
+         * First try: both candidate and exclude entry resolve to block
+         * devices; compare device ids (major/minor).
+         */
+        have_ex_rdev = ( nwipe_path_to_rdev( ex, &ex_rdev ) == 0 );
+        if( have_cand_rdev && have_ex_rdev && ex_rdev == cand_rdev )
+        {
+            nwipe_log( NWIPE_LOG_NOTICE, "Device %s excluded as per command line option -e", candidate_devnode );
+            return 1;
+        }
+
+        /*
+         * Fallback 1: exact string match. This keeps compatibility with
+         * older usage like --exclude=/dev/sda or --exclude=/dev/mapper/cryptswap1.
+         */
+        if( strcmp( candidate_devnode, ex ) == 0 )
+        {
+            nwipe_log( NWIPE_LOG_NOTICE, "Device %s excluded as per command line option -e", candidate_devnode );
+            return 1;
+        }
+
+        /*
+         * Fallback 2: match against the basename only, so that an
+         * exclude entry like "sda" still works even if the full path is
+         * /dev/sda.
+         */
+        base = strrchr( candidate_devnode, '/' );
+        if( base != NULL )
+        {
+            base++;
+        }
+        else
+        {
+            base = candidate_devnode;
+        }
+
+        if( strcmp( base, ex ) == 0 )
+        {
+            nwipe_log( NWIPE_LOG_NOTICE, "Device %s excluded as per command line option -e", candidate_devnode );
+            return 1;
+        }
+    }
+
+    return 0;
+}
 
 extern int terminate_signal;
 
@@ -138,15 +252,11 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
 
     bus = 0;
 
-    /* Check whether this drive is on the excluded drive list ? */
-    idx = 0;
-    while( idx < MAX_NUMBER_EXCLUDED_DRIVES )
+    /* Check whether this drive is on the excluded drive list. */
+    if( nwipe_is_excluded_device( dev->path ) )
     {
-        if( !strcmp( dev->path, nwipe_options.exclude[idx++] ) )
-        {
-            nwipe_log( NWIPE_LOG_NOTICE, "Device %s excluded as per command line option -e", dev->path );
-            return 0;
-        }
+        /* Already logged inside nwipe_is_excluded_device(). */
+        return 0;
     }
 
     /* Check whether the user has specified using the --nousb option
@@ -251,22 +361,26 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     next_device->device_size_text = next_device->device_size_txt;
     next_device->result = -2;
 
-    /* Attempt to get serial number of device.
-     */
-    next_device->device_serial_no[0] = 0; /* initialise the serial number */
+    /* Attempt to get serial number of device. */
+    next_device->device_serial_no[0] = '\0'; /* initialise the serial number */
 
-    if( ( fd = open( next_device->device_name = dev->path, O_RDONLY ) ) == ERR )
+    fd = open( next_device->device_name = dev->path, O_RDONLY );
+    if( fd == ERR )
     {
         nwipe_log( NWIPE_LOG_WARNING, "Unable to open device %s to obtain serial number", next_device->device_name );
     }
-
-    /*
-     * We don't check the ioctl return status because there are plenty of situations where a serial number may not be
-     * returned by ioctl such as USB drives, logical volumes, encryted volumes, so the log file would have multiple
-     * benign ioctl errors reported which isn't necessarily a problem.
-     */
-    ioctl( fd, HDIO_GET_IDENTITY, &next_device->identity );
-    close( fd );
+    else
+    {
+        /*
+         * We don't check the ioctl return status because there are plenty of
+         * situations where a serial number may not be returned by ioctl such as
+         * USB drives, logical volumes, encrypted volumes, so the log file
+         * would have multiple benign ioctl errors reported which isn't
+         * necessarily a problem.
+         */
+        ioctl( fd, HDIO_GET_IDENTITY, &next_device->identity );
+        close( fd );
+    }
 
     for( idx = 0; idx < NWIPE_SERIALNUMBER_LENGTH; idx++ )
     {
@@ -315,6 +429,9 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     /* strncpy would have copied the null terminator BUT just to be sure, just in case somebody changes the length
      * of those strings we should explicitly terminate the string */
     next_device->device_serial_no[NWIPE_SERIALNUMBER_LENGTH] = 0;
+
+    /* Ensure the serial number cannot break the ncurses UI. */
+    nwipe_normalize_serial( next_device->device_serial_no );
 
     /* Initialise the variables that toggle the [size][temp c] with [HPA status]
      * Not currently used, but may be used in the future or for other purposes
@@ -515,6 +632,39 @@ char* trim( char* str )
     return str;
 }
 
+/*
+ * Remove non-ASCII and control characters from a serial number string,
+ * then trim leading/trailing whitespace and left-justify it in-place.
+ * This keeps the value safe for ncurses output.
+ */
+static void nwipe_normalize_serial( char* serial )
+{
+    unsigned char ch;
+    char* src;
+    char* dst;
+
+    if( serial == NULL )
+    {
+        return;
+    }
+
+    src = dst = serial;
+
+    while( ( ch = (unsigned char) *src++ ) != '\0' )
+    {
+        if( isascii( ch ) && !iscntrl( ch ) )
+        {
+            *dst++ = (char) ch;
+        }
+        /* Alle remaining control characters will be dropped ( >0x7F) */
+    }
+
+    *dst = '\0';
+
+    /* Use existing trim() function */
+    trim( serial );
+}
+
 int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, int* is_ssd, char* serialnumber )
 {
     /* The caller provides a string that contains the device, i.e. /dev/sdc, also a pointer
@@ -561,6 +711,14 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, i
     char smartctl_labels_to_anonymize[][18] = {
         "serial number:", "lu wwn device id:", "logical unit id:", "" /* Don't remove this empty string !, important */
     };
+
+    /* Ensure the serialnumber buffer is in a defined state even if we
+     * never find a "serial number:" line in smartctl output.
+     */
+    if( serialnumber != NULL )
+    {
+        memset( serialnumber, 0, NWIPE_SERIALNUMBER_LENGTH + 1 );
+    }
 
     /* Initialise return value */
     set_return_value = 0;

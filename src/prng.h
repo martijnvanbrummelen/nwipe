@@ -63,6 +63,10 @@ int nwipe_add_lagg_fibonacci_prng_read( NWIPE_PRNG_READ_SIGNATURE );
 int nwipe_xoroshiro256_prng_init( NWIPE_PRNG_INIT_SIGNATURE );
 int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE );
 
+/* AES-CTR-NI prototypes. */
+int nwipe_aes_ctr_prng_init( NWIPE_PRNG_INIT_SIGNATURE );
+int nwipe_aes_ctr_prng_read( NWIPE_PRNG_READ_SIGNATURE );
+
 /* Size of the twister is not derived from the architecture, but it is strictly 4 bytes */
 #define SIZE_OF_TWISTER 4
 
@@ -75,5 +79,11 @@ int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE );
 
 /* Size of the XOROSHIRO-256 is not derived from the architecture, but it is strictly 32 bytes */
 #define SIZE_OF_XOROSHIRO256_PRNG 32
+
+/* AES-CTR generation chunk size: fixed 128 KiB (not architecture-dependent) */
+#define SIZE_OF_AES_CTR_PRNG ( 128 * 1024 )
+
+/* Thread-local prefetch ring buffer capacity: 1 MiB */
+#define STASH_CAPACITY ( 1024 * 1024 )
 
 #endif /* PRNG_H_ */

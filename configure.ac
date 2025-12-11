@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
-AC_INIT([nwipe],[0.39],[git@brumit.nl])
+AC_INIT([nwipe],[0.40],[git@brumit.nl])
 AM_INIT_AUTOMAKE(foreign subdir-objects)
 AC_CONFIG_FILES([Makefile src/Makefile man/Makefile])
 AC_OUTPUT
@@ -11,6 +11,7 @@ AC_CONFIG_HEADERS([config.h])
 
 # Checks for programs.
 AC_PROG_CC
+AC_PROG_CXX
 PKG_PROG_PKG_CONFIG
 
 # Checks for libraries.
@@ -67,8 +68,13 @@ PKG_CHECK_MODULES(
 	    ], [AC_MSG_ERROR([libconfig library not found])])]
 )
 
-AC_CHECK_LIB([intl], [libintl_dgettext]) # needed to statically link libparted, but not given in its pkgconfig file
-AC_CHECK_LIB([uuid], [uuid_generate])    # needed to statically link libparted, but not given in its pkgconfig file
+# Libraries needed for static linking with parted
+if echo "$LDFLAGS" | grep -q "static"; then
+	AC_CHECK_LIB([uuid], [uuid_generate], [LIBS="-luuid $LIBS"], [AC_MSG_ERROR([libuuid is required for static linking but not found])])
+	AC_CHECK_LIB([devmapper], [dm_task_create], [LIBS="-ldevmapper $LIBS"], [AC_MSG_ERROR([libdevmapper is required for static linking but not found])])
+	AC_CHECK_LIB([blkid], [blkid_new_probe], [LIBS="-lblkid $LIBS"], [AC_MSG_ERROR([libblkid is required for static linking but not found])])
+fi
+
 PKG_CHECK_MODULES([PARTED], [libparted])
 AC_CHECK_LIB([pthread], [main], ,[AC_MSG_ERROR([pthread development library not found])])
 

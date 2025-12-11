@@ -96,6 +96,170 @@ int devnamecmp( const void* a, const void* b )
     return ( ret );
 }
 
+#define NWIPE_PDF_DIR_MODE ( S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH )
+/* -> 0755: rwx for owner, r-x for group and others */
+
+/* Helper: try to create and remove a temporary file inside the directory.
+ * This catches cases where access(path, W_OK) passes (especially as root)
+ * but the underlying filesystem does not allow creating regular files,
+ * e.g. /proc or other pseudo/readonly filesystems.
+ */
+static int nwipe_probe_directory_writable( const char* path )
+{
+    const char* suffix = "/.nwipe_pdf_testXXXXXX";
+    size_t path_len = strlen( path );
+    size_t suffix_len = strlen( suffix );
+    size_t total_len = path_len + suffix_len + 1; /* +1 for '\0' */
+
+    char* tmpl = (char*) malloc( total_len );
+    if( tmpl == NULL )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to allocate memory to probe PDFreportpath '%s'.", path );
+        return -1;
+    }
+
+    /* Build template "<path>/.nwipe_pdf_testXXXXXX" */
+    snprintf( tmpl, total_len, "%s%s", path, suffix );
+
+    int fd = mkstemp( tmpl );
+    if( fd < 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR,
+                   "PDFreportpath '%s' is not writable (cannot create test file): %s.",
+                   path,
+                   strerror( errno ) );
+        free( tmpl );
+        return -1;
+    }
+
+    /* Successfully created a temporary file, now clean it up. */
+    close( fd );
+    if( unlink( tmpl ) != 0 )
+    {
+        /* Not fatal for our check, but log it anyway. */
+        nwipe_log( NWIPE_LOG_WARNING,
+                   "Failed to remove temporary test file '%s' in PDFreportpath '%s': %s.",
+                   tmpl,
+                   path,
+                   strerror( errno ) );
+    }
+
+    free( tmpl );
+    return 0;
+}
+
+static int nwipe_ensure_directory( const char* path )
+{
+    struct stat st;
+    char* tmp;
+    char* p;
+    size_t len;
+
+    if( path == NULL || path[0] == '\0' )
+    {
+        /* Empty path: nothing to do, treat as success. */
+        return 0;
+    }
+
+    /* 1. First try: does the path already exist? */
+    if( stat( path, &st ) == 0 )
+    {
+        /* Path exists; make sure it's a directory. */
+        if( !S_ISDIR( st.st_mode ) )
+        {
+            nwipe_log( NWIPE_LOG_ERROR, "PDFreportpath '%s' exists but is not a directory.", path );
+            return -1;
+        }
+
+        /* Even if access() says it's writable (especially as root),
+         * we still probe by actually creating a test file. */
+        if( nwipe_probe_directory_writable( path ) != 0 )
+        {
+            /* Detailed error already logged. */
+            return -1;
+        }
+
+        /* Everything is fine, directory already present and writable. */
+        return 0;
+    }
+
+    /* stat() failed: if this is not "does not exist", propagate the error. */
+    if( errno != ENOENT )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to stat PDFreportpath '%s': %s.", path, strerror( errno ) );
+        return -1;
+    }
+
+    /* 2. Directory does not exist -> create it recursively (mkdir -p style). */
+
+    len = strlen( path );
+    tmp = (char*) malloc( len + 1 );
+    if( tmp == NULL )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to allocate memory to create PDFreportpath '%s'.", path );
+        return -1;
+    }
+
+    memcpy( tmp, path, len + 1 );
+
+    /* Start at the beginning of the string.
+     * For absolute paths ("/foo/bar") we skip the leading slash so we do not
+     * try to create "/" itself. */
+    p = tmp;
+    if( tmp[0] == '/' )
+    {
+        p = tmp + 1;
+    }
+
+    for( ; *p; ++p )
+    {
+        if( *p == '/' )
+        {
+            *p = '\0';
+
+            /* Skip empty components (can happen with leading '/' or double '//'). */
+            if( tmp[0] != '\0' )
+            {
+                if( mkdir( tmp, NWIPE_PDF_DIR_MODE ) != 0 && errno != EEXIST )
+                {
+                    nwipe_log( NWIPE_LOG_ERROR,
+                               "Failed to create directory '%s' for PDFreportpath '%s': %s.",
+                               tmp,
+                               path,
+                               strerror( errno ) );
+                    free( tmp );
+                    return -1;
+                }
+            }
+
+            *p = '/';
+        }
+    }
+
+    /* Create the final directory component (the full path). */
+    if( mkdir( tmp, NWIPE_PDF_DIR_MODE ) != 0 && errno != EEXIST )
+    {
+        nwipe_log( NWIPE_LOG_ERROR,
+                   "Failed to create directory '%s' for PDFreportpath '%s': %s.",
+                   tmp,
+                   path,
+                   strerror( errno ) );
+        free( tmp );
+        return -1;
+    }
+
+    free( tmp );
+
+    /* 3. Final sanity check: ensure the path is writable by probing with a file. */
+    if( nwipe_probe_directory_writable( path ) != 0 )
+    {
+        /* Detailed error already logged. */
+        return -1;
+    }
+
+    return 0;
+}
+
 int main( int argc, char** argv )
 {
     int nwipe_optind;  // The result of nwipe_options().
@@ -198,12 +362,14 @@ int main( int argc, char** argv )
         }
     }
 
-    /* Check if the given path for PDF reports is a writeable directory */
+    /* Check if the given path for PDF reports is a writeable directory.
+     * If it does not exist, try to create it (mkdir -p style).
+     */
     if( strcmp( nwipe_options.PDFreportpath, "noPDF" ) != 0 )
     {
-        if( access( nwipe_options.PDFreportpath, W_OK ) != 0 )
+        if( nwipe_ensure_directory( nwipe_options.PDFreportpath ) != 0 )
         {
-            nwipe_log( NWIPE_LOG_ERROR, "PDFreportpath %s is not a writeable directory.", nwipe_options.PDFreportpath );
+            /* nwipe_ensure_directory already logged a detailed error message. */
             cleanup();
             exit( 2 );
         }

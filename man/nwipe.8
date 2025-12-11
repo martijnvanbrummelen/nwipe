@@ -1,4 +1,4 @@
-.TH NWIPE "8" "Sep 2025" "nwipe version 0.39" "User Commands"
+.TH NWIPE "8" "Dec 2025" "nwipe version 0.40" "User Commands"
 .SH NAME
 nwipe \- securely erase disks
 .SH SYNOPSIS
@@ -22,6 +22,26 @@ same as dwipe, with a few changes:
 - SIGUSR1 can be used to log the stats of the current wipe.
 .TP
 - Additional wiping methods and PRNGs.
+.TP
+- Configurable I/O modes (cached, direct, auto) using large I/O buffers for higher throughput.
+.TP
+- Support for stable device paths such as \fI/dev/disk/by-id/\fR.
+.PP
+All PRNG implementations are seeded using the Linux
+.BR getrandom (2)
+system call instead of reading from
+.IR /dev/urandom
+via a file descriptor.
+
+.SH DEVICES
+.PP
+Devices can be specified either as block device nodes (for example
+.IR /dev/sda ,
+.IR /dev/nvme0n1 ,
+.IR /dev/mapper/cryptroot )
+or via stable symlinks under
+.IR /dev/disk/by-id/ .
+nwipe will resolve these paths and operate on the underlying block device.
 
 .SH OPTIONS
 .TP
@@ -41,17 +61,54 @@ Power off system on completion of wipe delayed for one minute. During
 this one minute delay you can abort the shutdown by typing sudo shutdown -c
 .TP
 \fB\-\-sync\fR=\fINUM\fR
-Will perform a syn after NUM writes (default: 100000).
+Specify how often nwipe performs an fdatasync() during cached I/O mode.  
+The value refers to the number of *device hardware blocks* (commonly 512 or
+4096 bytes) written before triggering a sync. Since nwipe now writes using
+large multi-megabyte buffers, this value is automatically scaled so the sync
+interval in bytes is consistent with historic behaviour.
+
+The default value (100000) results in a sync approximately every 50–400 MB,
+similar to earlier nwipe releases. This ensures timely detection of I/O errors
+while maintaining good throughput.
+
+This setting has no effect when using --directio, as write() returns errors
+immediately under direct I/O.
+
 .IP
-0    \- fdatasync after the disk is completely written
-       fdatasync errors not detected until completion.
-       0 is not recommended as disk errors may cause nwipe
-       to appear to hang.
+0    \- Perform one sync only at the end of the pass.
+       Not advised; errors may only be detected after the entire wipe.
+
 .IP
-1    \- fdatasync after every write.
-       Warning: Lower values will reduce wipe speeds.
+1    \- Sync immediately after each write.
+       Extremely safe but extremely slow.
+
 .IP
-1000 \- fdatasync after 1000 writes.
+1000 \- Sync after the equivalent of 1000 hardware blocks.
+       Useful for testing or more aggressive error detection.
+.TP
+\fB\-\-cachedio\fR
+Use buffered I/O with large write buffers (page cache enabled). This is the
+default on most systems and generally gives the best performance for
+rotational disks.
+.TP
+\fB\-\-directio\fR
+Use direct I/O with large write buffers. This opens devices with
+.BR O_DIRECT
+to bypass the page cache. It can be useful when running multiple wipes in
+parallel or when you do not want to pollute the system page cache. On some
+devices this may be slower than cached I/O.
+.TP
+\fB\-\-io\-mode\fR=\fIMODE\fR
+Select the I/O mode explicitly. \fIMODE\fR can be:
+.IP
+\fBauto\fR   \- (default) automatically choose the best supported mode for
+              the device and kernel.
+.IP
+\fBcached\fR \- force buffered I/O.
+.IP
+\fBdirect\fR \- force direct I/O (\fBO_DIRECT\fR).
+.IP
+Large I/O buffers are used in all modes to maximise throughput.
 .TP
 \fB\-\-noblank\fR
 Do not perform the final blanking pass after the wipe (default is to blank,
@@ -72,6 +129,9 @@ Do not show the GUI interface. Can only be used with the autonuke option.
 Nowait option is automatically invoked with the nogui option.
 SIGUSR1 can be used to retrieve the current wiping statistics.
 .TP
+\fB\-\-pdftag\fR
+Enables a field on the PDF that holds a tag that identifies the host computer
+.TP
 \fB\-v\fR, \fB\-\-verbose\fR
 Log more messages, useful for debugging.
 .TP
@@ -88,7 +148,7 @@ Please mind that HMG IS5 enhanced always verifies the last (PRNG) pass
 regardless of this option.
 .TP
 \fB\-m\fR, \fB\-\-method\fR=\fIMETHOD\fR
-The wiping method (default: dodshort).
+The wiping method (default: prng).
 .IP
 dod522022m / dod       \- 7 pass DOD 5220.22\-M method
 .IP
@@ -111,6 +171,13 @@ verify_one             \- Verifies disk is one (0xFF) filled
 is5enh                 \- HMG IS5 enhanced
 .IP
 bruce7                 \- Schneier Bruce 7-pass mixed pattern
+.IP
+bmb                    \- Chinese BMB21-2019 State Secrets Bureau standard.
+                         This method overwrites the device with ones (0xFF),
+                         then zeros (0x00), followed by three passes of PRNG-
+                         generated random data, and finishes with a final pass
+                         of ones (0xFF). Designed to meet the BMB21-2019
+                         technical sanitization requirements.
 .TP
 \fB\-l\fR, \fB\-\-logfile\fR=\fIFILE\fR
 Filename to log to. Default is STDOUT.
@@ -121,8 +188,13 @@ Defaults to ".".
 If \fIDIR\fR is set to \fInoPDF\fR no report PDF files are written.
 .TP
 \fB\-p\fR, \fB\-\-prng\fR=\fIMETHOD\fR
-The PRNG option (default: xoroshiro256_prng).
-(mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng|xoroshiro256_prng)
+The PRNG option (default: aes_ctr_prng).
+(mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng|xoroshiro256_prng|aes_ctr_prng)
+.IP
+\fBaes_ctr_prng\fR uses the Linux kernel AF_ALG interface to AES\-CTR as a
+cryptographically strong stream generator. It is seeded via
+.BR getrandom (2)
+and requires kernel crypto support for AES\-CTR.
 .TP
 \fB\-q\fR, \fB\-\-quiet\fR
 Anonymize serial numbers, GUI & logs display:
@@ -137,11 +209,14 @@ Up to ten comma separated devices to be excluded, examples:
  --exclude=/dev/sdc
  --exclude=/dev/sdc,/dev/sdd
  --exclude=/dev/sdc,/dev/sdd,/dev/mapper/cryptswap1
+ --dev/disk/by-path/pci-0000:00:17.0-ata-1
 .SH BUGS
 Please see the GitHub site for the latest list:
 (https://github.com/martijnvanbrummelen/nwipe/issues)
+
 .SH AUTHOR
 nwipe is developed by Martijn van Brummelen <github@brumit.nl>.
+
 .SH "SEE ALSO"
 .BR shred (1),
 .BR dwipe (1),
