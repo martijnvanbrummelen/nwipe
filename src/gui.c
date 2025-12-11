@@ -1649,7 +1649,7 @@ void nwipe_gui_prng( void )
 
     /* The number of implemented PRNGs. */
     const int aes_ctr_available = has_aes_ni();
-    const int count = aes_ctr_available ? 6 : 5;
+    const int count = 6;
 
     /* The first tabstop. */
     const int tab1 = 2;
@@ -1691,7 +1691,7 @@ void nwipe_gui_prng( void )
     {
         focus = 4;
     }
-    if( aes_ctr_available && nwipe_options.prng == &nwipe_aes_ctr_prng )
+    if( nwipe_options.prng == &nwipe_aes_ctr_prng )
     {
         focus = 5;
     }
@@ -1711,9 +1711,18 @@ void nwipe_gui_prng( void )
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_isaac64.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_add_lagg_fibonacci_prng.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_xoroshiro256_prng.label );
+        /* AES-CTR: visually indicate “not available” if no AES-NI */
         if( aes_ctr_available )
         {
             mvwprintw( main_window, yy++, tab1, "  %s", nwipe_aes_ctr_prng.label );
+        }
+        else
+        {
+            /* Dim + “(N/A)” suffix. You can also combine A_REVERSE
+             * when focused; here only text is dimmed. */
+            wattron( main_window, A_DIM );
+            mvwprintw( main_window, yy++, tab1, "  %s (N/A)", nwipe_aes_ctr_prng.label );
+            wattroff( main_window, A_DIM );
         }
         yy++;
 
@@ -1889,33 +1898,64 @@ void nwipe_gui_prng( void )
                            tab1,
                            "especially for legacy systems, due to its efficiency and minimal demands.     " );
                 break;
-            case 5:
-                mvwprintw(
-                    main_window, yy++, tab1, "AES-256 in Counter Mode (CTR), securely implemented by Fabian Druschke" );
-                mvwprintw( main_window, yy++, tab1, "using the Linux kernel's AF_ALG cryptographic API for efficient" );
-                mvwprintw( main_window, yy++, tab1, "pseudo-random data generation with minimal user-space overhead." );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "                                                                            " );
-                mvwprintw(
-                    main_window, yy++, tab1, "This integration leverages potential hardware acceleration via AES-NI," );
-                mvwprintw(
-                    main_window, yy++, tab1, "making AES-256 CTR ideal for secure and fast data wiping in nwipe." );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "                                                                            " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "Compliant with NIST SP 800-38A, it is a global standard for encryption." );
-                mvwprintw(
-                    main_window, yy++, tab1, "Designed for 64-bit Linux systems with kernel CryptoAPI support." );
-                break;
-        }
+            case 5: {
+                extern int has_aes_ni( void );
+                const int aes_ctr_available = has_aes_ni();
 
-        /* switch */
+                if( aes_ctr_available )
+                {
+                    mvwprintw( main_window,
+                               yy++,
+                               tab1,
+                               "AES-256 in Counter Mode (CTR), securely implemented by Fabian Druschke" );
+                    mvwprintw(
+                        main_window, yy++, tab1, "using the Linux kernel's AF_ALG cryptographic API for efficient" );
+                    mvwprintw(
+                        main_window, yy++, tab1, "pseudo-random data generation with minimal user-space overhead." );
+                    mvwprintw( main_window,
+                               yy++,
+                               tab1,
+                               "                                                                            " );
+                    mvwprintw( main_window,
+                               yy++,
+                               tab1,
+                               "This integration leverages potential hardware acceleration via AES-NI," );
+                    mvwprintw(
+                        main_window, yy++, tab1, "making AES-256 CTR ideal for secure and fast data wiping in nwipe." );
+                    mvwprintw( main_window,
+                               yy++,
+                               tab1,
+                               "                                                                            " );
+                    mvwprintw( main_window,
+                               yy++,
+                               tab1,
+                               "Compliant with NIST SP 800-38A, it is a global standard for encryption." );
+                    mvwprintw(
+                        main_window, yy++, tab1, "Designed for 64-bit Linux systems with kernel CryptoAPI support." );
+                }
+                else
+                {
+                    /* Dimmed, shortened explanation when AES-NI is not available. */
+                    wattron( main_window, A_DIM );
+
+                    mvwprintw( main_window, yy++, tab1, "AES-256 in Counter Mode (CTR) PRNG (N/A on this system)" );
+                    mvwprintw(
+                        main_window, yy++, tab1, "This PRNG uses AES-NI acceleration via the Linux kernel CryptoAPI." );
+                    mvwprintw( main_window, yy++, tab1, "It is not available because your CPU does not support the" );
+                    mvwprintw( main_window, yy++, tab1, "required AES-NI instruction set." );
+                    mvwprintw( main_window,
+                               yy++,
+                               tab1,
+                               "                                                                            " );
+                    mvwprintw(
+                        main_window, yy++, tab1, "You can still use all other PRNGs (e.g. xoroshiro-256, ISAAC, MT)." );
+
+                    wattroff( main_window, A_DIM );
+                }
+
+                break;
+            }
+        }
 
         /* Add a border. */
         box( main_window, 0, 0 );
@@ -1933,9 +1973,9 @@ void nwipe_gui_prng( void )
          * sluggish, any slower and more time is spent unnecessarily looping
          * which wastes CPU cycles.
          */
-        timeout( 250 );  // block getch() for 250ms.
-        keystroke = getch();  // Get a keystroke.
-        timeout( -1 );  // Switch back to blocking mode.
+        timeout( 250 ); /* block getch() for 250ms */
+        keystroke = getch(); /* Get a keystroke.         */
+        timeout( -1 ); /* Switch back to blocking mode. */
 
         switch( keystroke )
         {
@@ -1961,34 +2001,60 @@ void nwipe_gui_prng( void )
 
             case KEY_ENTER:
             case ' ':
-            case 10:
+            case 10: {
+                int selection_made = 0;
 
                 if( focus == 0 )
                 {
                     nwipe_options.prng = &nwipe_twister;
+                    selection_made = 1;
                 }
-                if( focus == 1 )
+                else if( focus == 1 )
                 {
                     nwipe_options.prng = &nwipe_isaac;
+                    selection_made = 1;
                 }
-                if( focus == 2 )
+                else if( focus == 2 )
                 {
                     nwipe_options.prng = &nwipe_isaac64;
+                    selection_made = 1;
                 }
-                if( focus == 3 )
+                else if( focus == 3 )
                 {
                     nwipe_options.prng = &nwipe_add_lagg_fibonacci_prng;
+                    selection_made = 1;
                 }
-                if( focus == 4 )
+                else if( focus == 4 )
                 {
                     nwipe_options.prng = &nwipe_xoroshiro256_prng;
+                    selection_made = 1;
                 }
-                if( aes_ctr_available && focus == 5 )
+                else if( focus == 5 )
                 {
-                    nwipe_options.prng = &nwipe_aes_ctr_prng;
+                    if( aes_ctr_available )
+                    {
+                        /* AES-CTR selectable only when AES-NI is available. */
+                        nwipe_options.prng = &nwipe_aes_ctr_prng;
+                        selection_made = 1;
+                    }
+                    else
+                    {
+                        /* Visible but disabled: do not change selection and
+                         * do not close the dialog. Give feedback only. */
+                        beep();
+                        selection_made = 0;
+                    }
                 }
 
-                return;
+                if( selection_made )
+                {
+                    /* Close the dialog only on a valid selection. */
+                    return;
+                }
+
+                /* No valid selection (e.g. AES-CTR without AES-NI): stay in dialog. */
+                break;
+            }
 
             case KEY_BACKSPACE:
             case KEY_BREAK:
