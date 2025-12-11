@@ -64,6 +64,7 @@
 #include "customers.h"
 #include "conf.h"
 #include "unistd.h"
+#include "cpu_features.h"
 
 #define NWIPE_GUI_PANE 8
 
@@ -1647,7 +1648,8 @@ void nwipe_gui_prng( void )
     extern int terminate_signal;
 
     /* The number of implemented PRNGs. */
-    const int count = 6;
+    const int aes_ctr_available = has_aes_ni();
+    const int count = aes_ctr_available ? 6 : 5;
 
     /* The first tabstop. */
     const int tab1 = 2;
@@ -1689,7 +1691,7 @@ void nwipe_gui_prng( void )
     {
         focus = 4;
     }
-    if( nwipe_options.prng == &nwipe_aes_ctr_prng )
+    if( aes_ctr_available && nwipe_options.prng == &nwipe_aes_ctr_prng )
     {
         focus = 5;
     }
@@ -1709,7 +1711,10 @@ void nwipe_gui_prng( void )
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_isaac64.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_add_lagg_fibonacci_prng.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_xoroshiro256_prng.label );
-        mvwprintw( main_window, yy++, tab1, "  %s", nwipe_aes_ctr_prng.label );
+        if( aes_ctr_available )
+        {
+            mvwprintw( main_window, yy++, tab1, "  %s", nwipe_aes_ctr_prng.label );
+        }
         yy++;
 
         /* Print the cursor. */
@@ -1978,7 +1983,7 @@ void nwipe_gui_prng( void )
                 {
                     nwipe_options.prng = &nwipe_xoroshiro256_prng;
                 }
-                if( focus == 5 )
+                if( aes_ctr_available && focus == 5 )
                 {
                     nwipe_options.prng = &nwipe_aes_ctr_prng;
                 }
