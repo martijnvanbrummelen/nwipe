@@ -123,6 +123,7 @@ int nwipe_conf_init()
     nwipe_conf_populate( "PDF_Certificate.PDF_Enable", "ENABLED" );
     nwipe_conf_populate( "PDF_Certificate.PDF_Preview", "DISABLED" );
     nwipe_conf_populate( "PDF_Certificate.PDF_tag", "DISABLED" );
+    nwipe_conf_populate( "PDF_Certificate.User_Defined_Tag", "Empty Tag" );
 
     /**
      * The currently selected customer that will be printed on the report

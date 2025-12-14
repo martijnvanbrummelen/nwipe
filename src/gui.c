@@ -2779,8 +2779,8 @@ void nwipe_gui_config( void )
 
     extern int terminate_signal;
 
-    /* Number of entries in the configuration menu. */
-    const int count = 8;
+    /* Number of entries in the configuration menu. Includes blank lines */
+    const int total_menu_entries = 9;
 
     /* The first tabstop. */
     const int tab1 = 2;
@@ -2818,6 +2818,7 @@ void nwipe_gui_config( void )
         mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Select Customer  " );
         mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Add Customer     " );
         mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Delete Customer  " );
+        mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - User defined tag " );
         mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Preview Details  " );
         mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Preview at Start " );
         yy++;
@@ -2900,6 +2901,16 @@ void nwipe_gui_config( void )
 
             case 5:
 
+                mvwprintw( main_window, 2, tab2, "PDF Report - Add user defined tag to PDF" );
+
+                mvwprintw( main_window, 4, tab2, "The report supports user-defined text, " );
+                mvwprintw( main_window, 5, tab2, "which may be used to identify the host " );
+                mvwprintw( main_window, 6, tab2, "system or include any other information" );
+                mvwprintw( main_window, 7, tab2, "at the user's discretion.              " );
+                break;
+
+            case 6:
+
                 mvwprintw( main_window, 2, tab2, "PDF Report - Preview Organisation,     " );
                 mvwprintw( main_window, 3, tab2, "Customer and Date/Time details         " );
 
@@ -2909,7 +2920,7 @@ void nwipe_gui_config( void )
                 mvwprintw( main_window, 8, tab2, "the PDF report.                        " );
                 break;
 
-            case 6:
+            case 7:
 
                 if( nwipe_options.PDF_preview_details )
                 {
@@ -2928,7 +2939,7 @@ void nwipe_gui_config( void )
                 mvwprintw( main_window, 10, tab2, "drive selection and starting the erase." );
                 break;
 
-            case 8:
+            case 9:
 
                 mvwprintw( main_window, 2, tab2, "Set System Date & Time                 " );
 
@@ -2964,9 +2975,9 @@ void nwipe_gui_config( void )
             case 'j':
             case 'J':
 
-                if( focus < count - 1 )
+                if( focus < total_menu_entries - 1 )
                 {
-                    if( focus == 6 )
+                    if( focus == 7 )
                     {
                         focus += 2; /* mind the gaps */
                     }
@@ -2983,7 +2994,7 @@ void nwipe_gui_config( void )
 
                 if( focus > 0 )
                 {
-                    if( focus == 8 )
+                    if( focus == 9 )
                     {
                         focus -= 2; /* mind the gaps */
                     }
@@ -3042,10 +3053,14 @@ void nwipe_gui_config( void )
                     break;
 
                 case 5:
-                    nwipe_gui_preview_org_customer( SHOWING_IN_CONFIG_MENUS );
+                    nwipe_gui_user_defined_tag();
                     break;
 
                 case 6:
+                    nwipe_gui_preview_org_customer( SHOWING_IN_CONFIG_MENUS );
+                    break;
+
+                case 7:
                     /* Toggle on pressing ENTER key */
                     if( nwipe_options.PDF_preview_details == 0 )
                     {
@@ -3063,7 +3078,7 @@ void nwipe_gui_config( void )
                     }
                     break;
 
-                case 8:
+                case 9:
                     nwipe_gui_set_date_time();
                     break;
             }
@@ -3073,6 +3088,281 @@ void nwipe_gui_config( void )
     } while( keystroke != KEY_ENTER && /* keystroke != ' ' && */ keystroke != 10 && terminate_signal != 1 );
 
 } /* end of nwipe_config() */
+
+void nwipe_gui_user_defined_tag( void )
+{
+    /**
+     * Display for editing, the user defined text that's printed on the PDF report
+     *
+     */
+
+    extern int terminate_signal;
+
+    /* Number of entries in the configuration menu. Includes blank lines */
+    const int total_menu_entries = 1;
+
+    /* The first tabstop. */
+    const int tab1 = 2;
+
+    /* The second tabstop. */
+    const int tab2 = 27;
+
+    /* The currently selected method. */
+    int focus = 0;
+
+    /* The current working row. */
+    int yy;
+
+    /* Input buffer. */
+    int keystroke;
+
+    /* variables used by libconfig for extracting data from nwipe.conf */
+    config_setting_t* setting;
+    const char* user_defined_tag;
+    extern config_t nwipe_cfg;
+
+    do
+    {
+        do
+        {
+            /* Clear the main window. */
+            werase( main_window );
+
+            /* Update the footer window. */
+            werase( footer_window );
+            nwipe_gui_title( footer_window, selection_footer_config );
+            wrefresh( footer_window );
+
+            nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_config );
+
+            /* Initialize the working row. */
+            yy = 2;
+
+            /* Print the options. */
+            mvwprintw( main_window, yy++, tab1, "  %s", "Edit user defined tag" );
+
+            /* Print the cursor. */
+            mvwaddch( main_window, 2 + focus, tab1, ACS_RARROW );
+
+            /* libconfig: Locate the 'PDF_Certificate' Details section in nwipe.conf */
+            setting = config_lookup( &nwipe_cfg, "PDF_Certificate" );
+
+            /* Retrieve data from nwipe.conf */
+            if( config_setting_lookup_string( setting, "User_Defined_Tag", &user_defined_tag ) )
+            {
+                mvwprintw( main_window, 2, tab2, ": %s", user_defined_tag );
+            }
+            else
+            {
+                mvwprintw( main_window, 2, tab2, ": Cannot retrieve User_Defined_Tag from nwipe.conf" );
+            }
+
+            /* Add a border. */
+            box( main_window, 0, 0 );
+
+            /* Add a title. */
+            nwipe_gui_title( main_window, " PDF Report - Edit User Defined Text " );
+
+            /* Refresh the window. */
+            wrefresh( main_window );
+
+            /* Wait 250ms for input from getch, if nothing getch will then continue,
+             * This is necessary so that the while loop can be exited by the
+             * terminate_signal e.g.. the user pressing control-c to exit.
+             * Do not change this value, a higher value means the keys become
+             * sluggish, any slower and more time is spent unnecessarily looping
+             * which wastes CPU cycles.
+             */
+            timeout( 250 ); /* block getch() for 250ms */
+            keystroke = getch(); /* Get a keystroke. */
+            timeout( -1 ); /* Switch back to blocking mode */
+
+            switch( keystroke )
+            {
+                case KEY_DOWN:
+                case 'j':
+                case 'J':
+
+                    if( focus < total_menu_entries - 1 )
+                    {
+                        focus += 1;
+                    }
+                    break;
+
+                case KEY_UP:
+                case 'k':
+                case 'K':
+
+                    if( focus > 0 )
+                    {
+                        focus -= 1;
+                    }
+                    break;
+
+                case KEY_BACKSPACE:
+                case KEY_BREAK:
+                case 27: /* ESC */
+
+                    return;
+
+            } /* switch */
+
+        } while( keystroke != KEY_ENTER && keystroke != 10 && terminate_signal != 1 );
+
+        if( keystroke == KEY_ENTER || keystroke == 10 || keystroke == ' ' )
+        {
+            switch( focus )
+            {
+                case 0:
+                    nwipe_gui_pdf_certificate_edit_user_defined_tag( user_defined_tag );
+                    keystroke = 0;
+                    break;
+            }
+        }
+
+    } while( keystroke != KEY_ENTER && keystroke != 10 && terminate_signal != 1 );
+
+} /* end of nwipe_gui_user_defined_tag( Void ) */
+
+void nwipe_gui_pdf_certificate_edit_user_defined_tag( const char* user_defined_tag )
+{
+    /**
+     * Allows the user to change the organisation business name as displayed on the PDF report.
+     *
+     * @modifies  business_name in nwipe.conf
+     * @modifies  main_window
+     *
+     */
+
+    /* The first tabstop. */
+    const int tab1 = 2;
+
+    /* The current working row. */
+    int yy;
+
+    /* Input buffer. */
+    int keystroke;
+
+    /* buffer */
+    char buffer[256] = "";
+
+    /* buffer index */
+    int idx = 0;
+
+    extern int terminate_signal;
+
+    /* variables used by libconfig for inserting data into nwipe.conf */
+    config_setting_t* setting;
+    // const char* business_name;
+    extern config_t nwipe_cfg;
+    extern char nwipe_config_file[];
+
+    /* Update the footer window. */
+    werase( footer_window );
+    nwipe_gui_title( footer_window, selection_footer_text_entry );
+    wrefresh( footer_window );
+
+    /* Copy the current business name to the buffer */
+    strcpy( buffer, user_defined_tag );
+
+    /* Set the buffer index to point to the end of the string, i.e the NULL */
+    idx = strlen( buffer );
+
+    do
+    {
+        /* Erase the main window. */
+        werase( main_window );
+
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry );
+
+        /* Add a border. */
+        box( main_window, 0, 0 );
+
+        /* Add a title. */
+        nwipe_gui_title( main_window, " Edit User Defined Tag Content " );
+
+        /* Initialize the working row. */
+        yy = 4;
+
+        mvwprintw( main_window, yy++, tab1, "Enter the text that you want to appear on the PDF report" );
+
+        /* Print this line last so that the cursor is in the right place. */
+        mvwprintw( main_window, 2, tab1, ">%s", buffer );
+
+        /* Reveal the cursor. */
+        curs_set( 1 );
+
+        /* Refresh the window. */
+        wrefresh( main_window );
+
+        /* Wait 250ms for input from getch, if nothing getch will then continue,
+         * This is necessary so that the while loop can be exited by the
+         * terminate_signal e.g.. the user pressing control-c to exit.
+         * Do not change this value, a higher value means the keys become
+         * sluggish, any slower and more time is spent unnecessarily looping
+         * which wastes CPU cycles.
+         */
+        timeout( 250 );  // block getch() for 250ms.
+        keystroke = getch();  // Get a keystroke.
+        timeout( -1 );  // Switch back to blocking mode.
+
+        switch( keystroke )
+        {
+            /* Escape key. */
+            case 27:
+                return;
+
+            case KEY_BACKSPACE:
+            case KEY_LEFT:
+            case 127:
+
+                if( idx > 0 )
+                {
+                    buffer[--idx] = 0;
+                }
+
+                break;
+
+        } /* switch keystroke */
+
+        if( ( keystroke >= ' ' && keystroke <= '~' ) && keystroke != '\"' && idx < 255 )
+        {
+            buffer[idx++] = keystroke;
+            buffer[idx] = 0;
+            mvwprintw( main_window, 2, tab1, ">%s", buffer );
+        }
+
+        /* Hide the cursor. */
+        curs_set( 0 );
+
+    } while( keystroke != 10 && terminate_signal != 1 );
+
+    /* libconfig: Locate the User_Defined_Tag in the PDF_Certificate section in nwipe.conf */
+    if( !( setting = config_lookup( &nwipe_cfg, "PDF_Certificate.User_Defined_Tag" ) ) )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to locate [PDF_Certificate.User_Defined_Tag] in %s", nwipe_config_file );
+    }
+
+    /* libconfig: Write the new business name */
+    if( config_setting_set_string( setting, buffer ) == CONFIG_FALSE )
+    {
+        nwipe_log( NWIPE_LOG_ERROR,
+                   "Failed to write [%s] to [PDF_Certificate.User_Defined_Tag] in %s",
+                   buffer,
+                   nwipe_config_file );
+    }
+
+    /* Write out the new configuration. */
+    if( config_write_file( &nwipe_cfg, nwipe_config_file ) == CONFIG_FALSE )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Failed to write User_Defined_Tag to %s", nwipe_config_file );
+    }
+    else
+    {
+        nwipe_log( NWIPE_LOG_INFO, "[Success] User_Defined_Tag content written to %s", nwipe_config_file );
+    }
+
+} /* End of nwipe_gui_pdf_certificate_edit_user_defined_tag() */
 
 void nwipe_gui_edit_organisation( void )
 {
@@ -4994,8 +5284,8 @@ void nwipe_gui_preview_org_customer( int mode )
 
     extern int terminate_signal;
 
-    /* Number of entries in the configuration menu. */
-    const int count = 12;
+    /* Number of entries in the configuration menu. Includes blank line. */
+    const int total_menu_entries = 14;
 
     /* The first tabstop. */
     const int tab1 = 2;
@@ -5022,7 +5312,7 @@ void nwipe_gui_preview_org_customer( int mode )
 
     /* variables used by libconfig for extracting data from nwipe.conf */
     config_setting_t* setting;
-    const char *business_name, *business_address, *contact_name, *contact_phone, *op_tech_name;
+    const char *business_name, *business_address, *contact_name, *contact_phone, *op_tech_name, *user_defined_tag;
     const char *customer_name, *customer_address, *customer_contact_name, *customer_contact_phone;
     extern config_t nwipe_cfg;
 
@@ -5064,6 +5354,8 @@ void nwipe_gui_preview_org_customer( int mode )
             mvwprintw( main_window, yy++, tab1, "  %s", "Customer Address" );
             mvwprintw( main_window, yy++, tab1, "  %s", "Customer Contact Name" );
             mvwprintw( main_window, yy++, tab1, "  %s", "Customer Contact Phone" );
+            yy++;
+            mvwprintw( main_window, yy++, tab1, "  %s", "User Defined Tag" );
             yy++;
             mvwprintw( main_window, yy++, tab1, "  %s", "System Date/Time" );
 
@@ -5190,11 +5482,28 @@ void nwipe_gui_preview_org_customer( int mode )
                 mvwprintw( main_window, 11, tab2, ": %s", output_str );
             }
 
+            /**********************************************************************
+             * libconfig: Locate the 'User_Defined_Tag' section in nwipe.conf
+             */
+            setting = config_lookup( &nwipe_cfg, "PDF_Certificate" );
+
+            /* Retrieve data from nwipe.conf */
+            if( config_setting_lookup_string( setting, "User_Defined_Tag", &user_defined_tag ) )
+            {
+                str_truncate( wcols, tab2, user_defined_tag, output_str, FIELD_LENGTH );
+                mvwprintw( main_window, 13, tab2, ": %s", output_str );
+            }
+            else
+            {
+                str_truncate( wcols, tab2, "Cannot retrieve User_Defined_Tag, nwipe.conf", output_str, FIELD_LENGTH );
+                mvwprintw( main_window, 13, tab2, ": %s", output_str );
+            }
+
             /*******************************
              * Retrieve system date and time
              */
             time( &t );
-            mvwprintw( main_window, 13, tab2, ": %s", ctime( &t ) );
+            mvwprintw( main_window, 15, tab2, ": %s", ctime( &t ) );
 
             /* ************
              * Add a border
@@ -5228,9 +5537,9 @@ void nwipe_gui_preview_org_customer( int mode )
                 case 'j':
                 case 'J':
 
-                    if( focus < count - 1 )
+                    if( focus < total_menu_entries - 1 )
                     {
-                        if( focus == 4 || focus == 9 )
+                        if( focus == 4 || focus == 9 || focus == 11 )
                         {
                             focus += 2; /* mind the gaps */
                         }
@@ -5247,7 +5556,7 @@ void nwipe_gui_preview_org_customer( int mode )
 
                     if( focus > 0 )
                     {
-                        if( focus == 6 || focus == 11 )
+                        if( focus == 6 || focus == 11 || focus == 13 )
                         {
                             focus -= 2; /* mind the gaps */
                         }
@@ -5313,7 +5622,14 @@ void nwipe_gui_preview_org_customer( int mode )
                     break;
 
                 case 11:
+                    nwipe_gui_pdf_certificate_edit_user_defined_tag( user_defined_tag );
+                    keystroke = 0;
+                    break;
+
+                case 13:
                     nwipe_gui_set_date_time();
+                    keystroke = 0;
+                    break;
             }
         }
 
