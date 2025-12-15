@@ -88,6 +88,8 @@ typedef struct nwipe_speedring_t_
 // Device name max size including /dev/ path
 #define DEVICE_NAME_MAX_SIZE 100
 
+#define NWIPE_DEVICE_SYSFS_PATH_LENGTH 512
+
 typedef struct nwipe_context_t_
 {
     /*
@@ -107,6 +109,7 @@ typedef struct nwipe_context_t_
     char* device_name;  // The device file name.
     char device_name_without_path[DEVICE_NAME_MAX_SIZE];
     char gui_device_name[DEVICE_NAME_MAX_SIZE];
+    char device_sysfs_path[NWIPE_DEVICE_SYSFS_PATH_LENGTH];  // sysfs path for topology view
     char device_name_terse[DEVICE_NAME_MAX_SIZE];
     unsigned long long device_size;  // The device size in bytes.
     u64 device_size_in_sectors;  // The device size in number of logical sectors, this may be 512 or 4096 sectors

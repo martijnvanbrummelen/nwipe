@@ -139,6 +139,8 @@ PANEL* main_panel;
 PANEL* options_panel;
 PANEL* stats_panel;
 
+extern void strip_CR_LF( char* );
+
 /* Options window title. */
 const char* options_title = " Options ";
 
@@ -147,9 +149,9 @@ const char* stats_title = " Statistics ";
 
 /* Footer labels. */
 const char* main_window_footer =
-    "S=Start m=Method p=PRNG v=Verify r=Rounds b=Blanking Space=Select c=Config CTRL+C=Quit";
+    "S=Start m=Method p=PRNG v=Verify t=path r=Rounds b=Blanking Space=Select c=Config CTRL+C=Quit";
 const char* shredos_main_window_footer =
-    "S=Start m=Method p=PRNG v=Verify r=Rounds b=Blanking Space=Select f=Font size c=Config CTRL+C=Quit";
+    "S=Start m=Method p=PRNG v=Verify t=path r=Rounds b=Blanking Space=Select f=Font size c=Config CTRL+C=Quit";
 char** p_main_window_footer;
 const char* main_window_footer_warning_lower_case_s = "  WARNING: To start the wipe press SHIFT+S (uppercase S)  ";
 
@@ -175,6 +177,7 @@ const char* end_wipe_footer = "B=[Toggle between dark\\blank\\blue screen] Ctrl+
 const char* shredos_end_wipe_footer = "b=[Toggle dark\\blank\\blue screen] f=Font size Ctrl+C=Quit";
 const char* rounds_footer = "Left=Erase Esc=Cancel Ctrl+C=Quit";
 const char* selection_footer_text_entry = "Esc=Cancel Return=Submit Ctrl+C=Quit";
+const char* selection_footer_device_view = "ESC|Backspace=Back Ctrl+C=Quit";
 
 /* Keeps track of whether font is standard or double size (applicable to ShredOS only) */
 int toggle_font_flag = 0;
@@ -192,6 +195,125 @@ int stdscr_lines_previous;
 int stdscr_cols_previous;
 
 int tft_saver = 0;
+
+/* Draw one "└── " prefix using ncurses ACS characters (portable, no UTF-8 needed).
+ * Falls dein Terminal ACS nicht sauber kann, kannst du unten auf ASCII fallbacken.
+ */
+static void nwipe_gui_draw_acs_prefix( WINDOW* w, int y, int x )
+{
+    mvwaddch( w, y, x + 0, ACS_LLCORNER );
+    mvwaddch( w, y, x + 1, ACS_HLINE );
+    mvwaddch( w, y, x + 2, ACS_HLINE );
+    mvwaddch( w, y, x + 3, ' ' );
+}
+
+static void nwipe_gui_trim_to_devices( const char* in, const char** out_start )
+{
+    const char* p = strstr( in ? in : "", "/devices/" );
+    *out_start = p ? ( p + 9 ) : ( in ? in : "" );
+}
+
+static int nwipe_gui_is_pci_bdf( const char* s )
+{
+    return s && strlen( s ) >= 12 && s[4] == ':' && s[7] == ':' && s[10] == '.';
+}
+
+static int nwipe_gui_have_lspci( void )
+{
+    return access( "/usr/bin/lspci", X_OK ) == 0 || access( "/bin/lspci", X_OK ) == 0;
+}
+
+static void nwipe_gui_lspci_name( const char* bdf, char* out, size_t outsz )
+{
+    out[0] = '\0';
+    if( !bdf || !out || outsz == 0 || !nwipe_gui_have_lspci() )
+        return;
+
+    char cmd[160];
+    snprintf( cmd, sizeof( cmd ), "lspci -D -s %s 2>/dev/null", bdf );
+
+    FILE* fp = popen( cmd, "r" );
+    if( !fp )
+        return;
+
+    char buf[256];
+    if( fgets( buf, sizeof( buf ), fp ) )
+    {
+        strip_CR_LF( buf );
+        char* sp = strchr( buf, ' ' );
+        if( sp && *( sp + 1 ) )
+        {
+            snprintf( out, outsz, "%s", sp + 1 );
+        }
+    }
+    pclose( fp );
+}
+
+/* Prints a linear sysfs path as an indented “tree chain” using ACS line-drawing.
+ * Returns the next free y position after printing.
+ */
+static int nwipe_gui_print_sysfs_tree( WINDOW* w, int starty, int maxy, int xbase, int width, const char* sysfs_target )
+{
+    const char* s;
+    nwipe_gui_trim_to_devices( sysfs_target, &s );
+
+    char tmp[1024];
+    strncpy( tmp, s, sizeof( tmp ) - 1 );
+    tmp[sizeof( tmp ) - 1] = '\0';
+
+    int level = 0;
+    int y = starty;
+
+    char* save = NULL;
+    char* tok = strtok_r( tmp, "/", &save );
+
+    while( tok && y < maxy )
+    {
+        if( tok[0] == '\0' )
+        {
+            tok = strtok_r( NULL, "/", &save );
+            continue;
+        }
+
+        char line[512];
+        line[0] = '\0';
+
+        if( nwipe_gui_is_pci_bdf( tok ) )
+        {
+            char name[256];
+            nwipe_gui_lspci_name( tok, name, sizeof( name ) );
+            if( name[0] )
+                snprintf( line, sizeof( line ), "%s  %s", tok, name );
+            else
+                snprintf( line, sizeof( line ), "%s", tok );
+        }
+        else
+        {
+            snprintf( line, sizeof( line ), "%s", tok );
+        }
+
+        /* Column calculation: xbase + level*3, then we draw a 4-char prefix "└── " in ACS. */
+        int col = xbase + ( level * 3 );
+        if( col < 0 )
+            col = 0;
+
+        /* Keep inside the box */
+        int text_col = col + 4;
+        int avail = width - text_col;
+        if( avail < 0 )
+            avail = 0;
+
+        /* Draw prefix and text */
+        nwipe_gui_draw_acs_prefix( w, y, col );
+        mvwprintw( w, y, text_col, "%.*s", avail, line );
+
+        y++;
+        level++;
+        tok = strtok_r( NULL, "/", &save );
+    }
+
+    return y;
+}
 
 void nwipe_gui_title( WINDOW* w, const char* s )
 {
@@ -1217,7 +1339,17 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                     /* Run the option dialog. */
                     nwipe_gui_verify();
                     break;
+                case 't':
+                    validkeyhit = 1;
 
+                    /* Open device view for the currently focused entry.
+                     * We only block disabled entries.
+                     */
+                    if( count > 0 && c[focus]->select != NWIPE_SELECT_DISABLED )
+                    {
+                        nwipe_gui_view_device( count, c, focus );
+                    }
+                    break;
                 case 'b':
                 case 'B':
 
@@ -2235,6 +2367,221 @@ void nwipe_gui_verify( void )
     } while( terminate_signal != 1 );
 
 } /* nwipe_gui_verify */
+
+static nwipe_context_t* nwipe_gui_find_parent_disk( int count, nwipe_context_t** c, int idx )
+{
+    nwipe_context_t* cur = c[idx];
+
+    if( cur->device_part == 0 )
+    {
+        return cur;
+    }
+
+    for( int i = 0; i < count; i++ )
+    {
+        if( c[i]->device_type == cur->device_type && c[i]->device_host == cur->device_host
+            && c[i]->device_bus == cur->device_bus && c[i]->device_target == cur->device_target
+            && c[i]->device_lun == cur->device_lun && c[i]->device_part == 0 )
+        {
+            return c[i];
+        }
+    }
+
+    return cur; /* fallback */
+}
+
+static void nwipe_gui_tail_truncate( const char* in, char* out, size_t outsz, int maxw )
+{
+    if( !out || outsz == 0 )
+        return;
+
+    out[0] = '\0';
+
+    if( !in )
+    {
+        snprintf( out, outsz, "(null)" );
+        return;
+    }
+
+    int len = (int) strlen( in );
+    if( maxw <= 0 )
+    {
+        snprintf( out, outsz, "" );
+        return;
+    }
+
+    if( len <= maxw )
+    {
+        snprintf( out, outsz, "%s", in );
+        return;
+    }
+
+    /* keep tail, prefix with "..." */
+    int keep = maxw - 3;
+    if( keep < 1 )
+    {
+        snprintf( out, outsz, "..." );
+        return;
+    }
+
+    const char* tail = in + ( len - keep );
+    snprintf( out, outsz, "...%s", tail );
+}
+
+static void nwipe_gui_format_topology_line( const char* sysfs_target, const char* blockname, char* out, size_t outsz )
+{
+    if( !out || outsz == 0 )
+        return;
+
+    out[0] = '\0';
+
+    if( !sysfs_target || sysfs_target[0] == '\0' )
+    {
+        snprintf( out, outsz, "Topo: (unknown)" );
+        return;
+    }
+
+    int is_usb = ( strstr( sysfs_target, "/usb" ) != NULL );
+
+    /* PCI BDF like 0000:03:00.0 */
+    char pcie[32] = { 0 };
+    {
+        const char* q = strstr( sysfs_target, "0000:" );
+        if( q )
+        {
+            size_t n = 0;
+            while( q[n] && q[n] != '/' && n < sizeof( pcie ) - 1 )
+                n++;
+            memcpy( pcie, q, n );
+            pcie[n] = '\0';
+        }
+    }
+
+    if( is_usb )
+    {
+        /* show USB hop tokens like "2-1", "2-1.3" */
+        char hops[128] = { 0 };
+        char tmp[512];
+        strncpy( tmp, sysfs_target, sizeof( tmp ) - 1 );
+        tmp[sizeof( tmp ) - 1] = '\0';
+
+        char* save = NULL;
+        char* tok = strtok_r( tmp, "/", &save );
+        while( tok )
+        {
+            if( tok[0] >= '0' && tok[0] <= '9' && strchr( tok, '-' ) )
+            {
+                if( hops[0] )
+                    strncat( hops, " → ", sizeof( hops ) - strlen( hops ) - 1 );
+                strncat( hops, tok, sizeof( hops ) - strlen( hops ) - 1 );
+            }
+            tok = strtok_r( NULL, "/", &save );
+        }
+
+        snprintf( out, outsz, "Topo: USB %s → %s", hops[0] ? hops : "(bus)", blockname ? blockname : "disk" );
+        return;
+    }
+
+    if( strstr( sysfs_target, "/nvme" ) != NULL )
+    {
+        if( pcie[0] )
+            snprintf( out, outsz, "Topo: PCIe %s → NVMe → %s", pcie, blockname ? blockname : "disk" );
+        else
+            snprintf( out, outsz, "Topo: NVMe → %s", blockname ? blockname : "disk" );
+        return;
+    }
+
+    if( pcie[0] )
+    {
+        snprintf( out, outsz, "Topo: PCIe %s → ATA/SCSI → %s", pcie, blockname ? blockname : "disk" );
+        return;
+    }
+
+    snprintf( out, outsz, "Topo: %s", blockname ? blockname : "disk" );
+}
+
+void nwipe_gui_view_device( int count, nwipe_context_t** c, int focus )
+{
+    extern int terminate_signal;
+
+    nwipe_context_t* disk = nwipe_gui_find_parent_disk( count, c, focus );
+
+    /* Read sysfs link target via readlink(2) on /sys/block/<dev> */
+    char sysfs_link[128];
+    char sysfs_target[512];
+    sysfs_target[0] = '\0';
+
+    snprintf( sysfs_link, sizeof( sysfs_link ), "/sys/block/%s", disk->device_name_terse );
+
+    ssize_t n = readlink( sysfs_link, sysfs_target, sizeof( sysfs_target ) - 1 );
+    if( n > 0 )
+    {
+        sysfs_target[n] = '\0';
+    }
+    else
+    {
+        snprintf( sysfs_target, sizeof( sysfs_target ), "(readlink failed for %s)", sysfs_link );
+    }
+
+    /* Footer */
+    werase( footer_window );
+    nwipe_gui_title( footer_window, selection_footer_device_view );
+    wrefresh( footer_window );
+
+    int keystroke = 0;
+
+    do
+    {
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_device_view );
+
+        int wlines, wcols;
+        getmaxyx( main_window, wlines, wcols );
+
+        werase( main_window );
+
+        /* Frame/title normal */
+        box( main_window, 0, 0 );
+        nwipe_gui_title( main_window, " Device Topology " );
+
+        /* Content grey/dim */
+        wattron( main_window, A_DIM );
+
+        int yy = 2;
+
+        mvwprintw( main_window, yy++, 2, "Device: %s", disk->gui_device_name );
+        mvwprintw( main_window, yy++, 2, "Model : %s", disk->device_model ? disk->device_model : "(unknown)" );
+        mvwprintw(
+            main_window, yy++, 2, "Serial: %s", disk->device_serial_no[0] ? disk->device_serial_no : "(unknown)" );
+        mvwprintw(
+            main_window, yy++, 2, "Type  : %s  (%s)", disk->device_type_str, disk->device_is_ssd ? "SSD" : "HDD" );
+
+        yy++;
+
+        mvwprintw( main_window, yy++, 2, "Sysfs: %s", sysfs_link );
+        mvwprintw( main_window, yy++, 2, "Path :" );
+
+        /* Tree view (keeps within the box: last line is wlines-2) */
+        (void) nwipe_gui_print_sysfs_tree( main_window, yy, wlines - 2, 4, wcols - 4, sysfs_target );
+
+        /* Back to normal */
+        wattroff( main_window, A_DIM );
+
+        wrefresh( main_window );
+
+        timeout( 250 );
+        keystroke = getch();
+        timeout( -1 );
+
+        switch( keystroke )
+        {
+            case KEY_BACKSPACE:
+            case KEY_BREAK:
+            case 27: /* ESC */
+                return;
+        }
+
+    } while( terminate_signal != 1 );
+}
 
 void nwipe_gui_noblank( void )
 {

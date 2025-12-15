@@ -40,7 +40,12 @@ int nwipe_device_scan( nwipe_context_t*** c );  // Find devices that we can wipe
  */
 int nwipe_device_get( nwipe_context_t*** c, char** devnamelist, int ndevnames );  // Get info about devices to wipe.
 
-int nwipe_get_device_bus_type_and_serialno( char*, nwipe_device_t*, int*, char* );
+int nwipe_get_device_bus_type_and_serialno( char* device,
+                                            nwipe_device_t* bus,
+                                            int* is_ssd,
+                                            char* serialnumber,
+                                            char* sysfs_path,
+                                            size_t sysfs_path_size );
 void strip_CR_LF( char* );
 void determine_disk_capacity_nomenclature( u64, char* );
 void remove_ATA_prefix( char* );

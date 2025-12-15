@@ -69,6 +69,7 @@ void nwipe_gui_add_customer_contact_phone( char* );  // Add new customer contact
 int nwipe_gui_yes_no_footer( void );  // Change footer to yes no
 void nwipe_gui_user_defined_tag( void );  // Edit user defined text to be added to pdf report
 void nwipe_gui_pdf_certificate_edit_user_defined_tag( const char* );
+void nwipe_gui_view_device( int count, nwipe_context_t** c, int focus );
 
 /** nwipe_gui_preview_org_customer( int )
  * Display a editable preview of organisation, customer and date/time
