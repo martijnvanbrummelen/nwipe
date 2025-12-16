@@ -266,7 +266,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     if( nwipe_options.nousb )
     {
         /* retrieve bus and drive serial number, HOWEVER we are only interested in the bus at this time */
-        r = nwipe_get_device_bus_type_and_serialno( dev->path, &bus, &is_ssd, tmp_serial );
+        r = nwipe_get_device_bus_type_and_serialno( dev->path, &bus, &is_ssd, tmp_serial, NULL, 0 );
 
         /* See nwipe_get_device_bus_type_and_serialno() function for meaning of these codes */
         if( r == 0 || ( r >= 3 && r <= 6 ) )
@@ -401,8 +401,12 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     trim( (char*) next_device->device_serial_no );
 
     /* if we couldn't obtain serial number by using the above method .. try this */
-    r = nwipe_get_device_bus_type_and_serialno(
-        next_device->device_name, &next_device->device_type, &next_device->device_is_ssd, tmp_serial );
+    r = nwipe_get_device_bus_type_and_serialno( next_device->device_name,
+                                                &next_device->device_type,
+                                                &next_device->device_is_ssd,
+                                                tmp_serial,
+                                                next_device->device_sysfs_path,
+                                                sizeof( next_device->device_sysfs_path ) );
 
     /* If serial number & bus retrieved (0) OR unsupported USB bus identified (5) */
     if( r == 0 || r == 5 )
@@ -665,7 +669,13 @@ static void nwipe_normalize_serial( char* serial )
     trim( serial );
 }
 
-int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, int* is_ssd, char* serialnumber )
+int nwipe_get_device_bus_type_and_serialno( char* device,
+                                            nwipe_device_t* bus,
+                                            int* is_ssd,
+                                            char* serialnumber,
+                                            char* sysfs_path,
+                                            size_t sysfs_path_size )
+
 {
     /* The caller provides a string that contains the device, i.e. /dev/sdc, also a pointer
      * to an integer (bus type), another pointer to an integer (is_ssd), and finally a 21 byte
@@ -804,11 +814,19 @@ int nwipe_get_device_bus_type_and_serialno( char* device, nwipe_device_t* bus, i
         if( fp != NULL )
         {
             /* Read the output a line at a time - output it. */
+
             if( fgets( result, sizeof( result ) - 1, fp ) != NULL )
             {
+                strip_CR_LF( result );
+
+                if( sysfs_path != NULL && sysfs_path_size > 0 )
+                {
+                    strncpy( sysfs_path, result, sysfs_path_size - 1 );
+                    sysfs_path[sysfs_path_size - 1] = '\0';
+                }
+
                 if( nwipe_options.verbose )
                 {
-                    strip_CR_LF( result );
                     nwipe_log( NWIPE_LOG_DEBUG, "Readlink: %s", result );
                 }
 
