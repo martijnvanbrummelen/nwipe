@@ -149,9 +149,9 @@ const char* stats_title = " Statistics ";
 
 /* Footer labels. */
 const char* main_window_footer =
-    "S=Start m=Method p=PRNG v=Verify t=path r=Rounds b=Blanking Space=Select c=Config CTRL+C=Quit";
-const char* shredos_main_window_footer =
-    "S=Start m=Method p=PRNG v=Verify t=path r=Rounds b=Blanking Space=Select f=Font size c=Config CTRL+C=Quit";
+    "S=Start m=Method p=PRNG v=Verify t=path o=Benchmark r=Rounds b=Blanking Space=Select c=Config CTRL+C=Quit";
+const char* shredos_main_window_footer = "S=Start m=Method p=PRNG v=Verify t=path o=Benchmark r=Rounds b=Blanking "
+                                         "Space=Select f=Font size c=Config CTRL+C=Quit";
 char** p_main_window_footer;
 const char* main_window_footer_warning_lower_case_s = "  WARNING: To start the wipe press SHIFT+S (uppercase S)  ";
 
@@ -168,6 +168,7 @@ const char* main_window_footer_warning_no_drive_selected =
  * of the footer message when the terminal is resized, a quirk in ncurses? - DO NOT REMOVE THE \" */
 const char* selection_footer = "J=Down K=Up Space=Select Backspace=Cancel Ctrl+C=Quit";
 const char* selection_footer_config = "J=Down K=Up Return=Select ESC|Backspace=back Ctrl+C=Quit";
+const char* selection_footer_benchmark = "ESC|Backspace=Back ENTER=Run Ctrl+C=Quit";
 const char* selection_footer_preview_prior_to_drive_selection =
     "A=Accept & display drives J=Down K=Up Space=Select Backspace=Cancel Ctrl+C=Quit";
 const char* selection_footer_add_customer = "S=Save J=Down K=Up Space=Select Backspace=Cancel Ctrl+C=Quit";
@@ -205,6 +206,116 @@ static void nwipe_gui_draw_acs_prefix( WINDOW* w, int y, int x )
     mvwaddch( w, y, x + 1, ACS_HLINE );
     mvwaddch( w, y, x + 2, ACS_HLINE );
     mvwaddch( w, y, x + 3, ' ' );
+}
+
+typedef struct
+{
+    const nwipe_prng_t* prng;
+    double mbps;
+    double seconds;
+    unsigned long long bytes;
+    int rc;
+} nwipe_prng_bench_result_t;
+
+static double nwipe_gui_monotonic_seconds( void )
+{
+    struct timespec ts;
+    clock_gettime( CLOCK_MONOTONIC, &ts );
+    return (double) ts.tv_sec + (double) ts.tv_nsec / 1000000000.0;
+}
+
+/* Simple deterministic seed for benchmarking (no external deps). */
+static void nwipe_gui_make_bench_seed( unsigned char* seed, size_t len )
+{
+    unsigned long t = (unsigned long) time( NULL );
+    unsigned long x = ( t ^ 0xA5A5A5A5UL ) + (unsigned long) (uintptr_t) seed;
+
+    for( size_t i = 0; i < len; i++ )
+    {
+        x = x * 1664525UL + 1013904223UL;
+        seed[i] = (unsigned char) ( ( x >> 16 ) & 0xFF );
+    }
+}
+
+static void* nwipe_gui_alloc_aligned( size_t alignment, size_t size )
+{
+    void* p = NULL;
+    if( posix_memalign( &p, alignment, size ) != 0 )
+        return NULL;
+    return p;
+}
+
+static int nwipe_gui_cmp_bench_desc( const void* a, const void* b )
+{
+    const nwipe_prng_bench_result_t* A = (const nwipe_prng_bench_result_t*) a;
+    const nwipe_prng_bench_result_t* B = (const nwipe_prng_bench_result_t*) b;
+
+    if( A->rc != 0 && B->rc == 0 )
+        return 1;
+    if( A->rc == 0 && B->rc != 0 )
+        return -1;
+
+    if( A->mbps < B->mbps )
+        return 1;
+    if( A->mbps > B->mbps )
+        return -1;
+    return 0;
+}
+
+/* Benchmark one PRNG by generating keystream into a RAM buffer for ~target_seconds. */
+static void nwipe_gui_bench_one_prng( const nwipe_prng_t* prng,
+                                      nwipe_prng_bench_result_t* out,
+                                      void* io_buf,
+                                      size_t io_block,
+                                      double target_seconds )
+{
+    void* state = NULL;
+
+    unsigned char seedbuf[4096];
+    nwipe_entropy_t seed;
+    seed.s = (u8*) seedbuf;
+    seed.length = sizeof( seedbuf );
+    nwipe_gui_make_bench_seed( seedbuf, sizeof( seedbuf ) );
+
+    out->prng = prng;
+    out->mbps = 0.0;
+    out->seconds = 0.0;
+    out->bytes = 0;
+    out->rc = 0;
+
+    int rc = prng->init( &state, &seed );
+    if( rc != 0 )
+    {
+        out->rc = rc;
+        if( state )
+            free( state );
+        return;
+    }
+
+    const double t0 = nwipe_gui_monotonic_seconds();
+    double now = t0;
+
+    while( ( now - t0 ) < target_seconds )
+    {
+        rc = prng->read( &state, io_buf, io_block );
+        if( rc != 0 )
+        {
+            out->rc = rc;
+            break;
+        }
+
+        out->bytes += (unsigned long long) io_block;
+        now = nwipe_gui_monotonic_seconds();
+    }
+
+    out->seconds = now - t0;
+    if( out->rc == 0 && out->seconds > 0.0 )
+    {
+        out->mbps = ( (double) out->bytes / ( 1024.0 * 1024.0 ) ) / out->seconds;
+    }
+
+    if( state )
+        free( state );
 }
 
 static void nwipe_gui_trim_to_devices( const char* in, const char** out_start )
@@ -647,6 +758,176 @@ void nwipe_gui_amend_footer_window( const char* footer_text )
     wnoutrefresh( footer_window );
 
 } /* nwipe_gui_amend_footer_window */
+
+void nwipe_gui_benchmark_prng( void )
+{
+    extern nwipe_prng_t nwipe_twister;
+    extern nwipe_prng_t nwipe_isaac;
+    extern nwipe_prng_t nwipe_isaac64;
+    extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
+    extern nwipe_prng_t nwipe_xoroshiro256_prng;
+    extern nwipe_prng_t nwipe_aes_ctr_prng;
+
+    extern int terminate_signal;
+
+    const nwipe_prng_t* prngs[] = {
+        &nwipe_twister,
+        &nwipe_isaac,
+        &nwipe_isaac64,
+        &nwipe_add_lagg_fibonacci_prng,
+        &nwipe_xoroshiro256_prng,
+        &nwipe_aes_ctr_prng,
+    };
+
+    const int prng_count = (int) ( sizeof( prngs ) / sizeof( prngs[0] ) );
+
+    nwipe_prng_bench_result_t results[8];
+    memset( results, 0, sizeof( results ) );
+
+    /* Settings: keep it quick and comparable */
+    const double target_seconds = 1.0; /* ~1s per PRNG */
+    const size_t io_block = 4 * 1024 * 1024; /* 4 MiB block into RAM */
+    const size_t alignment = 4096;
+
+    void* io_buf = nwipe_gui_alloc_aligned( alignment, io_block );
+    if( !io_buf )
+    {
+        /* Minimal error view */
+        werase( main_window );
+        box( main_window, 0, 0 );
+        nwipe_gui_title( main_window, " PRNG Benchmark " );
+        // wattron( main_window, A_DIM );
+        mvwprintw( main_window, 3, 2, "Unable to allocate benchmark buffer (%zu bytes).", io_block );
+        mvwprintw( main_window, 5, 2, "Press ESC to return." );
+        // wattroff( main_window, A_DIM );
+        wrefresh( main_window );
+
+        int k;
+        do
+        {
+            timeout( 250 );
+            k = getch();
+            timeout( -1 );
+        } while( k != 27 && terminate_signal != 1 );
+        return;
+    }
+
+    /* Footer */
+    werase( footer_window );
+    nwipe_gui_title( footer_window, selection_footer_benchmark );
+    wrefresh( footer_window );
+
+    int keystroke = 0;
+    int have_results = 0;
+
+    do
+    {
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_benchmark );
+
+        int wlines, wcols;
+        getmaxyx( main_window, wlines, wcols );
+
+        werase( main_window );
+        box( main_window, 0, 0 );
+        nwipe_gui_title( main_window, " PRNG Benchmark " );
+
+        // wattron( main_window, A_DIM );
+
+        mvwprintw( main_window, 2, 2, "RAM-only PRNG throughput test (~%.1fs each).", target_seconds );
+        mvwprintw( main_window, 3, 2, "ENTER = run benchmark   ESC = back" );
+
+        int yy = 5;
+
+        if( !have_results )
+        {
+            mvwprintw( main_window, yy++, 2, "No results yet." );
+        }
+        else
+        {
+            mvwprintw( main_window, yy++, 2, "Leaderboard (MB/s):" );
+            yy++;
+
+            for( int i = 0; i < prng_count && yy < ( wlines - 2 ); i++ )
+            {
+                if( results[i].rc == 0 )
+                {
+                    mvwprintw( main_window,
+                               yy++,
+                               2,
+                               "%2d) %-40.40s %10.1f MB/s",
+                               i + 1,
+                               results[i].prng->label,
+                               results[i].mbps );
+                }
+                else
+                {
+                    mvwprintw( main_window,
+                               yy++,
+                               2,
+                               "%2d) %-40.40s   (failed: rc=%d)",
+                               i + 1,
+                               results[i].prng->label,
+                               results[i].rc );
+                }
+            }
+        }
+
+        // wattroff( main_window, A_DIM );
+        wrefresh( main_window );
+
+        timeout( 250 );
+        keystroke = getch();
+        timeout( -1 );
+
+        if( keystroke == 27 || keystroke == KEY_BACKSPACE || keystroke == KEY_BREAK )
+        {
+            break;
+        }
+
+        if( keystroke == 10 || keystroke == KEY_ENTER ) /* ENTER */
+        {
+            /* Run benchmark */
+            have_results = 0;
+
+            for( int i = 0; i < prng_count; i++ )
+            {
+                /* Update progress screen */
+                werase( main_window );
+                box( main_window, 0, 0 );
+                nwipe_gui_title( main_window, " PRNG Benchmark " );
+
+                // wattron( main_window, A_DIM );
+                mvwprintw( main_window, 2, 2, "Running %d/%d:", i + 1, prng_count );
+                mvwprintw( main_window, 3, 2, "%s", prngs[i]->label );
+                mvwprintw(
+                    main_window, 5, 2, "Generating into RAM buffer (%zu MiB blocks)...", io_block / ( 1024 * 1024 ) );
+                mvwprintw( main_window, 7, 2, "ESC to abort this benchmark." );
+                // wattroff( main_window, A_DIM );
+
+                wrefresh( main_window );
+
+                /* Actually benchmark one PRNG */
+                nwipe_gui_bench_one_prng( prngs[i], &results[i], io_buf, io_block, target_seconds );
+
+                /* Allow user abort quickly after each PRNG */
+                timeout( 0 );
+                int k = getch();
+                timeout( -1 );
+                if( k == 27 || terminate_signal == 1 )
+                {
+                    break;
+                }
+            }
+
+            /* Sort results into a leaderboard */
+            qsort( results, prng_count, sizeof( results[0] ), nwipe_gui_cmp_bench_desc );
+            have_results = 1;
+        }
+
+    } while( terminate_signal != 1 );
+
+    free( io_buf );
+}
 
 void nwipe_gui_create_options_window()
 {
@@ -1339,6 +1620,11 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                     /* Run the option dialog. */
                     nwipe_gui_verify();
                     break;
+                case 'o':
+                    validkeyhit = 1;
+                    nwipe_gui_benchmark_prng();
+                    break;
+
                 case 't':
                     validkeyhit = 1;
 
