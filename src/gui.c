@@ -2136,11 +2136,7 @@ void nwipe_gui_prng( void )
         }
         else
         {
-            /* Dim + “(N/A)” suffix. You can also combine A_REVERSE
-             * when focused; here only text is dimmed. */
-            wattron( main_window, A_DIM );
             mvwprintw( main_window, yy++, tab1, "  %s (N/A)", nwipe_aes_ctr_prng.label );
-            wattroff( main_window, A_DIM );
         }
         yy++;
 
@@ -2685,14 +2681,12 @@ static void nwipe_gui_tail_truncate( const char* in, char* out, size_t outsz, in
 
     if( !in )
     {
-        snprintf( out, outsz, "(null)" );
         return;
     }
 
     int len = (int) strlen( in );
     if( maxw <= 0 )
     {
-        snprintf( out, outsz, "" );
         return;
     }
 
@@ -2829,9 +2823,6 @@ void nwipe_gui_view_device( int count, nwipe_context_t** c, int focus )
         box( main_window, 0, 0 );
         nwipe_gui_title( main_window, " Device Topology " );
 
-        /* Content grey/dim */
-        wattron( main_window, A_DIM );
-
         int yy = 2;
 
         mvwprintw( main_window, yy++, 2, "Device: %s", disk->gui_device_name );
@@ -2848,9 +2839,6 @@ void nwipe_gui_view_device( int count, nwipe_context_t** c, int focus )
 
         /* Tree view (keeps within the box: last line is wlines-2) */
         (void) nwipe_gui_print_sysfs_tree( main_window, yy, wlines - 2, 4, wcols - 4, sysfs_target );
-
-        /* Back to normal */
-        wattroff( main_window, A_DIM );
 
         wrefresh( main_window );
 
