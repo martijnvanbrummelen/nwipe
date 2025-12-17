@@ -2395,14 +2395,12 @@ static void nwipe_gui_tail_truncate( const char* in, char* out, size_t outsz, in
 
     if( !in )
     {
-        snprintf( out, outsz, "(null)" );
         return;
     }
 
     int len = (int) strlen( in );
     if( maxw <= 0 )
     {
-        snprintf( out, outsz, "" );
         return;
     }
 
