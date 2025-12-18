@@ -167,6 +167,7 @@ const char* main_window_footer_warning_no_drive_selected =
 /* Oddly enough, placing extra quotes around the footer strings fixes corruption to the right
  * of the footer message when the terminal is resized, a quirk in ncurses? - DO NOT REMOVE THE \" */
 const char* selection_footer = "J=Down K=Up Space=Select Backspace=Cancel Ctrl+C=Quit";
+const char* selection_footer_prng = "J=Down K=Up Space=Select o=Benchmark Backspace=Cancel Ctrl+C=Quit";
 const char* selection_footer_config = "J=Down K=Up Return=Select ESC|Backspace=back Ctrl+C=Quit";
 const char* selection_footer_benchmark = "ESC|Backspace=Back ENTER=Run Ctrl+C=Quit";
 const char* selection_footer_preview_prior_to_drive_selection =
@@ -2086,7 +2087,7 @@ void nwipe_gui_prng( void )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer );
+    nwipe_gui_title( footer_window, selection_footer_prng );
     wrefresh( footer_window );
 
     if( nwipe_options.prng == &nwipe_twister )
@@ -2118,7 +2119,7 @@ void nwipe_gui_prng( void )
         /* Clear the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_prng );
 
         /* Initialize the working row. */
         yy = 3;
@@ -2143,174 +2144,79 @@ void nwipe_gui_prng( void )
         /* Print the cursor. */
         mvwaddch( main_window, 3 + focus, tab1, ACS_RARROW );
 
+        yy = 2;  // Start line for all help text
         switch( focus )
         {
             case 0:
 
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "The Mersenne Twister, by Makoto Matsumoto and Takuji Nishimura, is a          " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "generalized feedback shift register PRNG that is uniform and                  " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "equidistributed in 623-dimensions with a proven period of 2^19937-1.          " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "                                                                              " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "This implementation passes the Marsaglia Diehard test suite.                  " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "                                                                              " );
+                mvwprintw( main_window, 2, tab2, "The Mersenne Twister, by Makoto Matsumoto and    " );
+                mvwprintw( main_window, 3, tab2, "Takuji Nishimura, is a generalized feedback shift" );
+                mvwprintw( main_window, 4, tab2, "register PRNG that is uniform and equidistributed" );
+                mvwprintw( main_window, 5, tab2, "in 623-dimensions with a proven period of        " );
+                mvwprintw( main_window, 6, tab2, "2^19937-1." );
+                mvwprintw( main_window, 7, tab2, "                                                 " );
+                mvwprintw( main_window, 8, tab2, "This implementation passes the Marsaglia Diehard " );
+                mvwprintw( main_window, 9, tab2, "test suite." );
+                mvwprintw( main_window, 10, tab2, "                                                 " );
+                mvwprintw( main_window, 14, tab1, "Fastest PRNG for you hardware? type o to find out" );
                 break;
 
             case 1:
 
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "ISAAC, by Bob Jenkins, is a PRNG derived from RC4 with a minimum period of    " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "2^40 and an expected period of 2^8295.  It is difficult to recover the        " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "initial PRNG state by cryptanalysis of the ISAAC stream.                      " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "                                                                              " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "Performs best on a 32-bit CPU. Use ISAAC-64 if this system has a 64-bit CPU.  " );
+                mvwprintw( main_window, 2, tab2, "ISAAC, by Bob Jenkins, is a PRNG derived from RC4" );
+                mvwprintw( main_window, 3, tab2, "RC4 with a minimum period of 2^40 and an expected" );
+                mvwprintw( main_window, 4, tab2, "period of 2^8295. It is difficult to recover the " );
+                mvwprintw( main_window, 5, tab2, "initial PRNG state by cryptanalysis of the ISAAC " );
+                mvwprintw( main_window, 6, tab2, "stream.                                          " );
+                mvwprintw( main_window, 7, tab2, "                                                 " );
+                mvwprintw( main_window, 8, tab2, "Performs best on a 32-bit CPU. Use ISAAC-64 if   " );
+                mvwprintw( main_window, 9, tab2, "this system has a 64-bit CPU.  " );
+                mvwprintw( main_window, 14, tab1, "Fastest PRNG for you hardware? type o to find out" );
                 break;
 
             case 2:
 
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "ISAAC-64, by Bob Jenkins, is like 32-bit ISAAC, but with a minimum period of  " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "2^77 and an expected period of 2^16583. It is difficult to recover the        " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "initial PRNG state by cryptanalysis of the ISAAC-64 stream.                   " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "                                                                              " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "Performs best on a 64-bit CPU. Use ISAAC if this system has a 32-bit CPU.     " );
+                mvwprintw( main_window, 2, tab2, "ISAAC-64, by Bob Jenkins, is like 32-bit ISAAC,  " );
+                mvwprintw( main_window, 3, tab2, "but with a minimum period of 2^77 and an expected" );
+                mvwprintw( main_window, 4, tab2, "period of 2^16583. It is difficult to recover the" );
+                mvwprintw( main_window, 5, tab2, "initial PRNG state by cryptanalysis of the       " );
+                mvwprintw( main_window, 5, tab2, "ISAAC-64 stream.                                 " );
+                mvwprintw( main_window, 6, tab2, "                                                 " );
+                mvwprintw( main_window, 7, tab2, "Performs best on a 64-bit CPU. Use ISAAC if this " );
+                mvwprintw( main_window, 8, tab2, "system has a 32-bit CPU.                         " );
+                mvwprintw( main_window, 14, tab1, "Fastest PRNG for you hardware? type o to find out" );
                 break;
 
             case 3:
 
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "ALFG (Additive Lagged Fibonacci Generator), is a class of PRNGs utilizing     " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "the Fibonacci sequence with additive operations between lagged values. While  " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "they offer a good balance between speed and randomness, it's important to note" );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "that they provide lower levels of security, making them less suitable for     " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "cryptographic applications. Their periodicity depends on the choice of lags   " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "and arithmetic operations, potentially achieving large values, often 2^N or   " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "higher, where N is the bit length of the states.                              " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "                                                                              " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "Efficient on CPUs of any bit width, particularly suited for non-cryptographic " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "applications requiring long sequences with a good speed-randomness trade-off. " );
+                mvwprintw( main_window, yy++, tab2, "ALFGs use additive lagged Fibonacci sequences,   " );
+                mvwprintw( main_window, yy++, tab2, "offering good speed and randomness but low       " );
+                mvwprintw( main_window, yy++, tab2, "security, making them unsuitable for cryptography" );
+                mvwprintw( main_window, yy++, tab2, "Their period depends on lag and arithmetic       " );
+                mvwprintw( main_window, yy++, tab2, "choices, often reaching 2^N or higher, where N   " );
+                mvwprintw( main_window, yy++, tab2, "is the bit length of the states.                 " );
+                mvwprintw( main_window, yy++, tab2, "                                                 " );
+                mvwprintw( main_window, yy++, tab2, "Efficient on CPUs of any bit width, particularly " );
+                mvwprintw( main_window, yy++, tab2, "suited for non-cryptographic applications        " );
+                mvwprintw( main_window, yy++, tab2, "requiring long sequences with a good speed and   " );
+                mvwprintw( main_window, yy++, tab2, "randomness trade-off.                            " );
+                mvwprintw( main_window, 14, tab1, "Fastest PRNG for you hardware? type o to find out" );
                 break;
 
             case 4:
 
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "XORoshiro256**, originally designed by David Blackman and Sebastiano Vigna    " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "for 128 bits, was adapted to 256 bits by Fabian Druschke. This adaptation     " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "enhances its capability for fast, high-quality generation of pseudo-random    " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "numbers with a state size of 256 bits. It boasts an extremely long period     " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "of 2^256-1 without sacrificing performance, suitable for a wide range of      " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "applications.                                                                 " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "                                                                              " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "The simple arithmetic operations (shifts, rotations, and XORs) of             " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "XORoshiro256** ensure low computational complexity. This, combined with       " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "the adaptation for 256 bits by Fabian Druschke, allows efficient use          " );
-                mvwprintw( main_window,
-                           yy++,
-                           tab1,
-                           "especially for legacy systems, due to its efficiency and minimal demands.     " );
+                mvwprintw( main_window, yy++, tab2, "XORoshiro256 was designed by David Blackman      " );
+                mvwprintw( main_window, yy++, tab2, "and Sebastiano Vigna for 128 bits. adapted to 256" );
+                mvwprintw( main_window, yy++, tab2, "bits by Fabian Druschke, enhancing its capability" );
+                mvwprintw( main_window, yy++, tab2, "for fast, high-quality pseudo-random numbers     " );
+                mvwprintw( main_window, yy++, tab2, "with a state size of 256 bits and extremely long " );
+                mvwprintw( main_window, yy++, tab2, "period of 2^256-1 without sacrificing performance" );
+                mvwprintw( main_window, yy++, tab2, "                                                 " );
+                mvwprintw( main_window, yy++, tab2, "The simple arithmetic operations, shifts, XORs   " );
+                mvwprintw( main_window, yy++, tab2, "and rotations ensure low computational complexity" );
+                mvwprintw( main_window, yy++, tab2, "Combined with the 256 bit adaption, it provides  " );
+                mvwprintw( main_window, yy++, tab2, "efficient use especially for legacy systems " );
+                mvwprintw( main_window, 14, tab1, "Fastest PRNG for you hardware? type o to find out" );
                 break;
             case 5: {
                 extern int has_aes_ni( void );
@@ -2318,53 +2224,38 @@ void nwipe_gui_prng( void )
 
                 if( aes_ctr_available )
                 {
-                    mvwprintw( main_window,
-                               yy++,
-                               tab1,
-                               "AES-256 in Counter Mode (CTR), securely implemented by Fabian Druschke" );
-                    mvwprintw(
-                        main_window, yy++, tab1, "using the Linux kernel's AF_ALG cryptographic API for efficient" );
-                    mvwprintw(
-                        main_window, yy++, tab1, "pseudo-random data generation with minimal user-space overhead." );
-                    mvwprintw( main_window,
-                               yy++,
-                               tab1,
-                               "                                                                            " );
-                    mvwprintw( main_window,
-                               yy++,
-                               tab1,
-                               "This integration leverages potential hardware acceleration via AES-NI," );
-                    mvwprintw(
-                        main_window, yy++, tab1, "making AES-256 CTR ideal for secure and fast data wiping in nwipe." );
-                    mvwprintw( main_window,
-                               yy++,
-                               tab1,
-                               "                                                                            " );
-                    mvwprintw( main_window,
-                               yy++,
-                               tab1,
-                               "Compliant with NIST SP 800-38A, it is a global standard for encryption." );
-                    mvwprintw(
-                        main_window, yy++, tab1, "Designed for 64-bit Linux systems with kernel CryptoAPI support." );
+                    yy = 2;
+                    mvwprintw( main_window, yy++, tab2, "AES-256 in Counter Mode (CTR), implemented   " );
+                    mvwprintw( main_window, yy++, tab2, "by Fabian Druschke using the Linux kernel's  " );
+                    mvwprintw( main_window, yy++, tab2, "AF_ALG cryptographic API for efficient pseudo" );
+                    mvwprintw( main_window, yy++, tab2, "random data generation. Hardware acceleration" );
+                    mvwprintw( main_window, yy++, tab2, "via AES-NI, makes AES-256 CTR ideal for      " );
+                    mvwprintw( main_window, yy++, tab2, "secure and fast data wiping in nwipe.  " );
+                    mvwprintw( main_window, yy++, tab2, "                                             " );
+                    mvwprintw( main_window, yy++, tab2, "Compliant with NIST SP 800-38A, it is a      " );
+                    mvwprintw( main_window, yy++, tab2, "global standard for encryption. Designed for " );
+
+                    mvwprintw( main_window, yy++, tab2, "64-bit Linux systems with kernel CryptoAPI.  " );
+                    mvwprintw( main_window, 14, tab1, "Fastest PRNG for you hardware? type o to find out" );
                 }
                 else
                 {
+                    yy = 2;
                     /* Dimmed, shortened explanation when AES-NI is not available. */
                     wattron( main_window, A_DIM );
 
-                    mvwprintw( main_window, yy++, tab1, "AES-256 in Counter Mode (CTR) PRNG (N/A on this system)" );
-                    mvwprintw(
-                        main_window, yy++, tab1, "This PRNG uses AES-NI acceleration via the Linux kernel CryptoAPI." );
-                    mvwprintw( main_window, yy++, tab1, "It is not available because your CPU does not support the" );
-                    mvwprintw( main_window, yy++, tab1, "required AES-NI instruction set." );
-                    mvwprintw( main_window,
-                               yy++,
-                               tab1,
-                               "                                                                            " );
-                    mvwprintw(
-                        main_window, yy++, tab1, "You can still use all other PRNGs (e.g. xoroshiro-256, ISAAC, MT)." );
+                    mvwprintw( main_window, yy++, tab2, "AES-256 in Counter Mode (CTR) PRNG is NOT    " );
+                    mvwprintw( main_window, yy++, tab2, "available on this system. This PRNG uses     " );
+                    mvwprintw( main_window, yy++, tab2, "AES-NI acceleration via the Linux kernel     " );
+                    mvwprintw( main_window, yy++, tab2, "CryptoAPI. It is not available because your  " );
+                    mvwprintw( main_window, yy++, tab2, "CPU does not support the required AES-NI     " );
+                    mvwprintw( main_window, yy++, tab2, "instruction set. You can still use all other " );
+                    mvwprintw( main_window, yy++, tab2, "                                             " );
+                    mvwprintw( main_window, yy++, tab2, "PRNGs (e.g. xoroshiro-256, ISAAC, MT).       " );
 
                     wattroff( main_window, A_DIM );
+
+                    mvwprintw( main_window, 14, tab1, "Fastest PRNG for you hardware? type o to find out" );
                 }
 
                 break;
@@ -2469,6 +2360,11 @@ void nwipe_gui_prng( void )
                 /* No valid selection (e.g. AES-CTR without AES-NI): stay in dialog. */
                 break;
             }
+
+            case 'o':
+                // validkeyhit = 1;
+                nwipe_gui_benchmark_prng();
+                break;
 
             case KEY_BACKSPACE:
             case KEY_BREAK:

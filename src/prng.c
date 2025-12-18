@@ -29,13 +29,13 @@
 #include "xor/xoroshiro256_prng.h"  //XORoshiro-256 prototype
 #include "aes/aes_ctr_prng.h"  // AES-NI prototype
 
-nwipe_prng_t nwipe_twister = { "Mersenne Twister (mt19937ar-cok)", nwipe_twister_init, nwipe_twister_read };
+nwipe_prng_t nwipe_twister = { "Mersenne Twister", nwipe_twister_init, nwipe_twister_read };
 
-nwipe_prng_t nwipe_isaac = { "ISAAC (rand.c 20010626)", nwipe_isaac_init, nwipe_isaac_read };
-nwipe_prng_t nwipe_isaac64 = { "ISAAC-64 (isaac64.c)", nwipe_isaac64_init, nwipe_isaac64_read };
+nwipe_prng_t nwipe_isaac = { "ISAAC", nwipe_isaac_init, nwipe_isaac_read };
+nwipe_prng_t nwipe_isaac64 = { "ISAAC-64", nwipe_isaac64_init, nwipe_isaac64_read };
 
 /* ALFG PRNG Structure */
-nwipe_prng_t nwipe_add_lagg_fibonacci_prng = { "Lagged Fibonacci generator",
+nwipe_prng_t nwipe_add_lagg_fibonacci_prng = { "Lagged Fibonacci",
                                                nwipe_add_lagg_fibonacci_prng_init,
                                                nwipe_add_lagg_fibonacci_prng_read };
 /* XOROSHIRO-256 PRNG Structure */
