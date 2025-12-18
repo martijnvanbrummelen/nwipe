@@ -209,15 +209,6 @@ static void nwipe_gui_draw_acs_prefix( WINDOW* w, int y, int x )
     mvwaddch( w, y, x + 3, ' ' );
 }
 
-typedef struct
-{
-    const nwipe_prng_t* prng;
-    double mbps;
-    double seconds;
-    unsigned long long bytes;
-    int rc;
-} nwipe_prng_bench_result_t;
-
 static double nwipe_gui_monotonic_seconds( void )
 {
     struct timespec ts;

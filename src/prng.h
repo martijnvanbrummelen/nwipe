@@ -45,6 +45,25 @@ typedef struct
     nwipe_prng_read_t read;  // Read data from the prng.
 } nwipe_prng_t;
 
+typedef struct
+{
+    const nwipe_prng_t* prng;
+    double mbps;
+    double seconds;
+    unsigned long long bytes;
+    int rc;
+} nwipe_prng_bench_result_t;
+
+int nwipe_prng_benchmark_all( double seconds_per_prng,
+                              size_t io_block_bytes,
+                              nwipe_prng_bench_result_t* results,
+                              size_t results_count );
+
+const nwipe_prng_t* nwipe_prng_select_fastest( double seconds_per_prng,
+                                               size_t io_block_bytes,
+                                               nwipe_prng_bench_result_t* results,
+                                               size_t results_count );
+
 /* Mersenne Twister prototypes. */
 int nwipe_twister_init( NWIPE_PRNG_INIT_SIGNATURE );
 int nwipe_twister_read( NWIPE_PRNG_READ_SIGNATURE );
