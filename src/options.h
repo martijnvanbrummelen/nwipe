@@ -78,6 +78,7 @@ typedef struct
     int PDFtag;  // Enable display of hostID, such as UUID or serial no. on PDF report.
     nwipe_verify_t verify;  // A flag to indicate whether writes should be verified.
     nwipe_io_mode_t io_mode;  // Runtime I/O mode selection (auto/direct/cached).
+    int noabort_block_errors;  // 0 = abort on errors, 1 = Continue on errors.
 } nwipe_options_t;
 
 extern nwipe_options_t nwipe_options;
