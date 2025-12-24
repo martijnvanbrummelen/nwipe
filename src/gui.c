@@ -2679,6 +2679,9 @@ void nwipe_gui_method( void )
         case 11:
             nwipe_options.method = &nwipe_bmb;
             break;
+        case 12:
+            nwipe_options.method = &nwipe_secure_erase;
+            break;
     }
 
 } /* nwipe_gui_method */
