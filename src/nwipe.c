@@ -643,7 +643,7 @@ int main( int argc, char** argv )
     for( i = 0; i < nwipe_enumerated; i++ )
     {
 
-        if( nwipe_options.autonuke )
+        if( nwipe_options.autonuke == 1 )
         {
             /* When the autonuke option is set, select all disks. */
             // TODO - partitions
@@ -691,33 +691,54 @@ int main( int argc, char** argv )
         &nwipe_temperature_thread, NULL, nwipe_update_temperature_thread, &nwipe_temperature_thread_data );
 
     /* Start the ncurses interface. */
-    if( !nwipe_options.nogui )
-        nwipe_gui_init();
-
-    if( nwipe_options.autonuke == 1 )
+    switch( nwipe_options.nogui )
     {
-        /* Print the options window. */
-        if( !nwipe_options.nogui )
-            nwipe_gui_options();
+        case 0:
+            nwipe_gui_init();
+            break;
+
+        case 1:
+            break;
+
+        default:
+            printf( "system error: nwipe_options.nogui (should be 0 or 1) is invalid, nwipe_options.nogui=%i !? \n",
+                    nwipe_options.nogui );
     }
-    else
-    {
-        /* Get device selections from the user. */
-        if( nwipe_options.nogui )
-        {
-            printf( "--nogui option must be used with autonuke option\n" );
-            cleanup();
-            exit( 1 );
-        }
-        else
-        {
-            if( nwipe_options.PDF_preview_details == 1 )
-            {
-                nwipe_gui_preview_org_customer( SHOWING_PRIOR_TO_DRIVE_SELECTION );
-            }
 
-            nwipe_gui_select( nwipe_enumerated, c1 );
-        }
+    switch( nwipe_options.autonuke )
+    {
+        case 0:
+            /* The user can't specify the nogui option without also using the autonuke option */
+            if( nwipe_options.nogui == 1 )
+            {
+                printf( "--nogui option must be used with autonuke option\n" );
+                cleanup();
+                exit( 1 );
+            }
+            else
+            {
+                /* If selected show customer and organisation details BEFORE drive selection screen */
+                if( nwipe_options.PDF_preview_details == 1 )
+                {
+                    nwipe_gui_preview_org_customer( SHOWING_PRIOR_TO_DRIVE_SELECTION );
+                }
+
+                /* Get device selections from the user. */
+                nwipe_gui_select( nwipe_enumerated, c1 );
+            }
+            break;
+
+        case 1:
+            /* Print the options window. */
+            if( !nwipe_options.nogui )
+                nwipe_gui_options();
+
+            break;
+
+        default:
+            printf(
+                "system error: nwipe_options.autonuke (should be 0 or 1) is invalid, nwipe_options.autonuke=%i !? \n",
+                nwipe_options.autonuke );
     }
 
     /* Initialise some of the variables in the drive contexts

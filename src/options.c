@@ -725,7 +725,7 @@ void nwipe_options_log( void )
 
     nwipe_log( NWIPE_LOG_NOTICE, "Program options are set as follows..." );
 
-    if( nwipe_options.autonuke )
+    if( nwipe_options.autonuke == 1 )
     {
         nwipe_log( NWIPE_LOG_NOTICE, "  autonuke = %i (on)", nwipe_options.autonuke );
     }
