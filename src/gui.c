@@ -8266,16 +8266,22 @@ char* str_truncate( int wcols, int start_column, const char* input, char* output
      */
 
     int length, idx = 0;
-
-    length = wcols - start_column - 1;
-    idx = 0;
-    while( idx < output_length && idx < length )
+    if( start_column < wcols )
     {
-        output[idx] = input[idx];
-        idx++;
+        length = wcols - start_column - 1;
+        idx = 0;
+        while( idx < output_length - 1 && idx < length && input[idx] != 0 )
+        {
+            output[idx] = input[idx];
+            idx++;
+        }
+        /* terminate the string */
+        output[idx] = 0;
     }
-    /* terminate the string */
-    output[idx] = 0;
+    else
+    {
+        strncpy( output, "Error:start_column>=wcols", output_length - 1 );
+    }
 
     return output;
 }
