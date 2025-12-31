@@ -818,6 +818,22 @@ const nwipe_prng_t* nwipe_prng_select_fastest( double seconds_per_prng,
     if( n <= 0 )
         return NULL;
 
+    printf( "Analysing PRNG performance:\n" );
+    fflush( stdout );
+
+    for( int i = 0; i < n; i++ )
+    {
+        if( results[i].prng == NULL )
+            continue;
+
+        if( results[i].rc == 0 )
+            printf( "%-22s -> %8.1f MB/s\n", results[i].prng->label, results[i].mbps );
+        else
+            printf( "%-22s -> (failed: rc=%d)\n", results[i].prng->label, results[i].rc );
+
+        fflush( stdout );
+    }
+
     const nwipe_prng_t* best = NULL;
     double best_mbps = 0.0;
 
@@ -833,6 +849,13 @@ const nwipe_prng_t* nwipe_prng_select_fastest( double seconds_per_prng,
     if( best == NULL )
     {
         nwipe_log( NWIPE_LOG_WARNING, "Auto PRNG selection: no successful PRNG benchmark" );
+        printf( "Auto PRNG selection: no successful PRNG benchmark\n" );
+        fflush( stdout );
+    }
+    else
+    {
+        printf( "Selected PRNG: %s\n", best->label );
+        fflush( stdout );
     }
 
     return best;
