@@ -59,6 +59,13 @@ typedef enum nwipe_select_t_ {
     NWIPE_SELECT_DISABLED  // Do not wipe this device and do not allow it to be selected.
 } nwipe_select_t;
 
+/* I/O mode for data path: auto, direct, or cached. */
+typedef enum {
+    NWIPE_IO_MODE_AUTO = 0, /* Try O_DIRECT, fall back to cached I/O if not supported. */
+    NWIPE_IO_MODE_DIRECT, /* Force O_DIRECT, fail if not supported. */
+    NWIPE_IO_MODE_CACHED /* Force cached I/O, never attempt O_DIRECT. */
+} nwipe_io_mode_t;
+
 #define NWIPE_KNOB_SPEEDRING_SIZE 30
 #define NWIPE_KNOB_SPEEDRING_GRANULARITY 10
 
@@ -199,6 +206,7 @@ typedef struct nwipe_context_t_
     char HPA_size_text[NWIPE_DEVICE_SIZE_TXT_LENGTH];  // Human readable size bytes, KB, MB, GB ..
     int HPA_display_toggle_state;  // 0 or 1 Used to toggle between "[1TB] [ 33C]" and [HDA STATUS]
     time_t HPA_toggle_time;  // records a time, then if for instance 3 seconds has elapsed the display changes
+    nwipe_io_mode_t io_mode;  // specific I/O method for a given drive, direct or cached.
     int test_use1;
     int test_use2;
 
