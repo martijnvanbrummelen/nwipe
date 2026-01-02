@@ -388,7 +388,7 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
 
     /* For direct I/O we do not need periodic fdatasync(), I/O errors are detected
      * at write() time. Keep sync for cached I/O only. */
-    if( nwipe_options.io_mode == NWIPE_IO_MODE_DIRECT )
+    if( c->io_mode == NWIPE_IO_MODE_DIRECT )
     {
         syncRate = 0;
     }
@@ -824,6 +824,13 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
     u64 z = c->device_size;
 
     int syncRate = nwipe_options.sync;
+    /* For direct I/O we do not need periodic fdatasync(), I/O errors are detected
+     * at write() time. Keep sync for cached I/O only. */
+    if( c->io_mode == NWIPE_IO_MODE_DIRECT )
+    {
+        syncRate = 0;
+    }
+
     int i = 0;
 
     if( pattern == NULL )

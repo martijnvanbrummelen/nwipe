@@ -738,10 +738,12 @@ int main( int argc, char** argv )
                 if( open_flags & O_DIRECT )
                 {
                     io_desc = "direct I/O (O_DIRECT)";
+                    c2[i]->io_mode = NWIPE_IO_MODE_DIRECT;
                 }
                 else
                 {
                     io_desc = "cached I/O";
+                    c2[i]->io_mode = NWIPE_IO_MODE_CACHED;
                 }
 
                 nwipe_log( NWIPE_LOG_NOTICE, "Using %s on device '%s'.", io_desc, c2[i]->device_name );
