@@ -386,18 +386,22 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
 
     int syncRate = nwipe_options.sync;
 
-    /* For direct I/O we do not need periodic fdatasync(), I/O errors are detected
-     * at write() time. Keep sync for cached I/O only. */
-    if( nwipe_options.io_mode == NWIPE_IO_MODE_DIRECT )
-    {
-        syncRate = 0;
-    }
-
     /* Select effective I/O block size (e.g. 4 MiB, never smaller than st_blksize). */
     io_blocksize = nwipe_effective_io_blocksize( c );
 
-    /* Compute the per-write sync rate based on io_blocksize and old semantics. */
-    syncRate = nwipe_compute_sync_rate_for_device( c, io_blocksize );
+    /* For direct I/O we do not need periodic fdatasync(), I/O errors are detected
+     * at write() time. Keep sync for cached I/O only. */
+
+    if( c->io_mode == NWIPE_IO_MODE_DIRECT )
+    {
+        syncRate = 0;
+        nwipe_log( NWIPE_LOG_NOTICE, "Disabled fdatasync for %s, DirectI/O in use.", c->device_name );
+    }
+    else /* for cached I/O only */
+    {
+        /* Compute the per-write sync rate based on io_blocksize and old semantics. */
+        syncRate = nwipe_compute_sync_rate_for_device( c, io_blocksize );
+    }
 
     int i = 0;
     int idx;
@@ -824,6 +828,22 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
     u64 z = c->device_size;
 
     int syncRate = nwipe_options.sync;
+
+    io_blocksize = nwipe_effective_io_blocksize( c );
+
+    /* For direct I/O we do not need periodic fdatasync(), I/O errors are detected
+     * at write() time. Keep sync for cached I/O only. */
+    if( c->io_mode == NWIPE_IO_MODE_DIRECT )
+    {
+        syncRate = 0;
+        nwipe_log( NWIPE_LOG_NOTICE, "Disabled fdatasync for %s, DirectI/O in use.", c->device_name );
+    }
+    else /* for cached I/O only */
+    {
+        /* Compute per-write sync rate (same semantics as random pass). */
+        syncRate = nwipe_compute_sync_rate_for_device( c, io_blocksize );
+    }
+
     int i = 0;
 
     if( pattern == NULL )
@@ -837,11 +857,6 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
         nwipe_log( NWIPE_LOG_SANITY, "__FUNCTION__: The pattern length member is %i.", pattern->length );
         return -1;
     }
-
-    io_blocksize = nwipe_effective_io_blocksize( c );
-
-    /* Compute per-write sync rate (same semantics as random pass). */
-    syncRate = nwipe_compute_sync_rate_for_device( c, io_blocksize );
 
     /*
      * For static patterns we want enough buffer space to always have a
