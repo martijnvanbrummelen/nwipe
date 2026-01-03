@@ -385,10 +385,17 @@ int main( int argc, char** argv )
         nwipe_prng_bench_result_t results[16];
         memset( results, 0, sizeof( results ) );
 
+        /* ------------------------------------------------------------
+         * --prng-benchmark-only path
+         * (keep output clean: no live "Testing..." lines by default)
+         * ------------------------------------------------------------ */
         if( nwipe_options.prng_benchmark_only )
         {
-            int n = nwipe_prng_benchmark_all(
-                seconds, io_block, results, (int) ( sizeof( results ) / sizeof( results[0] ) ) );
+            const int live_print = 0; /* set to 1 if you also want live here */
+
+            int n = nwipe_prng_benchmark_all_live(
+                seconds, io_block, results, (int) ( sizeof( results ) / sizeof( results[0] ) ), live_print );
+
             if( n <= 0 )
             {
                 nwipe_log( NWIPE_LOG_ERROR, "PRNG benchmark failed (no results)." );
@@ -435,11 +442,31 @@ int main( int argc, char** argv )
             exit( 0 );
         }
 
-        /* --prng=auto path */
+        /* ------------------------------------------------------------
+         * --prng=auto path
+         * (THIS is the path where live output matters for “GUI delay”)
+         * ------------------------------------------------------------ */
         if( nwipe_options.prng_auto )
         {
+            /* live_print=1: prints:
+             *  - "Analysing PRNG performance:" immediately (with spinner)
+             *  - "Testing <PRNG> performance..." per PRNG
+             *  - "<PRNG> -> xx.x MB/s" immediately after each PRNG
+             */
+            const int live_print = 1;
+
+            /* Option A (preferred): make select_fastest call the live benchmark internally.
+             *   best = nwipe_prng_select_fastest(seconds, io_block, results, count);
+             * and inside select_fastest use nwipe_prng_benchmark_all_live(..., 1)
+             *
+             * Option B: benchmark here (live), then choose best locally.
+             * Since you already have nwipe_prng_select_fastest(), stick with Option A.
+             */
+
             const nwipe_prng_t* best = nwipe_prng_select_fastest(
-                seconds, io_block, results, (int) ( sizeof( results ) / sizeof( results[0] ) ) );
+                seconds, io_block, results, (int) ( sizeof( results ) / sizeof( results[0] ) ) /* results_count */
+                /* ensure select_fastest uses nwipe_prng_benchmark_all_live(..., live_print) */
+            );
 
             if( best != NULL )
             {
