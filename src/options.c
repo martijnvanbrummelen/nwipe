@@ -91,6 +91,8 @@ int nwipe_options_parse( int argc, char** argv )
 
         /* The Pseudo Random Number Generator. */
         { "prng", required_argument, 0, 'p' },
+        { "prng-benchmark", no_argument, 0, 0 },
+        { "prng-bench-seconds", required_argument, 0, 0 },
 
         /* The number of times to run the method. */
         { "rounds", required_argument, 0, 'r' },
@@ -139,6 +141,10 @@ int nwipe_options_parse( int argc, char** argv )
     nwipe_options.autonuke = 0;
     nwipe_options.autopoweroff = 0;
     nwipe_options.method = &nwipe_random;
+    nwipe_options.prng_auto = 0;
+    nwipe_options.prng_benchmark_only = 0;
+    nwipe_options.prng_bench_seconds = 1.0; /* default for interactive / manual */
+
     /*
      * Determines and sets the default PRNG based on AES-NI support and system architecture.
      * It selects AES-CTR PRNG if AES-NI is supported, xoroshiro256 for 64-bit systems without AES-NI,
@@ -571,6 +577,21 @@ int nwipe_options_parse( int argc, char** argv )
                     break;
                 }
 
+                if( strcmp( nwipe_options_long[i].name, "prng-benchmark" ) == 0 )
+                {
+                    nwipe_options.prng_benchmark_only = 1;
+                    break;
+                }
+                if( strcmp( nwipe_options_long[i].name, "prng-bench-seconds" ) == 0 )
+                {
+                    nwipe_options.prng_bench_seconds = atof( optarg );
+                    if( nwipe_options.prng_bench_seconds < 0.05 )
+                        nwipe_options.prng_bench_seconds = 0.05;
+                    if( nwipe_options.prng_bench_seconds > 10.0 )
+                        nwipe_options.prng_bench_seconds = 10.0;
+                    break;
+                }
+
                 /* getopt_long should raise on invalid option, so we should never get here. */
                 exit( EINVAL );
 
@@ -737,6 +758,12 @@ int nwipe_options_parse( int argc, char** argv )
 
             case 'p': /* PRNG option. */
 
+                if( strcmp( optarg, "auto" ) == 0 )
+                {
+                    nwipe_options.prng_auto = 1;
+                    /* keep current default as fallback until autoselect runs */
+                    break;
+                }
                 if( strcmp( optarg, "mersenne" ) == 0 || strcmp( optarg, "twister" ) == 0 )
                 {
                     nwipe_options.prng = &nwipe_twister;
@@ -996,6 +1023,18 @@ void display_help()
     puts( "                           If set to \"noPDF\" no PDF reports are written.\n" );
     puts( "  -p, --prng=METHOD        PRNG option "
           "(mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng|xoroshiro256_prng|aes_ctr_prng)\n" );
+    puts( "  --prng=auto" );
+    puts( "      Automatically benchmark all available PRNGs at startup and" );
+    puts( "      select the fastest one for the current hardware." );
+    puts( "" );
+    puts( "  --prng-benchmark" );
+    puts( "      Run a RAM-only PRNG throughput benchmark and exit." );
+    puts( "      Prints a sorted leaderboard (MB/s). No wipe is performed." );
+    puts( "" );
+    puts( "  --prng-bench-seconds=N" );
+    puts( "      Seconds per PRNG during benchmarking (default: 1.0)." );
+    puts( "      For --prng=auto this is automatically reduced unless set." );
+
     puts( "  -q, --quiet              Anonymize logs and the GUI by removing unique data, i.e." );
     puts( "                           serial numbers, LU WWN Device ID, and SMBIOS/DMI data." );
     puts( "                           XXXXXX = S/N exists, ????? = S/N not obtainable\n" );

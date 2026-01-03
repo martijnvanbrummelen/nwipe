@@ -58,6 +58,9 @@ typedef struct
     int nowait;  // Do not wait for a final key before exiting.
     int nosignals;  // Do not allow signals to interrupt a wipe.
     int nogui;  // Do not show the GUI.
+    int prng_auto; /* 1 = auto-select fastest PRNG at startup */
+    int prng_benchmark_only; /* 1 = run PRNG benchmark and exit (nogui-friendly) */
+    double prng_bench_seconds; /* seconds per PRNG (default e.g. 0.25 for auto, 1.0 for manual) */
     char* banner;  // The product banner shown on the top line of the screen.
     void* method;  // A function pointer to the wipe method that will be used.
     char logfile[FILENAME_MAX];  // The filename to log the output to.

@@ -96,6 +96,25 @@ int devnamecmp( const void* a, const void* b )
     return ( ret );
 }
 
+static int nwipe_prng_bench_cmp_desc( const void* a, const void* b )
+{
+    const nwipe_prng_bench_result_t* A = (const nwipe_prng_bench_result_t*) a;
+    const nwipe_prng_bench_result_t* B = (const nwipe_prng_bench_result_t*) b;
+
+    /* successful results first */
+    if( A->rc != 0 && B->rc == 0 )
+        return 1;
+    if( A->rc == 0 && B->rc != 0 )
+        return -1;
+
+    /* then sort by MB/s */
+    if( A->mbps < B->mbps )
+        return 1;
+    if( A->mbps > B->mbps )
+        return -1;
+    return 0;
+}
+
 #define NWIPE_PDF_DIR_MODE ( S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH )
 /* -> 0755: rwx for owner, r-x for group and others */
 
@@ -338,6 +357,106 @@ int main( int argc, char** argv )
 
     /* Log OS info */
     nwipe_log_OSinfo();
+
+    /* ------------------------------------------------------------
+     * PRNG benchmark / auto-select (runs before device scan)
+     * ------------------------------------------------------------ */
+    if( nwipe_options.prng_benchmark_only || nwipe_options.prng_auto )
+    {
+        /* tune defaults */
+        const size_t io_block = 4 * 1024 * 1024; /* 4 MiB RAM buffer blocks */
+        double seconds = nwipe_options.prng_bench_seconds;
+
+        /* If user requested auto-select and didn't override seconds, keep it short */
+        if( nwipe_options.prng_auto )
+        {
+            if( seconds <= 0.0 )
+                seconds = 0.25;
+            /* Optional: if you consider "1.0" to be the default and want auto shorter:
+             * if( seconds == 1.0 ) seconds = 0.25;
+             */
+        }
+        else
+        {
+            if( seconds <= 0.0 )
+                seconds = 1.0;
+        }
+
+        nwipe_prng_bench_result_t results[16];
+        memset( results, 0, sizeof( results ) );
+
+        if( nwipe_options.prng_benchmark_only )
+        {
+            int n = nwipe_prng_benchmark_all(
+                seconds, io_block, results, (int) ( sizeof( results ) / sizeof( results[0] ) ) );
+            if( n <= 0 )
+            {
+                nwipe_log( NWIPE_LOG_ERROR, "PRNG benchmark failed (no results)." );
+                printf( "PRNG benchmark failed (no results).\n" );
+                cleanup();
+                exit( 3 );
+            }
+
+            qsort( results, (size_t) n, sizeof( results[0] ), nwipe_prng_bench_cmp_desc );
+
+            /* Print to console + log */
+            printf( "\nPRNG Benchmark (RAM-only) ~%.2fs each, block=%zu MiB\n", seconds, io_block / ( 1024 * 1024 ) );
+            printf( "---------------------------------------------------\n" );
+
+            nwipe_log( NWIPE_LOG_INFO,
+                       "PRNG Benchmark (RAM-only) ~%.2fs each, block=%zu MiB",
+                       seconds,
+                       io_block / ( 1024 * 1024 ) );
+
+            for( int i = 0; i < n; i++ )
+            {
+                if( results[i].rc == 0 )
+                {
+                    printf( "%2d) %-40s %10.1f MB/s\n", i + 1, results[i].prng->label, results[i].mbps );
+                    nwipe_log( NWIPE_LOG_INFO,
+                               "PRNG bench %2d) %-40s %10.1f MB/s",
+                               i + 1,
+                               results[i].prng->label,
+                               results[i].mbps );
+                }
+                else
+                {
+                    printf( "%2d) %-40s (failed: rc=%d)\n", i + 1, results[i].prng->label, results[i].rc );
+                    nwipe_log( NWIPE_LOG_WARNING,
+                               "PRNG bench %2d) %-40s (failed: rc=%d)",
+                               i + 1,
+                               results[i].prng->label,
+                               results[i].rc );
+                }
+            }
+
+            printf( "\n" );
+            cleanup();
+            exit( 0 );
+        }
+
+        /* --prng=auto path */
+        if( nwipe_options.prng_auto )
+        {
+            const nwipe_prng_t* best = nwipe_prng_select_fastest(
+                seconds, io_block, results, (int) ( sizeof( results ) / sizeof( results[0] ) ) );
+
+            if( best != NULL )
+            {
+                /* Apply selection */
+                nwipe_options.prng = (nwipe_prng_t*) best;
+
+                nwipe_log( NWIPE_LOG_INFO, "Auto-selected fastest PRNG: %s", best->label );
+                printf( "Auto-selected fastest PRNG: %s\n", best->label );
+            }
+            else
+            {
+                nwipe_log( NWIPE_LOG_WARNING,
+                           "Auto PRNG selection: no working PRNG found, keeping configured default." );
+                printf( "Auto PRNG selection: no working PRNG found, keeping configured default.\n" );
+            }
+        }
+    }
 
     /* Check that hdparm exists, we use hdparm for some HPA/DCO detection etc, if not
      * exit nwipe. These checks are required if the PATH environment is not setup !

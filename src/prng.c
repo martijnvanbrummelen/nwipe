@@ -44,6 +44,15 @@ nwipe_prng_t nwipe_xoroshiro256_prng = { "XORoshiro-256", nwipe_xoroshiro256_prn
 /* AES-CTR-NI PRNG Structure */
 nwipe_prng_t nwipe_aes_ctr_prng = { "AES-CTR (Kernel)", nwipe_aes_ctr_prng_init, nwipe_aes_ctr_prng_read };
 
+static const nwipe_prng_t* all_prngs[] = {
+    &nwipe_twister,
+    &nwipe_isaac,
+    &nwipe_isaac64,
+    &nwipe_add_lagg_fibonacci_prng,
+    &nwipe_xoroshiro256_prng,
+    &nwipe_aes_ctr_prng,
+};
+
 /* Print given number of bytes from unsigned integer number to a byte stream buffer starting with low-endian. */
 static inline void u32_to_buffer( u8* restrict buffer, u32 val, const int len )
 {
@@ -680,4 +689,174 @@ int nwipe_aes_ctr_prng_read( NWIPE_PRNG_READ_SIGNATURE )
         }
     }
     return 0;
+}
+
+/* ----------------------------------------------------------------------
+ * PRNG benchmark / auto-selection core
+ * ---------------------------------------------------------------------- */
+
+static double nwipe_prng_monotonic_seconds( void )
+{
+    struct timespec ts;
+    clock_gettime( CLOCK_MONOTONIC, &ts );
+    return (double) ts.tv_sec + (double) ts.tv_nsec / 1000000000.0;
+}
+
+/* einfacher LCG zum Seed-Befüllen – nur für Benchmark, kein Kryptokram */
+static void nwipe_prng_make_seed( unsigned char* seed, size_t len )
+{
+    unsigned long t = (unsigned long) time( NULL );
+    unsigned long x = ( t ^ 0xA5A5A5A5UL ) + (unsigned long) (uintptr_t) seed;
+
+    for( size_t i = 0; i < len; i++ )
+    {
+        x = x * 1664525UL + 1013904223UL;
+        seed[i] = (unsigned char) ( ( x >> 16 ) & 0xFF );
+    }
+}
+
+static void* nwipe_prng_alloc_aligned( size_t alignment, size_t size )
+{
+    void* p = NULL;
+    if( posix_memalign( &p, alignment, size ) != 0 )
+        return NULL;
+    return p;
+}
+
+static void nwipe_prng_bench_one( const nwipe_prng_t* prng,
+                                  nwipe_prng_bench_result_t* out,
+                                  void* io_buf,
+                                  size_t io_block,
+                                  double seconds_per_prng )
+{
+    void* state = NULL;
+
+    unsigned char seedbuf[4096];
+    nwipe_entropy_t seed;
+    seed.s = (u8*) seedbuf;
+    seed.length = sizeof( seedbuf );
+    nwipe_prng_make_seed( seedbuf, sizeof( seedbuf ) );
+
+    out->prng = prng;
+    out->mbps = 0.0;
+    out->seconds = 0.0;
+    out->bytes = 0;
+    out->rc = 0;
+
+    int rc = prng->init( &state, &seed );
+    if( rc != 0 )
+    {
+        out->rc = rc;
+        if( state )
+            free( state );
+        return;
+    }
+
+    const double t0 = nwipe_prng_monotonic_seconds();
+    double now = t0;
+
+    while( ( now - t0 ) < seconds_per_prng )
+    {
+        rc = prng->read( &state, io_buf, io_block );
+        if( rc != 0 )
+        {
+            out->rc = rc;
+            break;
+        }
+
+        out->bytes += (unsigned long long) io_block;
+        now = nwipe_prng_monotonic_seconds();
+    }
+
+    out->seconds = now - t0;
+    if( out->rc == 0 && out->seconds > 0.0 )
+    {
+        out->mbps = ( (double) out->bytes / ( 1024.0 * 1024.0 ) ) / out->seconds;
+    }
+
+    if( state )
+        free( state );
+}
+
+int nwipe_prng_benchmark_all( double seconds_per_prng,
+                              size_t io_block_bytes,
+                              nwipe_prng_bench_result_t* results,
+                              size_t results_count )
+{
+    if( results == NULL || results_count == 0 )
+        return 0;
+
+    /* Anzahl PRNGs begrenzen auf results_count */
+    size_t max = sizeof( all_prngs ) / sizeof( all_prngs[0] );
+    if( results_count < max )
+        max = results_count;
+
+    void* io_buf = nwipe_prng_alloc_aligned( 4096, io_block_bytes );
+    if( !io_buf )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "PRNG benchmark: unable to allocate %zu bytes buffer", io_block_bytes );
+        return -1;
+    }
+
+    for( size_t i = 0; i < max; i++ )
+    {
+        nwipe_prng_bench_result_t* r = &results[i];
+        memset( r, 0, sizeof( *r ) );
+        nwipe_prng_bench_one( all_prngs[i], r, io_buf, io_block_bytes, seconds_per_prng );
+    }
+
+    free( io_buf );
+    return (int) max;
+}
+
+const nwipe_prng_t* nwipe_prng_select_fastest( double seconds_per_prng,
+                                               size_t io_block_bytes,
+                                               nwipe_prng_bench_result_t* results,
+                                               size_t results_count )
+{
+    int n = nwipe_prng_benchmark_all( seconds_per_prng, io_block_bytes, results, results_count );
+    if( n <= 0 )
+        return NULL;
+
+    printf( "Analysing PRNG performance:\n" );
+    fflush( stdout );
+
+    for( int i = 0; i < n; i++ )
+    {
+        if( results[i].prng == NULL )
+            continue;
+
+        if( results[i].rc == 0 )
+            printf( "%-22s -> %8.1f MB/s\n", results[i].prng->label, results[i].mbps );
+        else
+            printf( "%-22s -> (failed: rc=%d)\n", results[i].prng->label, results[i].rc );
+
+        fflush( stdout );
+    }
+
+    const nwipe_prng_t* best = NULL;
+    double best_mbps = 0.0;
+
+    for( int i = 0; i < n; i++ )
+    {
+        if( results[i].rc == 0 && results[i].mbps > best_mbps )
+        {
+            best_mbps = results[i].mbps;
+            best = results[i].prng;
+        }
+    }
+
+    if( best == NULL )
+    {
+        nwipe_log( NWIPE_LOG_WARNING, "Auto PRNG selection: no successful PRNG benchmark" );
+        printf( "Auto PRNG selection: no successful PRNG benchmark\n" );
+        fflush( stdout );
+    }
+    else
+    {
+        printf( "Selected PRNG: %s\n", best->label );
+        fflush( stdout );
+    }
+
+    return best;
 }
