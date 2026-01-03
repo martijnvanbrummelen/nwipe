@@ -142,7 +142,7 @@ int nwipe_options_parse( int argc, char** argv )
     nwipe_options.autonuke = 0;
     nwipe_options.autopoweroff = 0;
     nwipe_options.method = &nwipe_random;
-    nwipe_options.prng_auto = 0;
+    nwipe_options.prng_auto = 1; /* by default the PRNG is selected through the benchmark selection */
     nwipe_options.prng_benchmark_only = 0;
     nwipe_options.prng_bench_seconds = 1.0; /* default for interactive / manual */
 
@@ -611,12 +611,25 @@ int nwipe_options_parse( int argc, char** argv )
 
             case 'p': /* PRNG option. */
 
+                /* Default behaviour is auto now, but allow explicit opt-out */
                 if( strcmp( optarg, "auto" ) == 0 )
                 {
                     nwipe_options.prng_auto = 1;
                     /* keep current default as fallback until autoselect runs */
                     break;
                 }
+
+                /* NEW: disable auto and keep compiled-in default selection */
+                if( strcmp( optarg, "default" ) == 0 || strcmp( optarg, "manual" ) == 0 )
+                {
+                    nwipe_options.prng_auto = 0;
+                    /* keep nwipe_options.prng as chosen by CPU heuristics above */
+                    break;
+                }
+
+                /* Any explicit PRNG selection implies auto off */
+                nwipe_options.prng_auto = 0;
+
                 if( strcmp( optarg, "mersenne" ) == 0 || strcmp( optarg, "twister" ) == 0 )
                 {
                     nwipe_options.prng = &nwipe_twister;
@@ -634,16 +647,19 @@ int nwipe_options_parse( int argc, char** argv )
                     nwipe_options.prng = &nwipe_isaac64;
                     break;
                 }
+
                 if( strcmp( optarg, "add_lagg_fibonacci_prng" ) == 0 )
                 {
                     nwipe_options.prng = &nwipe_add_lagg_fibonacci_prng;
                     break;
                 }
+
                 if( strcmp( optarg, "xoroshiro256_prng" ) == 0 )
                 {
                     nwipe_options.prng = &nwipe_xoroshiro256_prng;
                     break;
                 }
+
                 if( strcmp( optarg, "aes_ctr_prng" ) == 0 )
                 {
                     if( has_aes_ni() )
@@ -660,7 +676,6 @@ int nwipe_options_parse( int argc, char** argv )
                     break;
                 }
 
-                /* Else we do not know this PRNG. */
                 fprintf( stderr, "Error: Unknown prng '%s'.\n", optarg );
                 exit( EINVAL );
 
@@ -877,9 +892,15 @@ void display_help()
     puts( "                           If set to \"noPDF\" no PDF reports are written.\n" );
     puts( "  -p, --prng=METHOD        PRNG option "
           "(mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng|xoroshiro256_prng|aes_ctr_prng)\n" );
-    puts( "  --prng=auto" );
+    puts( "  --prng=auto              (default)" );
     puts( "      Automatically benchmark all available PRNGs at startup and" );
     puts( "      select the fastest one for the current hardware." );
+    puts( "" );
+
+    puts( "  --prng=default" );
+    puts( "      Disable auto-selection and use the built-in default PRNG choice" );
+    puts( "      (CPU-based heuristic; no benchmarking)." );
+    puts( "      Alias: --prng=manual" );
     puts( "" );
     puts( "  --prng-benchmark" );
     puts( "      Run a RAM-only PRNG throughput benchmark and exit." );
