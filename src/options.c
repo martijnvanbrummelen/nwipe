@@ -75,7 +75,7 @@ int nwipe_options_parse( int argc, char** argv )
         { "autopoweroff", no_argument, 0, 0 },
 
         /* A GNU standard option. Corresponds to the 'h' short option. */
-        { "help", no_argument, 0, 'h' },
+        { "help", no_argument, 0, 0 },
 
         /* The wipe method. Corresponds to the 'm' short option. */
         { "method", required_argument, 0, 'm' },
@@ -111,7 +111,7 @@ int nwipe_options_parse( int argc, char** argv )
         { "nogui", no_argument, 0, 0 },
 
         /* Whether to anonymize the serial numbers. */
-        { "quiet", no_argument, 0, 'q' },
+        { "quiet", no_argument, 0, 0 },
 
         /* A flag to indicate whether the devices would be opened in sync mode. */
         { "sync", required_argument, 0, 0 },
@@ -122,16 +122,15 @@ int nwipe_options_parse( int argc, char** argv )
         /* I/O mode selection: auto/direct/cached. */
         { "directio", no_argument, 0, 0 },
         { "cachedio", no_argument, 0, 0 },
-        { "io-mode", required_argument, 0, 0 },
 
         /* Enables a field on the PDF that holds a tag that identifies the host computer */
         { "pdftag", no_argument, 0, 0 },
 
         /* Display program version. */
-        { "verbose", no_argument, 0, 'v' },
+        { "verbose", no_argument, 0, 0 },
 
         /* Display program version. */
-        { "version", no_argument, 0, 'V' },
+        { "version", no_argument, 0, 0 },
 
         /* Requisite padding for getopt(). */
         { 0, 0, 0, 0 } };
@@ -302,51 +301,193 @@ int nwipe_options_parse( int argc, char** argv )
 
                 if( strcmp( nwipe_options_long[i].name, "autonuke" ) == 0 )
                 {
-                    nwipe_options.autonuke = 1;
-                    break;
+                    /* check for the full option name, as getopt_long() allows abreviations and can lead to unintended
+                     * consequences when the user makes a typo */
+                    if( strcmp( argv[optind - 1], "--autonuke" ) == 0 )
+                    {
+                        nwipe_options.autonuke = 1;
+                        break;
+                    }
+                    else
+                    {
+                        fprintf( stderr,
+                                 "Error: Strict command line options required, did you mean --autonuke?, you typed "
+                                 "%s.\nType `sudo nwipe --help` for options \n",
+                                 argv[optind - 1] );
+                        exit( EINVAL );
+                    }
                 }
 
                 if( strcmp( nwipe_options_long[i].name, "autopoweroff" ) == 0 )
                 {
-                    nwipe_options.autopoweroff = 1;
-                    break;
+                    /* check for the full option name, as getopt_long() allows abreviations and can lead to unintended
+                     * consequences when the user makes a typo */
+                    if( strcmp( argv[optind - 1], "--autopoweroff" ) == 0 )
+                    {
+                        nwipe_options.autopoweroff = 1;
+                        break;
+                    }
+                    else
+                    {
+                        fprintf( stderr,
+                                 "Error: Strict command line options required, did you mean --autopoweroff?, you typed "
+                                 "%s.\nType `sudo nwipe --help` for options \n",
+                                 argv[optind - 1] );
+                        exit( EINVAL );
+                    }
+                }
+
+                if( strcmp( nwipe_options_long[i].name, "help" ) == 0 )
+                {
+                    /* check for the full option name, as getopt_long() allows abreviations and can lead to unintended
+                     * consequences when the user makes a typo */
+                    if( strcmp( argv[optind - 1], "--help" ) == 0 )
+                    {
+                        display_help();
+                        exit( EINVAL );
+                    }
+                    else
+                    {
+                        fprintf( stderr,
+                                 "Error: Strict command line options required, did you mean --help?, you typed "
+                                 "%s.\nType `sudo nwipe --help` for options \n",
+                                 argv[optind - 1] );
+                        exit( EINVAL );
+                    }
                 }
 
                 if( strcmp( nwipe_options_long[i].name, "noblank" ) == 0 )
                 {
-                    nwipe_options.noblank = 1;
-                    break;
+                    /* check for the full option name, as getopt_long() allows abreviations and can lead to unintended
+                     * consequences when the user makes a typo */
+                    if( strcmp( argv[optind - 1], "--noblank" ) == 0 )
+                    {
+                        nwipe_options.noblank = 1;
+                        break;
+                    }
+                    else
+                    {
+                        fprintf( stderr,
+                                 "Error: Strict command line options required, did you mean --noblank?, you typed "
+                                 "%s.\nType `sudo nwipe --help` for options \n",
+                                 argv[optind - 1] );
+                        exit( EINVAL );
+                    }
                 }
 
                 if( strcmp( nwipe_options_long[i].name, "nousb" ) == 0 )
                 {
-                    nwipe_options.nousb = 1;
-                    break;
+                    /* check for the full option name, as getopt_long() allows abreviations and can lead to unintended
+                     * consequences when the user makes a typo */
+                    if( strcmp( argv[optind - 1], "--nousb" ) == 0 )
+                    {
+                        nwipe_options.nousb = 1;
+                        break;
+                    }
+                    else
+                    {
+                        fprintf( stderr,
+                                 "Error: Strict command line options required, did you mean --nousb?, you typed "
+                                 "%s.\nType `sudo nwipe --help` for options \n",
+                                 argv[optind - 1] );
+                        exit( EINVAL );
+                    }
                 }
 
                 if( strcmp( nwipe_options_long[i].name, "nowait" ) == 0 )
                 {
-                    nwipe_options.nowait = 1;
-                    break;
+                    /* check for the full option name, as getopt_long() allows abreviations and can lead to unintended
+                     * consequences when the user makes a typo */
+                    if( strcmp( argv[optind - 1], "--nowait" ) == 0 )
+                    {
+                        nwipe_options.nowait = 1;
+                        break;
+                    }
+                    else
+                    {
+                        fprintf( stderr,
+                                 "Error: Strict command line options required, did you mean --nowait?, you typed "
+                                 "%s.\nType `sudo nwipe --help` for options \n",
+                                 argv[optind - 1] );
+                        exit( EINVAL );
+                    }
                 }
 
                 if( strcmp( nwipe_options_long[i].name, "nosignals" ) == 0 )
                 {
-                    nwipe_options.nosignals = 1;
-                    break;
+                    /* check for the full option name, as getopt_long() allows abreviations and can lead to unintended
+                     * consequences when the user makes a typo */
+                    if( strcmp( argv[optind - 1], "--nosignals" ) == 0 )
+                    {
+                        nwipe_options.nosignals = 1;
+                        break;
+                    }
+                    else
+                    {
+                        fprintf( stderr,
+                                 "Error: Strict command line options required, did you mean --nosignals?, you typed "
+                                 "%s.\nType `sudo nwipe --help` for options \n",
+                                 argv[optind - 1] );
+                        exit( EINVAL );
+                    }
                 }
 
                 if( strcmp( nwipe_options_long[i].name, "nogui" ) == 0 )
                 {
-                    nwipe_options.nogui = 1;
-                    nwipe_options.nowait = 1;
-                    break;
+                    /* check for the full option name, as getopt_long() allows abreviations and can lead to unintended
+                     * consequences when the user makes a typo */
+                    if( strcmp( argv[optind - 1], "--nogui" ) == 0 )
+                    {
+                        nwipe_options.nogui = 1;
+                        nwipe_options.nowait = 1;
+                        break;
+                    }
+                    else
+                    {
+                        fprintf( stderr,
+                                 "Error: Strict command line options required, did you mean --nogui?, you typed "
+                                 "%s.\nType `sudo nwipe --help` for options \n",
+                                 argv[optind - 1] );
+                        exit( EINVAL );
+                    }
+                }
+
+                if( strcmp( nwipe_options_long[i].name, "quiet" ) == 0 )
+                {
+                    /* check for the full option name, as getopt_long() allows abreviations and can lead to unintended
+                     * consequences when the user makes a typo */
+                    if( strcmp( argv[optind - 1], "--quiet" ) == 0 )
+                    {
+                        nwipe_options.quiet = 1;
+                        break;
+                    }
+                    else
+                    {
+                        fprintf( stderr,
+                                 "Error: Strict command line options required, did you mean --quiet?, you typed "
+                                 "%s.\nType `sudo nwipe --help` for options \n",
+                                 argv[optind - 1] );
+                        exit( EINVAL );
+                    }
                 }
 
                 if( strcmp( nwipe_options_long[i].name, "verbose" ) == 0 )
                 {
-                    nwipe_options.verbose = 1;
-                    break;
+                    /* check for the full option name, as getopt_long() allows abreviations and can lead to unintended
+                     * consequences when the user makes a typo */
+                    if( strcmp( argv[optind - 1], "--verbose" ) == 0 )
+                    {
+                        nwipe_options.verbose = 1;
+                        break;
+                    }
+                    else
+                    {
+                        fprintf( stderr,
+                                 "Error: Strict command line options required, did you mean --verbose?, you typed "
+                                 "%s.\nType `sudo nwipe --help` for options \n",
+                                 argv[optind - 1] );
+                        exit( EINVAL );
+                    }
                 }
 
                 if( strcmp( nwipe_options_long[i].name, "sync" ) == 0 )
@@ -361,7 +502,6 @@ int nwipe_options_parse( int argc, char** argv )
 
                 if( strcmp( nwipe_options_long[i].name, "verify" ) == 0 )
                 {
-
                     if( strcmp( optarg, "0" ) == 0 || strcmp( optarg, "off" ) == 0 )
                     {
                         nwipe_options.verify = NWIPE_VERIFY_NONE;
@@ -389,36 +529,42 @@ int nwipe_options_parse( int argc, char** argv )
 
                 if( strcmp( nwipe_options_long[i].name, "directio" ) == 0 )
                 {
-                    nwipe_options.io_mode = NWIPE_IO_MODE_DIRECT;
-                    break;
+                    /* check for the full option name, as getopt_long() allows abreviations and can lead to unintended
+                     * consequences when the user makes a typo */
+                    if( strcmp( argv[optind - 1], "--directio" ) == 0 )
+                    {
+                        nwipe_options.io_mode = NWIPE_IO_MODE_DIRECT;
+                        break;
+                    }
+                    else
+                    {
+                        fprintf( stderr,
+                                 "Error: Strict command line options required, did you mean --directio?, you typed "
+                                 "%s.\nType `sudo nwipe --help` for options \n",
+                                 argv[optind - 1] );
+                        exit( EINVAL );
+                    }
                 }
 
                 if( strcmp( nwipe_options_long[i].name, "cachedio" ) == 0 )
                 {
-                    nwipe_options.io_mode = NWIPE_IO_MODE_CACHED;
-                    break;
-                }
-
-                if( strcmp( nwipe_options_long[i].name, "io-mode" ) == 0 )
-                {
-                    if( strcmp( optarg, "auto" ) == 0 )
-                    {
-                        nwipe_options.io_mode = NWIPE_IO_MODE_AUTO;
-                    }
-                    else if( strcmp( optarg, "direct" ) == 0 )
-                    {
-                        nwipe_options.io_mode = NWIPE_IO_MODE_DIRECT;
-                    }
-                    else if( strcmp( optarg, "cached" ) == 0 )
+                    /* check for the full option name, as getopt_long() allows abreviations and can lead to unintended
+                     * consequences when the user makes a typo */
+                    if( strcmp( argv[optind - 1], "--cachedio" ) == 0 )
                     {
                         nwipe_options.io_mode = NWIPE_IO_MODE_CACHED;
+                        break;
                     }
                     else
                     {
-                        fprintf( stderr, "Error: Unknown I/O mode '%s' (expected auto|direct|cached).\n", optarg );
+                        fprintf( stderr,
+                                 "Error: Strict command line options required, did you mean --cachedio?, you typed "
+                                 "%s.\nType `sudo nwipe --help` for options \n",
+                                 argv[optind - 1] );
                         exit( EINVAL );
                     }
                 }
+
                 if( strcmp( nwipe_options_long[i].name, "pdftag" ) == 0 )
                 {
                     nwipe_options.PDFtag = 1;
@@ -586,6 +732,7 @@ int nwipe_options_parse( int argc, char** argv )
             case 'h': /* Display help. */
 
                 display_help();
+                exit( EINVAL );
                 break;
 
             case 'p': /* PRNG option. */
@@ -665,7 +812,6 @@ int nwipe_options_parse( int argc, char** argv )
             default:
 
                 /* Bogus command line argument. */
-                display_help();
                 exit( EINVAL );
 
         } /* method */
@@ -875,5 +1021,4 @@ void display_help()
     puts( "                           --exclude=/dev/disk/by-id/ata-XXXXXXXX" );
     puts( "                           --exclude=/dev/disk/by-path/pci-0000:00:17.0-ata-1\n" );
     puts( "" );
-    exit( EXIT_SUCCESS );
 }
