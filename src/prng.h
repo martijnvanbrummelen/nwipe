@@ -54,10 +54,23 @@ typedef struct
     int rc;
 } nwipe_prng_bench_result_t;
 
+/* Existing API (kept for compatibility: no live output) */
 int nwipe_prng_benchmark_all( double seconds_per_prng,
                               size_t io_block_bytes,
                               nwipe_prng_bench_result_t* results,
                               size_t results_count );
+
+/* New API: live output (spinner + per-PRNG immediate prints)
+ * live_print:
+ *   0 = behave like old benchmark (silent, just fills results[])
+ *   1 = print "Analysing PRNG performance:" immediately, rotate cursor,
+ *       print "Testing <PRNG>..." before each PRNG, and print result right after.
+ */
+int nwipe_prng_benchmark_all_live( double seconds_per_prng,
+                                   size_t io_block_bytes,
+                                   nwipe_prng_bench_result_t* results,
+                                   size_t results_count,
+                                   int live_print );
 
 const nwipe_prng_t* nwipe_prng_select_fastest( double seconds_per_prng,
                                                size_t io_block_bytes,
