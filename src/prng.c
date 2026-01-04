@@ -893,12 +893,6 @@ int nwipe_prng_benchmark_all_live( double seconds_per_prng,
                 live.last_tick = nwipe_prng_monotonic_seconds();
                 nwipe_prng_live_render_spinner( &live, /*advance=*/0 );
             }
-            else
-            {
-                /* non-tty: just print once per PRNG */
-                printf( "Testing %s performance...\n", prng->label );
-                fflush( stdout );
-            }
         }
 
         nwipe_prng_bench_one( prng, r, io_buf, io_block_bytes, seconds_per_prng, &live );
