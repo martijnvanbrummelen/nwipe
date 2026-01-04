@@ -731,7 +731,9 @@ typedef struct
     int is_tty;
     int spin_idx;
     double last_tick;
-    const char* analysing_msg;
+
+    /* message currently shown with spinner (includes current PRNG label) */
+    char msg[160];
 } nwipe_prng_live_t;
 
 static void nwipe_prng_live_clear_line( nwipe_prng_live_t* live )
@@ -739,9 +741,19 @@ static void nwipe_prng_live_clear_line( nwipe_prng_live_t* live )
     if( !live || !live->enabled || !live->is_tty )
         return;
 
-    /* clear current line */
     printf( "\r\033[K" );
     fflush( stdout );
+}
+
+static void nwipe_prng_live_set_msg_for_prng( nwipe_prng_live_t* live, const nwipe_prng_t* prng )
+{
+    if( !live || !live->enabled )
+        return;
+
+    if( prng && prng->label )
+        snprintf( live->msg, sizeof( live->msg ), "Testing %s performance", prng->label );
+    else
+        snprintf( live->msg, sizeof( live->msg ), "Testing PRNG performance" );
 }
 
 static void nwipe_prng_live_render_spinner( nwipe_prng_live_t* live, int advance )
@@ -753,7 +765,7 @@ static void nwipe_prng_live_render_spinner( nwipe_prng_live_t* live, int advance
     if( advance )
         live->spin_idx = ( live->spin_idx + 1 ) & 3;
 
-    printf( "\r\033[K%s %c", live->analysing_msg, spin[live->spin_idx] );
+    printf( "\r\033[K%s %c", live->msg, spin[live->spin_idx] );
     fflush( stdout );
 }
 
@@ -770,7 +782,7 @@ static void nwipe_prng_live_tick_if_due( nwipe_prng_live_t* live, double now )
     }
 }
 
-/* --- bench one PRNG (now with optional live spinner ticks) -------------- */
+/* --- bench one PRNG (unchanged except it ticks spinner) ----------------- */
 
 static void nwipe_prng_bench_one( const nwipe_prng_t* prng,
                                   nwipe_prng_bench_result_t* out,
@@ -805,7 +817,6 @@ static void nwipe_prng_bench_one( const nwipe_prng_t* prng,
     const double t0 = nwipe_prng_monotonic_seconds();
     double now = t0;
 
-    /* ensure spinner is visible right when this PRNG starts doing work */
     if( live && live->enabled && live->is_tty )
     {
         live->last_tick = now;
@@ -824,21 +835,19 @@ static void nwipe_prng_bench_one( const nwipe_prng_t* prng,
         out->bytes += (unsigned long long) io_block;
         now = nwipe_prng_monotonic_seconds();
 
-        /* keep the classic cursor rotating while the benchmark runs */
+        /* rotate cursor while running */
         nwipe_prng_live_tick_if_due( live, now );
     }
 
     out->seconds = now - t0;
     if( out->rc == 0 && out->seconds > 0.0 )
-    {
         out->mbps = ( (double) out->bytes / ( 1024.0 * 1024.0 ) ) / out->seconds;
-    }
 
     if( state )
         free( state );
 }
 
-/* --- new: benchmark all with optional live output ----------------------- */
+/* --- benchmark all with live current-PRNG spinner ----------------------- */
 
 int nwipe_prng_benchmark_all_live( double seconds_per_prng,
                                    size_t io_block_bytes,
@@ -849,7 +858,6 @@ int nwipe_prng_benchmark_all_live( double seconds_per_prng,
     if( results == NULL || results_count == 0 )
         return 0;
 
-    /* limit number of PRNGs to results_count */
     size_t max = sizeof( all_prngs ) / sizeof( all_prngs[0] );
     if( results_count < max )
         max = results_count;
@@ -867,22 +875,7 @@ int nwipe_prng_benchmark_all_live( double seconds_per_prng,
     live.is_tty = ( live.enabled ? ( isatty( fileno( stdout ) ) ? 1 : 0 ) : 0 );
     live.spin_idx = 0;
     live.last_tick = nwipe_prng_monotonic_seconds();
-    live.analysing_msg = "Analysing PRNG performance:";
-
-    if( live.enabled )
-    {
-        if( live.is_tty )
-        {
-            /* show immediately (user sees activity right away) */
-            nwipe_prng_live_render_spinner( &live, /*advance=*/0 );
-        }
-        else
-        {
-            /* non-interactive: just print the header once */
-            printf( "%s\n", live.analysing_msg );
-            fflush( stdout );
-        }
-    }
+    snprintf( live.msg, sizeof( live.msg ), "Testing PRNG performance" );
 
     for( size_t i = 0; i < max; i++ )
     {
@@ -894,48 +887,38 @@ int nwipe_prng_benchmark_all_live( double seconds_per_prng,
         if( live.enabled )
         {
             if( live.is_tty )
-                nwipe_prng_live_clear_line( &live );
-
-            /* as requested: print before starting each PRNG */
-            printf( "Testing %s performance...\n", prng->label );
-            fflush( stdout );
-
-            if( live.is_tty )
             {
-                /* re-show spinner line while the PRNG runs */
+                /* single status line with spinner showing current PRNG */
+                nwipe_prng_live_set_msg_for_prng( &live, prng );
                 live.last_tick = nwipe_prng_monotonic_seconds();
                 nwipe_prng_live_render_spinner( &live, /*advance=*/0 );
+            }
+            else
+            {
+                /* non-tty: just print once per PRNG */
+                printf( "Testing %s performance...\n", prng->label );
+                fflush( stdout );
             }
         }
 
         nwipe_prng_bench_one( prng, r, io_buf, io_block_bytes, seconds_per_prng, &live );
 
+        if( live.enabled && live.is_tty )
+            nwipe_prng_live_clear_line( &live );
+
+        /* print result immediately after each PRNG */
         if( live.enabled )
         {
-            if( live.is_tty )
-                nwipe_prng_live_clear_line( &live );
-
-            /* print result immediately after each PRNG */
             if( r->rc == 0 )
                 printf( "%-22s -> %8.1f MB/s\n", r->prng->label, r->mbps );
             else
                 printf( "%-22s -> (failed: rc=%d)\n", r->prng->label, r->rc );
             fflush( stdout );
-
-            if( live.is_tty )
-            {
-                /* keep spinner visible between PRNGs */
-                live.last_tick = nwipe_prng_monotonic_seconds();
-                nwipe_prng_live_render_spinner( &live, /*advance=*/1 );
-            }
         }
     }
 
     if( live.enabled && live.is_tty )
-    {
-        /* remove spinner line before subsequent prints (Selected PRNG, GUI, etc.) */
         nwipe_prng_live_clear_line( &live );
-    }
 
     free( io_buf );
     return (int) max;
