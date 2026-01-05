@@ -37,6 +37,7 @@
 #include "options.h"
 #include "logging.h"
 #include "create_pdf.h"
+#include "create_json.h"
 #include "miscellaneous.h"
 
 /* Global array to hold log values to print when logging to STDOUT */
@@ -934,6 +935,11 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
             /* to have some progress indication. can help if there are many/slow disks */
             fprintf( stderr, "." );
             create_pdf( c[i] );
+        }
+        /* Create JSON Report if enabled */
+        if( nwipe_options.JSON_enable )
+        {
+            create_json( *c );
         }
     }
 
