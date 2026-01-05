@@ -135,6 +135,9 @@ int nwipe_options_parse( int argc, char** argv )
         /* Display program version. */
         { "version", no_argument, 0, 'V' },
 
+        /* Enabling JSON output. */
+        { "json", no_argument, 0, 'J' },
+
         /* Requisite padding for getopt(). */
         { 0, 0, 0, 0 } };
 
@@ -699,6 +702,11 @@ int nwipe_options_parse( int argc, char** argv )
                 nwipe_options.verbose = 1;
                 break;
 
+            case 'J':
+                /* Enable JSON report generation */
+                nwipe_options.JSON_enable = 1;
+                break;
+
             case 'V': /* Version option. */
 
                 printf( "%s version %s\n", program_name, version_string );
@@ -890,6 +898,8 @@ void display_help()
     puts( "  -l, --logfile=FILE      Filename to log to. Default is STDOUT\n" );
     puts( "  -P, --PDFreportpath=PATH Path to write PDF reports to. Default is \".\"" );
     puts( "                           If set to \"noPDF\" no PDF reports are written.\n" );
+    puts( "      --json               Generate a JSON report in addition to other reports." );
+    puts( "                           (default is disabled)\n" );
     puts( "  -p, --prng=METHOD        PRNG option "
           "(mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng|xoroshiro256_prng|aes_ctr_prng)\n" );
     puts( "  --prng=auto              (default)" );
