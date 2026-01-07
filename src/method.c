@@ -119,6 +119,7 @@ const char* nwipe_is5enh_label = "HMG IS5 Enhanced";
 const char* nwipe_bruce7_label = "Bruce Schneier 7-Pass";
 const char* nwipe_bmb_label = "BMB21-2019";
 const char* nwipe_secure_erase_label = "Secure Erase (ATA/NVMe)";
+const char* nwipe_secure_erase_prng_verify_label = "Secure Erase + PRNG + Verify";
 
 const char* nwipe_unknown_label = "Unknown Method (FIXME)";
 
@@ -180,6 +181,10 @@ const char* nwipe_method_label( void* method )
     if( method == &nwipe_secure_erase )
     {
         return nwipe_secure_erase_label;
+    }
+    if( method == &nwipe_secure_erase_prng_verify )
+    {
+        return nwipe_secure_erase_prng_verify_label;
     }
 
     /* else */
@@ -1156,6 +1161,153 @@ void* nwipe_secure_erase( void* ptr )
 
     return NULL;
 } /* nwipe_secure_erase */
+
+void* nwipe_secure_erase_prng_verify( void* ptr )
+{
+    /**
+     * Perform a drive-internal secure erase (ATA/NVMe), then overwrite the
+     * whole device with a single PRNG stream pass and finally verify that
+     * PRNG pass.
+     *
+     * Rationale: Some users want to combine the device-internal sanitize with
+     * an additional host-driven overwrite and deterministic verification.
+     */
+
+    nwipe_context_t* c;
+    int op_result = -1;
+    ssize_t r;
+
+    c = (nwipe_context_t*) ptr;
+
+    /* get current time at the start of the wipe */
+    time( &c->start_time );
+
+    /* set wipe in progress flag for GUI */
+    c->wipe_status = 1;
+
+    /* Step 1: Execute the drive's internal secure erase, depending on bus type. */
+    switch( c->device_type )
+    {
+        case NWIPE_DEVICE_NVME:
+            nwipe_log(
+                NWIPE_LOG_NOTICE, "Attempting NVMe Secure Erase on %s (%s).", c->device_name, c->device_type_str );
+            op_result = nwipe_execute_nvme_secure_erase( c );
+            break;
+
+        case NWIPE_DEVICE_ATA:
+        case NWIPE_DEVICE_SAS:
+            nwipe_log(
+                NWIPE_LOG_NOTICE, "Attempting ATA Secure Erase on %s (%s).", c->device_name, c->device_type_str );
+            op_result = nwipe_execute_ata_secure_erase( c );
+            break;
+
+        default:
+            nwipe_log( NWIPE_LOG_WARNING,
+                       "Secure Erase method is not supported on bus type %s (device %s).",
+                       c->device_type_str,
+                       c->device_name );
+            op_result = -1;
+            break;
+    }
+
+    if( op_result != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Secure Erase could not be executed on %s. Aborting method.", c->device_name );
+        c->result = -1;
+
+        c->wipe_status = 0;
+        time( &c->end_time );
+        return NULL;
+    }
+
+    /* Step 2: Seed PRNG and run a single PRNG write + verify pass. */
+
+    /* Allocate the PRNG seed buffer (mirrors nwipe_runmethod()). */
+    c->prng_seed.length = NWIPE_KNOB_PRNG_STATE_LENGTH;
+    c->prng_seed.s = malloc( c->prng_seed.length );
+
+    if( !c->prng_seed.s )
+    {
+        nwipe_perror( errno, __FUNCTION__, "malloc" );
+        nwipe_log( NWIPE_LOG_FATAL, "Unable to allocate memory for the prng seed buffer." );
+        c->result = -1;
+        c->wipe_status = 0;
+        time( &c->end_time );
+        return NULL;
+    }
+
+    /* Fill the seed with entropy (mirrors random passes in nwipe_runmethod()). */
+    r = nwipe_read_entropy( c->prng_seed.s, c->prng_seed.length );
+
+    if( r < 0 || r != c->prng_seed.length )
+    {
+        nwipe_perror( errno, __FUNCTION__, "getrandom" );
+        nwipe_log( NWIPE_LOG_FATAL, "Unable to seed the PRNG (insufficient entropy?)." );
+        c->result = -1;
+
+        c->prng_seed.length = 0;
+        free( c->prng_seed.s );
+        c->prng_seed.s = NULL;
+
+        c->wipe_status = 0;
+        time( &c->end_time );
+        return NULL;
+    }
+
+    /* Progress accounting: one write pass + one verify pass. */
+    c->round_count = 1;
+    c->round_working = 1;
+    c->round_done = 0;
+    c->round_size = c->device_size * 2;
+
+    c->pass_count = 2;
+    c->pass_size = c->device_size;
+    c->pass_done = 0;
+    c->pass_errors = 0;
+    c->verify_errors = 0;
+
+    /* Pass 1: PRNG write. */
+    c->pass_working = 1;
+    c->pass_type = NWIPE_PASS_WRITE;
+    nwipe_log( NWIPE_LOG_NOTICE, "Secure erase completed for %s, starting PRNG overwrite pass.", c->device_name );
+
+    c->result = nwipe_random_pass( c );
+
+    if( c->result < 0 )
+    {
+        c->pass_type = NWIPE_PASS_NONE;
+        c->prng_seed.length = 0;
+        free( c->prng_seed.s );
+        c->prng_seed.s = NULL;
+
+        c->wipe_status = 0;
+        time( &c->end_time );
+        return NULL;
+    }
+
+    /* Pass 2: PRNG verify. */
+    c->pass_working = 2;
+    c->pass_type = NWIPE_PASS_VERIFY;
+    nwipe_log( NWIPE_LOG_NOTICE, "Starting PRNG verification pass for %s.", c->device_name );
+
+    c->result = nwipe_random_verify( c );
+
+    /* Reset pass type. */
+    c->pass_type = NWIPE_PASS_NONE;
+
+    /* Release the seed buffer. */
+    c->prng_seed.length = 0;
+    free( c->prng_seed.s );
+    c->prng_seed.s = NULL;
+
+    /* Finished. Clear the wipe_status flag so that the GUI knows */
+    c->wipe_status = 0;
+
+    /* get current time at the end of the wipe */
+    time( &c->end_time );
+
+    return NULL;
+}
 
 int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 {

@@ -2305,7 +2305,7 @@ void nwipe_gui_method( void )
     extern int terminate_signal;
 
     /* The number of implemented methods. */
-    const int count = 13;
+    const int count = 14;
 
     /* The first tabstop. */
     const int tab1 = 2;
@@ -2379,7 +2379,10 @@ void nwipe_gui_method( void )
     {
         focus = 12;
     }
-
+    if( nwipe_options.method == &nwipe_secure_erase_prng_verify )
+    {
+        focus = 13;
+    }
     do
     {
         /* Clear the main window. */
@@ -2404,6 +2407,7 @@ void nwipe_gui_method( void )
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_bruce7 ) );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_bmb ) );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_secure_erase ) );
+        mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_secure_erase_prng_verify ) );
         mvwprintw( main_window, yy++, tab1, "                                             " );
 
         /* Print the cursor. */
@@ -2576,6 +2580,19 @@ void nwipe_gui_method( void )
                 mvwprintw( main_window, 10, tab2, "early and report that Secure Erase is not         " );
                 mvwprintw( main_window, 11, tab2, "available for the selected device.                " );
                 break;
+            case 13:
+
+                mvwprintw( main_window, 2, tab2, "Security Level: device internal (enhanced)" );
+
+                mvwprintw( main_window, 4, tab2, "This method uses the drive's internal secure      " );
+                mvwprintw( main_window, 5, tab2, "erase capability (ATA/NVMe) where available and   " );
+                mvwprintw( main_window, 6, tab2, "then performs a full prng pass pass and blanking  " );
+                mvwprintw( main_window, 7, tab2, "pass , checks the device reads back as all zeros. " );
+                mvwprintw( main_window, 8, tab2, "                                                  " );
+                mvwprintw( main_window, 9, tab2, "On unsupported bus types this method will fail    " );
+                mvwprintw( main_window, 10, tab2, "early and report that Secure Erase is not         " );
+                mvwprintw( main_window, 11, tab2, "available for the selected device.                " );
+                break;
 
         } /* switch */
 
@@ -2681,6 +2698,9 @@ void nwipe_gui_method( void )
             break;
         case 12:
             nwipe_options.method = &nwipe_secure_erase;
+            break;
+        case 13:
+            nwipe_options.method = &nwipe_secure_erase_prng_verify;
             break;
     }
 
