@@ -452,6 +452,13 @@ int nwipe_options_parse( int argc, char** argv )
                     nwipe_options.method = &nwipe_secure_erase_prng_verify;
                     break;
                 }
+                if( strcmp( optarg, "sanitize_crypto" ) == 0 || strcmp( optarg, "sanitize-crypto" ) == 0
+                    || strcmp( optarg, "sanitize_crypto_erase" ) == 0
+                    || strcmp( optarg, "sanitize-crypto-erase" ) == 0 )
+                {
+                    nwipe_options.method = &nwipe_sanitize_crypto_erase;
+                    break;
+                }
 
                 /* Else we do not know this wipe method. */
                 fprintf( stderr, "Error: Unknown wipe method '%s'.\n", optarg );

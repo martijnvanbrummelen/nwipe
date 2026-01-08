@@ -58,6 +58,7 @@ void* nwipe_bruce7( void* ptr );
 void* nwipe_bmb( void* ptr );
 void* nwipe_secure_erase( void* ptr );
 void* nwipe_secure_erase_prng_verify( void* ptr );
+void* nwipe_sanitize_crypto_erase( void* ptr );
 
 void calculate_round_size( nwipe_context_t* );
 

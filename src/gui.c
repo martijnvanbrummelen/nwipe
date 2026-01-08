@@ -2305,7 +2305,7 @@ void nwipe_gui_method( void )
     extern int terminate_signal;
 
     /* The number of implemented methods. */
-    const int count = 14;
+    const int count = 15;
 
     /* The first tabstop. */
     const int tab1 = 2;
@@ -2383,6 +2383,10 @@ void nwipe_gui_method( void )
     {
         focus = 13;
     }
+    if( nwipe_options.method == &nwipe_sanitize_crypto_erase )
+    {
+        focus = 14;
+    }
     do
     {
         /* Clear the main window. */
@@ -2408,6 +2412,7 @@ void nwipe_gui_method( void )
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_bmb ) );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_secure_erase ) );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_secure_erase_prng_verify ) );
+        mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_sanitize_crypto_erase ) );
         mvwprintw( main_window, yy++, tab1, "                                             " );
 
         /* Print the cursor. */
@@ -2594,6 +2599,20 @@ void nwipe_gui_method( void )
                 mvwprintw( main_window, 11, tab2, "available for the selected device.                " );
                 break;
 
+            case 14:
+
+                mvwprintw( main_window, 2, tab2, "Security Level: device internal (sanitize crypto erase)" );
+
+                mvwprintw( main_window, 4, tab2, "This method triggers the drive's Sanitize crypto  " );
+                mvwprintw( main_window, 5, tab2, "erase/scramble feature (ATA/SCSI/NVMe) where      " );
+                mvwprintw( main_window, 6, tab2, "supported. It typically regenerates internal     " );
+                mvwprintw( main_window, 7, tab2, "encryption keys, making prior data unreadable.   " );
+                mvwprintw( main_window, 8, tab2, "                                                  " );
+                mvwprintw( main_window, 9, tab2, "Unlike Secure Erase+Verify, this does NOT check  " );
+                mvwprintw( main_window, 10, tab2, "for zeroes afterwards (some drives read back      " );
+                mvwprintw( main_window, 11, tab2, "random data after key regeneration).             " );
+                break;
+
         } /* switch */
 
         /* Add a border. */
@@ -2701,6 +2720,9 @@ void nwipe_gui_method( void )
             break;
         case 13:
             nwipe_options.method = &nwipe_secure_erase_prng_verify;
+            break;
+        case 14:
+            nwipe_options.method = &nwipe_sanitize_crypto_erase;
             break;
     }
 
