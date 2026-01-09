@@ -122,6 +122,8 @@ const char* nwipe_bmb_label = "BMB21-2019";
 const char* nwipe_secure_erase_label = "Secure Erase (ATA/NVMe)";
 const char* nwipe_secure_erase_prng_verify_label = "Secure Erase + PRNG + Verify";
 const char* nwipe_sanitize_crypto_erase_label = "Sanitize Crypto Erase (ATA/SCSI/NVMe)";
+const char* nwipe_sanitize_block_erase_label = "Sanitize Block Erase (ATA/SCSI/NVMe)";
+const char* nwipe_sanitize_overwrite_label = "Sanitize Overwrite (ATA/SCSI/NVMe)";
 
 const char* nwipe_unknown_label = "Unknown Method (FIXME)";
 
@@ -193,6 +195,15 @@ const char* nwipe_method_label( void* method )
     {
         return nwipe_sanitize_crypto_erase_label;
     }
+    if( method == &nwipe_sanitize_block_erase )
+    {
+        return nwipe_sanitize_block_erase_label;
+    }
+    if( method == &nwipe_sanitize_overwrite )
+    {
+        return nwipe_sanitize_overwrite_label;
+    }
+
     /* else */
     return nwipe_unknown_label;
 
@@ -506,6 +517,259 @@ static int nwipe_execute_scsi_sanitize_crypto_erase( nwipe_context_t* c )
 }
 
 /* ------------------------------------------------------------------------ */
+
+static int nwipe_execute_nvme_sanitize_block_erase( nwipe_context_t* c )
+{
+    char cmd[512];
+    char ctrl[256];
+    int rc;
+
+    if( c == NULL || c->device_name == NULL )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "NVMe Sanitize Block Erase: invalid context or device name." );
+        return -1;
+    }
+
+    if( nwipe_nvme_controller_from_node( c->device_name, ctrl, sizeof( ctrl ) ) != 0 )
+    {
+        nwipe_log(
+            NWIPE_LOG_ERROR, "NVMe Sanitize Block Erase: unable to derive controller node from %s.", c->device_name );
+        return -1;
+    }
+
+    /* nvme sanitize expects the controller character device (e.g. /dev/nvme0). Action 2 = Block Erase. */
+    rc = snprintf( cmd, sizeof( cmd ), "nvme sanitize '%s' -a 2 >/dev/null 2>&1", ctrl );
+    if( rc < 0 || (size_t) rc >= sizeof( cmd ) )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "NVMe Sanitize Block Erase: command line for device %s is too long.", ctrl );
+        return -1;
+    }
+
+    nwipe_log( NWIPE_LOG_NOTICE, "Starting NVMe Sanitize Block Erase via nvme on %s (from %s).", ctrl, c->device_name );
+
+    errno = 0;
+    rc = system( cmd );
+
+    if( rc != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "NVMe Sanitize Block Erase failed on %s (rc=%d).", ctrl, rc );
+        return -1;
+    }
+
+    return 0;
+}
+
+static int nwipe_execute_nvme_sanitize_overwrite( nwipe_context_t* c )
+{
+    char cmd[512];
+    char ctrl[256];
+    int rc;
+
+    if( c == NULL || c->device_name == NULL )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "NVMe Sanitize Overwrite: invalid context or device name." );
+        return -1;
+    }
+
+    if( nwipe_nvme_controller_from_node( c->device_name, ctrl, sizeof( ctrl ) ) != 0 )
+    {
+        nwipe_log(
+            NWIPE_LOG_ERROR, "NVMe Sanitize Overwrite: unable to derive controller node from %s.", c->device_name );
+        return -1;
+    }
+
+    /* Action 3 = Overwrite. */
+    rc = snprintf( cmd, sizeof( cmd ), "nvme sanitize '%s' -a 3 >/dev/null 2>&1", ctrl );
+    if( rc < 0 || (size_t) rc >= sizeof( cmd ) )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "NVMe Sanitize Overwrite: command line for device %s is too long.", ctrl );
+        return -1;
+    }
+
+    nwipe_log( NWIPE_LOG_NOTICE, "Starting NVMe Sanitize Overwrite via nvme on %s (from %s).", ctrl, c->device_name );
+
+    errno = 0;
+    rc = system( cmd );
+
+    if( rc != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "NVMe Sanitize Overwrite failed on %s (rc=%d).", ctrl, rc );
+        return -1;
+    }
+
+    return 0;
+}
+
+static int nwipe_execute_ata_sanitize_block_erase( nwipe_context_t* c )
+{
+    char cmd[512];
+    char dev[256];
+    int rc;
+
+    if( c == NULL || c->device_name == NULL )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "ATA Sanitize Block Erase: invalid context or device name." );
+        return -1;
+    }
+
+    if( nwipe_strip_partition_suffix( c->device_name, dev, sizeof( dev ) ) != 0 )
+    {
+        nwipe_log(
+            NWIPE_LOG_ERROR, "ATA Sanitize Block Erase: unable to normalize device node from %s.", c->device_name );
+        return -1;
+    }
+
+    rc = snprintf(
+        cmd, sizeof( cmd ), "hdparm --yes-i-know-what-i-am-doing --sanitize-block-erase '%s' >/dev/null 2>&1", dev );
+    if( rc < 0 || (size_t) rc >= sizeof( cmd ) )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "ATA Sanitize Block Erase: command line for device %s is too long.", dev );
+        return -1;
+    }
+
+    nwipe_log( NWIPE_LOG_NOTICE, "Starting ATA Sanitize Block Erase via hdparm on %s.", dev );
+
+    errno = 0;
+    rc = system( cmd );
+
+    if( rc != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "ATA Sanitize Block Erase failed on %s (rc=%d).", dev, rc );
+        return -1;
+    }
+
+    return 0;
+}
+
+static int nwipe_execute_ata_sanitize_overwrite( nwipe_context_t* c )
+{
+    char cmd[512];
+    char dev[256];
+    int rc;
+
+    if( c == NULL || c->device_name == NULL )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "ATA Sanitize Overwrite: invalid context or device name." );
+        return -1;
+    }
+
+    if( nwipe_strip_partition_suffix( c->device_name, dev, sizeof( dev ) ) != 0 )
+    {
+        nwipe_log(
+            NWIPE_LOG_ERROR, "ATA Sanitize Overwrite: unable to normalize device node from %s.", c->device_name );
+        return -1;
+    }
+
+    /*
+     * Use 1 pass and specify a deterministic overwrite pattern.
+     * hdparm requires the acknowledgement flag for sanitize commands.
+     */
+    rc = snprintf(
+        cmd,
+        sizeof( cmd ),
+        "hdparm --yes-i-know-what-i-am-doing --sanitize-overwrite-passes 1 --sanitize-overwrite hex:00000000 '%s' "
+        ">/dev/null 2>&1",
+        dev );
+    if( rc < 0 || (size_t) rc >= sizeof( cmd ) )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "ATA Sanitize Overwrite: command line for device %s is too long.", dev );
+        return -1;
+    }
+
+    nwipe_log( NWIPE_LOG_NOTICE, "Starting ATA Sanitize Overwrite via hdparm on %s.", dev );
+
+    errno = 0;
+    rc = system( cmd );
+
+    if( rc != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "ATA Sanitize Overwrite failed on %s (rc=%d).", dev, rc );
+        return -1;
+    }
+
+    return 0;
+}
+
+static int nwipe_execute_scsi_sanitize_block_erase( nwipe_context_t* c )
+{
+    char cmd[512];
+    char dev[256];
+    int rc;
+
+    if( c == NULL || c->device_name == NULL )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "SCSI Sanitize Block Erase: invalid context or device name." );
+        return -1;
+    }
+
+    if( nwipe_strip_partition_suffix( c->device_name, dev, sizeof( dev ) ) != 0 )
+    {
+        nwipe_log(
+            NWIPE_LOG_ERROR, "SCSI Sanitize Block Erase: unable to normalize device node from %s.", c->device_name );
+        return -1;
+    }
+
+    rc = snprintf( cmd, sizeof( cmd ), "sg_sanitize --block '%s' >/dev/null 2>&1", dev );
+    if( rc < 0 || (size_t) rc >= sizeof( cmd ) )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "SCSI Sanitize Block Erase: command line for device %s is too long.", dev );
+        return -1;
+    }
+
+    nwipe_log( NWIPE_LOG_NOTICE, "Starting SCSI Sanitize Block Erase via sg_sanitize on %s.", dev );
+
+    errno = 0;
+    rc = system( cmd );
+
+    if( rc != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "SCSI Sanitize Block Erase failed on %s (rc=%d).", dev, rc );
+        return -1;
+    }
+
+    return 0;
+}
+
+static int nwipe_execute_scsi_sanitize_overwrite( nwipe_context_t* c )
+{
+    char cmd[512];
+    char dev[256];
+    int rc;
+
+    if( c == NULL || c->device_name == NULL )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "SCSI Sanitize Overwrite: invalid context or device name." );
+        return -1;
+    }
+
+    if( nwipe_strip_partition_suffix( c->device_name, dev, sizeof( dev ) ) != 0 )
+    {
+        nwipe_log(
+            NWIPE_LOG_ERROR, "SCSI Sanitize Overwrite: unable to normalize device node from %s.", c->device_name );
+        return -1;
+    }
+
+    /* Use --zero to request zero-filled overwrite where supported. */
+    rc = snprintf( cmd, sizeof( cmd ), "sg_sanitize --overwrite --zero '%s' >/dev/null 2>&1", dev );
+    if( rc < 0 || (size_t) rc >= sizeof( cmd ) )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "SCSI Sanitize Overwrite: command line for device %s is too long.", dev );
+        return -1;
+    }
+
+    nwipe_log( NWIPE_LOG_NOTICE, "Starting SCSI Sanitize Overwrite via sg_sanitize on %s.", dev );
+
+    errno = 0;
+    rc = system( cmd );
+
+    if( rc != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "SCSI Sanitize Overwrite failed on %s (rc=%d).", dev, rc );
+        return -1;
+    }
+
+    return 0;
+}
 
 static int nwipe_execute_nvme_secure_erase( nwipe_context_t* c )
 {
@@ -1602,6 +1866,160 @@ void* nwipe_sanitize_crypto_erase( void* ptr )
 
     /* Successful completion. */
     nwipe_log( NWIPE_LOG_NOTICE, "Sanitize Crypto Erase completed on %s.", c->device_name );
+
+    c->wipe_status = 0;
+    time( &c->end_time );
+    return NULL;
+}
+
+void* nwipe_sanitize_block_erase( void* ptr )
+{
+    /**
+     * Perform a Sanitize "Block Erase" operation where supported:
+     *
+     *   - NVMe:  nvme sanitize <controller> -a 2
+     *   - ATA:   hdparm --sanitize-block-erase
+     *   - SCSI:  sg_sanitize --block
+     *
+     * NOTE: After block erase sanitize, readback content may be indeterminate
+     * on some devices. We therefore do NOT run a verification pass here.
+     */
+
+    nwipe_context_t* c;
+    int op_result = -1;
+
+    c = (nwipe_context_t*) ptr;
+
+    if( c == NULL )
+    {
+        return NULL;
+    }
+
+    /* Mark as running. */
+    c->wipe_status = 1;
+    time( &c->start_time );
+
+    switch( c->device_type )
+    {
+        case NWIPE_DEVICE_NVME:
+            nwipe_log( NWIPE_LOG_NOTICE,
+                       "Attempting NVMe Sanitize Block Erase on %s (%s).",
+                       c->device_name,
+                       c->device_type_str );
+            op_result = nwipe_execute_nvme_sanitize_block_erase( c );
+            break;
+
+        case NWIPE_DEVICE_ATA:
+            nwipe_log( NWIPE_LOG_NOTICE,
+                       "Attempting ATA Sanitize Block Erase on %s (%s).",
+                       c->device_name,
+                       c->device_type_str );
+            op_result = nwipe_execute_ata_sanitize_block_erase( c );
+            break;
+
+        case NWIPE_DEVICE_SAS:
+            nwipe_log( NWIPE_LOG_NOTICE,
+                       "Attempting SCSI Sanitize Block Erase on %s (%s).",
+                       c->device_name,
+                       c->device_type_str );
+            op_result = nwipe_execute_scsi_sanitize_block_erase( c );
+            break;
+
+        default:
+            nwipe_log( NWIPE_LOG_WARNING,
+                       "Sanitize Block Erase method is not supported on bus type %s (device %s).",
+                       c->device_type_str,
+                       c->device_name );
+            op_result = -1;
+            break;
+    }
+
+    if( op_result != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Sanitize Block Erase failed on %s.", c->device_name );
+        c->wipe_status = 0;
+        time( &c->end_time );
+        return NULL;
+    }
+
+    /* Successful completion. */
+    nwipe_log( NWIPE_LOG_NOTICE, "Sanitize Block Erase completed on %s.", c->device_name );
+
+    c->wipe_status = 0;
+    time( &c->end_time );
+    return NULL;
+}
+
+void* nwipe_sanitize_overwrite( void* ptr )
+{
+    /**
+     * Perform a Sanitize "Overwrite" operation where supported:
+     *
+     *   - NVMe:  nvme sanitize <controller> -a 3
+     *   - ATA:   hdparm --sanitize-overwrite-passes 1 --sanitize-overwrite hex:00000000
+     *   - SCSI:  sg_sanitize --overwrite --zero
+     *
+     * NOTE: Similar to other sanitize operations, readback verification may not be reliable
+     * across all devices/firmware combinations. We therefore do NOT run a verify pass here.
+     */
+
+    nwipe_context_t* c;
+    int op_result = -1;
+
+    c = (nwipe_context_t*) ptr;
+
+    if( c == NULL )
+    {
+        return NULL;
+    }
+
+    /* Mark as running. */
+    c->wipe_status = 1;
+    time( &c->start_time );
+
+    switch( c->device_type )
+    {
+        case NWIPE_DEVICE_NVME:
+            nwipe_log( NWIPE_LOG_NOTICE,
+                       "Attempting NVMe Sanitize Overwrite on %s (%s).",
+                       c->device_name,
+                       c->device_type_str );
+            op_result = nwipe_execute_nvme_sanitize_overwrite( c );
+            break;
+
+        case NWIPE_DEVICE_ATA:
+            nwipe_log(
+                NWIPE_LOG_NOTICE, "Attempting ATA Sanitize Overwrite on %s (%s).", c->device_name, c->device_type_str );
+            op_result = nwipe_execute_ata_sanitize_overwrite( c );
+            break;
+
+        case NWIPE_DEVICE_SAS:
+            nwipe_log( NWIPE_LOG_NOTICE,
+                       "Attempting SCSI Sanitize Overwrite on %s (%s).",
+                       c->device_name,
+                       c->device_type_str );
+            op_result = nwipe_execute_scsi_sanitize_overwrite( c );
+            break;
+
+        default:
+            nwipe_log( NWIPE_LOG_WARNING,
+                       "Sanitize Overwrite method is not supported on bus type %s (device %s).",
+                       c->device_type_str,
+                       c->device_name );
+            op_result = -1;
+            break;
+    }
+
+    if( op_result != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Sanitize Overwrite failed on %s.", c->device_name );
+        c->wipe_status = 0;
+        time( &c->end_time );
+        return NULL;
+    }
+
+    /* Successful completion. */
+    nwipe_log( NWIPE_LOG_NOTICE, "Sanitize Overwrite completed on %s.", c->device_name );
 
     c->wipe_status = 0;
     time( &c->end_time );

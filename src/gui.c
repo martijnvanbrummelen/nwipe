@@ -2631,7 +2631,7 @@ int nwipe_gui_method_secure_erase_submenu( void )
      */
 
     extern int terminate_signal;
-    const int count = 3; /* Secure Erase, Secure Erase+PRNG, Sanitize */
+    const int count = 5;
     const int tab1 = 2;
     const int tab2 = 44;
     int focus = 0;
@@ -2650,6 +2650,14 @@ int nwipe_gui_method_secure_erase_submenu( void )
     else if( nwipe_options.method == &nwipe_sanitize_crypto_erase )
     {
         focus = 2;
+    }
+    else if( nwipe_options.method == &nwipe_sanitize_block_erase )
+    {
+        focus = 3;
+    }
+    else if( nwipe_options.method == &nwipe_sanitize_overwrite )
+    {
+        focus = 4;
     }
     else
     {
@@ -2674,6 +2682,8 @@ int nwipe_gui_method_secure_erase_submenu( void )
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_secure_erase ) );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_secure_erase_prng_verify ) );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_sanitize_crypto_erase ) );
+        mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_sanitize_block_erase ) );
+        mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_sanitize_overwrite ) );
         mvwprintw( main_window, yy++, tab1, "                                             " );
 
         /* Print the cursor. */
@@ -2716,6 +2726,21 @@ int nwipe_gui_method_secure_erase_submenu( void )
                 mvwprintw( main_window, 9, tab2, "Unlike Secure Erase+Verify, this does NOT check  " );
                 mvwprintw( main_window, 10, tab2, "for zeroes afterwards (some drives read back      " );
                 mvwprintw( main_window, 11, tab2, "random data after key regeneration).             " );
+                break;
+            case 3:
+                mvwprintw( main_window, 2, tab2, "Security Level: device internal (sanitize block erase)" );
+                mvwprintw( main_window, 4, tab2, "Triggers Sanitize block erase (ATA/SCSI/NVMe)     " );
+                mvwprintw( main_window, 5, tab2, "where supported. Device internal media erase.     " );
+                mvwprintw( main_window, 6, tab2, "                                                  " );
+                mvwprintw( main_window, 7, tab2, "No read-back verify afterwards.                   " );
+                break;
+
+            case 4:
+                mvwprintw( main_window, 2, tab2, "Security Level: device internal (sanitize overwrite)" );
+                mvwprintw( main_window, 4, tab2, "Triggers Sanitize overwrite (ATA/SCSI/NVMe)       " );
+                mvwprintw( main_window, 5, tab2, "where supported. Internal overwrite pass.         " );
+                mvwprintw( main_window, 6, tab2, "                                                  " );
+                mvwprintw( main_window, 7, tab2, "No read-back verify afterwards.                   " );
                 break;
         }
 
@@ -2761,6 +2786,12 @@ int nwipe_gui_method_secure_erase_submenu( void )
             break;
         case 2:
             nwipe_options.method = &nwipe_sanitize_crypto_erase;
+            break;
+        case 3:
+            nwipe_options.method = &nwipe_sanitize_block_erase;
+            break;
+        case 4:
+            nwipe_options.method = &nwipe_sanitize_overwrite;
             break;
     }
 
