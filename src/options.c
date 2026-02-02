@@ -29,6 +29,7 @@
 #include "version.h"
 #include "conf.h"
 #include "cpu_features.h"
+#include "libconfig.h"
 
 /* The global options struct. */
 nwipe_options_t nwipe_options;
@@ -46,6 +47,10 @@ int nwipe_options_parse( int argc, char** argv )
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
+
+    extern config_t nwipe_cfg;
+    config_setting_t* setting;
+    const char* user_defined_tag;
 
     /* The getopt() result holder. */
     int nwipe_opt;
@@ -176,12 +181,15 @@ int nwipe_options_parse( int argc, char** argv )
     nwipe_options.verbose = 0;
     nwipe_options.verify = NWIPE_VERIFY_LAST;
     nwipe_options.io_mode = NWIPE_IO_MODE_AUTO; /* Default: auto-select I/O mode. */
+    nwipe_options.PDF_toggle_host_info = 0; /* Default: host visibility on PDF disabled */
     nwipe_options.PDFtag = 0;
     memset( nwipe_options.logfile, '\0', sizeof( nwipe_options.logfile ) );
     memset( nwipe_options.PDFreportpath, '\0', sizeof( nwipe_options.PDFreportpath ) );
     strncpy( nwipe_options.PDFreportpath, ".", 2 );
 
-    /* Read PDF Enable/Disable settings from nwipe.conf if available  */
+    /*
+     * Read PDF Enable/Disable settings from nwipe.conf if available
+     */
     if( ( ret = nwipe_conf_read_setting( "PDF_Certificate.PDF_Enable", &read_value ) ) )
     {
         /* error occurred */
@@ -215,41 +223,62 @@ int nwipe_options_parse( int argc, char** argv )
         }
     }
 
-    /* Read PDF tag Enable/Disable settings from nwipe.conf if available  */
-    if( ( ret = nwipe_conf_read_setting( "PDF_Certificate.PDF_tag", &read_value ) ) )
+    /*
+     * Read PDF host visibility settings from nwipe.conf if available
+     */
+    if( ( ret = nwipe_conf_read_setting( "PDF_Certificate.PDF_Host_Visibility", &read_value ) ) )
     {
         /* error occurred */
         nwipe_log( NWIPE_LOG_ERROR,
-                   "nwipe_conf_read_setting():Error reading PDF_Certificate.PDF_tag from nwipe.conf, ret code %i",
-                   ret );
+                "nwipe_conf_read_setting():Error reading PDF_Certificate.PDF_toggle_host_info from nwipe.conf, ret code %i",
+                ret );
 
-        /* Use default values */
-        nwipe_options.PDFtag = 1;
+        nwipe_options.PDF_toggle_host_info = 0; /* Disable host visibility on PDF */
     }
     else
     {
         if( !strcmp( read_value, "ENABLED" ) )
         {
-            nwipe_options.PDFtag = 1;
+            nwipe_options.PDF_toggle_host_info = 1;
         }
         else
         {
             if( !strcmp( read_value, "DISABLED" ) )
             {
-                nwipe_options.PDFtag = 0;
+                nwipe_options.PDF_toggle_host_info = 0;
             }
             else
             {
                 // error occurred
                 nwipe_log(
                     NWIPE_LOG_ERROR,
-                    "PDF_Certificate.PDF_tag in nwipe.conf returned a value that was neither ENABLED or DISABLED" );
-                nwipe_options.PDFtag = 0;  // Default to Enabled
+                    "PDF_Certificate.PDF_toggle_host_info in nwipe.conf returned a value that was neither ENABLED or DISABLED" );
+                nwipe_options.PDF_toggle_host_info = 0;  // Default to disabled
             }
         }
     }
 
-    /* PDF Preview enable/disable */
+    /*
+     * Read PDF tag Enable/Disable settings from nwipe.conf if available
+     */
+
+    setting = config_lookup( &nwipe_cfg, "PDF_Certificate" );
+
+    if( config_setting_lookup_string( setting, "User_Defined_Tag", &user_defined_tag ) )
+    {
+        if( user_defined_tag[0] != 0 )
+        {
+            nwipe_options.PDFtag = 1;
+        }
+        else
+        {
+            nwipe_options.PDFtag = 0;
+        }
+    }
+
+    /*
+     * PDF Preview enable/disable
+     */
     if( ( ret = nwipe_conf_read_setting( "PDF_Certificate.PDF_Preview", &read_value ) ) )
     {
         /* error occurred */
@@ -283,7 +312,9 @@ int nwipe_options_parse( int argc, char** argv )
         }
     }
 
-    /* Initialise each of the strings in the excluded drives array */
+    /*
+     * Initialise each of the strings in the excluded drives array
+     */
     for( i = 0; i < MAX_NUMBER_EXCLUDED_DRIVES; i++ )
     {
         nwipe_options.exclude[i][0] = 0;

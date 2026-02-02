@@ -3288,7 +3288,7 @@ void nwipe_gui_config( void )
     extern int terminate_signal;
 
     /* Number of entries in the configuration menu. Includes blank lines */
-    const int total_menu_entries = 9;
+    const int total_menu_entries = 11;
 
     /* The first tabstop. */
     const int tab1 = 2;
@@ -3326,6 +3326,7 @@ void nwipe_gui_config( void )
         mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Select Customer  " );
         mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Add Customer     " );
         mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Delete Customer  " );
+        mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Host Info Display " );
         mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - User defined tag " );
         mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Preview Details  " );
         mvwprintw( main_window, yy++, tab1, "  %s", "PDF Report - Preview at Start " );
@@ -3355,7 +3356,7 @@ void nwipe_gui_config( void )
 
             case 1:
 
-                mvwprintw( main_window, 2, tab2, "PDF Report - Edit Organisation         " );
+                mvwprintw( main_window, 2, tab2, "PDF - Edit Organisation         " );
 
                 mvwprintw( main_window, 4, tab2, "This option allows you to edit details " );
                 mvwprintw( main_window, 5, tab2, "of the organisation that is performing " );
@@ -3365,7 +3366,7 @@ void nwipe_gui_config( void )
                 break;
 
             case 2:
-                mvwprintw( main_window, 2, tab2, "PDF Report - Select Customer           " );
+                mvwprintw( main_window, 2, tab2, "PDF - Select Customer           " );
 
                 mvwprintw( main_window, 4, tab2, "Allows selection of a customer as      " );
                 mvwprintw( main_window, 5, tab2, "displayed on the PDF report. Customer  " );
@@ -3379,7 +3380,7 @@ void nwipe_gui_config( void )
 
             case 3:
 
-                mvwprintw( main_window, 2, tab2, "PDF Report - Add Customer              " );
+                mvwprintw( main_window, 2, tab2, "PDF - Add Customer              " );
 
                 mvwprintw( main_window, 4, tab2, "This option allows you to add a new    " );
                 mvwprintw( main_window, 5, tab2, "customer. A customer can be optionally " );
@@ -3394,7 +3395,7 @@ void nwipe_gui_config( void )
 
             case 4:
 
-                mvwprintw( main_window, 2, tab2, "PDF Report - Delete Customer           " );
+                mvwprintw( main_window, 2, tab2, "PDF - Delete Customer           " );
 
                 mvwprintw( main_window, 4, tab2, "This option allows you to delete a     " );
                 mvwprintw( main_window, 5, tab2, "customer. A customer can be optionally " );
@@ -3409,7 +3410,23 @@ void nwipe_gui_config( void )
 
             case 5:
 
-                mvwprintw( main_window, 2, tab2, "PDF Report - Add user defined tag to PDF" );
+                mvwprintw( main_window, 2, tab2, "PDF - Toggle Host Information Visibility" );
+
+                mvwprintw( main_window, 4, tab2, "Controls the display of the host's UUID" );
+                mvwprintw( main_window, 5, tab2, "and serial number on the generated PDF." );
+                if( nwipe_options.PDF_toggle_host_info )
+                {
+                    mvwprintw( main_window, 7, tab2, "Host Visibility = ENABLED" );
+                }
+                else
+                {
+                    mvwprintw( main_window, 7, tab2, "Host Visibility = DISABLED" );
+                }
+                break;
+
+            case 6:
+
+                mvwprintw( main_window, 2, tab2, "PDF - Add user defined tag to PDF" );
 
                 mvwprintw( main_window, 4, tab2, "The report supports user-defined text, " );
                 mvwprintw( main_window, 5, tab2, "which may be used to identify the host " );
@@ -3417,7 +3434,7 @@ void nwipe_gui_config( void )
                 mvwprintw( main_window, 7, tab2, "at the user's discretion.              " );
                 break;
 
-            case 6:
+            case 7:
 
                 mvwprintw( main_window, 2, tab2, "PDF Report - Preview Organisation,     " );
                 mvwprintw( main_window, 3, tab2, "Customer and Date/Time details         " );
@@ -3428,7 +3445,7 @@ void nwipe_gui_config( void )
                 mvwprintw( main_window, 8, tab2, "the PDF report.                        " );
                 break;
 
-            case 7:
+            case 8:
 
                 if( nwipe_options.PDF_preview_details )
                 {
@@ -3447,7 +3464,7 @@ void nwipe_gui_config( void )
                 mvwprintw( main_window, 10, tab2, "drive selection and starting the erase." );
                 break;
 
-            case 9:
+            case 10:
 
                 mvwprintw( main_window, 2, tab2, "Set System Date & Time                 " );
 
@@ -3485,7 +3502,7 @@ void nwipe_gui_config( void )
 
                 if( focus < total_menu_entries - 1 )
                 {
-                    if( focus == 7 )
+                    if( focus == 8 )
                     {
                         focus += 2; /* mind the gaps */
                     }
@@ -3502,7 +3519,7 @@ void nwipe_gui_config( void )
 
                 if( focus > 0 )
                 {
-                    if( focus == 9 )
+                    if( focus == 10 )
                     {
                         focus -= 2; /* mind the gaps */
                     }
@@ -3561,14 +3578,32 @@ void nwipe_gui_config( void )
                     break;
 
                 case 5:
-                    nwipe_gui_user_defined_tag();
+                    /* Toggle on pressing ENTER key */
+                    if( nwipe_options.PDF_toggle_host_info == 0 )
+                    {
+                        nwipe_options.PDF_toggle_host_info = 1;
+
+                        /* write the setting to nwipe.conf */
+                        nwipe_conf_update_setting( "PDF_Certificate.PDF_Host_Visibility", "ENABLED" );
+                    }
+                    else
+                    {
+                        nwipe_options.PDF_toggle_host_info = 0;
+
+                        /* write the setting to nwipe.conf */
+                        nwipe_conf_update_setting( "PDF_Certificate.PDF_Host_Visibility", "DISABLED" );
+                    }
                     break;
 
                 case 6:
-                    nwipe_gui_preview_org_customer( SHOWING_IN_CONFIG_MENUS );
+                    nwipe_gui_user_defined_tag();
                     break;
 
                 case 7:
+                    nwipe_gui_preview_org_customer( SHOWING_IN_CONFIG_MENUS );
+                    break;
+
+                case 8:
                     /* Toggle on pressing ENTER key */
                     if( nwipe_options.PDF_preview_details == 0 )
                     {
@@ -3586,7 +3621,7 @@ void nwipe_gui_config( void )
                     }
                     break;
 
-                case 9:
+                case 10:
                     nwipe_gui_set_date_time();
                     break;
             }
