@@ -4,18 +4,27 @@ v0.40
 -----------------------
 includes the following changes:
 
-- Only checks the static libraries when -static is specified and removed libintl which is no longer required by parted 3.6. A statically linked nwipe can be built with
-sh autogen.sh && ./configure LDFLAGS=-static && make All the static libraries need to be built before this step, alternatively use the buildah script from https://github.com/deamen/nwipe-static-builder/blob/master/README.md [#655](https://github.com/martijnvanbrummelen/nwipe/pull/655) Thanks @deamen
-- Implement high-performance AES-256-CTR PRNG via Linux kernel AF_ALG socket [#660](https://github.com/martijnvanbrummelen/nwipe/pull/660) Thanks @Knogle
-- BMB21-2019 Chinese State Secrets Bureau standard Technical Requirement for Data Sanitization [668](https://github.com/martijnvanbrummelen/nwipe/pull/668) Thanks @xicaixiaokeke
-- Add the Bruce Schneier 7 pass method in the man page text. https://github.com/martijnvanbrummelen/nwipe/commit/342fb03c1d9ef3343254783133aa7b5c962c65c7 Thanks @Extloga
-- Fixes for formatting and consistency. Thanks @Extloga
-- Added device name, e.g sda, SD etc to PDF to fix obscure issue where the file might get overwritten if devices with no model name and no serial number complete in the same second. i.e very small virtual devices) [#676](https://github.com/martijnvanbrummelen/nwipe/pull/676) Thanks @PartialVolume
-- Added direct I/O and 16MB write buffers to improve I/O performance and reduce CPU load, with optional command line switches --directio and --cachedio [683](https://github.com/martijnvanbrummelen/nwipe/pull/683) Thanks @Knogle
-- Added user-selectable host information, UUID and serial number, which can be included in the PDF report using the --pdftag command-line option.
-- Fixes an issue where blanking was applied to a method that shouldn't have a blanking pass when in --nogui mode. Require respect for no-blanking methods in --nogui mode. [682](https://github.com/martijnvanbrummelen/nwipe/pull/682) Thanks @desertwitch
-- Enhances the --exclude option to match devices by /dev/disk/by-id/ and /dev/disk/by-path/ [686]https://github.com/martijnvanbrummelen/nwipe/pull/686
-- Add option to include static linking libraries that are required by parted 3.6 ./configure LDFLAGS=-static [655](https://github.com/martijnvanbrummelen/nwipe/pull/655) Thanks @deamen 
+## New Features and improved performance in V0.40
+* Upon initialization, nwipe identifies and sets the most efficient Pseudo-Random Number Generator (PRNG) as the default, based on a real-time hardware performance test. Thanks to @knogle #698 #699 #700 #706
+* AES-256-CTR PRNG that utilizes native [AES-NI instructions](https://en.wikipedia.org/wiki/AES_instruction_set) to significantly boost data-wiping throughput on compatible CPUs. Thanks @knogle #695 #660  #659
+* Implemented a new wipe method, the  BMB21-2019 Chinese State Secrets Bureau standard Technical Requirement for Data Sanitization. Thanks @xicaixiaokeke #668
+* Implemented Direct I/O with large buffers as the default wipe method, reducing write instructions and boosting throughput. This change cut wipe completion times by 5–10% in tests and significantly lowered CPU load—especially on high-density servers wiping 10+ drives simultaneously. Kernel cached I/O remains available via command-line switches. Thanks @knogle #683
+* Added support for host UUID, serial number, and custom tags in PDF report headers. These options can be configured and toggled in the nwipe config menu ('c'), accessible from the nwipe drive selection screen and are saved to nwipe's config file, /etc/nwipe/nwipe.conf for persistent configuration between restarts." Thanks @PartialVolume #709
+* Added a new GUI “device topology” view, opened with the 't' key from the device selection screen. Useful if you want to check which device controller, which HBA, etc. your drive is attached. This improves safety and usability on systems with multiple controllers by clearly showing the physical attachment path of each drive without changing wipe behaviour. Thanks @Knogle #697
+* Enhanced the --exclude option to match devices by their underlying block device ID (major/minor), allowing persistent identifiers in /dev/disk/by-id/ and /dev/disk/by-path/ to be used safely. Legacy string-based matching is preserved. Thanks @Knogle #686
+* The internal PRNGs are now seeded via getrandom(2) rather than through a long-lived file descriptor to /dev/urandom, to improve reliability. Thanks @Knogle #680
+
+## Resolved issues
+* fixed: To resolve issues with partition wipes, as opposed to whole disc wipes, nwipe now includes the device name in the PDF report filename. Previously, when wiping specific partitions (e.g., sudo nwipe /dev/sdc3 /dev/sd4 /dev/sd5) via the CLI, the absence of a disk model or serial number caused PDF filenames to conflict and overwrite each other. This update ensures unique filenames and prevents data loss when processing multiple partitions. Thanks @PartialVolume #676
+* Add static linking libraries that are required by parted 3.6 @deamen #655
+* fixed: some declaration changes to satisfy gcc 15 Thanks @Knogle & @xandris #663 #658
+* Optimised that header code that generates the PDF reports. Thanks @PartialVolume #678
+* fixed: respect no-blanking methods in --nogui mode. This fixes an issue where a default blanking pass was added to methods which do not support it when in --nogui mode. Existing GUI code overriding the option is never called in --nogui mode, Thanks @desertwitch #682
+* fixed: sanitize device serial numbers and fix uninitialized/fallback handling. Thanks @Knogle #690
+* fixed: Automatically create PDF report directory if missing and improve permission model Thanks @Knogle #693
+* optimise: Validate autonuke and nogui for valid values and harden logic by not using assumptions in if statements for binary values and switching to case statements for value specific checks. Thanks @PartialVolume  #701
+* fixed: Improve str_truncate to fix memory error detected in valgrind #702
+* fixed: Require strict input of long form options, i.e no abbreviations allowed!. Command line option syntax as specifically described in `nwipe --help` and nwipe man page are only allowed. Corrects a 'feature' in GNU getopt_long().   Thanks @PartialVolume #705
 
 v0.39
 -----------------------
