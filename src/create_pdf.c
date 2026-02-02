@@ -1017,24 +1017,34 @@ void pdf_header_footer_text( nwipe_context_t* c, char* page_title )
     pdf_add_image_data( pdf, NULL, 45, 665, 100, 100, bin2c_shred_db_jpg, 27063 );
     pdf_set_font( pdf, "Helvetica-Bold" );
 
-    if( nwipe_options.PDFtag )
+    if( nwipe_options.PDFtag || nwipe_options.PDF_toggle_host_info )
     {
         snprintf( model_header, sizeof( model_header ), " %s: %s ", "Disk Model", c->device_model );
         pdf_add_text_wrap( pdf, NULL, model_header, 11, 0, 718, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
         snprintf( serial_header, sizeof( serial_header ), " %s: %s ", "Disk S/N", c->device_serial_no );
         pdf_add_text_wrap( pdf, NULL, serial_header, 11, 0, 703, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
-        snprintf( hostid_header, sizeof( hostid_header ), " %s: %s ", "System S/N", dmidecode_system_serial_number );
-        pdf_add_text_wrap( pdf, NULL, hostid_header, 11, 0, 688, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
-        snprintf( hostid_header, sizeof( hostid_header ), " %s: %s ", "System uuid", dmidecode_system_uuid );
-        pdf_add_text_wrap( pdf, NULL, hostid_header, 11, 0, 673, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
+
+        /* Display host UUID & S/N is host visibility is enabled in PDF */
+        if( nwipe_options.PDF_toggle_host_info )
+        {
+            snprintf(
+                hostid_header, sizeof( hostid_header ), " %s: %s ", "System S/N", dmidecode_system_serial_number );
+            pdf_add_text_wrap( pdf, NULL, hostid_header, 11, 0, 688, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
+            snprintf( hostid_header, sizeof( hostid_header ), " %s: %s ", "System uuid", dmidecode_system_uuid );
+            pdf_add_text_wrap( pdf, NULL, hostid_header, 11, 0, 673, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
+        }
 
         /* libconfig: Obtain PDF_Certificate.User_Defined_Tag from nwipe.conf */
         setting = config_lookup( &nwipe_cfg, "PDF_Certificate" );
 
         if( config_setting_lookup_string( setting, "User_Defined_Tag", &user_defined_tag ) )
         {
-            snprintf( tag_header, sizeof( tag_header ), " %s: %s ", "Tag", user_defined_tag );
-            pdf_add_text_wrap( pdf, NULL, tag_header, 11, 0, 658, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
+            if( user_defined_tag[0] != 0 )
+            {
+                snprintf( tag_header, sizeof( tag_header ), " %s: %s ", "Tag", user_defined_tag );
+                pdf_add_text_wrap(
+                    pdf, NULL, tag_header, 11, 0, 658, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
+            }
         }
         else
         {
