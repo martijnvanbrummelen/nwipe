@@ -231,9 +231,9 @@ If you are compiling `nwipe` from source on Debian/Ubuntu:
 sudo apt install \
   build-essential \
   pkg-config \
-  automake \
   libncurses5-dev \
-  autotools-dev \
+  meson \
+  ninja-build \
   libparted-dev \
   libconfig-dev \
   libconfig++-dev \
@@ -250,6 +250,8 @@ sudo bash
 sudo dnf update -y
 sudo dnf groupinstall -y "Development Tools" "C Development Tools and Libraries"
 sudo dnf install -y \
+  meson \
+  ninja-build \
   ncurses-devel \
   parted-devel \
   libconfig-devel \
@@ -265,6 +267,8 @@ sudo dnf install -y \
 ```bash
 sudo pacman -Syu --needed \
   base-devel \
+  meson \
+  ninja \
   ncurses \
   parted \
   libconfig \
@@ -279,10 +283,9 @@ sudo pacman -Syu --needed \
 sudo zypper refresh
 sudo zypper install -y \
   gcc \
-  make \
-  automake \
-  autoconf \
-  libtool \
+  meson \
+  ninja \
+  pkg-config \
   ncurses-devel \
   libparted-devel \
   libconfig-devel \
@@ -297,29 +300,15 @@ Note: `dmidecode`, `readlink` (from `coreutils`) and `smartmontools` are technic
 
 ### Compilation
 
-Generate the autoconf files:
+Configure, build and install with Meson:
 
 ```bash
-./autogen.sh
-```
-
-Then configure, build and install:
-
-```bash
-./configure
-make format    # only required if you intend to submit pull requests
-make
-sudo make install
+meson setup build
+meson compile -C build
+meson install -C build
 ```
 
 Run nwipe:
-
-```bash
-cd src
-sudo ./nwipe
-```
-
-or simply:
 
 ```bash
 sudo nwipe
@@ -334,10 +323,9 @@ If you intend to submit patches or pull requests, we recommend enabling full war
 For a debug–friendly build:
 
 ```bash
-./configure --prefix=/usr CFLAGS='-O0 -g -Wall -Wextra'
-make format      # necessary if submitting pull requests
-make
-sudo make install
+meson setup build --prefix=/usr -Dc_args='-O0 -g -Wall -Wextra'
+meson compile -C build
+meson install -C build
 ```
 
 * `-O0 -g`
@@ -349,7 +337,7 @@ sudo make install
 The code style is defined via `.clang-format`. Before submitting:
 
 ```bash
-make format
+meson compile -C build format
 ```
 
 You will need `clang-format` installed for this step.
@@ -357,9 +345,9 @@ You will need `clang-format` installed for this step.
 To rebuild a "release-like" binary with normal optimisations after development:
 
 ```bash
-./configure --prefix=/usr
-make
-sudo make install
+meson setup --wipe build --prefix=/usr
+meson compile -C build
+meson install -C build
 ```
 
 ---
@@ -388,9 +376,9 @@ cd "$nwipe_directory"
 sudo apt install -y \
   build-essential \
   pkg-config \
-  automake \
   libncurses5-dev \
-  autotools-dev \
+  meson \
+  ninja-build \
   libparted-dev \
   libconfig-dev \
   libconfig++-dev \
@@ -403,24 +391,22 @@ sudo apt install -y \
 rm -rf nwipe
 git clone https://github.com/martijnvanbrummelen/nwipe.git
 cd nwipe
-./autogen.sh
-./configure
-make
+meson setup build
+meson compile -C build
 
-cd src
-sudo ./nwipe
+sudo ./build/nwipe
 ```
 
 To run the latest master later on:
 
 ```bash
-sudo ~/nwipe_master/nwipe/src/nwipe
+sudo ~/nwipe_master/nwipe/build/nwipe
 ```
 
 If you already have nwipe from your distro’s repo installed, remember:
 
 * `nwipe` → runs the packaged version in your `$PATH`
-* `./nwipe` in `~/nwipe_master/nwipe/src` → runs the freshly built master
+* `./nwipe` in `~/nwipe_master/nwipe/build` → runs the freshly built master
 
 ---
 
@@ -486,5 +472,3 @@ Please include:
 
 nwipe is licensed under the **GNU General Public License v2.0**.
 See the `LICENSE` file for details.
-
-
