@@ -33,10 +33,7 @@ configure_file(
 
 add_project_arguments('-DHAVE_CONFIG_H', language: ['c', 'cpp'])
 
-include_dirs = include_directories(
-  'src',
-  meson.current_build_dir(),
-)
+include_dirs = include_directories('src')
 
 nwipe_sources = files(
   'src/aes/aes_ctr_prng.cpp',
