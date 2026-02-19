@@ -27,6 +27,7 @@
 #include <string.h> /* memset, memcpy, memcmp */
 #include <errno.h>
 #include <limits.h>
+#include <unistd.h>
 
 #include "nwipe.h"
 #include "context.h"
@@ -64,6 +65,162 @@
 #ifndef NWIPE_IO_BLOCKSIZE
 #define NWIPE_IO_BLOCKSIZE ( 4 * 1024 * 1024UL ) /* 4 MiB I/O block */
 #endif
+
+/*
+ * write_with_retry / read_with_retry
+ *
+ * Attempt the I/O up to MAX_IO_RETRIES times, sleeping IO_RETRY_DELAY_S
+ * seconds between attempts.  On persistent failure the last return value
+ * (negative errno or short count) is returned to the caller unchanged, so
+ * existing error-handling logic is unaffected.
+ */
+
+#ifndef NWIPE_MAX_IO_RETRIES
+#define NWIPE_MAX_IO_RETRIES 3
+#endif
+
+#ifndef NWIPE_IO_RETRY_DELAY_S
+#define NWIPE_IO_RETRY_DELAY_S 5
+#endif
+
+static ssize_t write_with_retry( nwipe_context_t* c, int fd, const void* buf, size_t count )
+{
+    ssize_t r;
+    off64_t pos;
+    int attempt;
+    int slept_s;
+
+    for( attempt = 0; attempt < NWIPE_MAX_IO_RETRIES; attempt++ )
+    {
+        r = write( fd, buf, count );
+
+        if( r == (ssize_t) count )
+            return r; /* full write - success */
+
+        if( r < 0 )
+        {
+            nwipe_log( NWIPE_LOG_WARNING,
+                       "write_with_retry: write() failed on '%s' (attempt %d/%d): %s",
+                       c->device_name,
+                       attempt + 1,
+                       NWIPE_MAX_IO_RETRIES,
+                       strerror( errno ) );
+        }
+        else
+        {
+            nwipe_log( NWIPE_LOG_WARNING,
+                       "write_with_retry: short write on '%s' (attempt %d/%d): "
+                       "wrote %zd of %zu bytes.",
+                       c->device_name,
+                       attempt + 1,
+                       NWIPE_MAX_IO_RETRIES,
+                       r,
+                       count );
+        }
+
+        if( attempt + 1 < NWIPE_MAX_IO_RETRIES )
+        {
+            nwipe_log( NWIPE_LOG_NOTICE, "write_with_retry: retrying in %d seconds ...", NWIPE_IO_RETRY_DELAY_S );
+
+            for( slept_s = 0; slept_s < NWIPE_IO_RETRY_DELAY_S; slept_s++ )
+            {
+                sleep( 1 );
+                pthread_testcancel();
+            }
+
+            if( r > 0 )
+            {
+                pos = lseek( fd, -r, SEEK_CUR );
+                if( pos == (off64_t) -1 )
+                {
+                    nwipe_perror( errno, __FUNCTION__, "lseek" );
+                    nwipe_log(
+                        NWIPE_LOG_ERROR, "write_with_retry: cannot rewind after short write on '%s'.", c->device_name );
+                    return -1; /* fatal, we don't know where we are */
+                }
+            }
+        }
+    }
+
+    nwipe_log( NWIPE_LOG_ERROR,
+               "write_with_retry: giving up on '%s' after %d attempts.",
+               c->device_name,
+               NWIPE_MAX_IO_RETRIES );
+    return r;
+
+} /* write_with_retry */
+
+static ssize_t read_with_retry( nwipe_context_t* c, int fd, void* buf, size_t count )
+{
+    ssize_t r;
+    off64_t pos;
+    int attempt;
+    int slept_s;
+
+    for( attempt = 0; attempt < NWIPE_MAX_IO_RETRIES; attempt++ )
+    {
+        r = read( fd, buf, count );
+
+        if( r == (ssize_t) count )
+            return r; /* full read - success */
+
+        if( r == 0 )
+        {
+            return r; /* EOF */
+        }
+
+        if( r < 0 )
+        {
+            nwipe_log( NWIPE_LOG_WARNING,
+                       "read_with_retry: read() failed on '%s' (attempt %d/%d): %s",
+                       c->device_name,
+                       attempt + 1,
+                       NWIPE_MAX_IO_RETRIES,
+                       strerror( errno ) );
+        }
+        else
+        {
+            nwipe_log( NWIPE_LOG_WARNING,
+                       "read_with_retry: short read on '%s' (attempt %d/%d): "
+                       "read %zd of %zu bytes.",
+                       c->device_name,
+                       attempt + 1,
+                       NWIPE_MAX_IO_RETRIES,
+                       r,
+                       count );
+        }
+
+        if( attempt + 1 < NWIPE_MAX_IO_RETRIES )
+        {
+            nwipe_log( NWIPE_LOG_NOTICE, "read_with_retry: retrying in %d seconds ...", NWIPE_IO_RETRY_DELAY_S );
+
+            for( slept_s = 0; slept_s < NWIPE_IO_RETRY_DELAY_S; slept_s++ )
+            {
+                sleep( 1 );
+                pthread_testcancel();
+            }
+
+            if( r > 0 )
+            {
+                pos = lseek( fd, -r, SEEK_CUR );
+                if( pos == (off64_t) -1 )
+                {
+                    nwipe_perror( errno, __FUNCTION__, "lseek" );
+                    nwipe_log(
+                        NWIPE_LOG_ERROR, "read_with_retry: cannot rewind after short read on '%s'.", c->device_name );
+                    return -1; /* fatal, we don't know where we are */
+                }
+            }
+        }
+    }
+
+    nwipe_log( NWIPE_LOG_ERROR,
+               "read_with_retry: giving up on '%s' after %d attempts.",
+               c->device_name,
+               NWIPE_MAX_IO_RETRIES );
+    return r;
+
+} /* read_with_retry */
 
 /*
  * Compute the effective I/O block size for a given device:
@@ -303,7 +460,7 @@ int nwipe_random_verify( nwipe_context_t* c )
         c->prng->read( &c->prng_state, d, blocksize );
 
         /* Read data from device. */
-        r = (int) read( c->device_fd, b, blocksize );
+        r = (int) read_with_retry( c, c->device_fd, b, blocksize );
         if( r < 0 )
         {
             nwipe_perror( errno, __FUNCTION__, "read" );
@@ -517,7 +674,7 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
         }
 
         /* Write the generated random data to the device. */
-        r = (int) write( c->device_fd, b, blocksize );
+        r = (int) write_with_retry( c, c->device_fd, b, blocksize );
 
         if( r < 0 )
         {
@@ -743,7 +900,7 @@ int nwipe_static_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
             }
         }
 
-        r = (int) read( c->device_fd, b, blocksize );
+        r = (int) read_with_retry( c, c->device_fd, b, blocksize );
         if( r < 0 )
         {
             nwipe_perror( errno, __FUNCTION__, "read" );
@@ -926,7 +1083,7 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
          * pattern buffer. Because we filled the entire buffer with the
          * pattern (and made it large enough), &b[w] is always valid.
          */
-        r = (int) write( c->device_fd, &b[w], blocksize );
+        r = (int) write_with_retry( c, c->device_fd, &b[w], blocksize );
         if( r < 0 )
         {
             nwipe_perror( errno, __FUNCTION__, "write" );
