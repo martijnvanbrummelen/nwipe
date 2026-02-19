@@ -69,18 +69,22 @@
 /*
  * write_with_retry / read_with_retry
  *
- * Attempt the I/O up to MAX_IO_RETRIES times, sleeping IO_RETRY_DELAY_S
+ * Attempt the I/O up to MAX_IO_ATTEMPTS times, sleeping IO_RETRY_DELAY_S
  * seconds between attempts.  On persistent failure the last return value
  * (negative errno or short count) is returned to the caller unchanged, so
  * existing error-handling logic is unaffected.
  */
 
-#ifndef NWIPE_MAX_IO_RETRIES
-#define NWIPE_MAX_IO_RETRIES 3
+#ifndef NWIPE_MAX_IO_ATTEMPTS
+#define NWIPE_MAX_IO_ATTEMPTS 3
 #endif
 
 #ifndef NWIPE_IO_RETRY_DELAY_S
 #define NWIPE_IO_RETRY_DELAY_S 5
+#endif
+
+#if NWIPE_MAX_IO_ATTEMPTS < 1
+#error "NWIPE_MAX_IO_ATTEMPTS must be at least 1"
 #endif
 
 static ssize_t write_with_retry( nwipe_context_t* c, int fd, const void* buf, size_t count )
@@ -92,7 +96,7 @@ static ssize_t write_with_retry( nwipe_context_t* c, int fd, const void* buf, si
     int pass_type_changed = 0;
     nwipe_pass_t saved_pass_type;
 
-    for( attempt = 0; attempt < NWIPE_MAX_IO_RETRIES; attempt++ )
+    for( attempt = 0; attempt < NWIPE_MAX_IO_ATTEMPTS; attempt++ )
     {
         r = write( fd, buf, count );
 
@@ -109,7 +113,7 @@ static ssize_t write_with_retry( nwipe_context_t* c, int fd, const void* buf, si
                        "write_with_retry: write() failed on '%s' (attempt %d/%d): %s",
                        c->device_name,
                        attempt + 1,
-                       NWIPE_MAX_IO_RETRIES,
+                       NWIPE_MAX_IO_ATTEMPTS,
                        strerror( errno ) );
         }
         else
@@ -119,12 +123,12 @@ static ssize_t write_with_retry( nwipe_context_t* c, int fd, const void* buf, si
                        "wrote %zd of %zu bytes.",
                        c->device_name,
                        attempt + 1,
-                       NWIPE_MAX_IO_RETRIES,
+                       NWIPE_MAX_IO_ATTEMPTS,
                        r,
                        count );
         }
 
-        if( attempt + 1 < NWIPE_MAX_IO_RETRIES )
+        if( attempt + 1 < NWIPE_MAX_IO_ATTEMPTS )
         {
             if( attempt == 0 )
             {
@@ -160,7 +164,7 @@ static ssize_t write_with_retry( nwipe_context_t* c, int fd, const void* buf, si
     nwipe_log( NWIPE_LOG_ERROR,
                "write_with_retry: giving up on '%s' after %d attempts.",
                c->device_name,
-               NWIPE_MAX_IO_RETRIES );
+               NWIPE_MAX_IO_ATTEMPTS );
 
     if( pass_type_changed )
         c->pass_type = saved_pass_type; /* restore pass type */
@@ -177,7 +181,7 @@ static ssize_t read_with_retry( nwipe_context_t* c, int fd, void* buf, size_t co
     int pass_type_changed = 0;
     nwipe_pass_t saved_pass_type;
 
-    for( attempt = 0; attempt < NWIPE_MAX_IO_RETRIES; attempt++ )
+    for( attempt = 0; attempt < NWIPE_MAX_IO_ATTEMPTS; attempt++ )
     {
         r = read( fd, buf, count );
 
@@ -201,7 +205,7 @@ static ssize_t read_with_retry( nwipe_context_t* c, int fd, void* buf, size_t co
                        "read_with_retry: read() failed on '%s' (attempt %d/%d): %s",
                        c->device_name,
                        attempt + 1,
-                       NWIPE_MAX_IO_RETRIES,
+                       NWIPE_MAX_IO_ATTEMPTS,
                        strerror( errno ) );
         }
         else
@@ -211,12 +215,12 @@ static ssize_t read_with_retry( nwipe_context_t* c, int fd, void* buf, size_t co
                        "read %zd of %zu bytes.",
                        c->device_name,
                        attempt + 1,
-                       NWIPE_MAX_IO_RETRIES,
+                       NWIPE_MAX_IO_ATTEMPTS,
                        r,
                        count );
         }
 
-        if( attempt + 1 < NWIPE_MAX_IO_RETRIES )
+        if( attempt + 1 < NWIPE_MAX_IO_ATTEMPTS )
         {
             if( attempt == 0 )
             {
@@ -252,7 +256,7 @@ static ssize_t read_with_retry( nwipe_context_t* c, int fd, void* buf, size_t co
     nwipe_log( NWIPE_LOG_ERROR,
                "read_with_retry: giving up on '%s' after %d attempts.",
                c->device_name,
-               NWIPE_MAX_IO_RETRIES );
+               NWIPE_MAX_IO_ATTEMPTS );
 
     if( pass_type_changed )
         c->pass_type = saved_pass_type; /* restore pass type */
