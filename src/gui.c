@@ -7700,6 +7700,13 @@ void* nwipe_gui_status( void* ptr )
                                 }
                                 break;
 
+                            case NWIPE_PASS_RETRY:
+                                if( !c[i]->sync_status )
+                                {
+                                    wprintw( main_window, "[retrying ] " );
+                                }
+                                break;
+
                             case NWIPE_PASS_VERIFY:
                                 if( !c[i]->sync_status )
                                 {

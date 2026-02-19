@@ -45,6 +45,7 @@ typedef enum nwipe_device_t_ {
 typedef enum nwipe_pass_t_ {
     NWIPE_PASS_NONE = 0,  // Not running.
     NWIPE_PASS_WRITE,  // Writing patterns to the device.
+    NWIPE_PASS_RETRY,  // Retrying I/O failures.
     NWIPE_PASS_VERIFY,  // Verifying a pass.
     NWIPE_PASS_FINAL_BLANK,  // Filling the device with zeros.
     NWIPE_PASS_FINAL_OPS2  // Special case for nwipe_ops2.

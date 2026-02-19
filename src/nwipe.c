@@ -1419,6 +1419,10 @@ void* signal_hand( void* ptr )
                                 status = "[writing]";
                                 break;
 
+                            case NWIPE_PASS_RETRY:
+                                status = "[retrying]";
+                                break;
+
                             case NWIPE_PASS_VERIFY:
                                 status = "[verifying]";
                                 break;
