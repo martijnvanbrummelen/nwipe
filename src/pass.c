@@ -720,6 +720,61 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
 
         if( r < 0 )
         {
+            if( nwipe_options.noabort_block_errors )
+            {
+                /*
+                 * Block write failed and the user requested to NOT abort the pass.
+                 * Treat the whole block as failed, skip it, count the bytes,
+                 * and continue with the next block.
+                 */
+                int s = (int) blocksize;
+
+                /* Count all bytes of this block as pass errors. */
+                c->pass_errors += s;
+
+                /* Log the write error and that we are skipping this block. */
+                nwipe_perror( errno, __FUNCTION__, "write" );
+                nwipe_log( NWIPE_LOG_ERROR,
+                           "Write error on '%s' at offset %llu, skipping %d bytes.",
+                           c->device_name,
+                           (unsigned long long) ( c->device_size - z ),
+                           s );
+
+                /*
+                 * Skip forward by one block on the device, so subsequent writes
+                 * continue after the failing region.
+                 */
+                offset = lseek( c->device_fd, s, SEEK_CUR );
+                if( offset == (off64_t) -1 )
+                {
+                    /*
+                     * If we cannot move the file offset, we cannot safely continue,
+                     * so we must abort the pass even in no-abort mode.
+                     */
+                    nwipe_perror( errno, __FUNCTION__, "lseek" );
+                    nwipe_log(
+                        NWIPE_LOG_FATAL, "Unable to bump the '%s' file offset after a write error.", c->device_name );
+                    free( b );
+                    return -1;
+                }
+
+                /*
+                 * This block is logically processed (address space advanced),
+                 * but not actually written. Reflect that in the remaining size
+                 * and in the per-round progress, but DO NOT increase pass_done.
+                 */
+                z -= (u64) s;
+                c->round_done += s;
+
+                /* Allow thread cancellation points and proceed with the next loop iteration. */
+                pthread_testcancel();
+                continue;
+            }
+
+            /*
+             * Default behaviour (no no-abort option):
+             * abort the pass on a write error.
+             */
             nwipe_perror( errno, __FUNCTION__, "write" );
             nwipe_log( NWIPE_LOG_FATAL, "Unable to write to '%s'.", c->device_name );
             if( c->bytes_erased < ( c->device_size - z ) )
@@ -1128,6 +1183,71 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
         r = (int) write_with_retry( c, c->device_fd, &b[w], blocksize );
         if( r < 0 )
         {
+            if( nwipe_options.noabort_block_errors )
+            {
+                /*
+                 * Block write failed and the user requested to NOT abort the pass.
+                 * As in the random pass, treat the whole block as failed, skip it,
+                 * count the bytes, and continue with the next block.
+                 */
+                int s = (int) blocksize;
+
+                /* Count all bytes of this block as pass errors. */
+                c->pass_errors += s;
+
+                /* Log the write error and that we are skipping this block. */
+                nwipe_perror( errno, __FUNCTION__, "write" );
+                nwipe_log( NWIPE_LOG_ERROR,
+                           "Write error on '%s' at offset %llu, skipping %d bytes.",
+                           c->device_name,
+                           (unsigned long long) ( c->device_size - z ),
+                           s );
+
+                /*
+                 * Skip forward by one block on the device, so subsequent writes
+                 * continue after the failing region.
+                 */
+                offset = lseek( c->device_fd, s, SEEK_CUR );
+                if( offset == (off64_t) -1 )
+                {
+                    /*
+                     * If we cannot move the file offset, we cannot safely continue,
+                     * so we must abort the pass even in no-abort mode.
+                     */
+                    nwipe_perror( errno, __FUNCTION__, "lseek" );
+                    nwipe_log(
+                        NWIPE_LOG_FATAL, "Unable to bump the '%s' file offset after a write error.", c->device_name );
+                    free( b );
+                    return -1;
+                }
+
+                /*
+                 * Adjust the pattern window so that the logical pattern position
+                 * stays consistent after skipping s bytes.
+                 */
+                if( pattern->length > 0 )
+                {
+                    size_t adv = (size_t) s % (size_t) pattern->length;
+                    w = (int) ( ( w + (int) adv ) % pattern->length );
+                }
+
+                /*
+                 * This block is logically processed (address space advanced),
+                 * but not actually written. Reflect that in the remaining size
+                 * and in the per-round progress, but DO NOT increase pass_done.
+                 */
+                z -= (u64) s;
+                c->round_done += s;
+
+                /* Allow thread cancellation points and proceed with the next loop iteration. */
+                pthread_testcancel();
+                continue;
+            }
+
+            /*
+             * Default behaviour (no no-abort option):
+             * abort the pass on a write error.
+             */
             nwipe_perror( errno, __FUNCTION__, "write" );
             nwipe_log( NWIPE_LOG_FATAL, "Unable to write to '%s'.", c->device_name );
             if( c->bytes_erased < ( c->device_size - z ) )

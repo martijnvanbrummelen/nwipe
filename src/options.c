@@ -114,6 +114,9 @@ int nwipe_options_parse( int argc, char** argv )
         /* Whether to allow signals to interrupt a wipe. */
         { "nosignals", no_argument, 0, 0 },
 
+        /* Do NOT abort pass on block write errors. */
+        { "no-abort-on-block-errors", no_argument, 0, 0 },
+
         /* Whether to display the gui. */
         { "nogui", no_argument, 0, 0 },
 
@@ -181,6 +184,7 @@ int nwipe_options_parse( int argc, char** argv )
     nwipe_options.verbose = 0;
     nwipe_options.verify = NWIPE_VERIFY_LAST;
     nwipe_options.io_mode = NWIPE_IO_MODE_AUTO; /* Default: auto-select I/O mode. */
+    nwipe_options.noabort_block_errors = 0;
     nwipe_options.PDF_toggle_host_info = 0; /* Default: host visibility on PDF disabled */
     nwipe_options.PDFtag = 0;
     memset( nwipe_options.logfile, '\0', sizeof( nwipe_options.logfile ) );
@@ -468,6 +472,12 @@ int nwipe_options_parse( int argc, char** argv )
                                  argv[optind - 1] );
                         exit( EINVAL );
                     }
+                }
+
+                if( strcmp( nwipe_options_long[i].name, "no-abort-on-block-errors" ) == 0 )
+                {
+                    nwipe_options.noabort_block_errors = 1;
+                    break;
                 }
 
                 if( strcmp( nwipe_options_long[i].name, "nogui" ) == 0 )
@@ -1104,6 +1114,9 @@ void display_help()
     puts( "                           option. Send SIGUSR1 to log current stats.\n" );
     puts( "      --nousb              Do NOT show or wipe any USB devices whether in GUI" );
     puts( "                           mode, --nogui or --autonuke modes.\n" );
+    puts( "      --no-abort-on-block-errors  Do NOT abort passes on block write errors;" );
+    puts( "                                  skip the failing block and continue." );
+    puts( "                                  (default is to abort)\n" );
     puts( "      --pdftag             Enables a field on the PDF that holds a tag that\n" );
     puts( "                           identifies the host computer\n" );
     puts( "  -e, --exclude=DEVICES    Up to ten comma separated devices to be excluded." );
