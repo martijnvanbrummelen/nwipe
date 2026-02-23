@@ -247,6 +247,38 @@ static ssize_t nwipe_read_with_retry( nwipe_context_t* c, int fd, void* buf, siz
     return r;
 } /* nwipe_read_with_retry */
 
+/**
+ * Performs fdatasync(), logs (and increases error count).
+ * Function returns 0 on success, and -1 on fatal failure.
+ * With noabort_block_errors, logs a warning and returns 0.
+ */
+static int nwipe_fdatasync( nwipe_context_t* c, const char* f )
+{
+    int r;
+
+    c->sync_status = 1;
+    r = fdatasync( c->device_fd );
+    c->sync_status = 0;
+
+    if( r != 0 )
+    {
+        c->fsyncdata_errors++;
+
+        nwipe_perror( errno, f, "fdatasync" );
+        nwipe_log( NWIPE_LOG_WARNING, "Buffer flush failure on '%s'.", c->device_name );
+
+        if( nwipe_options.noabort_block_errors )
+        {
+            /* Sync errors are to be expected with bad blocks, so we must allow them */
+            return 0;
+        }
+
+        nwipe_log( NWIPE_LOG_WARNING, "Wrote %llu bytes on '%s'.", c->pass_done, c->device_name );
+        return -1;
+    }
+
+    return 0;
+} /* nwipe_fdatasync */
 
 /*
  * Compute the effective I/O block size for a given device:
@@ -447,16 +479,7 @@ int nwipe_random_verify( nwipe_context_t* c )
     }
 
     /* Ensure all previous writes are on disk before we verify. */
-    c->sync_status = 1;
-    r = fdatasync( c->device_fd );
-    c->sync_status = 0;
-
-    if( r != 0 )
-    {
-        nwipe_perror( errno, __FUNCTION__, "fdatasync" );
-        nwipe_log( NWIPE_LOG_WARNING, "Buffer flush failure on '%s'.", c->device_name );
-        c->fsyncdata_errors++;
-    }
+    nwipe_fdatasync( c, __FUNCTION__ );
 
     /* Reseed the PRNG so it produces the same stream as during the pass. */
     c->prng->init( &c->prng_state, &c->prng_seed );
@@ -486,7 +509,7 @@ int nwipe_random_verify( nwipe_context_t* c )
         c->prng->read( &c->prng_state, d, blocksize );
 
         /* Read data from device. */
-        r = (int) read_with_retry( c, c->device_fd, b, blocksize );
+        r = (int) nwipe_read_with_retry( c, c->device_fd, b, blocksize );
         if( r < 0 )
         {
             nwipe_perror( errno, __FUNCTION__, "read" );
@@ -690,17 +713,13 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
             if( idx < 0 )
             {
                 nwipe_log( NWIPE_LOG_FATAL, "ERROR, prng wrote nothing to the buffer" );
-                if( c->bytes_erased < ( c->device_size - z ) )
-                {
-                    c->bytes_erased = c->device_size - z;
-                }
                 free( b );
                 return -1;
             }
         }
 
         /* Write the generated random data to the device. */
-        r = (int) write_with_retry( c, c->device_fd, b, blocksize );
+        r = (int) nwipe_write_with_retry( c, c->device_fd, b, blocksize );
 
         if( r < 0 )
         {
@@ -761,10 +780,6 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
              */
             nwipe_perror( errno, __FUNCTION__, "write" );
             nwipe_log( NWIPE_LOG_FATAL, "Unable to write to '%s'.", c->device_name );
-            if( c->bytes_erased < ( c->device_size - z ) )
-            {
-                c->bytes_erased = c->device_size - z;
-            }
             free( b );
             return -1;
         }
@@ -788,10 +803,6 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
                 nwipe_perror( errno, __FUNCTION__, "lseek" );
                 nwipe_log(
                     NWIPE_LOG_ERROR, "Unable to bump the '%s' file offset after a partial write.", c->device_name );
-                if( c->bytes_erased < ( c->device_size - z ) )
-                {
-                    c->bytes_erased = c->device_size - z;
-                }
                 free( b );
                 return -1;
             }
@@ -808,21 +819,11 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
 
             if( i >= syncRate )
             {
-                c->sync_status = 1;
-                r = fdatasync( c->device_fd );
-                c->sync_status = 0;
+                r = nwipe_fdatasync( c, __FUNCTION__ );
 
                 if( r != 0 )
                 {
-                    nwipe_perror( errno, __FUNCTION__, "fdatasync" );
-                    nwipe_log( NWIPE_LOG_WARNING, "Buffer flush failure on '%s'.", c->device_name );
-                    nwipe_log( NWIPE_LOG_WARNING, "Wrote %llu bytes on '%s'.", c->pass_done, c->device_name );
-                    c->fsyncdata_errors++;
                     free( b );
-                    if( c->bytes_erased < ( c->device_size - z ) )
-                    {
-                        c->bytes_erased = c->device_size - z;
-                    }
                     return -1;
                 }
 
@@ -843,25 +844,25 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
     free( b );
 
     /* Final sync at end of pass. */
-    c->sync_status = 1;
-    r = fdatasync( c->device_fd );
-    c->sync_status = 0;
+    r = nwipe_fdatasync( c, __FUNCTION__ );
 
-    if( r != 0 )
+    /*
+     * If any sync failed and the wipe claims 100% erased, always adjust down
+     * one full I/O block because we cannot guarantee it, otherwise percentage
+     * will show 100% erased. But we make sure to return only a fatal code if
+     * this specific sync has failed, to keep things consistent as everywhere.
+     */
+    if( c->fsyncdata_errors > 0 )
     {
-        nwipe_perror( errno, __FUNCTION__, "fdatasync" );
-        nwipe_log( NWIPE_LOG_WARNING, "Buffer flush failure on '%s'.", c->device_name );
-        c->fsyncdata_errors++;
-
-        /*
-         * Keep the original semantics: adjust bytes_erased based on the last
-         * known good block and fail the pass.
-         */
-        if( c->bytes_erased < ( c->device_size - z - blocksize ) )
+        if( c->bytes_erased >= c->device_size )
         {
-            c->bytes_erased = c->device_size - z - blocksize;
+            c->bytes_erased = c->device_size - (u64) io_blocksize;
         }
-        return -1;
+
+        if( r != 0 )
+        {
+            return -1;
+        }
     }
 
     return 0;
@@ -929,16 +930,7 @@ int nwipe_static_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
     }
 
     /* Ensure all writes are flushed before verification. */
-    c->sync_status = 1;
-    r = fdatasync( c->device_fd );
-    c->sync_status = 0;
-
-    if( r != 0 )
-    {
-        nwipe_perror( errno, __FUNCTION__, "fdatasync" );
-        nwipe_log( NWIPE_LOG_WARNING, "Buffer flush failure on '%s'.", c->device_name );
-        c->fsyncdata_errors++;
-    }
+    nwipe_fdatasync( c, __FUNCTION__ );
 
     /* Rewind. */
     offset = lseek( c->device_fd, 0, SEEK_SET );
@@ -981,7 +973,7 @@ int nwipe_static_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
             }
         }
 
-        r = (int) read_with_retry( c, c->device_fd, b, blocksize );
+        r = (int) nwipe_read_with_retry( c, c->device_fd, b, blocksize );
         if( r < 0 )
         {
             nwipe_perror( errno, __FUNCTION__, "read" );
@@ -1234,10 +1226,6 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
              */
             nwipe_perror( errno, __FUNCTION__, "write" );
             nwipe_log( NWIPE_LOG_FATAL, "Unable to write to '%s'.", c->device_name );
-            if( c->bytes_erased < ( c->device_size - z ) )
-            {
-                c->bytes_erased = c->device_size - z;
-            }
             free( b );
             return -1;
         }
@@ -1256,10 +1244,6 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
                 nwipe_perror( errno, __FUNCTION__, "lseek" );
                 nwipe_log(
                     NWIPE_LOG_ERROR, "Unable to bump the '%s' file offset after a partial write.", c->device_name );
-                if( c->bytes_erased < ( c->device_size - z ) )
-                {
-                    c->bytes_erased = c->device_size - z;
-                }
                 free( b );
                 return -1;
             }
@@ -1286,21 +1270,11 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
 
             if( i >= syncRate )
             {
-                c->sync_status = 1;
-                r = fdatasync( c->device_fd );
-                c->sync_status = 0;
+                r = nwipe_fdatasync( c, __FUNCTION__ );
 
                 if( r != 0 )
                 {
-                    nwipe_perror( errno, __FUNCTION__, "fdatasync" );
-                    nwipe_log( NWIPE_LOG_WARNING, "Buffer flush failure on '%s'.", c->device_name );
-                    nwipe_log( NWIPE_LOG_WARNING, "Wrote %llu bytes on '%s'.", c->pass_done, c->device_name );
-                    c->fsyncdata_errors++;
                     free( b );
-                    if( c->bytes_erased < ( c->device_size - z ) )
-                    {
-                        c->bytes_erased = c->device_size - z;
-                    }
                     return -1;
                 }
 
@@ -1318,24 +1292,26 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
     } /* /remaining bytes */
 
     /* Final sync at end of pass. */
-    c->sync_status = 1;
-    r = fdatasync( c->device_fd );
-    c->sync_status = 0;
+    r = nwipe_fdatasync( c, __FUNCTION__ );
 
-    if( r != 0 )
+    /*
+     * If any sync failed and the wipe claims 100% erased, always adjust down
+     * one full I/O block because we cannot guarantee it, otherwise percentage
+     * will show 100% erased. But we make sure to return only a fatal code if
+     * this specific sync has failed, to keep things consistent as everywhere.
+     */
+    if( c->fsyncdata_errors > 0 )
     {
-        nwipe_perror( errno, __FUNCTION__, "fdatasync" );
-        nwipe_log( NWIPE_LOG_WARNING, "Buffer flush failure on '%s'.", c->device_name );
-        c->fsyncdata_errors++;
-        if( c->bytes_erased < ( c->device_size - z - blocksize ) )
+        if( c->bytes_erased >= c->device_size )
         {
-            c->bytes_erased = c->device_size - z - blocksize;
+            c->bytes_erased = c->device_size - (u64) io_blocksize;
         }
-        free( b );
-        return -1;
-    }
 
-    free( b );
+        if( r != 0 )
+        {
+            return -1;
+        }
+    }
 
     return 0;
 
