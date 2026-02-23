@@ -7646,17 +7646,23 @@ void* nwipe_gui_status( void* ptr )
                     } /* child running */
                     else
                     {
-                        if( c[i]->result == 0 )
+                        if( c[i]->result == 0 ) /* Success */
                         {
                             mvwprintw( main_window, yy++, 4, "[%05.2f%% complete, SUCCESS! ", c[i]->round_percent );
                         }
-                        else if( c[i]->signal )
+                        else if( c[i]->signal ) /* Signal received */
                         {
                             wattron( main_window, COLOR_PAIR( 9 ) );
                             mvwprintw( main_window, yy++, 4, "(>>> FAILURE! <<<, signal %i) ", c[i]->signal );
                             wattroff( main_window, COLOR_PAIR( 9 ) );
                         }
-                        else
+                        else if( c[i]->result == 1 ) /* Non-fatal errors */
+                        {
+                            wattron( main_window, COLOR_PAIR( 9 ) );
+                            mvwprintw( main_window, yy++, 4, "(>>> FAILURE! <<<) " );
+                            wattroff( main_window, COLOR_PAIR( 9 ) );
+                        }
+                        else /* Fatal error */
                         {
                             wattron( main_window, COLOR_PAIR( 9 ) );
                             mvwprintw( main_window, yy++, 4, "(>>> IOERROR! <<<, code %i) ", c[i]->result );
