@@ -1084,10 +1084,11 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
     int r;
     size_t blocksize;
     size_t io_blocksize;
-    size_t bufsize;
     off64_t offset;
     char* b;
     char* p;
+    char* wbuf;
+    const void* wsrc;
     int w = 0; /* window offset into pattern */
     u64 z = c->device_size;
     u64 bs = 0; /* pass bytes skipped */
@@ -1142,6 +1143,18 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
         memcpy( p, pattern->s, pattern->length );
     }
 
+    /*
+     * We need an aligned buffer to copy the window-adjusted pattern into,
+     * otherwise patterns whose length doesn't divide the I/O block size
+     * evenly will fail under IO_DIRECT with EINVAL, as seen with Gutmann.
+     */
+    wbuf = (char*) nwipe_alloc_io_buffer( c, io_blocksize, 0, "static_pass write buffer" );
+    if( !wbuf )
+    {
+        free( b );
+        return -1;
+    }
+
     /* Rewind device. */
     offset = lseek( c->device_fd, 0, SEEK_SET );
     c->pass_done = 0;
@@ -1151,6 +1164,7 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
         nwipe_perror( errno, __FUNCTION__, "lseek" );
         nwipe_log( NWIPE_LOG_FATAL, "Unable to reset the '%s' file offset.", c->device_name );
         free( b );
+        free( wbuf );
         return -1;
     }
 
@@ -1158,6 +1172,7 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
     {
         nwipe_log( NWIPE_LOG_SANITY, "__FUNCTION__: lseek() returned a bogus offset on '%s'.", c->device_name );
         free( b );
+        free( wbuf );
         return -1;
     }
 
@@ -1182,11 +1197,21 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
         }
 
         /*
-         * Write "blocksize" bytes starting at offset w in the repeating
+         * Copy "blocksize" bytes starting at offset w into the aligned
          * pattern buffer. Because we filled the entire buffer with the
          * pattern (and made it large enough), &b[w] is always valid.
          */
-        r = (int) write_with_retry( c, c->device_fd, &b[w], blocksize );
+        if( w == 0 )
+        {
+            wsrc = &b[w]; /* already aligned, skip the copy */
+        }
+        else
+        {
+            memcpy( wbuf, &b[w], blocksize );
+            wsrc = wbuf;
+        }
+
+        r = (int) nwipe_write_with_retry( c, c->device_fd, wsrc, blocksize );
         if( r < 0 )
         {
             if( nwipe_options.noabort_block_errors )
@@ -1224,6 +1249,7 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
                     nwipe_log(
                         NWIPE_LOG_FATAL, "Unable to bump the '%s' file offset after a write error.", c->device_name );
                     free( b );
+                    free( wbuf );
                     return -1;
                 }
 
@@ -1258,6 +1284,7 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
             nwipe_perror( errno, __FUNCTION__, "write" );
             nwipe_log( NWIPE_LOG_FATAL, "Unable to write to '%s'.", c->device_name );
             free( b );
+            free( wbuf );
             return -1;
         }
 
@@ -1292,6 +1319,7 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
                 nwipe_log(
                     NWIPE_LOG_ERROR, "Unable to bump the '%s' file offset after a partial write.", c->device_name );
                 free( b );
+                free( wbuf );
                 return -1;
             }
         }
@@ -1322,6 +1350,7 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
                 if( r != 0 )
                 {
                     free( b );
+                    free( wbuf );
                     return -1;
                 }
 
@@ -1343,6 +1372,9 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
         }
 
     } /* /remaining bytes */
+
+    free( b );
+    free( wbuf );
 
     /* Final sync at end of pass. */
     r = nwipe_fdatasync( c, __FUNCTION__ );
