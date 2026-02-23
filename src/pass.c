@@ -1132,18 +1132,12 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
      *   buffer_size >= io_blocksize + pattern->length * 2
      *
      * guarantees that we can wrap around the repeating pattern safely.
-     * We also honour NWIPE_BUFFER_SIZE if it is larger, to keep the "generic
-     * 16 MiB buffer" behavior.
      */
-    bufsize = io_blocksize + pattern->length * 2;
-    if( bufsize < (size_t) NWIPE_BUFFER_SIZE )
-        bufsize = (size_t) NWIPE_BUFFER_SIZE;
-
-    b = (char*) nwipe_alloc_io_buffer( c, bufsize, 0, "static_pass pattern buffer" );
+    b = (char*) nwipe_alloc_io_buffer( c, io_blocksize + pattern->length * 2, 0, "static_pass pattern buffer" );
     if( !b )
         return -1;
 
-    for( p = b; p < b + bufsize; p += pattern->length )
+    for( p = b; p < b + io_blocksize + pattern->length; p += pattern->length )
     {
         memcpy( p, pattern->s, pattern->length );
     }
