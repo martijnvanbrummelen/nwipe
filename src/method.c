@@ -1334,7 +1334,7 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
             }
         }
 
-        if( c->verify_errors == 0 && c->pass_errors == 0 )
+        if( c->verify_errors == 0 && c->pass_errors == 0 && c->fsyncdata_errors == 0 )
         {
             nwipe_log( NWIPE_LOG_NOTICE, "[SUCCESS] Blanked device %s", c->device_name );
         }
@@ -1364,9 +1364,13 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
         nwipe_log( NWIPE_LOG_ERROR, "%llu wipe errors on '%s'.", c->pass_errors, c->device_name );
     }
 
-    /* FIXME: The 'round_errors' context member is not being used. */
+    if( c->fsyncdata_errors > 0 )
+    {
+        /* We finished, but with non-fatal sync errors. */
+        nwipe_log( NWIPE_LOG_ERROR, "%llu sync errors on '%s'.", c->fsyncdata_errors, c->device_name );
+    }
 
-    if( c->pass_errors > 0 || c->round_errors > 0 || c->verify_errors > 0 )
+    if( c->pass_errors > 0 || c->verify_errors > 0 || c->fsyncdata_errors > 0 )
     {
         /* We finished, but with non-fatal errors. */
         return 1;
