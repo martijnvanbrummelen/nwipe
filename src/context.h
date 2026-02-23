@@ -45,7 +45,6 @@ typedef enum nwipe_device_t_ {
 typedef enum nwipe_pass_t_ {
     NWIPE_PASS_NONE = 0,  // Not running.
     NWIPE_PASS_WRITE,  // Writing patterns to the device.
-    NWIPE_PASS_RETRY,  // Retrying I/O failures.
     NWIPE_PASS_VERIFY,  // Verifying a pass.
     NWIPE_PASS_FINAL_BLANK,  // Filling the device with zeros.
     NWIPE_PASS_FINAL_OPS2  // Special case for nwipe_ops2.
@@ -159,6 +158,7 @@ typedef struct nwipe_context_t_
     int signal;  // Set when the child is killed by a signal.
     nwipe_speedring_t speedring;  // Ring buffer for computing the rolling throughput average.
     short sync_status;  // A flag to indicate when the method is syncing.
+    short retry_status;  // A flag to indicate when the method is retrying.
     pthread_t thread;  // The ID of the thread.
     u64 throughput;  // Average throughput in bytes per second.
     char throughput_txt[13];  // Human readable throughput.

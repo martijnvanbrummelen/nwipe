@@ -1419,10 +1419,6 @@ void* signal_hand( void* ptr )
                                 status = "[writing]";
                                 break;
 
-                            case NWIPE_PASS_RETRY:
-                                status = "[retrying]";
-                                break;
-
                             case NWIPE_PASS_VERIFY:
                                 status = "[verifying]";
                                 break;
@@ -1433,6 +1429,10 @@ void* signal_hand( void* ptr )
                         if( c[i]->sync_status )
                         {
                             status = "[syncing]";
+                        }
+                        if( c[i]->retry_status )
+                        {
+                            status = "[retrying]";
                         }
 
                         convert_seconds_to_hours_minutes_seconds( c[i]->eta, &hours, &minutes, &seconds );

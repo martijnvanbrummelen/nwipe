@@ -7680,35 +7680,28 @@ void* nwipe_gui_status( void* ptr )
                             /* Each text field in square brackets should be the same number of characters
                              * to retain output in columns */
                             case NWIPE_PASS_FINAL_BLANK:
-                                if( !c[i]->sync_status )
+                                if( !c[i]->sync_status && !c[i]->retry_status )
                                 {
                                     wprintw( main_window, "[ blanking] " );
                                 }
                                 break;
 
                             case NWIPE_PASS_FINAL_OPS2:
-                                if( !c[i]->sync_status )
+                                if( !c[i]->sync_status && !c[i]->retry_status )
                                 {
                                     wprintw( main_window, "[OPS2final] " );
                                 }
                                 break;
 
                             case NWIPE_PASS_WRITE:
-                                if( !c[i]->sync_status )
+                                if( !c[i]->sync_status && !c[i]->retry_status )
                                 {
                                     wprintw( main_window, "[ writing ] " );
                                 }
                                 break;
 
-                            case NWIPE_PASS_RETRY:
-                                if( !c[i]->sync_status )
-                                {
-                                    wprintw( main_window, "[retrying ] " );
-                                }
-                                break;
-
                             case NWIPE_PASS_VERIFY:
-                                if( !c[i]->sync_status )
+                                if( !c[i]->sync_status && !c[i]->retry_status )
                                 {
                                     wprintw( main_window, "[verifying] " );
                                 }
@@ -7721,6 +7714,10 @@ void* nwipe_gui_status( void* ptr )
                         if( c[i]->sync_status )
                         {
                             wprintw( main_window, "[ syncing ] " );
+                        }
+                        else if( c[i]->retry_status )
+                        {
+                            wprintw( main_window, "[retrying ] " );
                         }
                     }
 

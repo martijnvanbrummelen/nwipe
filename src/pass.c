@@ -67,7 +67,7 @@
 #endif
 
 /*
- * write_with_retry / read_with_retry
+ * nwipe_write_with_retry / nwipe_read_with_retry
  *
  * Attempt the I/O up to MAX_IO_ATTEMPTS times, sleeping IO_RETRY_DELAY_S
  * seconds between attempts.  On persistent failure the last return value
@@ -87,30 +87,32 @@
 #error "NWIPE_MAX_IO_ATTEMPTS must be at least 1"
 #endif
 
-static ssize_t write_with_retry( nwipe_context_t* c, int fd, const void* buf, size_t count )
+/* Behaves like write(), but retries up to MAX_IO_ATTEMPTS times on error or short write.
+ * Returns -1 with errno from lseek() if seeking back after a short write fails. */
+static ssize_t nwipe_write_with_retry( nwipe_context_t* c, int fd, const void* buf, size_t count )
 {
     ssize_t r;
-    off64_t pos;
     int attempt;
     int slept_s;
-    int pass_type_changed = 0;
-    nwipe_pass_t saved_pass_type;
 
     for( attempt = 0; attempt < NWIPE_MAX_IO_ATTEMPTS; attempt++ )
     {
         r = write( fd, buf, count );
 
+        if( nwipe_options.noretry_io_errors )
+            return r; /* retrying is disabled */
+
         if( r == (ssize_t) count )
         {
-            if( pass_type_changed )
-                c->pass_type = saved_pass_type; /* restore pass type */
+            c->retry_status = 0;
             return r; /* full write - success */
         }
 
         if( r < 0 )
         {
             nwipe_log( NWIPE_LOG_WARNING,
-                       "write_with_retry: write() failed on '%s' (attempt %d/%d): %s",
+                       "%s: write() failed on '%s' (attempt %d/%d): %s",
+                       __FUNCTION__,
                        c->device_name,
                        attempt + 1,
                        NWIPE_MAX_IO_ATTEMPTS,
@@ -119,8 +121,9 @@ static ssize_t write_with_retry( nwipe_context_t* c, int fd, const void* buf, si
         else
         {
             nwipe_log( NWIPE_LOG_WARNING,
-                       "write_with_retry: short write on '%s' (attempt %d/%d): "
+                       "%s: short write on '%s' (attempt %d/%d): "
                        "wrote %zd of %zu bytes.",
+                       __FUNCTION__,
                        c->device_name,
                        attempt + 1,
                        NWIPE_MAX_IO_ATTEMPTS,
@@ -130,14 +133,9 @@ static ssize_t write_with_retry( nwipe_context_t* c, int fd, const void* buf, si
 
         if( attempt + 1 < NWIPE_MAX_IO_ATTEMPTS )
         {
-            if( attempt == 0 )
-            {
-                saved_pass_type = c->pass_type; /* save previous pass type */
-                c->pass_type = NWIPE_PASS_RETRY;
-                pass_type_changed = 1;
-            }
+            c->retry_status = 1;
 
-            nwipe_log( NWIPE_LOG_NOTICE, "write_with_retry: retrying in %d seconds ...", NWIPE_IO_RETRY_DELAY_S );
+            nwipe_log( NWIPE_LOG_NOTICE, "%s: retrying in %d seconds ...", __FUNCTION__, NWIPE_IO_RETRY_DELAY_S );
 
             for( slept_s = 0; slept_s < NWIPE_IO_RETRY_DELAY_S; slept_s++ )
             {
@@ -147,14 +145,12 @@ static ssize_t write_with_retry( nwipe_context_t* c, int fd, const void* buf, si
 
             if( r > 0 )
             {
-                pos = lseek( fd, -r, SEEK_CUR );
-                if( pos == (off64_t) -1 )
+                if( lseek( fd, -r, SEEK_CUR ) == (off64_t) -1 )
                 {
                     nwipe_perror( errno, __FUNCTION__, "lseek" );
                     nwipe_log(
-                        NWIPE_LOG_ERROR, "write_with_retry: cannot rewind after short write on '%s'.", c->device_name );
-                    if( pass_type_changed )
-                        c->pass_type = saved_pass_type; /* restore pass type */
+                        NWIPE_LOG_ERROR, "%s: cannot rewind after short write on '%s'.", __FUNCTION__, c->device_name );
+                    c->retry_status = 0;
                     return -1; /* fatal, we don't know where we are */
                 }
             }
@@ -162,47 +158,41 @@ static ssize_t write_with_retry( nwipe_context_t* c, int fd, const void* buf, si
     }
 
     nwipe_log( NWIPE_LOG_ERROR,
-               "write_with_retry: giving up on '%s' after %d attempts.",
+               "%s: giving up on '%s' after %d attempts.",
+               __FUNCTION__,
                c->device_name,
                NWIPE_MAX_IO_ATTEMPTS );
 
-    if( pass_type_changed )
-        c->pass_type = saved_pass_type; /* restore pass type */
-
+    c->retry_status = 0;
     return r;
-} /* write_with_retry */
+} /* nwipe_write_with_retry */
 
-static ssize_t read_with_retry( nwipe_context_t* c, int fd, void* buf, size_t count )
+/* Behaves like read(), but retries up to MAX_IO_ATTEMPTS times on error or short read.
+ * Returns -1 with errno from lseek() if seeking back after a short read fails. */
+static ssize_t nwipe_read_with_retry( nwipe_context_t* c, int fd, void* buf, size_t count )
 {
     ssize_t r;
-    off64_t pos;
     int attempt;
     int slept_s;
-    int pass_type_changed = 0;
-    nwipe_pass_t saved_pass_type;
 
     for( attempt = 0; attempt < NWIPE_MAX_IO_ATTEMPTS; attempt++ )
     {
         r = read( fd, buf, count );
 
-        if( r == (ssize_t) count )
-        {
-            if( pass_type_changed )
-                c->pass_type = saved_pass_type; /* restore pass type */
-            return r; /* full read - success */
-        }
+        if( nwipe_options.noretry_io_errors )
+            return r; /* retrying is disabled */
 
-        if( r == 0 )
+        if( r == (ssize_t) count || r == 0 )
         {
-            if( pass_type_changed )
-                c->pass_type = saved_pass_type; /* restore pass type */
-            return r; /* EOF */
+            c->retry_status = 0;
+            return r; /* full read or EOF - success */
         }
 
         if( r < 0 )
         {
             nwipe_log( NWIPE_LOG_WARNING,
-                       "read_with_retry: read() failed on '%s' (attempt %d/%d): %s",
+                       "%s: read() failed on '%s' (attempt %d/%d): %s",
+                       __FUNCTION__,
                        c->device_name,
                        attempt + 1,
                        NWIPE_MAX_IO_ATTEMPTS,
@@ -211,8 +201,9 @@ static ssize_t read_with_retry( nwipe_context_t* c, int fd, void* buf, size_t co
         else
         {
             nwipe_log( NWIPE_LOG_WARNING,
-                       "read_with_retry: short read on '%s' (attempt %d/%d): "
+                       "%s: short read on '%s' (attempt %d/%d): "
                        "read %zd of %zu bytes.",
+                       __FUNCTION__,
                        c->device_name,
                        attempt + 1,
                        NWIPE_MAX_IO_ATTEMPTS,
@@ -222,14 +213,9 @@ static ssize_t read_with_retry( nwipe_context_t* c, int fd, void* buf, size_t co
 
         if( attempt + 1 < NWIPE_MAX_IO_ATTEMPTS )
         {
-            if( attempt == 0 )
-            {
-                saved_pass_type = c->pass_type; /* save previous pass type */
-                c->pass_type = NWIPE_PASS_RETRY;
-                pass_type_changed = 1;
-            }
+            c->retry_status = 1;
 
-            nwipe_log( NWIPE_LOG_NOTICE, "read_with_retry: retrying in %d seconds ...", NWIPE_IO_RETRY_DELAY_S );
+            nwipe_log( NWIPE_LOG_NOTICE, "%s: retrying in %d seconds ...", __FUNCTION__, NWIPE_IO_RETRY_DELAY_S );
 
             for( slept_s = 0; slept_s < NWIPE_IO_RETRY_DELAY_S; slept_s++ )
             {
@@ -239,14 +225,12 @@ static ssize_t read_with_retry( nwipe_context_t* c, int fd, void* buf, size_t co
 
             if( r > 0 )
             {
-                pos = lseek( fd, -r, SEEK_CUR );
-                if( pos == (off64_t) -1 )
+                if( lseek( fd, -r, SEEK_CUR ) == (off64_t) -1 )
                 {
                     nwipe_perror( errno, __FUNCTION__, "lseek" );
                     nwipe_log(
-                        NWIPE_LOG_ERROR, "read_with_retry: cannot rewind after short read on '%s'.", c->device_name );
-                    if( pass_type_changed )
-                        c->pass_type = saved_pass_type; /* restore pass type */
+                        NWIPE_LOG_ERROR, "%s: cannot rewind after short read on '%s'.", __FUNCTION__, c->device_name );
+                    c->retry_status = 0;
                     return -1; /* fatal, we don't know where we are */
                 }
             }
@@ -254,15 +238,15 @@ static ssize_t read_with_retry( nwipe_context_t* c, int fd, void* buf, size_t co
     }
 
     nwipe_log( NWIPE_LOG_ERROR,
-               "read_with_retry: giving up on '%s' after %d attempts.",
+               "%s: giving up on '%s' after %d attempts.",
+               __FUNCTION__,
                c->device_name,
                NWIPE_MAX_IO_ATTEMPTS );
 
-    if( pass_type_changed )
-        c->pass_type = saved_pass_type; /* restore pass type */
-
+    c->retry_status = 0;
     return r;
-} /* read_with_retry */
+} /* nwipe_read_with_retry */
+
 
 /*
  * Compute the effective I/O block size for a given device:
