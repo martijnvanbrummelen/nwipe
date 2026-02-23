@@ -533,6 +533,11 @@ int nwipe_random_verify( nwipe_context_t* c )
 
             c->verify_errors += 1;
 
+            /* We need to count the skipped bytes logically, otherwise verify
+             * will try to read them past the device size at the verify end */
+            z -= (u64) s;
+            c->round_done += (u64) s;
+
             offset = lseek( c->device_fd, s, SEEK_CUR );
             if( offset == (off64_t) -1 )
             {
@@ -589,6 +594,8 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
     off64_t offset;
     char* b;
     u64 z = c->device_size; /* bytes remaining */
+    u64 bs = 0; /* pass bytes skipped */
+    u64 be = 0; /* pass bytes erased */
 
     int syncRate = nwipe_options.sync;
 
@@ -730,7 +737,7 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
                  * Treat the whole block as failed, skip it, count the bytes,
                  * and continue with the next block.
                  */
-                int s = (int) blocksize;
+                u64 s = (u64) blocksize;
 
                 /* Count all bytes of this block as pass errors. */
                 c->pass_errors += s;
@@ -738,16 +745,16 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
                 /* Log the write error and that we are skipping this block. */
                 nwipe_perror( errno, __FUNCTION__, "write" );
                 nwipe_log( NWIPE_LOG_ERROR,
-                           "Write error on '%s' at offset %llu, skipping %d bytes.",
+                           "Write error on '%s' at offset %llu, skipping %llu bytes.",
                            c->device_name,
-                           (unsigned long long) ( c->device_size - z ),
+                           c->device_size - z,
                            s );
 
                 /*
                  * Skip forward by one block on the device, so subsequent writes
                  * continue after the failing region.
                  */
-                offset = lseek( c->device_fd, s, SEEK_CUR );
+                offset = lseek( c->device_fd, (off64_t) s, SEEK_CUR );
                 if( offset == (off64_t) -1 )
                 {
                     /*
@@ -766,7 +773,8 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
                  * but not actually written. Reflect that in the remaining size
                  * and in the per-round progress, but DO NOT increase pass_done.
                  */
-                z -= (u64) s;
+                z -= s;
+                bs += s;
                 c->round_done += s;
 
                 /* Allow thread cancellation points and proceed with the next loop iteration. */
@@ -794,6 +802,12 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
             int s = (int) blocksize - r;
 
             c->pass_errors += s;
+
+            /* We need to count the skipped bytes logically, otherwise erasing
+             * will try to write them past the device size at the erase end */
+            z -= (u64) s;
+            bs += (u64) s;
+            c->round_done += (u64) s;
 
             nwipe_log( NWIPE_LOG_WARNING, "Partial write on '%s', %i bytes short.", c->device_name, s );
 
@@ -833,10 +847,15 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
 
         pthread_testcancel();
 
-        /* Track how much of the device has been successfully erased so far. */
-        if( c->bytes_erased < ( c->device_size - z ) )
+        /*
+         * High-water calculation of bytes erased across passes:
+         * If this pass erased more of the device than any previous pass,
+         * use that new highest number, otherwise keep previous bytes erased.
+         */
+        be = c->device_size - z - bs;
+        if( c->bytes_erased < be )
         {
-            c->bytes_erased = c->device_size - z;
+            c->bytes_erased = be;
         }
 
     } /* /remaining bytes */
@@ -997,6 +1016,21 @@ int nwipe_static_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
 
             c->verify_errors += 1;
 
+            /* We need to count the skipped bytes logically, otherwise verify
+             * will try to read them past the device size at the verify end */
+            z -= (u64) s;
+            c->round_done += (u64) s;
+
+            /*
+             * Adjust the pattern window so that the logical pattern position
+             * stays consistent after skipping s bytes.
+             */
+            if( pattern->length > 0 )
+            {
+                size_t adv = (size_t) s % (size_t) pattern->length;
+                w = (int) ( ( w + (int) adv ) % pattern->length );
+            }
+
             nwipe_log( NWIPE_LOG_WARNING, "Partial read on '%s', %i bytes short.", c->device_name, s );
 
             offset = lseek( c->device_fd, s, SEEK_CUR );
@@ -1056,6 +1090,8 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
     char* p;
     int w = 0; /* window offset into pattern */
     u64 z = c->device_size;
+    u64 bs = 0; /* pass bytes skipped */
+    u64 be = 0; /* pass bytes erased */
 
     int syncRate = nwipe_options.sync;
 
@@ -1166,7 +1202,7 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
                  * As in the random pass, treat the whole block as failed, skip it,
                  * count the bytes, and continue with the next block.
                  */
-                int s = (int) blocksize;
+                u64 s = (u64) blocksize;
 
                 /* Count all bytes of this block as pass errors. */
                 c->pass_errors += s;
@@ -1174,16 +1210,16 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
                 /* Log the write error and that we are skipping this block. */
                 nwipe_perror( errno, __FUNCTION__, "write" );
                 nwipe_log( NWIPE_LOG_ERROR,
-                           "Write error on '%s' at offset %llu, skipping %d bytes.",
+                           "Write error on '%s' at offset %llu, skipping %llu bytes.",
                            c->device_name,
-                           (unsigned long long) ( c->device_size - z ),
+                           c->device_size - z,
                            s );
 
                 /*
                  * Skip forward by one block on the device, so subsequent writes
                  * continue after the failing region.
                  */
-                offset = lseek( c->device_fd, s, SEEK_CUR );
+                offset = lseek( c->device_fd, (off64_t) s, SEEK_CUR );
                 if( offset == (off64_t) -1 )
                 {
                     /*
@@ -1212,7 +1248,8 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
                  * but not actually written. Reflect that in the remaining size
                  * and in the per-round progress, but DO NOT increase pass_done.
                  */
-                z -= (u64) s;
+                z -= s;
+                bs += s;
                 c->round_done += s;
 
                 /* Allow thread cancellation points and proceed with the next loop iteration. */
@@ -1235,6 +1272,22 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
             int s = (int) blocksize - r;
 
             c->pass_errors += s;
+
+            /* We need to count the skipped bytes logically, otherwise erasing
+             * will try to write them past the device size at the erase end */
+            z -= (u64) s;
+            bs += (u64) s;
+            c->round_done += (u64) s;
+
+            /*
+             * Adjust the pattern window so that the logical pattern position
+             * stays consistent after skipping s bytes.
+             */
+            if( pattern->length > 0 )
+            {
+                size_t adv = (size_t) s % (size_t) pattern->length;
+                w = (int) ( ( w + (int) adv ) % pattern->length );
+            }
 
             nwipe_log( NWIPE_LOG_WARNING, "Partial write on '%s', %i bytes short.", c->device_name, s );
 
@@ -1284,9 +1337,15 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
 
         pthread_testcancel();
 
-        if( c->bytes_erased < ( c->device_size - z ) )
+        /*
+         * High-water calculation of bytes erased across passes:
+         * If this pass erased more of the device than any previous pass,
+         * use that new highest number, otherwise keep previous bytes erased.
+         */
+        be = c->device_size - z - bs;
+        if( c->bytes_erased < be )
         {
-            c->bytes_erased = c->device_size - z;
+            c->bytes_erased = be;
         }
 
     } /* /remaining bytes */
