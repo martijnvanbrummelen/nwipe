@@ -92,6 +92,8 @@ nwipe_sources = files(
   'src/PDFGen/pdfgen.h',
   'src/prng.c',
   'src/prng.h',
+  'src/round_size.c',
+  'src/round_size.h',
   'src/temperature.c',
   'src/temperature.h',
   'src/version.c',
@@ -116,12 +118,33 @@ nwipe_exe = executable(
 
 install_man('man/nwipe.8')
 
+round_size_unit_test = executable(
+  'test_round_size',
+  [
+    'tests/unit/test_round_size.c',
+    'src/round_size.c',
+  ],
+  include_directories: include_dirs,
+)
+
+test('unit_round_size', round_size_unit_test)
+
+bash_prog = find_program('bash', required: true)
+loopback_smoke_script = '@0@/tests/ci/loopback_e2e.sh'.format(meson.project_source_root())
+test(
+  'unit_nwipe_cli_smoke',
+  bash_prog,
+  args: [loopback_smoke_script, 'smoke', nwipe_exe],
+  is_parallel: false,
+  timeout: 1200,
+)
+
 run_target(
   'format',
-  command: ['clang-format', '-i', '-style=file', 'src/*.c', 'src/*.h'],
+  command: ['sh', '-c', 'cd "$MESON_SOURCE_ROOT" && clang-format -i -style=file src/*.c src/*.h'],
 )
 
 run_target(
   'check-format',
-  command: ['sh', '-c', 'clang-format -i -style=file src/*.c src/*.h && git diff --exit-code'],
+  command: ['sh', '-c', 'cd "$MESON_SOURCE_ROOT" && clang-format -i -style=file src/*.c src/*.h && git diff --exit-code'],
 )

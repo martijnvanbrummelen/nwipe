@@ -1,0 +1,149 @@
+name: ci_runtime
+
+on: [push, pull_request]
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            pkg-config \
+            meson \
+            ninja-build \
+            libncurses5-dev \
+            libparted-dev \
+            libconfig-dev \
+            libconfig++-dev \
+            dmidecode \
+            smartmontools \
+            hdparm \
+            util-linux
+
+      - name: Configure
+        run: meson setup build-unit --prefix=/usr -Dc_args='-O0 -g -Wall -Wextra'
+
+      - name: Build
+        run: meson compile -C build-unit
+
+      - name: Run deterministic unit tests
+        run: meson test -C build-unit --print-errorlogs unit_round_size
+
+      - name: Run CLI unit smoke test (executes nwipe --nogui)
+        run: |
+          sudo -E env NWIPE_CI_ARTIFACT_DIR="$PWD/ci-artifacts/unit-cli" \
+            meson test -C build-unit --print-errorlogs unit_nwipe_cli_smoke
+
+      - name: Upload unit CLI artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-cli-smoke-logs
+          path: ci-artifacts/unit-cli
+          if-no-files-found: ignore
+
+  integration-loopback:
+    runs-on: ubuntu-latest
+    needs: unit-tests
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            pkg-config \
+            meson \
+            ninja-build \
+            libncurses5-dev \
+            libparted-dev \
+            libconfig-dev \
+            libconfig++-dev \
+            dmidecode \
+            smartmontools \
+            hdparm \
+            util-linux
+
+      - name: Configure
+        run: meson setup build --prefix=/usr -Dc_args='-O0 -g -Wall -Wextra'
+
+      - name: Build
+        run: meson compile -C build
+
+      - name: Run loopback integration tests
+        run: |
+          chmod +x tests/ci/loopback_e2e.sh
+          sudo -E env NWIPE_CI_ARTIFACT_DIR="$PWD/ci-artifacts/integration" \
+            tests/ci/loopback_e2e.sh full ./build/nwipe
+
+      - name: Upload integration artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-loopback-logs
+          path: ci-artifacts/integration
+          if-no-files-found: ignore
+
+  sanitizer-smoke:
+    runs-on: ubuntu-latest
+    needs: unit-tests
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            pkg-config \
+            meson \
+            ninja-build \
+            libncurses5-dev \
+            libparted-dev \
+            libconfig-dev \
+            libconfig++-dev \
+            dmidecode \
+            smartmontools \
+            hdparm \
+            util-linux
+
+      - name: Configure (ASan + UBSan)
+        run: >
+          meson setup build-sanitize
+          --prefix=/usr
+          -Dc_args='-O1 -g -Wall -Wextra -fno-omit-frame-pointer -fsanitize=address,undefined'
+          -Dcpp_args='-O1 -g -Wall -Wextra -fno-omit-frame-pointer -fsanitize=address,undefined'
+          -Dc_link_args='-fsanitize=address,undefined'
+          -Dcpp_link_args='-fsanitize=address,undefined'
+
+      - name: Build
+        run: meson compile -C build-sanitize
+
+      - name: Run sanitizer smoke tests
+        env:
+          ASAN_OPTIONS: detect_leaks=0:abort_on_error=1:strict_string_checks=1
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+        run: |
+          chmod +x tests/ci/loopback_e2e.sh
+          sudo -E env \
+            ASAN_OPTIONS="$ASAN_OPTIONS" \
+            UBSAN_OPTIONS="$UBSAN_OPTIONS" \
+            NWIPE_CI_ARTIFACT_DIR="$PWD/ci-artifacts/sanitizer" \
+            tests/ci/loopback_e2e.sh smoke ./build-sanitize/nwipe
+
+      - name: Upload sanitizer artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sanitizer-smoke-logs
+          path: ci-artifacts/sanitizer
+          if-no-files-found: ignore

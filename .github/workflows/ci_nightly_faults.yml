@@ -1,0 +1,52 @@
+name: ci_nightly_faults
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  fault-injection:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            pkg-config \
+            meson \
+            ninja-build \
+            libncurses5-dev \
+            libparted-dev \
+            libconfig-dev \
+            libconfig++-dev \
+            dmidecode \
+            smartmontools \
+            hdparm \
+            util-linux \
+            dmsetup
+
+      - name: Configure
+        run: meson setup build --prefix=/usr -Dc_args='-O0 -g -Wall -Wextra'
+
+      - name: Build
+        run: meson compile -C build
+
+      - name: Run fault injection tests
+        run: |
+          chmod +x tests/ci/fault_injection.sh
+          sudo -E env NWIPE_CI_ARTIFACT_DIR="$PWD/ci-artifacts/nightly-fault" \
+            tests/ci/fault_injection.sh ./build/nwipe
+
+      - name: Upload fault injection artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-fault-injection-logs
+          path: ci-artifacts/nightly-fault
+          if-no-files-found: ignore
