@@ -1014,6 +1014,13 @@ int nwipe_static_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
         {
             int s = (int) blocksize - r;
 
+            /* Compare the bytes we did read */
+            if( memcmp( b, &d[w], (size_t) r ) != 0 )
+            {
+                c->verify_errors += 1;
+            }
+
+            /* Increase the error count since we skipped bytes */
             c->verify_errors += 1;
 
             /* We need to count the skipped bytes logically, otherwise verify
