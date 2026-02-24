@@ -4,6 +4,9 @@ set -euo pipefail
 MODE="${1:-full}"
 NWIPE_BIN="${2:-./build/nwipe}"
 ARTIFACT_DIR="${NWIPE_CI_ARTIFACT_DIR:-}"
+STS_BIN="${NWIPE_STS_BIN:-}"
+STS_MIN_RATIO="${NWIPE_STS_MIN_RATIO:-0.9}"
+STS_ITERATIONS="${NWIPE_STS_ITERATIONS:-4}"
 
 if [[ "${MODE}" != "full" && "${MODE}" != "smoke" ]]; then
     echo "Usage: $0 [full|smoke] [path-to-nwipe-binary]"
@@ -28,7 +31,7 @@ require_cmd() {
     fi
 }
 
-for cmd in losetup truncate dd hexdump grep mktemp tail tee; do
+for cmd in losetup truncate dd hexdump grep mktemp tail tee awk; do
     require_cmd "${cmd}"
 done
 
@@ -60,6 +63,65 @@ assert_log_contains() {
         echo "Error: '${pattern}' not found in ${log_file}"
         echo "--- tail ${log_file} ---"
         tail -n 120 "${log_file}" || true
+        return 1
+    fi
+}
+
+run_sts_ratio_check() {
+    local case_name="$1"
+    local result_file
+    local sts_log
+    local passed
+    local total
+    local ratio
+    local ratio_ok
+
+    if [[ -z "${STS_BIN}" ]]; then
+        return 0
+    fi
+
+    if [[ ! -x "${STS_BIN}" ]]; then
+        echo "Error: STS binary not executable: ${STS_BIN}"
+        return 1
+    fi
+
+    result_file="${LOG_DIR}/${case_name}.sts/result.txt"
+    sts_log="${LOG_DIR}/${case_name}.sts/run.log"
+    mkdir -p "${LOG_DIR}/${case_name}.sts"
+
+    echo "==> Running STS for case ${case_name} (min ratio ${STS_MIN_RATIO}, iterations ${STS_ITERATIONS})"
+
+    set +e
+    "${STS_BIN}" -v 1 -i "${STS_ITERATIONS}" -I 1 -w "${LOG_DIR}/${case_name}.sts" -F r "${BACKING_FILE}" \
+        > >(tee "${sts_log}") 2>&1
+    local sts_rc=$?
+    set -e
+
+    if [[ "${sts_rc}" -ne 0 ]]; then
+        echo "Error: STS run failed for ${case_name} with rc=${sts_rc}"
+        return 1
+    fi
+
+    if [[ ! -f "${result_file}" ]]; then
+        echo "Error: STS result file missing for ${case_name}: ${result_file}"
+        return 1
+    fi
+
+    passed="$(awk '/tests passed successfully both the analyses/ { split($1,a,"/"); print a[1]; exit }' "${result_file}")"
+    total="$(awk '/tests passed successfully both the analyses/ { split($1,a,"/"); print a[2]; exit }' "${result_file}")"
+
+    if [[ -z "${passed}" || -z "${total}" ]]; then
+        echo "Error: unable to parse STS pass ratio from ${result_file}"
+        tail -n 80 "${result_file}" || true
+        return 1
+    fi
+
+    ratio="$(awk -v p="${passed}" -v t="${total}" 'BEGIN{ if (t == 0) { print "0.0" } else { printf "%.6f", p/t } }')"
+    ratio_ok="$(awk -v r="${ratio}" -v m="${STS_MIN_RATIO}" 'BEGIN{ if (r+0 >= m+0) print "1"; else print "0" }')"
+
+    echo "STS ratio for ${case_name}: ${passed}/${total} = ${ratio}"
+    if [[ "${ratio_ok}" != "1" ]]; then
+        echo "Error: STS ratio ${ratio} is below threshold ${STS_MIN_RATIO} for ${case_name}"
         return 1
     fi
 }
@@ -150,7 +212,7 @@ assert_block_is_byte "00"
 
 run_nwipe_case "verify_zero" "verify_zero" "off"
 
-if [[ "${MODE}" == "full" ]]; then
+    if [[ "${MODE}" == "full" ]]; then
     run_nwipe_case "wipe_one" "one" "off"
     assert_block_is_byte "ff"
 
@@ -158,13 +220,19 @@ if [[ "${MODE}" == "full" ]]; then
 
     echo "==> Running PRNG Stream coverage cases (each PRNG once)"
     run_nwipe_case "prng_stream_twister" "prng" "off" "twister"
+    run_sts_ratio_check "prng_stream_twister"
     run_nwipe_case "prng_stream_isaac" "prng" "off" "isaac"
+    run_sts_ratio_check "prng_stream_isaac"
     run_nwipe_case "prng_stream_isaac64" "prng" "off" "isaac64"
+    run_sts_ratio_check "prng_stream_isaac64"
     run_nwipe_case "prng_stream_alfg" "prng" "off" "add_lagg_fibonacci_prng"
+    run_sts_ratio_check "prng_stream_alfg"
     run_nwipe_case "prng_stream_xoroshiro256" "prng" "off" "xoroshiro256_prng"
+    run_sts_ratio_check "prng_stream_xoroshiro256"
 
     if cpu_supports_aes_ni; then
         run_nwipe_case "prng_stream_aes_ctr" "prng" "off" "aes_ctr_prng"
+        run_sts_ratio_check "prng_stream_aes_ctr"
     else
         echo "Skipping aes_ctr_prng case: CPU does not expose AES-NI."
     fi

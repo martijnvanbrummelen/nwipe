@@ -78,10 +78,19 @@ jobs:
       - name: Build
         run: meson compile -C build
 
+      - name: Build STS suite (legacy FFT mode)
+        run: |
+          git clone --depth 1 https://github.com/arcetri/sts.git /tmp/sts
+          CCACHE_DIR=/tmp/ccache make -C /tmp/sts legacy
+
       - name: Run loopback integration tests
         run: |
           chmod +x tests/ci/loopback_e2e.sh
-          sudo -E env NWIPE_CI_ARTIFACT_DIR="$PWD/ci-artifacts/integration" \
+          sudo -E env \
+            NWIPE_CI_ARTIFACT_DIR="$PWD/ci-artifacts/integration" \
+            NWIPE_STS_BIN="/tmp/sts/sts_legacy_fft" \
+            NWIPE_STS_MIN_RATIO="0.9" \
+            NWIPE_STS_ITERATIONS="4" \
             tests/ci/loopback_e2e.sh full ./build/nwipe
 
       - name: Upload integration artifacts

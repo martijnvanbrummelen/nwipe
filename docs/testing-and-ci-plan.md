@@ -26,6 +26,8 @@ For CI stability, the harness deliberately avoids:
   - headless integration tests for `zero`, `verify_zero`, `one`, `verify_one`
   - in `full` mode also runs `PRNG Stream` once per PRNG (`twister`, `isaac`, `isaac64`, `add_lagg_fibonacci_prng`,
     `xoroshiro256_prng`, `aes_ctr_prng` when AES-NI is available)
+  - optional STS check per PRNG stream case (enabled in CI): parses `result.txt` pass ratio and enforces threshold
+    (default `>= 0.9`)
   - streams `nwipe` stdout/stderr live into CI logs (while still writing per-case files)
   - asserts exit status + success log marker
   - verifies resulting data blocks (`0x00` / `0xFF`)
