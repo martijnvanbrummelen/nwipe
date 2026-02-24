@@ -273,7 +273,6 @@ static int nwipe_fdatasync( nwipe_context_t* c, const char* f )
             return 0;
         }
 
-        nwipe_log( NWIPE_LOG_WARNING, "Wrote %llu bytes on '%s'.", c->pass_done, c->device_name );
         return -1;
     }
 
