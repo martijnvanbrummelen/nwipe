@@ -41,11 +41,6 @@
 /*
  * Tunable sizes for the wiping / verification I/O path.
  *
- * NWIPE_BUFFER_SIZE:
- *   - Size of the generic scratch buffer used by passes.
- *   - Default is 16 MiB, which is a good compromise between memory usage and
- *     reducing syscall count.
- *
  * NWIPE_IO_BLOCKSIZE:
  *   - Target size of individual read()/write() operations.
  *   - Default is 4 MiB, so each syscall moves a lot of data instead of only
@@ -58,12 +53,13 @@
  *     that the same code also works with O_DIRECT when the device is opened
  *     with it.
  */
-#ifndef NWIPE_BUFFER_SIZE
-#define NWIPE_BUFFER_SIZE ( 16 * 1024 * 1024UL ) /* 16 MiB generic buffer */
-#endif
 
 #ifndef NWIPE_IO_BLOCKSIZE
 #define NWIPE_IO_BLOCKSIZE ( 4 * 1024 * 1024UL ) /* 4 MiB I/O block */
+#endif
+
+#if NWIPE_IO_BLOCKSIZE > INT_MAX
+#error "NWIPE_IO_BLOCKSIZE must fit in an int"
 #endif
 
 /*
@@ -576,7 +572,7 @@ int nwipe_random_verify( nwipe_context_t* c )
  * Writes a random pattern to the device using the configured PRNG.
  *
  * This version uses:
- *   - a generic buffer (default 16 MiB), zero-initialized to avoid leaking
+ *   - an io_blocksize allocated buffer, zero-initialized to avoid leaking
  *     previous memory content in case of PRNG bugs, and
  *   - large write() calls (default 4 MiB per syscall) instead of tiny
  *     st_blksize-sized writes.
@@ -589,7 +585,6 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
     int r;
     size_t blocksize;
     size_t io_blocksize;
-    size_t bufsize;
     off64_t offset;
     char* b;
     u64 z = c->device_size; /* bytes remaining */
@@ -630,16 +625,7 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
         return -1;
     }
 
-    /*
-     * Allocate a generic 16 MiB buffer (by default) that is used as the
-     * scratch area for random data. We will only fill and write "blocksize"
-     * bytes per iteration, which is at most io_blocksize.
-     */
-    bufsize = (size_t) NWIPE_BUFFER_SIZE;
-    if( bufsize < io_blocksize )
-        bufsize = io_blocksize;
-
-    b = (char*) nwipe_alloc_io_buffer( c, bufsize, 1, "random_pass output buffer" );
+    b = (char*) nwipe_alloc_io_buffer( c, io_blocksize, 1, "random_pass output buffer" );
     if( !b )
         return -1;
 
