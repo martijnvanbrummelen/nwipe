@@ -63,7 +63,7 @@
 #endif
 
 /*
- * nwipe_write_with_retry / nwipe_read_with_retry
+ * nwipe_(p)write_with_retry / nwipe_read_with_retry
  *
  * Attempt the I/O up to MAX_IO_ATTEMPTS times, sleeping IO_RETRY_DELAY_S
  * seconds between attempts.  On persistent failure the last return value
@@ -163,6 +163,74 @@ static ssize_t nwipe_write_with_retry( nwipe_context_t* c, int fd, const void* b
     c->retry_status = 0;
     return r;
 } /* nwipe_write_with_retry */
+
+/* Behaves like pwrite(), but retries up to MAX_IO_ATTEMPTS times on error or short write. */
+static ssize_t nwipe_pwrite_with_retry( nwipe_context_t* c, int fd, const void* buf, size_t count, off64_t offset )
+{
+    ssize_t r;
+    int attempt;
+    int slept_s;
+
+    for( attempt = 0; attempt < NWIPE_MAX_IO_ATTEMPTS; attempt++ )
+    {
+        r = pwrite( fd, buf, count, offset );
+
+        if( nwipe_options.noretry_io_errors )
+            return r; /* retrying is disabled */
+
+        if( r == (ssize_t) count )
+        {
+            c->retry_status = 0;
+            return r; /* full write - success */
+        }
+
+        if( r < 0 )
+        {
+            nwipe_log( NWIPE_LOG_WARNING,
+                       "%s: pwrite() failed on '%s' (attempt %d/%d): %s",
+                       __FUNCTION__,
+                       c->device_name,
+                       attempt + 1,
+                       NWIPE_MAX_IO_ATTEMPTS,
+                       strerror( errno ) );
+        }
+        else
+        {
+            nwipe_log( NWIPE_LOG_WARNING,
+                       "%s: short write on '%s' (attempt %d/%d): "
+                       "wrote %zd of %zu bytes.",
+                       __FUNCTION__,
+                       c->device_name,
+                       attempt + 1,
+                       NWIPE_MAX_IO_ATTEMPTS,
+                       r,
+                       count );
+        }
+
+        if( attempt + 1 < NWIPE_MAX_IO_ATTEMPTS )
+        {
+            c->io_retries += 1;
+            c->retry_status = 1;
+
+            nwipe_log( NWIPE_LOG_NOTICE, "%s: retrying in %d seconds ...", __FUNCTION__, NWIPE_IO_RETRY_DELAY_S );
+
+            for( slept_s = 0; slept_s < NWIPE_IO_RETRY_DELAY_S; slept_s++ )
+            {
+                sleep( 1 );
+                pthread_testcancel();
+            }
+        }
+    }
+
+    nwipe_log( NWIPE_LOG_ERROR,
+               "%s: giving up pwrite() on '%s' after %d attempts.",
+               __FUNCTION__,
+               c->device_name,
+               NWIPE_MAX_IO_ATTEMPTS );
+
+    c->retry_status = 0;
+    return r;
+} /* nwipe_pwrite_with_retry */
 
 /* Behaves like read(), but retries up to MAX_IO_ATTEMPTS times on error or short read.
  * Returns -1 with errno from lseek() if seeking back after a short read fails. */
@@ -588,6 +656,7 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
     size_t blocksize;
     size_t io_blocksize;
     off64_t offset;
+    off64_t current_offset;
     char* b;
     u64 z = c->device_size; /* bytes remaining */
     u64 bs = 0; /* pass bytes skipped */
@@ -712,11 +781,16 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
             }
         }
 
+        /* Record the offset we're at before the write. */
+        current_offset = (off64_t) ( c->device_size - z );
+
         /* Write the generated random data to the device. */
         r = (int) nwipe_write_with_retry( c, c->device_fd, b, blocksize );
 
         if( r < 0 )
         {
+            c->pass_errors += 1;
+
             if( nwipe_options.noabort_block_errors )
             {
                 /*
@@ -726,14 +800,12 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
                  */
                 u64 s = (u64) blocksize;
 
-                c->pass_errors += 1;
-
                 /* Log the write error and that we are skipping this block. */
                 nwipe_perror( errno, __FUNCTION__, "write" );
                 nwipe_log( NWIPE_LOG_ERROR,
-                           "Write error on '%s' at offset %llu, skipping %llu bytes.",
+                           "Write error on '%s' at offset %lld, skipping %llu bytes.",
                            c->device_name,
-                           c->device_size - z,
+                           (long long) current_offset,
                            s );
 
                 /*
@@ -765,17 +837,110 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
 
                 /* Allow thread cancellation points and proceed with the next loop iteration. */
                 pthread_testcancel();
+
                 continue;
             }
 
             /*
              * Default behaviour (no no-abort option):
-             * abort the pass on a write error.
+             * Try to touch the bad block from the back (reverse wipe).
+             * If we meet another bad block along the way, abort the wipe.
              */
+            off64_t rev_offset = (off64_t) ( c->device_size - (u64) io_blocksize );
+            size_t rev_blocksize = io_blocksize;
+
             nwipe_perror( errno, __FUNCTION__, "write" );
-            nwipe_log( NWIPE_LOG_FATAL, "Unable to write to '%s'.", c->device_name );
+            nwipe_log( NWIPE_LOG_ERROR,
+                       "Write error on '%s' at offset %lld, starting reverse wipe.",
+                       c->device_name,
+                       (long long) current_offset );
+
+            nwipe_fdatasync( c, __FUNCTION__ ); /* Best effort */
+            c->reverse_status = 1;
+
+            if( c->device_size % (u64) io_blocksize != 0 )
+            {
+                if( c->device_size % (u64) c->device_stat.st_blksize != 0 )
+                {
+                    nwipe_log( NWIPE_LOG_WARNING,
+                               "%s: The size of '%s' is not a multiple of its block size %i.",
+                               __FUNCTION__,
+                               c->device_name,
+                               c->device_stat.st_blksize );
+                }
+
+                /* The last block of the device is smaller than our I/O blocksize, adjust it */
+                rev_offset = (off64_t) ( c->device_size - ( c->device_size % (u64) io_blocksize ) );
+                rev_blocksize = (size_t) ( c->device_size % (u64) io_blocksize );
+            }
+
+            while( rev_offset > current_offset )
+            {
+                c->prng->read( &c->prng_state, b, rev_blocksize );
+
+                r = (int) nwipe_pwrite_with_retry( c, c->device_fd, b, rev_blocksize, rev_offset );
+
+                if( r < 0 )
+                {
+                    c->pass_errors += 1;
+                    nwipe_perror( errno, __FUNCTION__, "pwrite" );
+                    nwipe_log( NWIPE_LOG_FATAL,
+                               "Reverse wipe failed on '%s' at offset %lld.",
+                               c->device_name,
+                               (long long) rev_offset );
+                    nwipe_fdatasync( c, __FUNCTION__ ); /* Best effort */
+                    c->reverse_status = 0;
+                    free( b );
+                    return -1;
+                }
+
+                z -= (u64) r;
+                c->pass_done += r;
+                c->round_done += r;
+
+                /*
+                 * High-water calculation of bytes erased across passes:
+                 * If this pass erased more of the device than any previous pass,
+                 * use that new highest number, otherwise keep previous bytes erased.
+                 */
+                be = c->device_size - z - bs;
+                if( c->bytes_erased < be )
+                {
+                    c->bytes_erased = be;
+                }
+
+                if( r != (int) rev_blocksize )
+                {
+                    c->pass_errors += 1;
+                    nwipe_log( NWIPE_LOG_FATAL,
+                               "Reverse wipe short write on '%s' at offset %lld (%d of %zu bytes).",
+                               c->device_name,
+                               (long long) rev_offset,
+                               r,
+                               rev_blocksize );
+                    nwipe_fdatasync( c, __FUNCTION__ ); /* Best effort */
+                    c->reverse_status = 0;
+                    free( b );
+                    return -1;
+                }
+
+                rev_offset -= (off64_t) io_blocksize;
+                rev_blocksize = io_blocksize; /* must be a full I/O block now */
+
+                pthread_testcancel();
+            }
+
+            nwipe_log( NWIPE_LOG_NOTICE,
+                       "Reverse wipe on '%s' reached initial bad block at offset %lld.",
+                       c->device_name,
+                       (long long) current_offset );
+            nwipe_fdatasync( c, __FUNCTION__ ); /* Best effort */
+            c->reverse_status = 0;
+
+            /* The disk is otherwise stable, we return with non-fatal errors
+             * so other passes can continue; overall result will be failure. */
             free( b );
-            return -1;
+            return 0;
         }
 
         if( r != (int) blocksize )
@@ -831,8 +996,6 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
             }
         }
 
-        pthread_testcancel();
-
         /*
          * High-water calculation of bytes erased across passes:
          * If this pass erased more of the device than any previous pass,
@@ -843,6 +1006,8 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
         {
             c->bytes_erased = be;
         }
+
+        pthread_testcancel();
 
     } /* /remaining bytes */
 
@@ -1078,6 +1243,7 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
     size_t blocksize;
     size_t io_blocksize;
     off64_t offset;
+    off64_t current_offset;
     char* b;
     char* p;
     char* wbuf;
@@ -1204,9 +1370,14 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
             wsrc = wbuf;
         }
 
+        /* Record the offset we're at before the write. */
+        current_offset = (off64_t) ( c->device_size - z );
+
         r = (int) nwipe_write_with_retry( c, c->device_fd, wsrc, blocksize );
         if( r < 0 )
         {
+            c->pass_errors += 1;
+
             if( nwipe_options.noabort_block_errors )
             {
                 /*
@@ -1216,14 +1387,12 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
                  */
                 u64 s = (u64) blocksize;
 
-                c->pass_errors += 1;
-
                 /* Log the write error and that we are skipping this block. */
                 nwipe_perror( errno, __FUNCTION__, "write" );
                 nwipe_log( NWIPE_LOG_ERROR,
-                           "Write error on '%s' at offset %llu, skipping %llu bytes.",
+                           "Write error on '%s' at offset %lld, skipping %llu bytes.",
                            c->device_name,
-                           c->device_size - z,
+                           (long long) current_offset,
                            s );
 
                 /*
@@ -1266,18 +1435,128 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
 
                 /* Allow thread cancellation points and proceed with the next loop iteration. */
                 pthread_testcancel();
+
                 continue;
             }
 
             /*
              * Default behaviour (no no-abort option):
-             * abort the pass on a write error.
+             * Try to touch the bad block from the back (reverse wipe).
+             * If we meet another bad block along the way, abort the wipe.
              */
+            off64_t rev_offset = (off64_t) ( c->device_size - (u64) io_blocksize );
+            size_t rev_blocksize = io_blocksize;
+            int rev_w = 0;
+
             nwipe_perror( errno, __FUNCTION__, "write" );
-            nwipe_log( NWIPE_LOG_FATAL, "Unable to write to '%s'.", c->device_name );
+            nwipe_log( NWIPE_LOG_ERROR,
+                       "Write error on '%s' at offset %lld, starting reverse wipe.",
+                       c->device_name,
+                       (long long) current_offset );
+
+            nwipe_fdatasync( c, __FUNCTION__ ); /* Best effort */
+            c->reverse_status = 1;
+
+            if( c->device_size % (u64) io_blocksize != 0 )
+            {
+                if( c->device_size % (u64) c->device_stat.st_blksize != 0 )
+                {
+                    nwipe_log( NWIPE_LOG_WARNING,
+                               "%s: The size of '%s' is not a multiple of its block size %i.",
+                               __FUNCTION__,
+                               c->device_name,
+                               c->device_stat.st_blksize );
+                }
+
+                /* The last block of the device is smaller than our I/O blocksize, adjust it */
+                rev_offset = (off64_t) ( c->device_size - ( c->device_size % (u64) io_blocksize ) );
+                rev_blocksize = (size_t) ( c->device_size % (u64) io_blocksize );
+            }
+
+            while( rev_offset > current_offset )
+            {
+                if( pattern->length > 0 )
+                {
+                    /* Adjust the pattern window for the required offset */
+                    rev_w = (int) ( rev_offset % (off64_t) pattern->length );
+                }
+
+                if( rev_w == 0 )
+                {
+                    wsrc = &b[rev_w]; /* already aligned, skip the copy */
+                }
+                else
+                {
+                    memcpy( wbuf, &b[rev_w], rev_blocksize );
+                    wsrc = wbuf;
+                }
+
+                r = (int) nwipe_pwrite_with_retry( c, c->device_fd, wsrc, rev_blocksize, rev_offset );
+
+                if( r < 0 )
+                {
+                    c->pass_errors += 1;
+                    nwipe_perror( errno, __FUNCTION__, "pwrite" );
+                    nwipe_log( NWIPE_LOG_FATAL,
+                               "Reverse wipe failed on '%s' at offset %lld.",
+                               c->device_name,
+                               (long long) rev_offset );
+                    nwipe_fdatasync( c, __FUNCTION__ ); /* Best effort */
+                    c->reverse_status = 0;
+                    free( b );
+                    free( wbuf );
+                    return -1;
+                }
+
+                z -= (u64) r;
+                c->pass_done += r;
+                c->round_done += r;
+
+                /*
+                 * High-water calculation of bytes erased across passes:
+                 * If this pass erased more of the device than any previous pass,
+                 * use that new highest number, otherwise keep previous bytes erased.
+                 */
+                be = c->device_size - z - bs;
+                if( c->bytes_erased < be )
+                {
+                    c->bytes_erased = be;
+                }
+
+                if( r != (int) rev_blocksize )
+                {
+                    c->pass_errors += 1;
+                    nwipe_log( NWIPE_LOG_FATAL,
+                               "Reverse wipe short write on '%s' at offset %lld (%d of %zu bytes).",
+                               c->device_name,
+                               (long long) rev_offset,
+                               r,
+                               rev_blocksize );
+                    nwipe_fdatasync( c, __FUNCTION__ ); /* Best effort */
+                    c->reverse_status = 0;
+                    free( b );
+                    free( wbuf );
+                    return -1;
+                }
+
+                rev_offset -= (off64_t) io_blocksize;
+                rev_blocksize = io_blocksize; /* must be a full I/O block now */
+
+                pthread_testcancel();
+            }
+
+            nwipe_log( NWIPE_LOG_NOTICE,
+                       "Reverse wipe on '%s' reached initial bad block at offset %lld.",
+                       c->device_name,
+                       (long long) current_offset );
+            nwipe_fdatasync( c, __FUNCTION__ ); /* Best effort */
+            c->reverse_status = 0;
+
+            /* The disk is otherwise stable, we return with non-fatal errors
+             * so other passes can continue; overall result will be failure. */
             free( b );
             free( wbuf );
-            return -1;
+            return 0;
         }
 
         if( r != (int) blocksize )
@@ -1350,8 +1629,6 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
             }
         }
 
-        pthread_testcancel();
-
         /*
          * High-water calculation of bytes erased across passes:
          * If this pass erased more of the device than any previous pass,
@@ -1362,6 +1639,8 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
         {
             c->bytes_erased = be;
         }
+
+        pthread_testcancel();
 
     } /* /remaining bytes */
 
