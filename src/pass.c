@@ -155,7 +155,7 @@ static ssize_t nwipe_write_with_retry( nwipe_context_t* c, int fd, const void* b
     }
 
     nwipe_log( NWIPE_LOG_ERROR,
-               "%s: giving up on '%s' after %d attempts.",
+               "%s: giving up write() on '%s' after %d attempts.",
                __FUNCTION__,
                c->device_name,
                NWIPE_MAX_IO_ATTEMPTS );
@@ -236,7 +236,7 @@ static ssize_t nwipe_read_with_retry( nwipe_context_t* c, int fd, void* buf, siz
     }
 
     nwipe_log( NWIPE_LOG_ERROR,
-               "%s: giving up on '%s' after %d attempts.",
+               "%s: giving up read() on '%s' after %d attempts.",
                __FUNCTION__,
                c->device_name,
                NWIPE_MAX_IO_ATTEMPTS );
