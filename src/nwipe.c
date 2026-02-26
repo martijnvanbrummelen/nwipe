@@ -1287,15 +1287,14 @@ int main( int argc, char** argv )
             if( c2[i]->result != 0 || c2[i]->pass_errors != 0 || c2[i]->verify_errors != 0
                 || c2[i]->fsyncdata_errors != 0 )
             {
-                /* If the run_method ever returns anything other than zero then makesure there is at least one pass
-                 * error This is so that the log summary tables correctly show a failure when one occurs as it only
-                 * shows pass, verification and fdatasync errors. */
-                if( c2[i]->result != 0 )
+                /*
+                 * If the wipe finished with non-zero but did not internally increase
+                 * any error count, set at least one pass error for consistency between
+                 * the shown FAILURE/IOERROR status and the error count (also done in GUI).
+                 */
+                if( c2[i]->pass_errors == 0 && c2[i]->verify_errors == 0 && c2[i]->fsyncdata_errors == 0 )
                 {
-                    if( c2[i]->pass_errors == 0 )
-                    {
-                        c2[i]->pass_errors = 1;
-                    }
+                    c2[i]->pass_errors = 1;
                 }
 
                 nwipe_log( NWIPE_LOG_FATAL,

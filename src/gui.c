@@ -983,7 +983,7 @@ void nwipe_gui_create_stats_window()
     mvwprintw( stats_window, NWIPE_GUI_STATS_ETA_Y, NWIPE_GUI_STATS_ETA_X, "Remaining:     " );
     mvwprintw( stats_window, NWIPE_GUI_STATS_LOAD_Y, NWIPE_GUI_STATS_LOAD_X, "Load Averages: " );
     mvwprintw( stats_window, NWIPE_GUI_STATS_THROUGHPUT_Y, NWIPE_GUI_STATS_THROUGHPUT_X, "Throughput:    " );
-    mvwprintw( stats_window, NWIPE_GUI_STATS_ERRORS_Y, NWIPE_GUI_STATS_ERRORS_X, "Errors:        " );
+    mvwprintw( stats_window, NWIPE_GUI_STATS_ERRORS_Y, NWIPE_GUI_STATS_ERRORS_X, "Retries/Errors:" );
 
 } /* nwipe_gui_create_stats_window */
 
@@ -7316,6 +7316,9 @@ void* nwipe_gui_status( void* ptr )
     /* The combined number of errors of all processes. */
     nwipe_misc_thread_data->errors = 0;
 
+    /* The combined number of I/O retries of all processes. */
+    nwipe_misc_thread_data->io_retries = 0;
+
     /* Time values. */
     int nwipe_hh;
     int nwipe_mm;
@@ -7671,14 +7674,23 @@ void* nwipe_gui_status( void* ptr )
 
                     } /* child returned */
 
-                    if( c[i]->verify_errors )
+                    if( c[i]->io_retries )
                     {
-                        wprintw( main_window, "[verr:%llu] ", c[i]->verify_errors );
+                        wprintw( main_window, "[retr:%llu] ", c[i]->io_retries );
                     }
                     if( c[i]->pass_errors )
                     {
                         wprintw( main_window, "[perr:%llu] ", c[i]->pass_errors );
                     }
+                    if( c[i]->verify_errors )
+                    {
+                        wprintw( main_window, "[verr:%llu] ", c[i]->verify_errors );
+                    }
+                    if( c[i]->fsyncdata_errors )
+                    {
+                        wprintw( main_window, "[serr:%llu] ", c[i]->fsyncdata_errors );
+                    }
+
                     if( c[i]->wipe_status == 1 )
                     {
                         switch( c[i]->pass_type )
@@ -7855,11 +7867,12 @@ void* nwipe_gui_status( void* ptr )
                 }
 
                 /* Print the error count. */
-                mvwprintw( stats_window, NWIPE_GUI_STATS_ERRORS_Y, NWIPE_GUI_STATS_ERRORS_X, "Errors:" );
+                mvwprintw( stats_window, NWIPE_GUI_STATS_ERRORS_Y, NWIPE_GUI_STATS_ERRORS_X, "Retries/Errors:" );
                 mvwprintw( stats_window,
                            NWIPE_GUI_STATS_ERRORS_Y,
                            NWIPE_GUI_STATS_TAB,
-                           "  %llu",
+                           "  %llu/%llu",
+                           nwipe_misc_thread_data->io_retries,
                            nwipe_misc_thread_data->errors );
 
                 /* Add a border. */
@@ -7906,6 +7919,7 @@ int compute_stats( void* ptr )
     nwipe_misc_thread_data->throughput = 0;
     nwipe_misc_thread_data->maxeta = 0;
     nwipe_misc_thread_data->errors = 0;
+    nwipe_misc_thread_data->io_retries = 0;
 
     /* Enumerate all contexts to compute statistics. */
     for( i = 0; i < count; i++ )
@@ -7951,6 +7965,22 @@ int compute_stats( void* ptr )
         {
             /* Accumulate combined throughput. */
             nwipe_misc_thread_data->throughput += c[i]->throughput;
+        }
+
+        /* Accumulate I/O retry count */
+        nwipe_misc_thread_data->io_retries += c[i]->io_retries;
+
+        if( c[i]->wipe_status == 0 && c[i]->result != 0 )
+        {
+            /*
+             * If the wipe finished with non-zero but did not internally increase
+             * any error count, set at least one pass error for consistency between
+             * the shown FAILURE/IOERROR status and the error count (also done in CLI).
+             */
+            if( c[i]->pass_errors == 0 && c[i]->verify_errors == 0 && c[i]->fsyncdata_errors == 0 )
+            {
+                c[i]->pass_errors = 1;
+            }
         }
 
         /* Accumulate the error count. */

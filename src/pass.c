@@ -129,6 +129,7 @@ static ssize_t nwipe_write_with_retry( nwipe_context_t* c, int fd, const void* b
 
         if( attempt + 1 < NWIPE_MAX_IO_ATTEMPTS )
         {
+            c->io_retries += 1;
             c->retry_status = 1;
 
             nwipe_log( NWIPE_LOG_NOTICE, "%s: retrying in %d seconds ...", __FUNCTION__, NWIPE_IO_RETRY_DELAY_S );
@@ -209,6 +210,7 @@ static ssize_t nwipe_read_with_retry( nwipe_context_t* c, int fd, void* buf, siz
 
         if( attempt + 1 < NWIPE_MAX_IO_ATTEMPTS )
         {
+            c->io_retries += 1;
             c->retry_status = 1;
 
             nwipe_log( NWIPE_LOG_NOTICE, "%s: retrying in %d seconds ...", __FUNCTION__, NWIPE_IO_RETRY_DELAY_S );
@@ -258,7 +260,7 @@ static int nwipe_fdatasync( nwipe_context_t* c, const char* f )
 
     if( r != 0 )
     {
-        c->fsyncdata_errors++;
+        c->fsyncdata_errors += 1;
 
         nwipe_perror( errno, f, "fdatasync" );
         nwipe_log( NWIPE_LOG_WARNING, "Buffer flush failure on '%s'.", c->device_name );
@@ -724,8 +726,7 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
                  */
                 u64 s = (u64) blocksize;
 
-                /* Count all bytes of this block as pass errors. */
-                c->pass_errors += s;
+                c->pass_errors += 1;
 
                 /* Log the write error and that we are skipping this block. */
                 nwipe_perror( errno, __FUNCTION__, "write" );
@@ -786,7 +787,7 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
              */
             int s = (int) blocksize - r;
 
-            c->pass_errors += s;
+            c->pass_errors += 1;
 
             /* We need to count the skipped bytes logically, otherwise erasing
              * will try to write them past the device size at the erase end */
@@ -1215,8 +1216,7 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
                  */
                 u64 s = (u64) blocksize;
 
-                /* Count all bytes of this block as pass errors. */
-                c->pass_errors += s;
+                c->pass_errors += 1;
 
                 /* Log the write error and that we are skipping this block. */
                 nwipe_perror( errno, __FUNCTION__, "write" );
@@ -1284,7 +1284,7 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
         {
             int s = (int) blocksize - r;
 
-            c->pass_errors += s;
+            c->pass_errors += 1;
 
             /* We need to count the skipped bytes logically, otherwise erasing
              * will try to write them past the device size at the erase end */
