@@ -116,7 +116,7 @@
 #define NWIPE_GUI_STATS_THROUGHPUT_X 1
 #define NWIPE_GUI_STATS_ERRORS_Y 5
 #define NWIPE_GUI_STATS_ERRORS_X 1
-#define NWIPE_GUI_STATS_TAB 16
+#define NWIPE_GUI_STATS_TAB 17
 
 /* Select window: width, height, x coordinate, y coordinate. */
 #define NWIPE_GUI_MAIN_W COLS
@@ -7871,7 +7871,7 @@ void* nwipe_gui_status( void* ptr )
                 mvwprintw( stats_window,
                            NWIPE_GUI_STATS_ERRORS_Y,
                            NWIPE_GUI_STATS_TAB,
-                           "  %llu/%llu",
+                           "%llu/%llu",
                            nwipe_misc_thread_data->io_retries,
                            nwipe_misc_thread_data->errors );
 
