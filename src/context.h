@@ -158,6 +158,7 @@ typedef struct nwipe_context_t_
     int signal;  // Set when the child is killed by a signal.
     nwipe_speedring_t speedring;  // Ring buffer for computing the rolling throughput average.
     short sync_status;  // A flag to indicate when the method is syncing.
+    short retry_status;  // A flag to indicate when the method is retrying.
     pthread_t thread;  // The ID of the thread.
     u64 throughput;  // Average throughput in bytes per second.
     char throughput_txt[13];  // Human readable throughput.
@@ -189,6 +190,7 @@ typedef struct nwipe_context_t_
     time_t start_time;  // Start time of wipe
     time_t end_time;  // End time of wipe
     u64 fsyncdata_errors;  // The number of fsyncdata errors across all passes.
+    u64 io_retries;  // The number of I/O retries across all passes.
     char PDF_filename[FILENAME_MAX];  // The filename of the PDF certificate/report.
     int HPA_status;  // 0 = No HPA found/disabled, 1 = HPA detected, 2 = Unknown, unable to checked,
                      // 3 = Not applicable to this device
@@ -231,6 +233,7 @@ typedef struct
     time_t maxeta;  // The estimated runtime of the slowest device.
     u64 throughput;  // Total throughput.
     u64 errors;  // The combined number of errors of all processes.
+    u64 io_retries;  // The combined number of I/O retries of all processes.
     pthread_t* gui_thread;  // The ID of GUI thread.
 } nwipe_misc_thread_data_t;
 

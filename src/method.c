@@ -886,6 +886,31 @@ void* nwipe_bmb( void* ptr )
     return NULL;
 }
 
+/**
+ * Check whether verification should be skipped because earlier
+ * write passes recorded errors (making verification meaningless).
+ *
+ * If skipped, logs a warning and advances round_done by device_size
+ * so that the progress percentage remains accurate.
+ *
+ * Returns 1 if verification should be skipped, 0 otherwise.
+ */
+static int nwipe_should_skip_verify( nwipe_context_t* c )
+{
+    if( c->pass_errors == 0 )
+        return 0;
+
+    nwipe_log( NWIPE_LOG_WARNING,
+               "Skipping verification of pass %i/%i on %s due to %llu pass errors.",
+               c->pass_working,
+               c->pass_count,
+               c->device_name,
+               c->pass_errors );
+
+    c->round_done += c->device_size;
+    return 1;
+}
+
 int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 {
     /**
@@ -1009,35 +1034,37 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 
                 if( nwipe_options.verify == NWIPE_VERIFY_ALL || lastpass == 1 )
                 {
-
-                    nwipe_log( NWIPE_LOG_NOTICE,
-                               "Verifying pass %i of %i, round %i of %i, on %s",
-                               c->pass_working,
-                               c->pass_count,
-                               c->round_working,
-                               c->round_count,
-                               c->device_name );
-
-                    /* Verify this pass. */
-                    c->pass_type = NWIPE_PASS_VERIFY;
-                    r = nwipe_static_verify( c, &patterns[i] );
-                    c->pass_type = NWIPE_PASS_NONE;
-
-                    nwipe_log( NWIPE_LOG_NOTICE, "%llu bytes read from %s", c->pass_done, c->device_name );
-
-                    /* Check for a fatal error. */
-                    if( r < 0 )
+                    if( !nwipe_should_skip_verify( c ) )
                     {
-                        return r;
-                    }
+                        nwipe_log( NWIPE_LOG_NOTICE,
+                                   "Verifying pass %i of %i, round %i of %i, on %s",
+                                   c->pass_working,
+                                   c->pass_count,
+                                   c->round_working,
+                                   c->round_count,
+                                   c->device_name );
 
-                    nwipe_log( NWIPE_LOG_NOTICE,
-                               "Verified pass %i of %i, round %i of %i, on '%s'.",
-                               c->pass_working,
-                               c->pass_count,
-                               c->round_working,
-                               c->round_count,
-                               c->device_name );
+                        /* Verify this pass. */
+                        c->pass_type = NWIPE_PASS_VERIFY;
+                        r = nwipe_static_verify( c, &patterns[i] );
+                        c->pass_type = NWIPE_PASS_NONE;
+
+                        nwipe_log( NWIPE_LOG_NOTICE, "%llu bytes read from %s", c->pass_done, c->device_name );
+
+                        /* Check for a fatal error. */
+                        if( r < 0 )
+                        {
+                            return r;
+                        }
+
+                        nwipe_log( NWIPE_LOG_NOTICE,
+                                   "Verified pass %i of %i, round %i of %i, on '%s'.",
+                                   c->pass_working,
+                                   c->pass_count,
+                                   c->round_working,
+                                   c->round_count,
+                                   c->device_name );
+                    }
                 }
 
             } /* static pass */
@@ -1084,34 +1111,37 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
                 /* the lastpass variable) and --verify options.                    */
                 if( nwipe_options.verify == NWIPE_VERIFY_ALL || lastpass == 1 || nwipe_options.method == &nwipe_is5enh )
                 {
-                    nwipe_log( NWIPE_LOG_NOTICE,
-                               "Verifying pass %i of %i, round %i of %i, on %s",
-                               c->pass_working,
-                               c->pass_count,
-                               c->round_working,
-                               c->round_count,
-                               c->device_name );
-
-                    /* Verify this pass. */
-                    c->pass_type = NWIPE_PASS_VERIFY;
-                    r = nwipe_random_verify( c );
-                    c->pass_type = NWIPE_PASS_NONE;
-
-                    nwipe_log( NWIPE_LOG_NOTICE, "%llu bytes read from %s", c->pass_done, c->device_name );
-
-                    /* Check for a fatal error. */
-                    if( r < 0 )
+                    if( !nwipe_should_skip_verify( c ) )
                     {
-                        return r;
-                    }
+                        nwipe_log( NWIPE_LOG_NOTICE,
+                                   "Verifying pass %i of %i, round %i of %i, on %s",
+                                   c->pass_working,
+                                   c->pass_count,
+                                   c->round_working,
+                                   c->round_count,
+                                   c->device_name );
 
-                    nwipe_log( NWIPE_LOG_NOTICE,
-                               "Verified pass %i of %i, round %i of %i, on '%s'.",
-                               c->pass_working,
-                               c->pass_count,
-                               c->round_working,
-                               c->round_count,
-                               c->device_name );
+                        /* Verify this pass. */
+                        c->pass_type = NWIPE_PASS_VERIFY;
+                        r = nwipe_random_verify( c );
+                        c->pass_type = NWIPE_PASS_NONE;
+
+                        nwipe_log( NWIPE_LOG_NOTICE, "%llu bytes read from %s", c->pass_done, c->device_name );
+
+                        /* Check for a fatal error. */
+                        if( r < 0 )
+                        {
+                            return r;
+                        }
+
+                        nwipe_log( NWIPE_LOG_NOTICE,
+                                   "Verified pass %i of %i, round %i of %i, on '%s'.",
+                                   c->pass_working,
+                                   c->pass_count,
+                                   c->round_working,
+                                   c->round_count,
+                                   c->device_name );
+                    }
                 }
 
             } /* random pass */
@@ -1183,20 +1213,23 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 
         if( nwipe_options.verify == NWIPE_VERIFY_LAST || nwipe_options.verify == NWIPE_VERIFY_ALL )
         {
-            nwipe_log( NWIPE_LOG_NOTICE, "Verifying final random pattern FRP on %s", c->device_name );
-
-            /* Verify the final zero pass. */
-            r = nwipe_random_verify( c );
-
-            nwipe_log( NWIPE_LOG_NOTICE, "%llu bytes read from %s", c->pass_done, c->device_name );
-
-            /* Check for a fatal error. */
-            if( r < 0 )
+            if( !nwipe_should_skip_verify( c ) )
             {
-                return r;
-            }
+                nwipe_log( NWIPE_LOG_NOTICE, "Verifying final random pattern FRP on %s", c->device_name );
 
-            nwipe_log( NWIPE_LOG_NOTICE, "[SUCCESS] Verified FRP on '%s' matches", c->device_name );
+                /* Verify the final zero pass. */
+                r = nwipe_random_verify( c );
+
+                nwipe_log( NWIPE_LOG_NOTICE, "%llu bytes read from %s", c->pass_done, c->device_name );
+
+                /* Check for a fatal error. */
+                if( r < 0 )
+                {
+                    return r;
+                }
+
+                nwipe_log( NWIPE_LOG_NOTICE, "[SUCCESS] Verified FRP on '%s' matches", c->device_name );
+            }
         }
 
     } /* final ops2 */
@@ -1272,33 +1305,36 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 
         if( nwipe_options.verify == NWIPE_VERIFY_LAST || nwipe_options.verify == NWIPE_VERIFY_ALL )
         {
-            nwipe_log( NWIPE_LOG_NOTICE, "Verifying that %s is empty.", c->device_name );
-
-            /* Verify the final zero pass. */
-            c->pass_type = NWIPE_PASS_VERIFY;
-            r = nwipe_static_verify( c, &pattern_zero );
-            c->pass_type = NWIPE_PASS_NONE;
-
-            /* Log number of bytes read from disk */
-            nwipe_log( NWIPE_LOG_NOTICE, "%llu bytes read from %s", c->pass_done, c->device_name );
-
-            /* Check for a fatal error. */
-            if( r < 0 )
+            if( !nwipe_should_skip_verify( c ) )
             {
-                return r;
-            }
+                nwipe_log( NWIPE_LOG_NOTICE, "Verifying that %s is empty.", c->device_name );
 
-            if( c->verify_errors == 0 )
-            {
-                nwipe_log( NWIPE_LOG_NOTICE, "[SUCCESS] Verified that %s is empty.", c->device_name );
-            }
-            else
-            {
-                nwipe_log( NWIPE_LOG_NOTICE, "[FAILURE] %s Verification errors, not empty", c->device_name );
+                /* Verify the final zero pass. */
+                c->pass_type = NWIPE_PASS_VERIFY;
+                r = nwipe_static_verify( c, &pattern_zero );
+                c->pass_type = NWIPE_PASS_NONE;
+
+                /* Log number of bytes read from disk */
+                nwipe_log( NWIPE_LOG_NOTICE, "%llu bytes read from %s", c->pass_done, c->device_name );
+
+                /* Check for a fatal error. */
+                if( r < 0 )
+                {
+                    return r;
+                }
+
+                if( c->verify_errors == 0 )
+                {
+                    nwipe_log( NWIPE_LOG_NOTICE, "[SUCCESS] Verified that %s is empty.", c->device_name );
+                }
+                else
+                {
+                    nwipe_log( NWIPE_LOG_NOTICE, "[FAILURE] %s Verification errors, not empty", c->device_name );
+                }
             }
         }
 
-        if( c->verify_errors == 0 && c->pass_errors == 0 )
+        if( c->verify_errors == 0 && c->pass_errors == 0 && c->fsyncdata_errors == 0 )
         {
             nwipe_log( NWIPE_LOG_NOTICE, "[SUCCESS] Blanked device %s", c->device_name );
         }
@@ -1328,9 +1364,13 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
         nwipe_log( NWIPE_LOG_ERROR, "%llu wipe errors on '%s'.", c->pass_errors, c->device_name );
     }
 
-    /* FIXME: The 'round_errors' context member is not being used. */
+    if( c->fsyncdata_errors > 0 )
+    {
+        /* We finished, but with non-fatal sync errors. */
+        nwipe_log( NWIPE_LOG_ERROR, "%llu sync errors on '%s'.", c->fsyncdata_errors, c->device_name );
+    }
 
-    if( c->pass_errors > 0 || c->round_errors > 0 || c->verify_errors > 0 )
+    if( c->pass_errors > 0 || c->verify_errors > 0 || c->fsyncdata_errors > 0 )
     {
         /* We finished, but with non-fatal errors. */
         return 1;

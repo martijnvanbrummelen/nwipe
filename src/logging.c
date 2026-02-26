@@ -38,6 +38,7 @@
 #include "logging.h"
 #include "create_pdf.h"
 #include "miscellaneous.h"
+#include "hpa_dco.h"
 
 /* Global array to hold log values to print when logging to STDOUT */
 char** log_lines;
@@ -785,6 +786,72 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
 
     nwipe_log( NWIPE_LOG_NOTIMESTAMP,
                "********************************************************************************" );
+
+    /* Print the bytes erased summary table, but not for verify only methods */
+    if( nwipe_options.method != &nwipe_verify_one && nwipe_options.method != &nwipe_verify_zero )
+    {
+        nwipe_log( NWIPE_LOG_NOTIMESTAMP, "" );
+        nwipe_log( NWIPE_LOG_NOTIMESTAMP,
+                   "******************************* Erasure Summary ********************************" );
+        nwipe_log( NWIPE_LOG_NOTIMESTAMP, "!   Device |      Bytes Erased |      Bytes Total | Percentage Erased" );
+        nwipe_log( NWIPE_LOG_NOTIMESTAMP,
+                   "--------------------------------------------------------------------------------" );
+
+        for( i = 0; i < nwipe_selected; i++ )
+        {
+            u64 expected_size;
+            char percent_str[7];
+            char percent_display[8];
+
+            nwipe_strip_path( device, c[i]->device_name );
+
+            /* Determine the expected total size based on device type / HPA status */
+            if( c[i]->device_type == NWIPE_DEVICE_NVME || c[i]->device_type == NWIPE_DEVICE_VIRT
+                || c[i]->HPA_status == HPA_NOT_APPLICABLE )
+            {
+                expected_size = c[i]->device_size;
+            }
+            else
+            {
+                expected_size = c[i]->Calculated_real_max_size_in_bytes;
+            }
+
+            /* Calculate percentage (same method as in PDF) */
+            if( expected_size > 0 )
+            {
+                convert_double_to_string( percent_str,
+                                          (double) ( (double) c[i]->bytes_erased / (double) expected_size ) * 100 );
+                snprintf( percent_display, sizeof( percent_display ), "%s%%", percent_str );
+            }
+            else
+            {
+                snprintf( percent_display, sizeof( percent_display ), "N/A" );
+            }
+
+            /* Set exclamation flag if bytes erased doesn't match expected */
+            if( c[i]->bytes_erased != expected_size )
+            {
+                strncpy( exclamation_flag, "!", 1 );
+                exclamation_flag[1] = 0;
+            }
+            else
+            {
+                strncpy( exclamation_flag, " ", 1 );
+                exclamation_flag[1] = 0;
+            }
+
+            nwipe_log( NWIPE_LOG_NOTIMESTAMP,
+                       "%s %s | %17llu | %16llu | %17s",
+                       exclamation_flag,
+                       device,
+                       c[i]->bytes_erased,
+                       expected_size,
+                       percent_display );
+        }
+
+        nwipe_log( NWIPE_LOG_NOTIMESTAMP,
+                   "********************************************************************************" );
+    }
 
     /* Print the main summary table */
 
