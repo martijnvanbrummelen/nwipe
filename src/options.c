@@ -719,6 +719,25 @@ int nwipe_options_parse( int argc, char** argv )
                     nwipe_options.method = &nwipe_bmb;
                     break;
                 }
+                if( strcmp( optarg, "secure_erase" ) == 0 || strcmp( optarg, "secure-erase" ) == 0 )
+                {
+                    nwipe_options.method = &nwipe_secure_erase;
+                    break;
+                }
+                if( strcmp( optarg, "secure_erase_prng" ) == 0 || strcmp( optarg, "secure-erase-prng" ) == 0
+                    || strcmp( optarg, "secure_erase_prng_verify" ) == 0
+                    || strcmp( optarg, "secure-erase-prng-verify" ) == 0 )
+                {
+                    nwipe_options.method = &nwipe_secure_erase_prng_verify;
+                    break;
+                }
+                if( strcmp( optarg, "sanitize_crypto" ) == 0 || strcmp( optarg, "sanitize-crypto" ) == 0
+                    || strcmp( optarg, "sanitize_crypto_erase" ) == 0
+                    || strcmp( optarg, "sanitize-crypto-erase" ) == 0 )
+                {
+                    nwipe_options.method = &nwipe_sanitize_crypto_erase;
+                    break;
+                }
 
                 /* Else we do not know this wipe method. */
                 fprintf( stderr, "Error: Unknown wipe method '%s'.\n", optarg );
@@ -1085,6 +1104,8 @@ void display_help()
     puts( "                          is5enh                 -  HMG IS5 enhanced\n" );
     puts( "                          bruce7                 -  Schneier Bruce 7-pass mixed pattern\n" );
     puts( "                          bmb                    -  BMB21-2019 mixed pattern\n" );
+    puts( "                          secure_erase           - Drive internal ATA/NVMe Secure Erase + zero verify" );
+    puts( "                          secure_erase_prng      - Secure Erase + 1x PRNG pass + verify" );
     puts( "  -l, --logfile=FILE      Filename to log to. Default is STDOUT\n" );
     puts( "  -P, --PDFreportpath=PATH Path to write PDF reports to. Default is \".\"" );
     puts( "                           If set to \"noPDF\" no PDF reports are written.\n" );

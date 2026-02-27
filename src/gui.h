@@ -48,6 +48,7 @@ void nwipe_gui_create_all_windows_on_terminal_resize(
 void nwipe_gui_select( int count, nwipe_context_t** c );  // Select devices to wipe.
 void* nwipe_gui_status( void* ptr );  // Update operation progress.
 void nwipe_gui_method( void );  // Change the method option.
+int nwipe_gui_method_secure_erase_submenu( void );  // Submenu for Secure Erase selection.
 void nwipe_gui_options( void );  // Update the options window.
 void nwipe_gui_prng( void );  // Change the prng option.
 void nwipe_gui_rounds( void );  // Change the rounds option.
