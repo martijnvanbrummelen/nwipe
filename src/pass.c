@@ -960,6 +960,30 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
                     return -1;
                 }
 
+                if( r != (int) rev_blocksize )
+                {
+                    /*
+                     * Short write (rare with block devices)
+                     * Count what was written, skip the short bytes.
+                     */
+                    int s = (int) rev_blocksize - r;
+
+                    nwipe_log( NWIPE_LOG_ERROR,
+                               "Partial write on '%s' at offset %lld, %i bytes short.",
+                               c->device_name,
+                               (long long) rev_offset,
+                               s );
+
+                    /* Increase the error count since we skipped bytes */
+                    c->pass_errors += 1;
+
+                    /* We need to count the skipped bytes logically, otherwise erasing
+                     * will try to write them past the device size at the erase end */
+                    z -= (u64) s;
+                    bs += (u64) s;
+                    c->round_done += (u64) s;
+                }
+
                 z -= (u64) r;
                 c->pass_done += r;
                 c->round_done += r;
@@ -973,21 +997,6 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
                 if( c->bytes_erased < be )
                 {
                     c->bytes_erased = be;
-                }
-
-                if( r != (int) rev_blocksize )
-                {
-                    c->pass_errors += 1;
-                    nwipe_log( NWIPE_LOG_FATAL,
-                               "Reverse wipe short write on '%s' at offset %lld (%d of %zu bytes).",
-                               c->device_name,
-                               (long long) rev_offset,
-                               r,
-                               rev_blocksize );
-                    nwipe_fdatasync( c, __FUNCTION__ ); /* Best effort */
-                    c->reverse_status = 0;
-                    free( b );
-                    return -1;
                 }
 
                 rev_offset -= (off64_t) io_blocksize;
@@ -1634,6 +1643,30 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
                     return -1;
                 }
 
+                if( r != (int) rev_blocksize )
+                {
+                    /*
+                     * Short write (rare with block devices)
+                     * Count what was written, skip the short bytes.
+                     */
+                    int s = (int) rev_blocksize - r;
+
+                    nwipe_log( NWIPE_LOG_ERROR,
+                               "Partial write on '%s' at offset %lld, %i bytes short.",
+                               c->device_name,
+                               (long long) rev_offset,
+                               s );
+
+                    /* Increase the error count since we skipped bytes */
+                    c->pass_errors += 1;
+
+                    /* We need to count the skipped bytes logically, otherwise erasing
+                     * will try to write them past the device size at the erase end */
+                    z -= (u64) s;
+                    bs += (u64) s;
+                    c->round_done += (u64) s;
+                }
+
                 z -= (u64) r;
                 c->pass_done += r;
                 c->round_done += r;
@@ -1647,22 +1680,6 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
                 if( c->bytes_erased < be )
                 {
                     c->bytes_erased = be;
-                }
-
-                if( r != (int) rev_blocksize )
-                {
-                    c->pass_errors += 1;
-                    nwipe_log( NWIPE_LOG_FATAL,
-                               "Reverse wipe short write on '%s' at offset %lld (%d of %zu bytes).",
-                               c->device_name,
-                               (long long) rev_offset,
-                               r,
-                               rev_blocksize );
-                    nwipe_fdatasync( c, __FUNCTION__ ); /* Best effort */
-                    c->reverse_status = 0;
-                    free( b );
-                    free( wbuf );
-                    return -1;
                 }
 
                 rev_offset -= (off64_t) io_blocksize;
