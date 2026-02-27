@@ -688,8 +688,8 @@ int nwipe_random_verify( nwipe_context_t* c )
         }
 
         z -= (u64) r;
-        c->pass_done += r;
-        c->round_done += r;
+        c->pass_done += (u64) r;
+        c->round_done += (u64) r;
 
         pthread_testcancel();
 
@@ -985,8 +985,8 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
                 }
 
                 z -= (u64) r;
-                c->pass_done += r;
-                c->round_done += r;
+                c->pass_done += (u64) r;
+                c->round_done += (u64) r;
 
                 /*
                  * High-water calculation of bytes erased across passes:
@@ -1054,8 +1054,8 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
         }
 
         z -= (u64) r;
-        c->pass_done += r;
-        c->round_done += r;
+        c->pass_done += (u64) r;
+        c->round_done += (u64) r;
 
         /* Periodic fdatasync after 'syncRate' writes, if configured. */
         if( syncRate > 0 )
@@ -1168,7 +1168,8 @@ int nwipe_static_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
      * to ensure we can always take a contiguous window of size <= io_blocksize
      * starting at any offset w within [0, pattern->length).
      */
-    d = (char*) nwipe_alloc_io_buffer( c, io_blocksize + pattern->length * 2, 0, "static_verify pattern buffer" );
+    d = (char*) nwipe_alloc_io_buffer(
+        c, io_blocksize + (size_t) pattern->length * 2, 0, "static_verify pattern buffer" );
     if( !d )
     {
         free( b );
@@ -1177,7 +1178,7 @@ int nwipe_static_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
 
     for( q = d; q < d + io_blocksize + pattern->length; q += pattern->length )
     {
-        memcpy( q, pattern->s, pattern->length );
+        memcpy( q, pattern->s, (size_t) pattern->length );
     }
 
     /* Ensure all writes are flushed before verification. */
@@ -1352,8 +1353,8 @@ int nwipe_static_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
         }
 
         z -= (u64) r;
-        c->pass_done += r;
-        c->round_done += r;
+        c->pass_done += (u64) r;
+        c->round_done += (u64) r;
 
         pthread_testcancel();
 
@@ -1431,13 +1432,14 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
      *
      * guarantees that we can wrap around the repeating pattern safely.
      */
-    b = (char*) nwipe_alloc_io_buffer( c, io_blocksize + pattern->length * 2, 0, "static_pass pattern buffer" );
+    b = (char*) nwipe_alloc_io_buffer(
+        c, io_blocksize + (size_t) pattern->length * 2, 0, "static_pass pattern buffer" );
     if( !b )
         return -1;
 
     for( p = b; p < b + io_blocksize + pattern->length; p += pattern->length )
     {
-        memcpy( p, pattern->s, pattern->length );
+        memcpy( p, pattern->s, (size_t) pattern->length );
     }
 
     /*
@@ -1668,8 +1670,8 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
                 }
 
                 z -= (u64) r;
-                c->pass_done += r;
-                c->round_done += r;
+                c->pass_done += (u64) r;
+                c->round_done += (u64) r;
 
                 /*
                  * High-water calculation of bytes erased across passes:
@@ -1739,8 +1741,8 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
         }
 
         z -= (u64) r;
-        c->pass_done += r;
-        c->round_done += r;
+        c->pass_done += (u64) r;
+        c->round_done += (u64) r;
 
         /* Periodic sync if requested. */
         if( syncRate > 0 )
