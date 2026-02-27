@@ -1218,6 +1218,12 @@ int nwipe_static_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
         /* Record the offset we're at before the read. */
         current_offset = (off64_t) ( c->device_size - z );
 
+        if( pattern->length > 0 )
+        {
+            /* Adjust the pattern window for the current offset */
+            w = (int) ( current_offset % (off64_t) pattern->length );
+        }
+
         /* Read from the device */
         r = (int) nwipe_read_with_retry( c, c->device_fd, b, blocksize );
 
@@ -1259,16 +1265,6 @@ int nwipe_static_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
                     free( b );
                     free( d );
                     return -1;
-                }
-
-                /*
-                 * Adjust the pattern window so that the logical pattern position
-                 * stays consistent after skipping s bytes.
-                 */
-                if( pattern->length > 0 )
-                {
-                    size_t adv = (size_t) s % (size_t) pattern->length;
-                    w = (int) ( ( w + (int) adv ) % pattern->length );
                 }
 
                 /*
@@ -1333,16 +1329,6 @@ int nwipe_static_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
             z -= (u64) s;
             c->round_done += (u64) s;
 
-            /*
-             * Adjust the pattern window so that the logical pattern position
-             * stays consistent after skipping s bytes.
-             */
-            if( pattern->length > 0 )
-            {
-                size_t adv = (size_t) s % (size_t) pattern->length;
-                w = (int) ( ( w + (int) adv ) % pattern->length );
-            }
-
             /* Seek forward the skipped bytes so we stay in-sync for next read */
             offset = lseek( c->device_fd, s, SEEK_CUR );
             if( offset == (off64_t) -1 )
@@ -1354,16 +1340,6 @@ int nwipe_static_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
                 free( d );
                 return -1;
             }
-        }
-
-        /*
-         * Advance the pattern window by r bytes, modulo pattern->length.
-         * This keeps the pattern alignment in sync with the device offset.
-         */
-        if( pattern->length > 0 && r > 0 )
-        {
-            size_t adv = (size_t) r % (size_t) pattern->length;
-            w = (int) ( ( w + (int) adv ) % pattern->length );
         }
 
         z -= (u64) r;
@@ -1508,6 +1484,15 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
             }
         }
 
+        /* Record the offset we're at before the write. */
+        current_offset = (off64_t) ( c->device_size - z );
+
+        if( pattern->length > 0 )
+        {
+            /* Adjust the pattern window for the current offset */
+            w = (int) ( current_offset % (off64_t) pattern->length );
+        }
+
         /*
          * Copy "blocksize" bytes starting at offset w into the aligned
          * pattern buffer. Because we filled the entire buffer with the
@@ -1522,9 +1507,6 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
             memcpy( wbuf, &b[w], blocksize );
             wsrc = wbuf;
         }
-
-        /* Record the offset we're at before the write. */
-        current_offset = (off64_t) ( c->device_size - z );
 
         r = (int) nwipe_write_with_retry( c, c->device_fd, wsrc, blocksize );
 
@@ -1566,16 +1548,6 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
                     free( b );
                     free( wbuf );
                     return -1;
-                }
-
-                /*
-                 * Adjust the pattern window so that the logical pattern position
-                 * stays consistent after skipping s bytes.
-                 */
-                if( pattern->length > 0 )
-                {
-                    size_t adv = (size_t) s % (size_t) pattern->length;
-                    w = (int) ( ( w + (int) adv ) % pattern->length );
                 }
 
                 /*
@@ -1736,16 +1708,6 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
             bs += (u64) s;
             c->round_done += (u64) s;
 
-            /*
-             * Adjust the pattern window so that the logical pattern position
-             * stays consistent after skipping s bytes.
-             */
-            if( pattern->length > 0 )
-            {
-                size_t adv = (size_t) s % (size_t) pattern->length;
-                w = (int) ( ( w + (int) adv ) % pattern->length );
-            }
-
             /* Seek forward the skipped bytes so we stay in-sync for next write */
             offset = lseek( c->device_fd, s, SEEK_CUR );
             if( offset == (off64_t) -1 )
@@ -1757,16 +1719,6 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
                 free( wbuf );
                 return -1;
             }
-        }
-
-        /*
-         * Advance the pattern window by r bytes (not blocksize; we use the
-         * actual number of bytes written) modulo pattern length.
-         */
-        if( pattern->length > 0 && r > 0 )
-        {
-            size_t adv = (size_t) r % (size_t) pattern->length;
-            w = (int) ( ( w + (int) adv ) % pattern->length );
         }
 
         z -= (u64) r;
