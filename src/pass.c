@@ -313,10 +313,11 @@ static ssize_t nwipe_read_with_retry( nwipe_context_t* c, int fd, void* buf, siz
     return r;
 } /* nwipe_read_with_retry */
 
-/**
+/*
  * Performs fdatasync(), logs (and increases error count).
- * Function returns 0 on success, and -1 on fatal failure.
- * With noabort_block_errors, logs a warning and returns 0.
+ * Returns 0 on success, 1 on soft failure, -1 on fatal failure.
+ * Soft failure is when the option noabort_block_errors is enabled.
+ * fsyncdata_errors is incremented on any kind of failure (-1 or 1).
  */
 static int nwipe_fdatasync( nwipe_context_t* c, const char* f )
 {
@@ -336,7 +337,7 @@ static int nwipe_fdatasync( nwipe_context_t* c, const char* f )
         if( nwipe_options.noabort_block_errors )
         {
             /* Sync errors are to be expected with bad blocks, so we must allow them */
-            return 0;
+            return 1;
         }
 
         return -1;
@@ -474,6 +475,33 @@ static int nwipe_compute_sync_rate_for_device( const nwipe_context_t* c, size_t 
         return INT_MAX; /* just in case */
 
     return (int) tmp;
+}
+
+/*
+ * Updates the erased byte count with the provided bytes remaining (z), bytes
+ * skipped (bs) and synced flag. The synced flag should only be set when a
+ * sync immediately prior to calling this function was successful (r == 0).
+ *
+ * The synced flag ensures that in cached I/O mode the count is only ever
+ * updated when the bytes have in fact been written to the disk, which is
+ * ensured by the sync flag and a prior successful fsyncdata function call.
+ */
+static void nwipe_update_bytes_erased( nwipe_context_t* c, u64 z, u64 bs, int synced )
+{
+    if( synced || c->io_mode == NWIPE_IO_MODE_DIRECT )
+    {
+        u64 be = c->device_size - z - bs;
+
+        /*
+         * High-water calculation of bytes erased across passes:
+         * If this pass erased more of the device than any previous pass,
+         * use that new highest number, otherwise keep previous bytes erased.
+         */
+        if( c->bytes_erased < be )
+        {
+            c->bytes_erased = be;
+        }
+    }
 }
 
 /*
@@ -726,7 +754,6 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
     char* b;
     u64 z = c->device_size; /* bytes remaining */
     u64 bs = 0; /* pass bytes skipped */
-    u64 be = 0; /* pass bytes erased */
 
     int syncRate = nwipe_options.sync;
 
@@ -921,7 +948,9 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
                        c->device_name,
                        (long long) current_offset );
 
-            nwipe_fdatasync( c, __FUNCTION__ ); /* Best effort */
+            if( nwipe_fdatasync( c, __FUNCTION__ ) == 0 ) /* Best effort */
+                nwipe_update_bytes_erased( c, z, bs, 1 );
+
             c->reverse_status = 1;
 
             if( c->device_size % (u64) io_blocksize != 0 )
@@ -948,14 +977,18 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
 
                 if( r < 0 )
                 {
-                    c->pass_errors += 1;
                     nwipe_perror( errno, __FUNCTION__, "pwrite" );
                     nwipe_log( NWIPE_LOG_FATAL,
                                "Reverse wipe failed on '%s' at offset %lld.",
                                c->device_name,
                                (long long) rev_offset );
-                    nwipe_fdatasync( c, __FUNCTION__ ); /* Best effort */
+
+                    c->pass_errors += 1;
                     c->reverse_status = 0;
+
+                    if( nwipe_fdatasync( c, __FUNCTION__ ) == 0 ) /* Best effort */
+                        nwipe_update_bytes_erased( c, z, bs, 1 );
+
                     free( b );
                     return -1;
                 }
@@ -988,16 +1021,7 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
                 c->pass_done += (u64) r;
                 c->round_done += (u64) r;
 
-                /*
-                 * High-water calculation of bytes erased across passes:
-                 * If this pass erased more of the device than any previous pass,
-                 * use that new highest number, otherwise keep previous bytes erased.
-                 */
-                be = c->device_size - z - bs;
-                if( c->bytes_erased < be )
-                {
-                    c->bytes_erased = be;
-                }
+                nwipe_update_bytes_erased( c, z, bs, 0 );
 
                 rev_offset -= (off64_t) io_blocksize;
                 rev_blocksize = io_blocksize; /* must be a full I/O block now */
@@ -1009,8 +1033,11 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
                        "Reverse wipe on '%s' reached initial bad block at offset %lld.",
                        c->device_name,
                        (long long) current_offset );
-            nwipe_fdatasync( c, __FUNCTION__ ); /* Best effort */
+
             c->reverse_status = 0;
+
+            if( nwipe_fdatasync( c, __FUNCTION__ ) == 0 ) /* Best effort */
+                nwipe_update_bytes_erased( c, z, bs, 1 );
 
             /* The disk is otherwise stable, we return with non-fatal errors
              * so other passes can continue; overall result will be failure. */
@@ -1057,6 +1084,8 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
         c->pass_done += (u64) r;
         c->round_done += (u64) r;
 
+        nwipe_update_bytes_erased( c, z, bs, 0 );
+
         /* Periodic fdatasync after 'syncRate' writes, if configured. */
         if( syncRate > 0 )
         {
@@ -1066,7 +1095,12 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
             {
                 r = nwipe_fdatasync( c, __FUNCTION__ );
 
-                if( r != 0 )
+                if( r == 0 )
+                {
+                    nwipe_update_bytes_erased( c, z, bs, 1 );
+                }
+
+                if( r == -1 )
                 {
                     free( b );
                     return -1;
@@ -1074,17 +1108,6 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
 
                 i = 0;
             }
-        }
-
-        /*
-         * High-water calculation of bytes erased across passes:
-         * If this pass erased more of the device than any previous pass,
-         * use that new highest number, otherwise keep previous bytes erased.
-         */
-        be = c->device_size - z - bs;
-        if( c->bytes_erased < be )
-        {
-            c->bytes_erased = be;
         }
 
         pthread_testcancel();
@@ -1095,25 +1118,10 @@ int nwipe_random_pass( NWIPE_METHOD_SIGNATURE )
 
     /* Final sync at end of pass. */
     r = nwipe_fdatasync( c, __FUNCTION__ );
-
-    /*
-     * If any sync failed and the wipe claims 100% erased, always adjust down
-     * one full I/O block because we cannot guarantee it, otherwise percentage
-     * will show 100% erased. But we make sure to return only a fatal code if
-     * this specific sync has failed, to keep things consistent as everywhere.
-     */
-    if( c->fsyncdata_errors > 0 )
-    {
-        if( c->bytes_erased >= c->device_size )
-        {
-            c->bytes_erased = c->device_size - (u64) io_blocksize;
-        }
-
-        if( r != 0 )
-        {
-            return -1;
-        }
-    }
+    if( r == 0 )
+        nwipe_update_bytes_erased( c, z, bs, 1 );
+    if( r == -1 )
+        return -1;
 
     return 0;
 
@@ -1390,7 +1398,6 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
     int w = 0; /* window offset into pattern */
     u64 z = c->device_size;
     u64 bs = 0; /* pass bytes skipped */
-    u64 be = 0; /* pass bytes erased */
 
     int syncRate = nwipe_options.sync;
 
@@ -1591,7 +1598,9 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
                        c->device_name,
                        (long long) current_offset );
 
-            nwipe_fdatasync( c, __FUNCTION__ ); /* Best effort */
+            if( nwipe_fdatasync( c, __FUNCTION__ ) == 0 ) /* Best effort */
+                nwipe_update_bytes_erased( c, z, bs, 1 );
+
             c->reverse_status = 1;
 
             if( c->device_size % (u64) io_blocksize != 0 )
@@ -1632,14 +1641,18 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
 
                 if( r < 0 )
                 {
-                    c->pass_errors += 1;
                     nwipe_perror( errno, __FUNCTION__, "pwrite" );
                     nwipe_log( NWIPE_LOG_FATAL,
                                "Reverse wipe failed on '%s' at offset %lld.",
                                c->device_name,
                                (long long) rev_offset );
-                    nwipe_fdatasync( c, __FUNCTION__ ); /* Best effort */
+
+                    c->pass_errors += 1;
                     c->reverse_status = 0;
+
+                    if( nwipe_fdatasync( c, __FUNCTION__ ) == 0 ) /* Best effort */
+                        nwipe_update_bytes_erased( c, z, bs, 1 );
+
                     free( b );
                     free( wbuf );
                     return -1;
@@ -1673,16 +1686,7 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
                 c->pass_done += (u64) r;
                 c->round_done += (u64) r;
 
-                /*
-                 * High-water calculation of bytes erased across passes:
-                 * If this pass erased more of the device than any previous pass,
-                 * use that new highest number, otherwise keep previous bytes erased.
-                 */
-                be = c->device_size - z - bs;
-                if( c->bytes_erased < be )
-                {
-                    c->bytes_erased = be;
-                }
+                nwipe_update_bytes_erased( c, z, bs, 0 );
 
                 rev_offset -= (off64_t) io_blocksize;
                 rev_blocksize = io_blocksize; /* must be a full I/O block now */
@@ -1694,8 +1698,11 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
                        "Reverse wipe on '%s' reached initial bad block at offset %lld.",
                        c->device_name,
                        (long long) current_offset );
-            nwipe_fdatasync( c, __FUNCTION__ ); /* Best effort */
+
             c->reverse_status = 0;
+
+            if( nwipe_fdatasync( c, __FUNCTION__ ) == 0 ) /* Best effort */
+                nwipe_update_bytes_erased( c, z, bs, 1 );
 
             /* The disk is otherwise stable, we return with non-fatal errors
              * so other passes can continue; overall result will be failure. */
@@ -1744,6 +1751,8 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
         c->pass_done += (u64) r;
         c->round_done += (u64) r;
 
+        nwipe_update_bytes_erased( c, z, bs, 0 );
+
         /* Periodic sync if requested. */
         if( syncRate > 0 )
         {
@@ -1753,7 +1762,12 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
             {
                 r = nwipe_fdatasync( c, __FUNCTION__ );
 
-                if( r != 0 )
+                if( r == 0 )
+                {
+                    nwipe_update_bytes_erased( c, z, bs, 1 );
+                }
+
+                if( r == -1 )
                 {
                     free( b );
                     free( wbuf );
@@ -1762,17 +1776,6 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
 
                 i = 0;
             }
-        }
-
-        /*
-         * High-water calculation of bytes erased across passes:
-         * If this pass erased more of the device than any previous pass,
-         * use that new highest number, otherwise keep previous bytes erased.
-         */
-        be = c->device_size - z - bs;
-        if( c->bytes_erased < be )
-        {
-            c->bytes_erased = be;
         }
 
         pthread_testcancel();
@@ -1784,25 +1787,10 @@ int nwipe_static_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
 
     /* Final sync at end of pass. */
     r = nwipe_fdatasync( c, __FUNCTION__ );
-
-    /*
-     * If any sync failed and the wipe claims 100% erased, always adjust down
-     * one full I/O block because we cannot guarantee it, otherwise percentage
-     * will show 100% erased. But we make sure to return only a fatal code if
-     * this specific sync has failed, to keep things consistent as everywhere.
-     */
-    if( c->fsyncdata_errors > 0 )
-    {
-        if( c->bytes_erased >= c->device_size )
-        {
-            c->bytes_erased = c->device_size - (u64) io_blocksize;
-        }
-
-        if( r != 0 )
-        {
-            return -1;
-        }
-    }
+    if( r == 0 )
+        nwipe_update_bytes_erased( c, z, bs, 1 );
+    if( r == -1 )
+        return -1;
 
     return 0;
 
