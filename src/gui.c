@@ -7739,6 +7739,11 @@ void* nwipe_gui_status( void* ptr )
                         }
                     }
 
+                    if( c[i]->reverse_status )
+                    {
+                        wprintw( main_window, "[R] " );
+                    }
+
                     if( c[i]->wipe_status == 1 || nwipe_options.method == &nwipe_verify_zero
                         || nwipe_options.method == &nwipe_verify_one || c[i]->result == 0 )
                     {
