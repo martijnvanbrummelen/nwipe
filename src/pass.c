@@ -582,8 +582,65 @@ int nwipe_random_verify( nwipe_context_t* c )
 
         if( r < 0 )
         {
+            c->verify_errors += 1;
+
+            if( nwipe_options.noabort_block_errors )
+            {
+                /*
+                 * Block read failed and the user requested to NOT abort the pass.
+                 * Treat the whole block as failed, skip it, count the bytes,
+                 * and continue with the next block.
+                 */
+                u64 s = (u64) blocksize;
+
+                /* Log the read error and that we are skipping this block. */
+                nwipe_perror( errno, __FUNCTION__, "read" );
+                nwipe_log( NWIPE_LOG_ERROR,
+                           "Read error on '%s' at offset %lld, skipping %llu bytes.",
+                           c->device_name,
+                           (long long) current_offset,
+                           s );
+
+                /*
+                 * Skip forward by one block on the device, so subsequent reads
+                 * continue after the failing region.
+                 */
+                offset = lseek( c->device_fd, (off64_t) s, SEEK_CUR );
+                if( offset == (off64_t) -1 )
+                {
+                    /*
+                     * If we cannot move the file offset, we cannot safely continue,
+                     * so we must abort the pass even in no-abort mode.
+                     */
+                    nwipe_perror( errno, __FUNCTION__, "lseek" );
+                    nwipe_log(
+                        NWIPE_LOG_FATAL, "Unable to bump the '%s' file offset after a read error.", c->device_name );
+                    free( b );
+                    free( d );
+                    return -1;
+                }
+
+                /*
+                 * This block is logically processed (address space advanced),
+                 * but not actually written. Reflect that in the remaining size
+                 * and in the per-round progress, but DO NOT increase pass_done.
+                 */
+                z -= s;
+                c->round_done += s;
+
+                /* Allow thread cancellation points and proceed with the next loop iteration. */
+                pthread_testcancel();
+
+                continue;
+            }
+
+            /*
+             * Default behaviour (no no-abort option):
+             * Abort the verification because of the read error.
+             */
             nwipe_perror( errno, __FUNCTION__, "read" );
-            nwipe_log( NWIPE_LOG_ERROR, "Unable to read from '%s'.", c->device_name );
+            nwipe_log(
+                NWIPE_LOG_FATAL, "Read error on '%s' at offset %lld.", c->device_name, (long long) current_offset );
             free( b );
             free( d );
             return -1;
@@ -1166,8 +1223,75 @@ int nwipe_static_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
 
         if( r < 0 )
         {
+            c->verify_errors += 1;
+
+            if( nwipe_options.noabort_block_errors )
+            {
+                /*
+                 * Block read failed and the user requested to NOT abort the pass.
+                 * Treat the whole block as failed, skip it, count the bytes,
+                 * and continue with the next block.
+                 */
+                u64 s = (u64) blocksize;
+
+                /* Log the read error and that we are skipping this block. */
+                nwipe_perror( errno, __FUNCTION__, "read" );
+                nwipe_log( NWIPE_LOG_ERROR,
+                           "Read error on '%s' at offset %lld, skipping %llu bytes.",
+                           c->device_name,
+                           (long long) current_offset,
+                           s );
+
+                /*
+                 * Skip forward by one block on the device, so subsequent reads
+                 * continue after the failing region.
+                 */
+                offset = lseek( c->device_fd, (off64_t) s, SEEK_CUR );
+                if( offset == (off64_t) -1 )
+                {
+                    /*
+                     * If we cannot move the file offset, we cannot safely continue,
+                     * so we must abort the pass even in no-abort mode.
+                     */
+                    nwipe_perror( errno, __FUNCTION__, "lseek" );
+                    nwipe_log(
+                        NWIPE_LOG_FATAL, "Unable to bump the '%s' file offset after a read error.", c->device_name );
+                    free( b );
+                    free( d );
+                    return -1;
+                }
+
+                /*
+                 * Adjust the pattern window so that the logical pattern position
+                 * stays consistent after skipping s bytes.
+                 */
+                if( pattern->length > 0 )
+                {
+                    size_t adv = (size_t) s % (size_t) pattern->length;
+                    w = (int) ( ( w + (int) adv ) % pattern->length );
+                }
+
+                /*
+                 * This block is logically processed (address space advanced),
+                 * but not actually written. Reflect that in the remaining size
+                 * and in the per-round progress, but DO NOT increase pass_done.
+                 */
+                z -= s;
+                c->round_done += s;
+
+                /* Allow thread cancellation points and proceed with the next loop iteration. */
+                pthread_testcancel();
+
+                continue;
+            }
+
+            /*
+             * Default behaviour (no no-abort option):
+             * Abort the verification because of the read error.
+             */
             nwipe_perror( errno, __FUNCTION__, "read" );
-            nwipe_log( NWIPE_LOG_ERROR, "Unable to read from '%s'.", c->device_name );
+            nwipe_log(
+                NWIPE_LOG_FATAL, "Read error on '%s' at offset %lld.", c->device_name, (long long) current_offset );
             free( b );
             free( d );
             return -1;
