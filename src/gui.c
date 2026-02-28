@@ -149,8 +149,8 @@ const char* stats_title = " Statistics ";
 
 /* Footer labels. */
 const char* main_window_footer =
-    "S=Start m=Method p=PRNG v=Verify t=path o=Benchmark r=Rounds b=Blanking Space=Select c=Config CTRL+C=Quit";
-const char* shredos_main_window_footer = "S=Start m=Method p=PRNG v=Verify t=path o=Benchmark r=Rounds b=Blanking "
+    "S=Start m=Method p=PRNG v=Verify t=Path o=Benchmark r=Rounds b=Blanking Space=Select c=Config CTRL+C=Quit";
+const char* shredos_main_window_footer = "S=Start m=Method p=PRNG v=Verify t=Path o=Benchmark r=Rounds b=Blanking "
                                          "Space=Select f=Font size c=Config CTRL+C=Quit";
 char** p_main_window_footer;
 const char* main_window_footer_warning_lower_case_s = "  WARNING: To start the wipe press SHIFT+S (uppercase S)  ";
@@ -759,6 +759,7 @@ void nwipe_gui_benchmark_prng( void )
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
+    extern nwipe_prng_t nwipe_chacha20_prng;
 
     extern int terminate_signal;
 
@@ -769,6 +770,7 @@ void nwipe_gui_benchmark_prng( void )
         &nwipe_add_lagg_fibonacci_prng,
         &nwipe_xoroshiro256_prng,
         &nwipe_aes_ctr_prng,
+        &nwipe_chacha20_prng,
     };
 
     const int prng_count = (int) ( sizeof( prngs ) / sizeof( prngs[0] ) );
@@ -2054,12 +2056,13 @@ void nwipe_gui_prng( void )
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
+    extern nwipe_prng_t nwipe_chacha20_prng;
 
     extern int terminate_signal;
 
     /* The number of implemented PRNGs. */
     const int aes_ctr_available = has_aes_ni();
-    const int count = 6;
+    const int count = 7;
 
     /* The first tabstop. */
     const int tab1 = 2;
@@ -2105,6 +2108,10 @@ void nwipe_gui_prng( void )
     {
         focus = 5;
     }
+    if( nwipe_options.prng == &nwipe_chacha20_prng )
+    {
+        focus = 6;
+    }
     do
     {
         /* Clear the main window. */
@@ -2130,6 +2137,7 @@ void nwipe_gui_prng( void )
         {
             mvwprintw( main_window, yy++, tab1, "  %s (N/A)", nwipe_aes_ctr_prng.label );
         }
+        mvwprintw( main_window, yy++, tab1, "  %s", nwipe_chacha20_prng.label );
         yy++;
 
         /* Print the cursor. */
@@ -2149,7 +2157,7 @@ void nwipe_gui_prng( void )
                 mvwprintw( main_window, 8, tab2, "This implementation passes the Marsaglia Diehard " );
                 mvwprintw( main_window, 9, tab2, "test suite." );
                 mvwprintw( main_window, 10, tab2, "                                                 " );
-                mvwprintw( main_window, 14, tab1, "Fastest PRNG for you hardware? type o to find out" );
+                mvwprintw( main_window, 14, tab1, "Fastest PRNG for your hardware? type o to find out" );
                 break;
 
             case 1:
@@ -2162,7 +2170,7 @@ void nwipe_gui_prng( void )
                 mvwprintw( main_window, 7, tab2, "                                                 " );
                 mvwprintw( main_window, 8, tab2, "Performs best on a 32-bit CPU. Use ISAAC-64 if   " );
                 mvwprintw( main_window, 9, tab2, "this system has a 64-bit CPU.  " );
-                mvwprintw( main_window, 14, tab1, "Fastest PRNG for you hardware? type o to find out" );
+                mvwprintw( main_window, 14, tab1, "Fastest PRNG for your hardware? type o to find out" );
                 break;
 
             case 2:
@@ -2175,7 +2183,7 @@ void nwipe_gui_prng( void )
                 mvwprintw( main_window, 6, tab2, "                                                 " );
                 mvwprintw( main_window, 7, tab2, "Performs best on a 64-bit CPU. Use ISAAC if this " );
                 mvwprintw( main_window, 8, tab2, "system has a 32-bit CPU.                         " );
-                mvwprintw( main_window, 14, tab1, "Fastest PRNG for you hardware? type o to find out" );
+                mvwprintw( main_window, 14, tab1, "Fastest PRNG for your hardware? type o to find out" );
                 break;
 
             case 3:
@@ -2191,7 +2199,7 @@ void nwipe_gui_prng( void )
                 mvwprintw( main_window, yy++, tab2, "suited for non-cryptographic applications        " );
                 mvwprintw( main_window, yy++, tab2, "requiring long sequences with a good speed and   " );
                 mvwprintw( main_window, yy++, tab2, "randomness trade-off.                            " );
-                mvwprintw( main_window, 14, tab1, "Fastest PRNG for you hardware? type o to find out" );
+                mvwprintw( main_window, 14, tab1, "Fastest PRNG for your hardware? type o to find out" );
                 break;
 
             case 4:
@@ -2207,8 +2215,9 @@ void nwipe_gui_prng( void )
                 mvwprintw( main_window, yy++, tab2, "and rotations ensure low computational complexity" );
                 mvwprintw( main_window, yy++, tab2, "Combined with the 256 bit adaption, it provides  " );
                 mvwprintw( main_window, yy++, tab2, "efficient use especially for legacy systems " );
-                mvwprintw( main_window, 14, tab1, "Fastest PRNG for you hardware? type o to find out" );
+                mvwprintw( main_window, 14, tab1, "Fastest PRNG for your hardware? type o to find out" );
                 break;
+
             case 5: {
                 extern int has_aes_ni( void );
                 const int aes_ctr_available = has_aes_ni();
@@ -2227,7 +2236,7 @@ void nwipe_gui_prng( void )
                     mvwprintw( main_window, yy++, tab2, "global standard for encryption. Designed for " );
 
                     mvwprintw( main_window, yy++, tab2, "64-bit Linux systems with kernel CryptoAPI.  " );
-                    mvwprintw( main_window, 14, tab1, "Fastest PRNG for you hardware? type o to find out" );
+                    mvwprintw( main_window, 14, tab1, "Fastest PRNG for your hardware? type o to find out" );
                 }
                 else
                 {
@@ -2246,11 +2255,25 @@ void nwipe_gui_prng( void )
 
                     wattroff( main_window, A_DIM );
 
-                    mvwprintw( main_window, 14, tab1, "Fastest PRNG for you hardware? type o to find out" );
+                    mvwprintw( main_window, 14, tab1, "Fastest PRNG for your hardware? type o to find out" );
                 }
 
                 break;
             }
+
+            case 6:
+
+                mvwprintw( main_window, yy++, tab2, "ChaCha20 is a stream cipher by Daniel Bernstein  " );
+                mvwprintw( main_window, yy++, tab2, "used in TLS, SSH and OS kernel PRNGs worldwide.  " );
+                mvwprintw( main_window, yy++, tab2, "                                                 " );
+                mvwprintw( main_window, yy++, tab2, "ChaCha20 is a cryptographically secure PRNG and  " );
+                mvwprintw( main_window, yy++, tab2, "a good choice when security matters more than    " );
+                mvwprintw( main_window, yy++, tab2, "raw throughput. No special hardware required.    " );
+                mvwprintw( main_window, yy++, tab2, "                                                 " );
+                mvwprintw( main_window, yy++, tab2, "Implemented simple and well auditable by design. " );
+                mvwprintw( main_window, yy++, tab2, "Verified against official RFC 7539 test vectors. " );
+                mvwprintw( main_window, 14, tab1, "Fastest PRNG for your hardware? type o to find out" );
+                break;
         }
 
         /* Add a border. */
@@ -2340,6 +2363,11 @@ void nwipe_gui_prng( void )
                         beep();
                         selection_made = 0;
                     }
+                }
+                else if( focus == 6 )
+                {
+                    nwipe_options.prng = &nwipe_chacha20_prng;
+                    selection_made = 1;
                 }
 
                 if( selection_made )

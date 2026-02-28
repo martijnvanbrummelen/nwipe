@@ -28,6 +28,7 @@
 #include "alfg/add_lagg_fibonacci_prng.h"  //Lagged Fibonacci generator prototype
 #include "xor/xoroshiro256_prng.h"  //XORoshiro-256 prototype
 #include "aes/aes_ctr_prng.h"  // AES-NI prototype
+#include "chacha20/chacha20.h"  // ChaCha20 stream cipher CSPRNG
 
 nwipe_prng_t nwipe_twister = { "Mersenne Twister", nwipe_twister_init, nwipe_twister_read };
 
@@ -44,6 +45,9 @@ nwipe_prng_t nwipe_xoroshiro256_prng = { "XORoshiro-256", nwipe_xoroshiro256_prn
 /* AES-CTR-NI PRNG Structure */
 nwipe_prng_t nwipe_aes_ctr_prng = { "AES-CTR (Kernel)", nwipe_aes_ctr_prng_init, nwipe_aes_ctr_prng_read };
 
+/* ChaCha20 stream cipher CSPRNG */
+nwipe_prng_t nwipe_chacha20_prng = { "ChaCha20 (CSPRNG)", nwipe_chacha20_prng_init, nwipe_chacha20_prng_read };
+
 static const nwipe_prng_t* all_prngs[] = {
     &nwipe_twister,
     &nwipe_isaac,
@@ -51,6 +55,7 @@ static const nwipe_prng_t* all_prngs[] = {
     &nwipe_add_lagg_fibonacci_prng,
     &nwipe_xoroshiro256_prng,
     &nwipe_aes_ctr_prng,
+    &nwipe_chacha20_prng,
 };
 
 /* Print given number of bytes from unsigned integer number to a byte stream buffer starting with low-endian. */
@@ -352,6 +357,74 @@ int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE )
     }
 
     return 0;  // Success
+}
+
+int nwipe_chacha20_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
+{
+    int rc;
+
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising ChaCha20 stream cipher CSPRNG" );
+
+    /*
+     * We always run the self-tests to ensure that the CSPRNG is safe to use.
+     * Users specifically chose security over throughput, so we'll make sure.
+     */
+    rc = chacha20_self_test();
+    if( rc == 0 )
+    {
+        nwipe_log( NWIPE_LOG_NOTICE, "Self-test has passed for ChaCha20 (CSPRNG)" );
+    }
+    else
+    {
+        nwipe_log( NWIPE_LOG_SANITY,
+                   "Self-test has FAILED (code %d) for ChaCha20 (CSPRNG), "
+                   "report failure to developers and choose another PRNG",
+                   rc );
+        return -1;
+    }
+
+    if( *state == NULL )
+    {
+        *state = malloc( sizeof( chacha20_state_t ) );
+        if( *state == NULL )
+        {
+            nwipe_log( NWIPE_LOG_FATAL, "Unable to allocate memory for ChaCha20 (CSPRNG)" );
+            return -1;
+        }
+    }
+
+    /* Shouldn't happen with current defaults, but warn if it does. */
+    if( seed->length < 40 )
+        nwipe_log( NWIPE_LOG_WARNING,
+                   "Seed is shorter than ChaCha20 (CSPRNG) requires (%zu/40 bytes), "
+                   "it will be partially zero-padded (which is less secure)",
+                   seed->length );
+
+    uint8_t seedbuf[64] = { 0 };
+    size_t len = seed->length < 64 ? seed->length : 64;
+    memcpy( seedbuf, seed->s, len );
+
+    rc = chacha20_prng_init( (chacha20_state_t*) *state, seedbuf, 64 );
+    if( rc != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "chacha20_prng_init() failed" );
+        return -1;
+    }
+
+    return 0;
+}
+
+int nwipe_chacha20_prng_read( NWIPE_PRNG_READ_SIGNATURE )
+{
+    int rc = chacha20_prng_genrand_to_buf( (chacha20_state_t*) *state, (uint8_t*) buffer, count );
+
+    if( rc != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "chacha20_prng_genrand_to_buf() failed" );
+        return -1;
+    }
+
+    return 0;
 }
 
 /**

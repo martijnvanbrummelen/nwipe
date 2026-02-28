@@ -47,6 +47,7 @@ int nwipe_options_parse( int argc, char** argv )
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
+    extern nwipe_prng_t nwipe_chacha20_prng;
 
     extern config_t nwipe_cfg;
     config_setting_t* setting;
@@ -875,6 +876,12 @@ int nwipe_options_parse( int argc, char** argv )
                     break;
                 }
 
+                if( strcmp( optarg, "chacha20" ) == 0 )
+                {
+                    nwipe_options.prng = &nwipe_chacha20_prng;
+                    break;
+                }
+
                 fprintf( stderr, "Error: Unknown prng '%s'.\n", optarg );
                 exit( EINVAL );
 
@@ -931,6 +938,7 @@ void nwipe_options_log( void )
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
+    extern nwipe_prng_t nwipe_chacha20_prng;
 
     /**
      *  Prints a manifest of options to the log.
@@ -1001,6 +1009,10 @@ void nwipe_options_log( void )
     else if( nwipe_options.prng == &nwipe_isaac64 )
     {
         nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Isaac64" );
+    }
+    else if( nwipe_options.prng == &nwipe_chacha20_prng )
+    {
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = ChaCha20 (CSPRNG)" );
     }
     else
     {
@@ -1089,7 +1101,7 @@ void display_help()
     puts( "  -P, --PDFreportpath=PATH Path to write PDF reports to. Default is \".\"" );
     puts( "                           If set to \"noPDF\" no PDF reports are written.\n" );
     puts( "  -p, --prng=METHOD        PRNG option "
-          "(mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng|xoroshiro256_prng|aes_ctr_prng)\n" );
+          "(mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng|xoroshiro256_prng|aes_ctr_prng|chacha20)\n" );
     puts( "  --prng=auto              (default)" );
     puts( "      Automatically benchmark all available PRNGs at startup and" );
     puts( "      select the fastest one for the current hardware." );
