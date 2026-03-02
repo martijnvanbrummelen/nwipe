@@ -10,14 +10,14 @@
 #include <string.h>
 
 /* Read a little-endian uint64_t from a byte buffer. */
-static uint64_t load_le64( const uint8_t* p )
+static inline uint64_t load_le64( const uint8_t* p )
 {
     return (uint64_t) p[0] | (uint64_t) p[1] << 8 | (uint64_t) p[2] << 16 | (uint64_t) p[3] << 24
         | (uint64_t) p[4] << 32 | (uint64_t) p[5] << 40 | (uint64_t) p[6] << 48 | (uint64_t) p[7] << 56;
 }
 
 /* Write a uint64_t as little-endian bytes. */
-static void store_le64( uint8_t* p, uint64_t v )
+static inline void store_le64( uint8_t* p, uint64_t v )
 {
     p[0] = (uint8_t) ( v );
     p[1] = (uint8_t) ( v >> 8 );
@@ -30,7 +30,7 @@ static void store_le64( uint8_t* p, uint64_t v )
 }
 
 /* Returns one 64-bit pseudorandom value and advances the state. */
-static uint64_t xorshift128plus_next( xorshift128plus_state_t* state )
+static inline uint64_t xorshift128plus_next( xorshift128plus_state_t* state )
 {
     uint64_t a = state->s[0];
     uint64_t b = state->s[1];
