@@ -1,5 +1,6 @@
 /*
  * xorshift128plus.h: Xorshift128+ PRNG for nwipe.
+ * Author: Copyright (c) 2026 desertwitch (dezertwitsh@gmail.com)
  * This software is provided "as is", without warranty of any kind.
  */
 #ifndef XORSHIFT128PLUS_H

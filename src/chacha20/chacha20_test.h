@@ -1,5 +1,6 @@
 /*
  * chacha20_test.c: ChaCha20 stream cipher CSPRNG for nwipe.
+ * Author: Copyright (c) 2026 desertwitch (dezertwitsh@gmail.com)
  * This software is provided "as is", without warranty of any kind.
  *
  * This implementation is intentionally kept simple and portable.

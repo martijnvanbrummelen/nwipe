@@ -97,10 +97,13 @@ The user can select from a variety of recognised secure erase methods, including
 
 nwipe includes multiple pseudorandom number generators (PRNGs) for methods that require random data:
 
+- **Xorshift128+** *(new in v0.41)*  
+  Very fast, general-purpose non-cryptographic generator.
+
 - **ChaCha20 (CSPRNG)** *(new in v0.41)*  
   Cryptographically secure, no special hardware requirements, as used worldwide in TLS and SSH.
 
-- **AES-256-CTR** *(new in v0.40)*  
+- **AES-256-CTR (CSPRNG)** *(new in v0.40)*  
   Cryptographically secure, high–throughput counter-mode stream cipher, using hardware AES-NI where available.
 
 - **XORoshiro-256**  

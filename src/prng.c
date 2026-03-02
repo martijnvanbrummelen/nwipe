@@ -49,7 +49,7 @@ nwipe_prng_t nwipe_xorshift128plus_prng = { "Xorshift128+",
                                             nwipe_xorshift128plus_prng_read };
 
 /* AES-CTR-NI PRNG Structure */
-nwipe_prng_t nwipe_aes_ctr_prng = { "AES-CTR (Kernel)", nwipe_aes_ctr_prng_init, nwipe_aes_ctr_prng_read };
+nwipe_prng_t nwipe_aes_ctr_prng = { "AES-CTR (CSPRNG)", nwipe_aes_ctr_prng_init, nwipe_aes_ctr_prng_read };
 
 /* ChaCha20 stream cipher CSPRNG */
 nwipe_prng_t nwipe_chacha20_prng = { "ChaCha20 (CSPRNG)", nwipe_chacha20_prng_init, nwipe_chacha20_prng_read };

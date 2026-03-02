@@ -1,9 +1,12 @@
 /*
  * xorshift128plus.c: Xorshift128+ PRNG for nwipe.
+ * Author: Copyright (c) 2026 desertwitch (dezertwitsh@gmail.com)
  * This software is provided "as is", without warranty of any kind.
  */
 
 #include "xorshift128plus.h"
+#include <stdint.h>
+#include <stddef.h>
 #include <string.h>
 
 /* Read a little-endian uint64_t from a byte buffer. */
