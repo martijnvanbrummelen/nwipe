@@ -68,6 +68,7 @@ int create_single_disc_pdf( nwipe_context_t* ptr )
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
     extern nwipe_prng_t nwipe_xorshift128plus_prng;
+    extern nwipe_prng_t nwipe_aes_ctr_prng;
     extern nwipe_prng_t nwipe_chacha20_prng;
 
     /* Used by libconfig functions to retrieve data from nwipe.conf defined in conf.c */
@@ -444,55 +445,23 @@ int create_single_disc_pdf( nwipe_context_t* ptr )
     else
     {
         if( nwipe_options.prng == &nwipe_twister )
-        {
             snprintf( prng_type, sizeof( prng_type ), "Twister" );
-        }
+        else if( nwipe_options.prng == &nwipe_isaac )
+            snprintf( prng_type, sizeof( prng_type ), "Isaac" );
+        else if( nwipe_options.prng == &nwipe_isaac64 )
+            snprintf( prng_type, sizeof( prng_type ), "Isaac64" );
+        else if( nwipe_options.prng == &nwipe_add_lagg_fibonacci_prng )
+            snprintf( prng_type, sizeof( prng_type ), "Fibonacci" );
+        else if( nwipe_options.prng == &nwipe_xoroshiro256_prng )
+            snprintf( prng_type, sizeof( prng_type ), "XORoshiro256" );
+        else if( nwipe_options.prng == &nwipe_xorshift128plus_prng )
+            snprintf( prng_type, sizeof( prng_type ), "Xorshift128+" );
+        else if( nwipe_options.prng == &nwipe_chacha20_prng )
+            snprintf( prng_type, sizeof( prng_type ), "ChaCha20 (CSPRNG)" );
+        else if( nwipe_options.prng == &nwipe_aes_ctr_prng )
+            snprintf( prng_type, sizeof( prng_type ), "AES-CTR (CSPRNG)" );
         else
-        {
-            if( nwipe_options.prng == &nwipe_isaac )
-            {
-                snprintf( prng_type, sizeof( prng_type ), "Isaac" );
-            }
-            else
-            {
-                if( nwipe_options.prng == &nwipe_isaac64 )
-                {
-                    snprintf( prng_type, sizeof( prng_type ), "Isaac64" );
-                }
-                else
-                {
-                    if( nwipe_options.prng == &nwipe_add_lagg_fibonacci_prng )
-                    {
-                        snprintf( prng_type, sizeof( prng_type ), "Fibonacci" );
-                    }
-                    else
-                    {
-                        if( nwipe_options.prng == &nwipe_xoroshiro256_prng )
-                        {
-                            snprintf( prng_type, sizeof( prng_type ), "XORoshiro256" );
-                        }
-                        else
-                        {
-                            if( nwipe_options.prng == &nwipe_xorshift128plus_prng )
-                            {
-                                snprintf( prng_type, sizeof( prng_type ), "Xorshift128+" );
-                            }
-                            else
-                            {
-                                if( nwipe_options.prng == &nwipe_chacha20_prng )
-                                {
-                                    snprintf( prng_type, sizeof( prng_type ), "ChaCha20 (CSPRNG)" );
-                                }
-                                else
-                                {
-                                    snprintf( prng_type, sizeof( prng_type ), "Unknown" );
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+            snprintf( prng_type, sizeof( prng_type ), "Unknown" );
     }
     pdf_set_font( pdf, "Helvetica-Bold" );
     pdf_add_text( pdf, NULL, prng_type, text_size_data, 395, 270, PDF_BLACK );
