@@ -2080,18 +2080,22 @@ void nwipe_gui_prng_category( void )
         switch( focus )
         {
             case 0:
-                mvwprintw( main_window, yy++, tab2, "Fast PRNGs that favor speed over security.       " );
-                mvwprintw( main_window, yy++, tab2, "Suitable for data wiping with high throughput.   " );
+                mvwprintw( main_window, yy++, tab2, "PRNGs that favor speed over security.            " );
+                mvwprintw( main_window, yy++, tab2, "Suitable for general purpose data wiping.        " );
+                mvwprintw( main_window, yy++, tab2, "These are well-tested algorithms but are not     " );
+                mvwprintw( main_window, yy++, tab2, "designed to resist any cryptographic attacks.    " );
                 break;
 
             case 1:
                 mvwprintw( main_window, yy++, tab2, "PRNGs that meet cryptographic standards for the  " );
-                mvwprintw( main_window, yy++, tab2, "highest level of security in data sanitisation.  " );
+                mvwprintw( main_window, yy++, tab2, "highest levels of security in data sanitisation. " );
+                mvwprintw( main_window, yy++, tab2, "Recommended when strict compliance with security " );
+                mvwprintw( main_window, yy++, tab2, "standards or auditability outweighs performance. " );
                 break;
         }
 
         box( main_window, 0, 0 );
-        nwipe_gui_title( main_window, " PRNG Category " );
+        nwipe_gui_title( main_window, " Pseudorandom Number Generator " );
         wrefresh( main_window );
 
         /* Wait 250ms for input from getch, if nothing getch will then continue,
@@ -2350,7 +2354,7 @@ void nwipe_gui_prng( void )
             mvwprintw( main_window, yy++, tab2, "a good choice when security matters more than    " );
             mvwprintw( main_window, yy++, tab2, "raw throughput. No special hardware required.    " );
             mvwprintw( main_window, yy++, tab2, "                                                 " );
-            mvwprintw( main_window, yy++, tab2, "Implemented simple and well auditable by design. " );
+            mvwprintw( main_window, yy++, tab2, "Self-testing, simple and auditable by design.    " );
             mvwprintw( main_window, yy++, tab2, "Verified against official RFC 7539 test vectors. " );
         }
 
