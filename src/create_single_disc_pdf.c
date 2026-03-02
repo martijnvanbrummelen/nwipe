@@ -67,6 +67,7 @@ int create_single_disc_pdf( nwipe_context_t* ptr )
     extern nwipe_prng_t nwipe_isaac64;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
+    extern nwipe_prng_t nwipe_xorshift128plus_prng;
     extern nwipe_prng_t nwipe_chacha20_prng;
 
     /* Used by libconfig functions to retrieve data from nwipe.conf defined in conf.c */
@@ -472,13 +473,20 @@ int create_single_disc_pdf( nwipe_context_t* ptr )
                         }
                         else
                         {
-                            if( nwipe_options.prng == &nwipe_chacha20_prng )
+                            if( nwipe_options.prng == &nwipe_xorshift128plus_prng )
                             {
-                                snprintf( prng_type, sizeof( prng_type ), "ChaCha20 (CSPRNG)" );
+                                snprintf( prng_type, sizeof( prng_type ), "Xorshift128+" );
                             }
                             else
                             {
-                                snprintf( prng_type, sizeof( prng_type ), "Unknown" );
+                                if( nwipe_options.prng == &nwipe_chacha20_prng )
+                                {
+                                    snprintf( prng_type, sizeof( prng_type ), "ChaCha20 (CSPRNG)" );
+                                }
+                                else
+                                {
+                                    snprintf( prng_type, sizeof( prng_type ), "Unknown" );
+                                }
                             }
                         }
                     }

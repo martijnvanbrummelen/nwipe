@@ -95,6 +95,10 @@ int nwipe_add_lagg_fibonacci_prng_read( NWIPE_PRNG_READ_SIGNATURE );
 int nwipe_xoroshiro256_prng_init( NWIPE_PRNG_INIT_SIGNATURE );
 int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE );
 
+/* Xorshift128+ PRNG. */
+int nwipe_xorshift128plus_prng_init( NWIPE_PRNG_INIT_SIGNATURE );
+int nwipe_xorshift128plus_prng_read( NWIPE_PRNG_READ_SIGNATURE );
+
 /* AES-CTR-NI prototypes. */
 int nwipe_aes_ctr_prng_init( NWIPE_PRNG_INIT_SIGNATURE );
 int nwipe_aes_ctr_prng_read( NWIPE_PRNG_READ_SIGNATURE );

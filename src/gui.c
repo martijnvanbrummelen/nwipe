@@ -758,6 +758,7 @@ void nwipe_gui_benchmark_prng( void )
     extern nwipe_prng_t nwipe_isaac64;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
+    extern nwipe_prng_t nwipe_xorshift128plus_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
     extern nwipe_prng_t nwipe_chacha20_prng;
 
@@ -769,6 +770,7 @@ void nwipe_gui_benchmark_prng( void )
         &nwipe_isaac64,
         &nwipe_add_lagg_fibonacci_prng,
         &nwipe_xoroshiro256_prng,
+        &nwipe_xorshift128plus_prng,
         &nwipe_aes_ctr_prng,
         &nwipe_chacha20_prng,
     };
@@ -2054,6 +2056,7 @@ void nwipe_gui_prng( void )
     extern nwipe_prng_t nwipe_isaac;
     extern nwipe_prng_t nwipe_isaac64;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
+    extern nwipe_prng_t nwipe_xorshift128plus_prng;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
     extern nwipe_prng_t nwipe_chacha20_prng;
@@ -2062,7 +2065,7 @@ void nwipe_gui_prng( void )
 
     /* The number of implemented PRNGs. */
     const int aes_ctr_available = has_aes_ni();
-    const int count = 7;
+    const int count = 8;
 
     /* The first tabstop. */
     const int tab1 = 2;
@@ -2104,13 +2107,17 @@ void nwipe_gui_prng( void )
     {
         focus = 4;
     }
-    if( nwipe_options.prng == &nwipe_aes_ctr_prng )
+    if( nwipe_options.prng == &nwipe_xorshift128plus_prng )
     {
         focus = 5;
     }
-    if( nwipe_options.prng == &nwipe_chacha20_prng )
+    if( nwipe_options.prng == &nwipe_aes_ctr_prng )
     {
         focus = 6;
+    }
+    if( nwipe_options.prng == &nwipe_chacha20_prng )
+    {
+        focus = 7;
     }
     do
     {
@@ -2128,6 +2135,7 @@ void nwipe_gui_prng( void )
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_isaac64.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_add_lagg_fibonacci_prng.label );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_xoroshiro256_prng.label );
+        mvwprintw( main_window, yy++, tab1, "  %s", nwipe_xorshift128plus_prng.label );
         /* AES-CTR: visually indicate “not available” if no AES-NI */
         if( aes_ctr_available )
         {
@@ -2218,7 +2226,16 @@ void nwipe_gui_prng( void )
                 mvwprintw( main_window, 14, tab1, "Fastest PRNG for your hardware? type o to find out" );
                 break;
 
-            case 5: {
+            case 5:
+                mvwprintw( main_window, yy++, tab2, "Xorshift128+ is a fast non-cryptographic PRNG by " );
+                mvwprintw( main_window, yy++, tab2, "Sebastiano Vigna with a period of 2^128 - 1.     " );
+                mvwprintw( main_window, yy++, tab2, "                                                 " );
+                mvwprintw( main_window, yy++, tab2, "Uses only shifts and XORs, making it very fast on" );
+                mvwprintw( main_window, yy++, tab2, "platforms w/o requiring special hardware support." );
+                mvwprintw( main_window, 14, tab1, "Fastest PRNG for your hardware? type o to find out" );
+                break;
+
+            case 6: {
                 extern int has_aes_ni( void );
                 const int aes_ctr_available = has_aes_ni();
 
@@ -2261,7 +2278,7 @@ void nwipe_gui_prng( void )
                 break;
             }
 
-            case 6:
+            case 7:
 
                 mvwprintw( main_window, yy++, tab2, "ChaCha20 is a stream cipher by Daniel Bernstein  " );
                 mvwprintw( main_window, yy++, tab2, "used in TLS, SSH and OS kernel PRNGs worldwide.  " );
@@ -2350,6 +2367,11 @@ void nwipe_gui_prng( void )
                 }
                 else if( focus == 5 )
                 {
+                    nwipe_options.prng = &nwipe_xorshift128plus_prng;
+                    selection_made = 1;
+                }
+                else if( focus == 6 )
+                {
                     if( aes_ctr_available )
                     {
                         /* AES-CTR selectable only when AES-NI is available. */
@@ -2364,7 +2386,7 @@ void nwipe_gui_prng( void )
                         selection_made = 0;
                     }
                 }
-                else if( focus == 6 )
+                else if( focus == 7 )
                 {
                     nwipe_options.prng = &nwipe_chacha20_prng;
                     selection_made = 1;
