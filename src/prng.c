@@ -380,6 +380,7 @@ int nwipe_xorshift128plus_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
         }
     }
 
+    /* Shouldn't happen with current defaults */
     if( seed->length < 16 )
     {
         nwipe_log( NWIPE_LOG_ERROR, "Seed is shorter than Xorshift128+ requires (%zu/16 bytes)", seed->length );
@@ -443,18 +444,14 @@ int nwipe_chacha20_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
         }
     }
 
-    /* Shouldn't happen with current defaults, but warn if it does. */
+    /* Shouldn't happen with current defaults */
     if( seed->length < 40 )
-        nwipe_log( NWIPE_LOG_WARNING,
-                   "Seed is shorter than ChaCha20 (CSPRNG) requires (%zu/40 bytes), "
-                   "it will be partially zero-padded (which is less secure)",
-                   seed->length );
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Seed is shorter than ChaCha20 (CSPRNG) requires (%zu/40 bytes)", seed->length );
+        return -1;
+    }
 
-    uint8_t seedbuf[64] = { 0 };
-    size_t len = seed->length < 64 ? seed->length : 64;
-    memcpy( seedbuf, seed->s, len );
-
-    rc = chacha20_prng_init( (chacha20_state_t*) *state, seedbuf, 64 );
+    rc = chacha20_prng_init( (chacha20_state_t*) *state, (const uint8_t*) seed->s, seed->length );
     if( rc != 0 )
     {
         nwipe_log( NWIPE_LOG_ERROR, "chacha20_prng_init() failed" );
