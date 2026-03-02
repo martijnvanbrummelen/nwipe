@@ -2130,7 +2130,7 @@ void nwipe_gui_prng_category( void )
 
             case KEY_BACKSPACE:
             case KEY_BREAK:
-            case 127:
+            case 27: /* ESC */
                 return;
         }
 
@@ -2424,7 +2424,7 @@ void nwipe_gui_prng( void )
 
             case KEY_BACKSPACE:
             case KEY_BREAK:
-            case 127:
+            case 27: /* ESC */
 
                 return;
 
