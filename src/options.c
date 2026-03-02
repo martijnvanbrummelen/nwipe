@@ -1012,7 +1012,7 @@ void nwipe_options_log( void )
     }
     else if( nwipe_options.prng == &nwipe_aes_ctr_prng )
     {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = AES-CTR New Instructions (EXPERIMENTAL!)" );
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = AES-CTR (CSPRNG)" );
     }
     else if( nwipe_options.prng == &nwipe_isaac )
     {
@@ -1028,7 +1028,7 @@ void nwipe_options_log( void )
     }
     else
     {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Undefined" );
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Unknown" );
     }
 
     nwipe_log( NWIPE_LOG_NOTICE, "  method   = %s", nwipe_method_label( nwipe_options.method ) );

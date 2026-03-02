@@ -105,7 +105,7 @@ static inline u64 isaac64_nextval( rand64ctx* restrict ctx )
 
 int nwipe_twister_init( NWIPE_PRNG_INIT_SIGNATURE )
 {
-    nwipe_log( NWIPE_LOG_NOTICE, "Initialising Mersenne Twister prng" );
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising Mersenne Twister PRNG" );
 
     if( *state == NULL )
     {
@@ -144,7 +144,7 @@ int nwipe_isaac_init( NWIPE_PRNG_INIT_SIGNATURE )
     int count;
     randctx* isaac_state = *state;
 
-    nwipe_log( NWIPE_LOG_NOTICE, "Initialising Isaac prng" );
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising Isaac PRNG" );
 
     if( *state == NULL )
     {
@@ -218,7 +218,7 @@ int nwipe_isaac64_init( NWIPE_PRNG_INIT_SIGNATURE )
     int count;
     rand64ctx* isaac_state = *state;
 
-    nwipe_log( NWIPE_LOG_NOTICE, "Initialising ISAAC-64 prng" );
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising ISAAC-64 PRNG" );
 
     if( *state == NULL )
     {
@@ -290,7 +290,7 @@ int nwipe_add_lagg_fibonacci_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
 {
     if( *state == NULL )
     {
-        nwipe_log( NWIPE_LOG_NOTICE, "Initialising Lagged Fibonacci generator PRNG" );
+        nwipe_log( NWIPE_LOG_NOTICE, "Initialising Lagged Fibonacci Generator PRNG" );
         *state = malloc( sizeof( add_lagg_fibonacci_state_t ) );
     }
     add_lagg_fibonacci_init(
@@ -413,7 +413,7 @@ int nwipe_chacha20_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
 {
     int rc;
 
-    nwipe_log( NWIPE_LOG_NOTICE, "Initialising ChaCha20 stream cipher CSPRNG" );
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising ChaCha20 (CSPRNG)" );
 
     /*
      * We always run the self-tests to ensure that the CSPRNG is safe to use.
@@ -703,7 +703,7 @@ static int refill_stash_thread_local( void* state, size_t need )
  */
 int nwipe_aes_ctr_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
 {
-    nwipe_log( NWIPE_LOG_NOTICE, "Initializing AES-CTR PRNG (thread-local ring buffer)" );
+    nwipe_log( NWIPE_LOG_NOTICE, "Initializing AES-CTR (CSPRNG)" );
 
     if( *state == NULL )
     {

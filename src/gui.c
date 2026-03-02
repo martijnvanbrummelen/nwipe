@@ -2067,15 +2067,15 @@ void nwipe_gui_prng_category( void )
 
         nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
 
-        yy = 3;
+        yy = 2;
 
         mvwprintw( main_window, yy++, tab1, "  General Purpose PRNGs" );
         mvwprintw( main_window, yy++, tab1, "  Secure/Auditable PRNGs" );
         yy++;
 
-        mvwaddch( main_window, 3 + focus, tab1, ACS_RARROW );
+        mvwaddch( main_window, 2 + focus, tab1, ACS_RARROW );
 
-        yy = 3;
+        yy = 2;
 
         switch( focus )
         {
@@ -2220,7 +2220,7 @@ void nwipe_gui_prng( void )
         nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_prng );
 
         /* Initialize the working row. */
-        yy = 3;
+        yy = 2;
 
         /* Print the options. */
         for( int i = 0; i < count; i++ )
@@ -2237,9 +2237,9 @@ void nwipe_gui_prng( void )
         yy++;
 
         /* Print the cursor. */
-        mvwaddch( main_window, 3 + focus, tab1, ACS_RARROW );
+        mvwaddch( main_window, 2 + focus, tab1, ACS_RARROW );
 
-        yy = 3;  // Start line for all help text
+        yy = 2;  // Start line for all help text
 
         /* The focused PRNG */
         const nwipe_prng_t* focused_prng = prngs[focus];
