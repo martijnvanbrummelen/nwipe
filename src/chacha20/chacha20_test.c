@@ -9,11 +9,6 @@
  * Hardware-specific accelerations are discouraged and, if present,
  * were not added by the original author. Anyone with 15 minutes of
  * time and the RFC should be able to understand and audit the code.
- *
- * Test vectors are recent as of 28/02/2026 and were obtained from:
- * https://github.com/pyca/cryptography/tree/main/vectors/cryptography_vectors/ciphers/ChaCha20
- *
- * The public API (including chacha20_self_test) can be found in chacha20.h.
  */
 
 #include "chacha20.h"
@@ -143,9 +138,9 @@ static int run_test( const chacha20_test_vector_t* tv )
  */
 int chacha20_self_test( void )
 {
-    for( size_t i = 0; i < test_vectors_count; i++ )
+    for( size_t i = 0; i < chacha20_test_vectors_count; i++ )
     {
-        int rc = run_test( &test_vectors[i] );
+        int rc = run_test( &chacha20_test_vectors[i] );
 
         if( rc == -1 )
             return -1;

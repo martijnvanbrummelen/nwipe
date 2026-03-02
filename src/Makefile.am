@@ -37,7 +37,7 @@ NWIPE_PRNG = \
     splitmix64/splitmix64.c splitmix64/splitmix64.h \
     aes/aes_ctr_prng.cpp aes/aes_ctr_prng.h \
     chacha20/chacha20.c chacha20/chacha20.h \
-    chacha20/chacha20_test.c chacha20/chacha20_test.h
+    chacha20/chacha20_test.c chacha20/chacha20_test_vectors.c chacha20/chacha20_test.h
 
 # PDF generation and reporting
 NWIPE_PDF = \
