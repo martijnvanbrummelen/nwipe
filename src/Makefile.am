@@ -34,7 +34,7 @@ NWIPE_PRNG = \
     mt19937ar-cok/mt19937ar-cok.c mt19937ar-cok/mt19937ar-cok.h \
     alfg/add_lagg_fibonacci_prng.c alfg/add_lagg_fibonacci_prng.h \
     xor/xoroshiro256_prng.c xor/xoroshiro256_prng.h \
-    xorshift128plus/xorshift128plus.c xorshift128plus/xorshift128plus.h \
+    splitmix64/splitmix64.c splitmix64/splitmix64.h \
     aes/aes_ctr_prng.cpp aes/aes_ctr_prng.h \
     chacha20/chacha20.c chacha20/chacha20.h \
     chacha20/chacha20_test.c chacha20/chacha20_test.h

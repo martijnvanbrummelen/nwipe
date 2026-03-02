@@ -67,7 +67,7 @@ int create_single_disc_pdf( nwipe_context_t* ptr )
     extern nwipe_prng_t nwipe_isaac64;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
-    extern nwipe_prng_t nwipe_xorshift128plus_prng;
+    extern nwipe_prng_t nwipe_splitmix64_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
     extern nwipe_prng_t nwipe_chacha20_prng;
 
@@ -454,8 +454,8 @@ int create_single_disc_pdf( nwipe_context_t* ptr )
             snprintf( prng_type, sizeof( prng_type ), "Fibonacci" );
         else if( nwipe_options.prng == &nwipe_xoroshiro256_prng )
             snprintf( prng_type, sizeof( prng_type ), "XORoshiro256" );
-        else if( nwipe_options.prng == &nwipe_xorshift128plus_prng )
-            snprintf( prng_type, sizeof( prng_type ), "Xorshift128+" );
+        else if( nwipe_options.prng == &nwipe_splitmix64_prng )
+            snprintf( prng_type, sizeof( prng_type ), "SplitMix64" );
         else if( nwipe_options.prng == &nwipe_chacha20_prng )
             snprintf( prng_type, sizeof( prng_type ), "ChaCha20 (CSPRNG)" );
         else if( nwipe_options.prng == &nwipe_aes_ctr_prng )

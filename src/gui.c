@@ -761,7 +761,7 @@ void nwipe_gui_benchmark_prng( void )
     extern nwipe_prng_t nwipe_isaac64;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
-    extern nwipe_prng_t nwipe_xorshift128plus_prng;
+    extern nwipe_prng_t nwipe_splitmix64_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
     extern nwipe_prng_t nwipe_chacha20_prng;
 
@@ -773,7 +773,7 @@ void nwipe_gui_benchmark_prng( void )
         &nwipe_isaac64,
         &nwipe_add_lagg_fibonacci_prng,
         &nwipe_xoroshiro256_prng,
-        &nwipe_xorshift128plus_prng,
+        &nwipe_splitmix64_prng,
         &nwipe_aes_ctr_prng,
         &nwipe_chacha20_prng,
     };
@@ -2151,7 +2151,7 @@ void nwipe_gui_prng( void )
     extern nwipe_prng_t nwipe_isaac;
     extern nwipe_prng_t nwipe_isaac64;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
-    extern nwipe_prng_t nwipe_xorshift128plus_prng;
+    extern nwipe_prng_t nwipe_splitmix64_prng;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
     extern nwipe_prng_t nwipe_chacha20_prng;
@@ -2194,7 +2194,7 @@ void nwipe_gui_prng( void )
         prngs[count++] = &nwipe_isaac64;
         prngs[count++] = &nwipe_add_lagg_fibonacci_prng;
         prngs[count++] = &nwipe_xoroshiro256_prng;
-        prngs[count++] = &nwipe_xorshift128plus_prng;
+        prngs[count++] = &nwipe_splitmix64_prng;
     }
     else /* Cryptographically secure */
     {
@@ -2305,13 +2305,13 @@ void nwipe_gui_prng( void )
             mvwprintw( main_window, yy++, tab2, "Combined with the 256 bit adaption, it provides  " );
             mvwprintw( main_window, yy++, tab2, "efficient use especially for legacy systems " );
         }
-        else if( focused_prng == &nwipe_xorshift128plus_prng )
+        else if( focused_prng == &nwipe_splitmix64_prng )
         {
-            mvwprintw( main_window, yy++, tab2, "Xorshift128+ is a fast non-cryptographic PRNG by " );
-            mvwprintw( main_window, yy++, tab2, "Sebastiano Vigna with a period of 2^128 - 1.     " );
+            mvwprintw( main_window, yy++, tab2, "SplitMix64 is a fast non-cryptographic PRNG by   " );
+            mvwprintw( main_window, yy++, tab2, "Steele and Lea, adaptions by Sebastiano Vigna.   " );
             mvwprintw( main_window, yy++, tab2, "                                                 " );
-            mvwprintw( main_window, yy++, tab2, "Uses only shifts and XORs, making it very fast on" );
-            mvwprintw( main_window, yy++, tab2, "platforms w/o requiring special hardware support." );
+            mvwprintw( main_window, yy++, tab2, "Uses 64-bit arithmetic and shifts; optimized for " );
+            mvwprintw( main_window, yy++, tab2, "high-speed generation on 64-bit architectures.   " );
         }
         else if( focused_prng == &nwipe_aes_ctr_prng )
         {

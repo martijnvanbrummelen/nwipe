@@ -27,7 +27,7 @@
 #include "isaac_rand/isaac64.h"
 #include "alfg/add_lagg_fibonacci_prng.h"  //Lagged Fibonacci generator prototype
 #include "xor/xoroshiro256_prng.h"  //XORoshiro-256 prototype
-#include "xorshift128plus/xorshift128plus.h"  // Xorshift128+ PRNG
+#include "splitmix64/splitmix64.h"  // SplitMix64 PRNG
 #include "aes/aes_ctr_prng.h"  // AES-NI prototype
 #include "chacha20/chacha20.h"  // ChaCha20 stream cipher CSPRNG
 
@@ -43,10 +43,8 @@ nwipe_prng_t nwipe_add_lagg_fibonacci_prng = { "Lagged Fibonacci",
 /* XOROSHIRO-256 PRNG Structure */
 nwipe_prng_t nwipe_xoroshiro256_prng = { "XORoshiro-256", nwipe_xoroshiro256_prng_init, nwipe_xoroshiro256_prng_read };
 
-/* Xorshift128+ PRNG */
-nwipe_prng_t nwipe_xorshift128plus_prng = { "Xorshift128+",
-                                            nwipe_xorshift128plus_prng_init,
-                                            nwipe_xorshift128plus_prng_read };
+/* SplitMix64 PRNG */
+nwipe_prng_t nwipe_splitmix64_prng = { "SplitMix64", nwipe_splitmix64_prng_init, nwipe_splitmix64_prng_read };
 
 /* AES-CTR-NI PRNG Structure */
 nwipe_prng_t nwipe_aes_ctr_prng = { "AES-CTR (CSPRNG)", nwipe_aes_ctr_prng_init, nwipe_aes_ctr_prng_read };
@@ -60,7 +58,7 @@ static const nwipe_prng_t* all_prngs[] = {
     &nwipe_isaac64,
     &nwipe_add_lagg_fibonacci_prng,
     &nwipe_xoroshiro256_prng,
-    &nwipe_xorshift128plus_prng,
+    &nwipe_splitmix64_prng,
     &nwipe_aes_ctr_prng,
     &nwipe_chacha20_prng,
 };
@@ -366,44 +364,44 @@ int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE )
     return 0;  // Success
 }
 
-int nwipe_xorshift128plus_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
+int nwipe_splitmix64_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
 {
-    nwipe_log( NWIPE_LOG_NOTICE, "Initialising Xorshift128+ PRNG" );
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising SplitMix64 PRNG" );
 
     if( *state == NULL )
     {
-        *state = malloc( sizeof( xorshift128plus_state_t ) );
+        *state = malloc( sizeof( splitmix64_state_t ) );
         if( *state == NULL )
         {
-            nwipe_log( NWIPE_LOG_FATAL, "Unable to allocate memory for Xorshift128+ PRNG" );
+            nwipe_log( NWIPE_LOG_FATAL, "Unable to allocate memory for SplitMix64 PRNG" );
             return -1;
         }
     }
 
     /* Shouldn't happen with current defaults */
-    if( seed->length < 16 )
+    if( seed->length < 8 )
     {
-        nwipe_log( NWIPE_LOG_ERROR, "Seed is shorter than Xorshift128+ requires (%zu/16 bytes)", seed->length );
+        nwipe_log( NWIPE_LOG_ERROR, "Seed is shorter than SplitMix64 requires (%zu/8 bytes)", seed->length );
         return -1;
     }
 
-    int rc = xorshift128plus_prng_init( (xorshift128plus_state_t*) *state, (const uint8_t*) seed->s, seed->length );
+    int rc = splitmix64_prng_init( (splitmix64_state_t*) *state, (const uint8_t*) seed->s, seed->length );
     if( rc != 0 )
     {
-        nwipe_log( NWIPE_LOG_ERROR, "xorshift128plus_prng_init() failed" );
+        nwipe_log( NWIPE_LOG_ERROR, "splitmix64_prng_init() failed" );
         return -1;
     }
 
     return 0;
 }
 
-int nwipe_xorshift128plus_prng_read( NWIPE_PRNG_READ_SIGNATURE )
+int nwipe_splitmix64_prng_read( NWIPE_PRNG_READ_SIGNATURE )
 {
-    int rc = xorshift128plus_prng_genrand_to_buf( (xorshift128plus_state_t*) *state, (uint8_t*) buffer, count );
+    int rc = splitmix64_prng_genrand_to_buf( (splitmix64_state_t*) *state, (uint8_t*) buffer, count );
 
     if( rc != 0 )
     {
-        nwipe_log( NWIPE_LOG_ERROR, "xorshift128plus_prng_genrand_to_buf() failed" );
+        nwipe_log( NWIPE_LOG_ERROR, "splitmix64_prng_genrand_to_buf() failed" );
         return -1;
     }
 

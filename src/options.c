@@ -46,7 +46,7 @@ int nwipe_options_parse( int argc, char** argv )
     extern nwipe_prng_t nwipe_isaac64;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
-    extern nwipe_prng_t nwipe_xorshift128plus_prng;
+    extern nwipe_prng_t nwipe_splitmix64_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
     extern nwipe_prng_t nwipe_chacha20_prng;
 
@@ -861,9 +861,9 @@ int nwipe_options_parse( int argc, char** argv )
                     break;
                 }
 
-                if( strcmp( optarg, "xorshift128plus" ) == 0 )
+                if( strcmp( optarg, "splitmix64" ) == 0 )
                 {
-                    nwipe_options.prng = &nwipe_xorshift128plus_prng;
+                    nwipe_options.prng = &nwipe_splitmix64_prng;
                     break;
                 }
 
@@ -944,7 +944,7 @@ void nwipe_options_log( void )
     extern nwipe_prng_t nwipe_isaac64;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
-    extern nwipe_prng_t nwipe_xorshift128plus_prng;
+    extern nwipe_prng_t nwipe_splitmix64_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
     extern nwipe_prng_t nwipe_chacha20_prng;
 
@@ -1006,9 +1006,9 @@ void nwipe_options_log( void )
     {
         nwipe_log( NWIPE_LOG_NOTICE, "  prng     = XORoshiro-256" );
     }
-    else if( nwipe_options.prng == &nwipe_xorshift128plus_prng )
+    else if( nwipe_options.prng == &nwipe_splitmix64_prng )
     {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Xorshift128+" );
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = SplitMix64" );
     }
     else if( nwipe_options.prng == &nwipe_aes_ctr_prng )
     {
@@ -1113,7 +1113,7 @@ void display_help()
     puts( "  -P, --PDFreportpath=PATH Path to write PDF reports to. Default is \".\"" );
     puts( "                           If set to \"noPDF\" no PDF reports are written.\n" );
     puts( "  -p, --prng=METHOD        PRNG option "
-          "(mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng|xoroshiro256_prng|xorshift128plus|aes_ctr_prng|"
+          "(mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng|xoroshiro256_prng|splitmix64|aes_ctr_prng|"
           "chacha20)\n" );
     puts( "  --prng=auto              (default)" );
     puts( "      Automatically benchmark all available PRNGs at startup and" );
