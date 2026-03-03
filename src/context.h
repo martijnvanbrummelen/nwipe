@@ -159,6 +159,7 @@ typedef struct nwipe_context_t_
     nwipe_speedring_t speedring;  // Ring buffer for computing the rolling throughput average.
     short sync_status;  // A flag to indicate when the method is syncing.
     short retry_status;  // A flag to indicate when the method is retrying.
+    short reverse_status;  // A flag to indicate when the method is reverse wiping.
     pthread_t thread;  // The ID of the thread.
     u64 throughput;  // Average throughput in bytes per second.
     char throughput_txt[13];  // Human readable throughput.
