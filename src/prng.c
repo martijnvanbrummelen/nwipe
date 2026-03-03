@@ -33,8 +33,8 @@
 
 nwipe_prng_t nwipe_twister = { "Mersenne Twister", nwipe_twister_init, nwipe_twister_read };
 
-nwipe_prng_t nwipe_isaac = { "ISAAC", nwipe_isaac_init, nwipe_isaac_read };
-nwipe_prng_t nwipe_isaac64 = { "ISAAC-64", nwipe_isaac64_init, nwipe_isaac64_read };
+nwipe_prng_t nwipe_isaac = { "ISAAC (CSPRNG)", nwipe_isaac_init, nwipe_isaac_read };
+nwipe_prng_t nwipe_isaac64 = { "ISAAC-64 (CSPRNG)", nwipe_isaac64_init, nwipe_isaac64_read };
 
 /* ALFG PRNG Structure */
 nwipe_prng_t nwipe_add_lagg_fibonacci_prng = { "Lagged Fibonacci",
@@ -142,7 +142,7 @@ int nwipe_isaac_init( NWIPE_PRNG_INIT_SIGNATURE )
     int count;
     randctx* isaac_state = *state;
 
-    nwipe_log( NWIPE_LOG_NOTICE, "Initialising Isaac PRNG" );
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising Isaac (CSPRNG)" );
 
     if( *state == NULL )
     {
@@ -216,7 +216,7 @@ int nwipe_isaac64_init( NWIPE_PRNG_INIT_SIGNATURE )
     int count;
     rand64ctx* isaac_state = *state;
 
-    nwipe_log( NWIPE_LOG_NOTICE, "Initialising ISAAC-64 PRNG" );
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising ISAAC-64 (CSPRNG)" );
 
     if( *state == NULL )
     {

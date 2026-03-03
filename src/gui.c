@@ -2194,8 +2194,6 @@ void nwipe_gui_prng( void )
     if( prng_filter == 0 ) /* General purpose */
     {
         prngs[count++] = &nwipe_twister;
-        prngs[count++] = &nwipe_isaac;
-        prngs[count++] = &nwipe_isaac64;
         prngs[count++] = &nwipe_add_lagg_fibonacci_prng;
         prngs[count++] = &nwipe_xoroshiro256_prng;
         prngs[count++] = &nwipe_splitmix64_prng;
@@ -2204,6 +2202,8 @@ void nwipe_gui_prng( void )
     {
         prngs[count++] = &nwipe_aes_ctr_prng;
         prngs[count++] = &nwipe_chacha20_prng;
+        prngs[count++] = &nwipe_isaac;
+        prngs[count++] = &nwipe_isaac64;
     }
 
     /* Set initial focus to currently selected PRNG if it's in this category */

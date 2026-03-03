@@ -447,9 +447,9 @@ int create_single_disc_pdf( nwipe_context_t* ptr )
         if( nwipe_options.prng == &nwipe_twister )
             snprintf( prng_type, sizeof( prng_type ), "Twister" );
         else if( nwipe_options.prng == &nwipe_isaac )
-            snprintf( prng_type, sizeof( prng_type ), "Isaac" );
+            snprintf( prng_type, sizeof( prng_type ), "Isaac (CSPRNG)" );
         else if( nwipe_options.prng == &nwipe_isaac64 )
-            snprintf( prng_type, sizeof( prng_type ), "Isaac64" );
+            snprintf( prng_type, sizeof( prng_type ), "Isaac64 (CSPRNG)" );
         else if( nwipe_options.prng == &nwipe_add_lagg_fibonacci_prng )
             snprintf( prng_type, sizeof( prng_type ), "Fibonacci" );
         else if( nwipe_options.prng == &nwipe_xoroshiro256_prng )
