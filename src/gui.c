@@ -2909,84 +2909,58 @@ void nwipe_gui_method( void )
 {
     /**
      * Allows the user to change the wipe method.
-     *
      * @modifies  nwipe_options.method
      * @modifies  main_window
-     *
      */
 
     extern int terminate_signal;
 
-    /* The number of implemented methods. */
-    const int count = 12;
+    /* The number of implemented methods displayed in THIS menu.
+     * 0-11 are standard, 12 is the 'Secure Erase' submenu entry. */
+    const int count = 13;
 
-    /* The first tabstop. */
     const int tab1 = 2;
-
-    /* The second tabstop. */
     const int tab2 = 30;
-
-    /* The currently selected method. */
     int focus = 0;
-
-    /* The current working row. */
     int yy;
-
-    /* Input buffer. */
     int keystroke;
+    int submenu_result;
 
     /* Update the footer window. */
     werase( footer_window );
     nwipe_gui_title( footer_window, selection_footer );
     wrefresh( footer_window );
 
+    /* Determine initial focus */
     if( nwipe_options.method == &nwipe_zero )
-    {
         focus = 0;
-    }
-    if( nwipe_options.method == &nwipe_one )
-    {
+    else if( nwipe_options.method == &nwipe_one )
         focus = 1;
-    }
-    if( nwipe_options.method == &nwipe_ops2 )
-    {
+    else if( nwipe_options.method == &nwipe_ops2 )
         focus = 2;
-    }
-    if( nwipe_options.method == &nwipe_dodshort )
-    {
+    else if( nwipe_options.method == &nwipe_dodshort )
         focus = 3;
-    }
-    if( nwipe_options.method == &nwipe_dod522022m )
-    {
+    else if( nwipe_options.method == &nwipe_dod522022m )
         focus = 4;
-    }
-    if( nwipe_options.method == &nwipe_gutmann )
-    {
+    else if( nwipe_options.method == &nwipe_gutmann )
         focus = 5;
-    }
-    if( nwipe_options.method == &nwipe_random )
-    {
+    else if( nwipe_options.method == &nwipe_random )
         focus = 6;
-    }
-    if( nwipe_options.method == &nwipe_verify_zero )
-    {
+    else if( nwipe_options.method == &nwipe_verify_zero )
         focus = 7;
-    }
-    if( nwipe_options.method == &nwipe_verify_one )
-    {
+    else if( nwipe_options.method == &nwipe_verify_one )
         focus = 8;
-    }
-    if( nwipe_options.method == &nwipe_is5enh )
-    {
+    else if( nwipe_options.method == &nwipe_is5enh )
         focus = 9;
-    }
-    if( nwipe_options.method == &nwipe_bruce7 )
-    {
+    else if( nwipe_options.method == &nwipe_bruce7 )
         focus = 10;
-    }
-    if( nwipe_options.method == &nwipe_bmb )
-    {
+    else if( nwipe_options.method == &nwipe_bmb )
         focus = 11;
+    /* If any of the secure erase methods are selected, focus the submenu item */
+    else if( nwipe_options.method == &nwipe_secure_erase || nwipe_options.method == &nwipe_secure_erase_prng_verify
+             || nwipe_options.method == &nwipe_sanitize_crypto_erase )
+    {
+        focus = 12;
     }
 
     do
@@ -2996,10 +2970,9 @@ void nwipe_gui_method( void )
 
         nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
 
-        /* Initialize the working row. */
         yy = 2;
 
-        /* Print the options. */
+        /* Print the standard options (0-11) */
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_zero ) );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_one ) );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_ops2 ) );
@@ -3012,6 +2985,11 @@ void nwipe_gui_method( void )
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_is5enh ) );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_bruce7 ) );
         mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_bmb ) );
+
+        /* Print the Submenu Entry (Index 12) */
+        /* Note: Using a manual label here to indicate it's a menu */
+        mvwprintw( main_window, yy++, tab1, "  Secure Erase / Sanitize >" );
+
         mvwprintw( main_window, yy++, tab1, "                                             " );
 
         /* Print the cursor. */
@@ -3019,10 +2997,9 @@ void nwipe_gui_method( void )
 
         switch( focus )
         {
+            /* Cases 0-11 remain exactly as they were in your original code */
             case 0:
-
                 mvwprintw( main_window, 2, tab2, "Security Level: high (1 pass)" );
-
                 mvwprintw( main_window, 4, tab2, "This method fills the device with zeros.          " );
                 mvwprintw( main_window, 5, tab2, "                                                  " );
                 mvwprintw( main_window, 6, tab2, "There is no publicly available evidence that      " );
@@ -3031,11 +3008,8 @@ void nwipe_gui_method( void )
                 mvwprintw( main_window, 9, tab2, "however a wipe that includes a PRNG may be        " );
                 mvwprintw( main_window, 10, tab2, "preferable.                                       " );
                 break;
-
             case 1:
-
                 mvwprintw( main_window, 2, tab2, "Security Level: high (1 pass)" );
-
                 mvwprintw( main_window, 4, tab2, "This method fills the device with ones.           " );
                 mvwprintw( main_window, 5, tab2, "                                                  " );
                 mvwprintw( main_window, 6, tab2, "This method might be used when wiping a solid     " );
@@ -3044,11 +3018,8 @@ void nwipe_gui_method( void )
                 mvwprintw( main_window, 9, tab2, "erase features. Alternatively PRNG may be         " );
                 mvwprintw( main_window, 10, tab2, "preferable.                                       " );
                 break;
-
             case 2:
-
                 mvwprintw( main_window, 2, tab2, "Security Level: higher (8 passes)" );
-
                 mvwprintw( main_window, 4, tab2, "The Royal Canadian Mounted Police Technical       " );
                 mvwprintw( main_window, 5, tab2, "Security Standard for Information Technology.     " );
                 mvwprintw( main_window, 6, tab2, "Appendix OPS-II: Media Sanitization.              " );
@@ -3057,11 +3028,8 @@ void nwipe_gui_method( void )
                 mvwprintw( main_window, 9, tab2, "section A of the standard, uses a pattern that is " );
                 mvwprintw( main_window, 10, tab2, "one random byte and that is changed each round.   " );
                 break;
-
             case 3:
-
                 mvwprintw( main_window, 2, tab2, "Security Level: higher (3 passes)" );
-
                 mvwprintw( main_window, 4, tab2, "The US Department of Defense 5220.22-M short wipe." );
                 mvwprintw( main_window, 5, tab2, "This method is composed of passes 1, 2 & 7 from   " );
                 mvwprintw( main_window, 6, tab2, "the standard DoD 5220.22-M wipe.                  " );
@@ -3070,11 +3038,8 @@ void nwipe_gui_method( void )
                 mvwprintw( main_window, 9, tab2, "Pass 2: The bitwise complement of pass 1.         " );
                 mvwprintw( main_window, 10, tab2, "Pass 3: A random number generated data stream.    " );
                 break;
-
             case 4:
-
                 mvwprintw( main_window, 2, tab2, "Security Level: higher (7 passes)" );
-
                 mvwprintw( main_window, 3, tab2, "The American Department of Defense 5220.22-M      " );
                 mvwprintw( main_window, 4, tab2, "standard wipe.                                    " );
                 mvwprintw( main_window, 5, tab2, "                                                  " );
@@ -3086,22 +3051,16 @@ void nwipe_gui_method( void )
                 mvwprintw( main_window, 11, tab2, "Pass 6: The bitwise complement of pass 5.         " );
                 mvwprintw( main_window, 12, tab2, "Pass 7: A random number generated data stream.    " );
                 break;
-
             case 5:
-
                 mvwprintw( main_window, 2, tab2, "Security Level: Paranoid ! (35 passes)            " );
                 mvwprintw( main_window, 3, tab2, "Don't waste your time with this on a modern drive!" );
-
                 mvwprintw( main_window, 5, tab2, "This is the method described by Peter Gutmann in  " );
                 mvwprintw( main_window, 6, tab2, "the paper entitled \"Secure Deletion of Data from " );
                 mvwprintw( main_window, 7, tab2, "Magnetic and Solid-State Memory\", however not    " );
                 mvwprintw( main_window, 8, tab2, "relevant in regards to modern hard disk drives.   " );
                 break;
-
             case 6:
-
                 mvwprintw( main_window, 2, tab2, "Security Level: Depends on Rounds" );
-
                 mvwprintw( main_window, 4, tab2, "This method fills the device with a stream from   " );
                 mvwprintw( main_window, 5, tab2, "the PRNG. It is probably the best method to use   " );
                 mvwprintw( main_window, 6, tab2, "on modern hard disk drives due to variation in    " );
@@ -3111,29 +3070,18 @@ void nwipe_gui_method( void )
                 mvwprintw( main_window, 10, tab2, "round and an increasingly higher security level   " );
                 mvwprintw( main_window, 11, tab2, "as rounds are increased.                          " );
                 break;
-
             case 7:
-
                 mvwprintw( main_window, 2, tab2, "Security Level: Not applicable" );
-
                 mvwprintw( main_window, 4, tab2, "This method only reads the device and checks      " );
                 mvwprintw( main_window, 5, tab2, "that it is all zeros (0x00).                      " );
-
                 break;
-
             case 8:
-
                 mvwprintw( main_window, 2, tab2, "Security Level: Not applicable" );
-
                 mvwprintw( main_window, 4, tab2, "This method only reads the device and checks      " );
                 mvwprintw( main_window, 5, tab2, "that it is all ones (0xFF).                       " );
-
                 break;
-
             case 9:
-
                 mvwprintw( main_window, 2, tab2, "Security Level: higher (3 passes)" );
-
                 mvwprintw( main_window, 4, tab2, "U.K. HMG IA/IS 5 (Infosec Standard 5): Secure     " );
                 mvwprintw( main_window, 5, tab2, "Sanitisation of Protectively Marked Information   " );
                 mvwprintw( main_window, 6, tab2, "or Sensitive Information.                         " );
@@ -3144,9 +3092,7 @@ void nwipe_gui_method( void )
                 mvwprintw( main_window, 11, tab2, "Pass 4 : Last Pass Verification of PRNG stream    " );
                 break;
             case 10:
-
                 mvwprintw( main_window, 2, tab2, "Security Level: very high (7 passes)" );
-
                 mvwprintw( main_window, 4, tab2, "Bruce Schneier 7-Pass Wiping Method:              " );
                 mvwprintw( main_window, 5, tab2, "A secure erasure technique developed by the       " );
                 mvwprintw( main_window, 6, tab2, "renowned cryptographer Bruce Schneier.            " );
@@ -3157,9 +3103,7 @@ void nwipe_gui_method( void )
                 mvwprintw( main_window, 11, tab2, "generated random data to maximize security.       " );
                 break;
             case 11:
-
                 mvwprintw( main_window, 2, tab2, "Security Level: very high (6 passes)" );
-
                 mvwprintw( main_window, 4, tab2, "BMB21-2019 Chinese State Secrets Bureau standard  " );
                 mvwprintw( main_window, 5, tab2, "Technical Requirement for Data Sanitization of    " );
                 mvwprintw( main_window, 6, tab2, "Storage Media Involving State Secrets.            " );
@@ -3172,111 +3116,300 @@ void nwipe_gui_method( void )
                 mvwprintw( main_window, 13, tab2, "Pass 6 : Ones (0xFF).                             " );
                 break;
 
-        } /* switch */
+            /* NEW GROUP DESCRIPTION */
+            case 12:
+                mvwprintw( main_window, 2, tab2, "Security Level: Firmware Dependent" );
+                mvwprintw( main_window, 4, tab2, "Contains methods using the drives internal        " );
+                mvwprintw( main_window, 5, tab2, "firmware commands to sanitize data.               " );
+                mvwprintw( main_window, 6, tab2, "                                                  " );
+                mvwprintw( main_window, 7, tab2, "Select this option to choose between:             " );
+                mvwprintw( main_window, 8, tab2, " - ATA/NVMe Secure Erase                          " );
+                mvwprintw( main_window, 9, tab2, " - Secure Erase + PRNG verification               " );
+                mvwprintw( main_window, 10, tab2, " - Sanitize Crypto Erase                         " );
+                mvwprintw( main_window, 11, tab2, "                                                  " );
+                mvwprintw( main_window, 12, tab2, "Press ENTER to view these options.                " );
+                break;
+        }
 
         /* Add a border. */
         box( main_window, 0, 0 );
-
-        /* Add a title. */
         nwipe_gui_title( main_window, " Wipe Method " );
-
-        /* Refresh the window. */
         wrefresh( main_window );
 
-        /* Wait 250ms for input from getch, if nothing getch will then continue,
-         * This is necessary so that the while loop can be exited by the
-         * terminate_signal e.g.. the user pressing control-c to exit.
-         * Do not change this value, a higher value means the keys become
-         * sluggish, any slower and more time is spent unnecessarily looping
-         * which wastes CPU cycles.
-         */
-        timeout( 250 ); /* block getch() for 250ms */
-        keystroke = getch(); /* Get a keystroke. */
-        timeout( -1 ); /* Switch back to blocking mode */
+        timeout( 250 );
+        keystroke = getch();
+        timeout( -1 );
 
         switch( keystroke )
         {
             case KEY_DOWN:
             case 'j':
             case 'J':
-
                 if( focus < count - 1 )
-                {
-                    focus += 1;
-                }
+                    focus++;
                 break;
 
             case KEY_UP:
             case 'k':
             case 'K':
-
                 if( focus > 0 )
-                {
-                    focus -= 1;
-                }
+                    focus--;
                 break;
 
             case KEY_BACKSPACE:
             case KEY_BREAK:
-
+            case KEY_LEFT:
                 return;
 
-        } /* switch */
+            /* Handle selection */
+            case KEY_ENTER:
+            case ' ':
+            case 10:
+            case KEY_RIGHT:
+                if( focus == 12 )
+                {
+                    /* Enter Submenu */
+                    submenu_result = nwipe_gui_method_secure_erase_submenu();
 
-    } while( keystroke != KEY_ENTER && keystroke != ' ' && keystroke != 10 && terminate_signal != 1 );
+                    /* If user selected something in submenu (returned 1), we return
+                       to the main options menu immediately.
+                       If they cancelled (returned 0), we stay in this loop. */
+                    if( submenu_result == 1 )
+                    {
+                        return;
+                    }
+                    /* If 0, loop continues, screen redraws */
+                }
+                else
+                {
+                    /* Standard selection for items 0-11 */
+                    /* Break loop to apply selection below */
+                    goto apply_selection;
+                }
+                break;
+        }
 
+    } while( terminate_signal != 1 );
+
+apply_selection:
     switch( focus )
     {
         case 0:
             nwipe_options.method = &nwipe_zero;
             break;
-
         case 1:
             nwipe_options.method = &nwipe_one;
             break;
-
         case 2:
             nwipe_options.method = &nwipe_ops2;
             break;
-
         case 3:
             nwipe_options.method = &nwipe_dodshort;
             break;
-
         case 4:
             nwipe_options.method = &nwipe_dod522022m;
             break;
-
         case 5:
             nwipe_options.method = &nwipe_gutmann;
             break;
-
         case 6:
             nwipe_options.method = &nwipe_random;
             break;
-
         case 7:
             nwipe_options.method = &nwipe_verify_zero;
             break;
-
         case 8:
             nwipe_options.method = &nwipe_verify_one;
             break;
-
         case 9:
             nwipe_options.method = &nwipe_is5enh;
             break;
-
         case 10:
             nwipe_options.method = &nwipe_bruce7;
             break;
-
         case 11:
             nwipe_options.method = &nwipe_bmb;
             break;
+            /* Case 12 is handled inside the loop via submenu */
     }
 
 } /* nwipe_gui_method */
+
+/* Submenu for Secure Erase methods */
+int nwipe_gui_method_secure_erase_submenu( void )
+{
+    /**
+     * Allows the user to select specific Secure Erase / Sanitize methods.
+     * Returns 1 if a selection was made (Enter), 0 if user went back (Backspace).
+     */
+
+    extern int terminate_signal;
+    const int count = 5;
+    const int tab1 = 2;
+    const int tab2 = 44;
+    int focus = 0;
+    int yy;
+    int keystroke;
+
+    /* Determine initial focus based on current global selection */
+    if( nwipe_options.method == &nwipe_secure_erase )
+    {
+        focus = 0;
+    }
+    else if( nwipe_options.method == &nwipe_secure_erase_prng_verify )
+    {
+        focus = 1;
+    }
+    else if( nwipe_options.method == &nwipe_sanitize_crypto_erase )
+    {
+        focus = 2;
+    }
+    else if( nwipe_options.method == &nwipe_sanitize_block_erase )
+    {
+        focus = 3;
+    }
+    else if( nwipe_options.method == &nwipe_sanitize_overwrite )
+    {
+        focus = 4;
+    }
+    else
+    {
+        focus = 0; /* Default to first if coming from a non-secure method */
+    }
+
+    do
+    {
+        /* Clear the main window. */
+        werase( main_window );
+
+        /* We reuse the resize logic, though strictly this title belongs to the parent menu,
+           we can override the title later */
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, " Select Secure Erase Type " );
+
+        /* Overwrite title specific to submenu */
+        nwipe_gui_title( main_window, " Secure Erase Methods " );
+
+        yy = 2;
+
+        /* Print the options */
+        mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_secure_erase ) );
+        mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_secure_erase_prng_verify ) );
+        mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_sanitize_crypto_erase ) );
+        mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_sanitize_block_erase ) );
+        mvwprintw( main_window, yy++, tab1, "  %s", nwipe_method_label( &nwipe_sanitize_overwrite ) );
+        mvwprintw( main_window, yy++, tab1, "                                             " );
+
+        /* Print the cursor. */
+        mvwaddch( main_window, 2 + focus, tab1, ACS_RARROW );
+
+        /* Descriptions (Moved from original function) */
+        switch( focus )
+        {
+            case 0: /* Originally Case 12 */
+                mvwprintw( main_window, 2, tab2, "Security Level: device internal" );
+                mvwprintw( main_window, 4, tab2, "This method uses the drive's internal secure      " );
+                mvwprintw( main_window, 5, tab2, "erase capability (ATA/NVMe) where available and   " );
+                mvwprintw( main_window, 6, tab2, "then performs a full verification pass that       " );
+                mvwprintw( main_window, 7, tab2, "checks the device reads back as all zeros.        " );
+                mvwprintw( main_window, 8, tab2, "                                                  " );
+                mvwprintw( main_window, 9, tab2, "On unsupported bus types this method will fail    " );
+                mvwprintw( main_window, 10, tab2, "early and report that Secure Erase is not         " );
+                mvwprintw( main_window, 11, tab2, "available for the selected device.                " );
+                break;
+
+            case 1: /* Originally Case 13 */
+                mvwprintw( main_window, 2, tab2, "Security Level: device internal (enhanced)" );
+                mvwprintw( main_window, 4, tab2, "This method uses the drive's internal secure      " );
+                mvwprintw( main_window, 5, tab2, "erase capability (ATA/NVMe) where available and   " );
+                mvwprintw( main_window, 6, tab2, "then performs a full prng pass pass and blanking  " );
+                mvwprintw( main_window, 7, tab2, "pass , checks the device reads back as all zeros. " );
+                mvwprintw( main_window, 8, tab2, "                                                  " );
+                mvwprintw( main_window, 9, tab2, "On unsupported bus types this method will fail    " );
+                mvwprintw( main_window, 10, tab2, "early and report that Secure Erase is not         " );
+                mvwprintw( main_window, 11, tab2, "available for the selected device.                " );
+                break;
+
+            case 2: /* Originally Case 14 */
+                mvwprintw( main_window, 2, tab2, "Security Level: device internal (sanitize crypto erase)" );
+                mvwprintw( main_window, 4, tab2, "This method triggers the drive's Sanitize crypto  " );
+                mvwprintw( main_window, 5, tab2, "erase/scramble feature (ATA/SCSI/NVMe) where      " );
+                mvwprintw( main_window, 6, tab2, "supported. It typically regenerates internal     " );
+                mvwprintw( main_window, 7, tab2, "encryption keys, making prior data unreadable.   " );
+                mvwprintw( main_window, 8, tab2, "                                                  " );
+                mvwprintw( main_window, 9, tab2, "Unlike Secure Erase+Verify, this does NOT check  " );
+                mvwprintw( main_window, 10, tab2, "for zeroes afterwards (some drives read back      " );
+                mvwprintw( main_window, 11, tab2, "random data after key regeneration).             " );
+                break;
+            case 3:
+                mvwprintw( main_window, 2, tab2, "Security Level: device internal (sanitize block erase)" );
+                mvwprintw( main_window, 4, tab2, "Triggers Sanitize block erase (ATA/SCSI/NVMe)     " );
+                mvwprintw( main_window, 5, tab2, "where supported. Device internal media erase.     " );
+                mvwprintw( main_window, 6, tab2, "                                                  " );
+                mvwprintw( main_window, 7, tab2, "No read-back verify afterwards.                   " );
+                break;
+
+            case 4:
+                mvwprintw( main_window, 2, tab2, "Security Level: device internal (sanitize overwrite)" );
+                mvwprintw( main_window, 4, tab2, "Triggers Sanitize overwrite (ATA/SCSI/NVMe)       " );
+                mvwprintw( main_window, 5, tab2, "where supported. Internal overwrite pass.         " );
+                mvwprintw( main_window, 6, tab2, "                                                  " );
+                mvwprintw( main_window, 7, tab2, "No read-back verify afterwards.                   " );
+                break;
+        }
+
+        box( main_window, 0, 0 );
+        wrefresh( main_window );
+
+        timeout( 250 );
+        keystroke = getch();
+        timeout( -1 );
+
+        switch( keystroke )
+        {
+            case KEY_DOWN:
+            case 'j':
+            case 'J':
+                if( focus < count - 1 )
+                    focus++;
+                break;
+
+            case KEY_UP:
+            case 'k':
+            case 'K':
+                if( focus > 0 )
+                    focus--;
+                break;
+
+            case KEY_BACKSPACE:
+            case KEY_LEFT:
+            case 'h':
+                return 0; /* Return without selection */
+        }
+
+    } while( keystroke != KEY_ENTER && keystroke != ' ' && keystroke != 10 && terminate_signal != 1 );
+
+    /* Apply selection */
+    switch( focus )
+    {
+        case 0:
+            nwipe_options.method = &nwipe_secure_erase;
+            break;
+        case 1:
+            nwipe_options.method = &nwipe_secure_erase_prng_verify;
+            break;
+        case 2:
+            nwipe_options.method = &nwipe_sanitize_crypto_erase;
+            break;
+        case 3:
+            nwipe_options.method = &nwipe_sanitize_block_erase;
+            break;
+        case 4:
+            nwipe_options.method = &nwipe_sanitize_overwrite;
+            break;
+    }
+
+    return 1; /* Return indicating a selection was made */
+}
 
 void nwipe_gui_config( void )
 {
