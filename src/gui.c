@@ -759,6 +759,7 @@ void nwipe_gui_benchmark_prng( void )
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
+    extern nwipe_prng_t nwipe_opencl_philox_prng;
 
     extern int terminate_signal;
 
@@ -769,11 +770,12 @@ void nwipe_gui_benchmark_prng( void )
         &nwipe_add_lagg_fibonacci_prng,
         &nwipe_xoroshiro256_prng,
         &nwipe_aes_ctr_prng,
+        &nwipe_opencl_philox_prng,
     };
 
     const int prng_count = (int) ( sizeof( prngs ) / sizeof( prngs[0] ) );
 
-    nwipe_prng_bench_result_t results[8];
+    nwipe_prng_bench_result_t results[9];
     memset( results, 0, sizeof( results ) );
 
     /* Settings: keep it quick and comparable */
@@ -2054,12 +2056,14 @@ void nwipe_gui_prng( void )
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
+    extern nwipe_prng_t nwipe_opencl_philox_prng;
 
     extern int terminate_signal;
 
     /* The number of implemented PRNGs. */
     const int aes_ctr_available = has_aes_ni();
-    const int count = 6;
+    const int opencl_philox_available = nwipe_opencl_philox_prng_available();
+    const int count = 7;
 
     /* The first tabstop. */
     const int tab1 = 2;
@@ -2105,6 +2109,10 @@ void nwipe_gui_prng( void )
     {
         focus = 5;
     }
+    if( nwipe_options.prng == &nwipe_opencl_philox_prng )
+    {
+        focus = 6;
+    }
     do
     {
         /* Clear the main window. */
@@ -2129,6 +2137,14 @@ void nwipe_gui_prng( void )
         else
         {
             mvwprintw( main_window, yy++, tab1, "  %s (N/A)", nwipe_aes_ctr_prng.label );
+        }
+        if( opencl_philox_available )
+        {
+            mvwprintw( main_window, yy++, tab1, "  %s", nwipe_opencl_philox_prng.label );
+        }
+        else
+        {
+            mvwprintw( main_window, yy++, tab1, "  %s (N/A)", nwipe_opencl_philox_prng.label );
         }
         yy++;
 
@@ -2251,6 +2267,36 @@ void nwipe_gui_prng( void )
 
                 break;
             }
+            case 6:
+                if( opencl_philox_available )
+                {
+                    yy = 2;
+                    mvwprintw( main_window, yy++, tab2, "Counter-based Philox4x32 PRNG executed on a " );
+                    mvwprintw( main_window, yy++, tab2, "GPU through OpenCL. It is designed for very  " );
+                    mvwprintw( main_window, yy++, tab2, "high throughput and deterministic replay by  " );
+                    mvwprintw( main_window, yy++, tab2, "byte offset, which keeps nwipe verification  " );
+                    mvwprintw( main_window, yy++, tab2, "compatible with the existing PRNG pass model." );
+                    mvwprintw( main_window, yy++, tab2, "                                             " );
+                    mvwprintw( main_window, yy++, tab2, "Best suited to systems where GPU generation  " );
+                    mvwprintw( main_window, yy++, tab2, "plus host readback beats CPU PRNG throughput." );
+                    mvwprintw( main_window, yy++, tab2, "                                             " );
+                    mvwprintw( main_window, yy++, tab2, "Experimental backend. Benchmark before use.  " );
+                    mvwprintw( main_window, 14, tab1, "Fastest PRNG for your hardware? type o to find out" );
+                }
+                else
+                {
+                    yy = 2;
+                    wattron( main_window, A_DIM );
+                    mvwprintw( main_window, yy++, tab2, "OpenCL Philox4x32 is NOT available on this   " );
+                    mvwprintw( main_window, yy++, tab2, "system. It requires an OpenCL-enabled build  " );
+                    mvwprintw( main_window, yy++, tab2, "and a usable GPU device discovered at runtime." );
+                    mvwprintw( main_window, yy++, tab2, "                                             " );
+                    mvwprintw( main_window, yy++, tab2, "If OpenCL support is built and a GPU runtime " );
+                    mvwprintw( main_window, yy++, tab2, "is installed, this entry becomes selectable. " );
+                    wattroff( main_window, A_DIM );
+                    mvwprintw( main_window, 14, tab1, "Fastest PRNG for your hardware? type o to find out" );
+                }
+                break;
         }
 
         /* Add a border. */
@@ -2337,6 +2383,19 @@ void nwipe_gui_prng( void )
                     {
                         /* Visible but disabled: do not change selection and
                          * do not close the dialog. Give feedback only. */
+                        beep();
+                        selection_made = 0;
+                    }
+                }
+                else if( focus == 6 )
+                {
+                    if( opencl_philox_available )
+                    {
+                        nwipe_options.prng = &nwipe_opencl_philox_prng;
+                        selection_made = 1;
+                    }
+                    else
+                    {
                         beep();
                         selection_made = 0;
                     }

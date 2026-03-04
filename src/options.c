@@ -47,6 +47,7 @@ int nwipe_options_parse( int argc, char** argv )
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
+    extern nwipe_prng_t nwipe_opencl_philox_prng;
 
     extern config_t nwipe_cfg;
     config_setting_t* setting;
@@ -855,6 +856,22 @@ int nwipe_options_parse( int argc, char** argv )
                     break;
                 }
 
+                if( strcmp( optarg, "opencl_philox_prng" ) == 0 )
+                {
+                    if( nwipe_opencl_philox_prng_available() )
+                    {
+                        nwipe_options.prng = &nwipe_opencl_philox_prng;
+                    }
+                    else
+                    {
+                        fprintf( stderr,
+                                 "Error: opencl_philox_prng requires an OpenCL-enabled build and a usable GPU "
+                                 "device.\n" );
+                        exit( EINVAL );
+                    }
+                    break;
+                }
+
                 fprintf( stderr, "Error: Unknown prng '%s'.\n", optarg );
                 exit( EINVAL );
 
@@ -911,6 +928,7 @@ void nwipe_options_log( void )
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
+    extern nwipe_prng_t nwipe_opencl_philox_prng;
 
     /**
      *  Prints a manifest of options to the log.
@@ -973,6 +991,10 @@ void nwipe_options_log( void )
     else if( nwipe_options.prng == &nwipe_aes_ctr_prng )
     {
         nwipe_log( NWIPE_LOG_NOTICE, "  prng     = AES-CTR New Instructions (EXPERIMENTAL!)" );
+    }
+    else if( nwipe_options.prng == &nwipe_opencl_philox_prng )
+    {
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = OpenCL Philox4x32 GPU backend" );
     }
     else if( nwipe_options.prng == &nwipe_isaac )
     {
@@ -1069,10 +1091,14 @@ void display_help()
     puts( "  -P, --PDFreportpath=PATH Path to write PDF reports to. Default is \".\"" );
     puts( "                           If set to \"noPDF\" no PDF reports are written.\n" );
     puts( "  -p, --prng=METHOD        PRNG option "
-          "(mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng|xoroshiro256_prng|aes_ctr_prng)\n" );
+          "(mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng|xoroshiro256_prng|aes_ctr_prng|opencl_philox_prng)\n" );
     puts( "  --prng=auto              (default)" );
     puts( "      Automatically benchmark all available PRNGs at startup and" );
     puts( "      select the fastest one for the current hardware." );
+    puts( "" );
+    puts( "  --prng=opencl_philox_prng" );
+    puts( "      Experimental GPU-backed Philox4x32 PRNG via OpenCL." );
+    puts( "      Requires an OpenCL-enabled build and a usable GPU device." );
     puts( "" );
 
     puts( "  --prng=default" );
