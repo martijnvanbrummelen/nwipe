@@ -47,6 +47,7 @@
 #include "options.h"
 #include "pass.h"
 #include "logging.h"
+#include "round_size.h"
 #include <errno.h>
 #include <unistd.h>
 #include <sys/syscall.h> /* SYS_getrandom */
@@ -1343,186 +1344,27 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
 
 void calculate_round_size( nwipe_context_t* c )
 {
-    /* This is where the round size is calculated. round_size is used in the running percentage completion
-     * calculation. round size is calculated based on pass_size, pass_count, number of rounds, blanking
-     * on/off and verification All/Last/None
-     *
-     * To hopefully make this calculation more understandable, I have separated the calculations that apply to
-     * all methods and processed first then created a switch statement that contains method specific changes if any
-     */
+    nwipe_round_method_class_t method_class = NWIPE_ROUND_METHOD_DEFAULT;
+    uint64_t effective_pass_size = (uint64_t) c->pass_size;
 
-    /* Don't change the order of these values as the case statements use their index in the array, New methods
-     * don't need to be added to this array unless they have complicated calculations like Ops2 and IS5. If you do
-     * add a method, just add it to the bottom of the array_methods array and also to the bottom of the switch
-     * statement.
-     */
-    void* array_methods[] = { &nwipe_zero,
-                              &nwipe_ops2,
-                              &nwipe_dodshort,
-                              &nwipe_dod522022m,
-                              &nwipe_gutmann,
-                              &nwipe_random,
-                              &nwipe_is5enh,
-                              NULL };
-    int i;
-
-    /* This while loop allows us to effectively create a const that represents a method so we can use a case statement
-     * rather than if statements.
-     *
-     * Using a switch statement looks better than if statments as more methods may get added in the future expanding the
-     * list. The code could be condensed as some methods have identical adjustments, however as there are only a few
-     * methods I felt it was easier to understand as it is, however this could be changed if necessary.
-     */
-
-    /* Initialise, -1 = no additional calculation required */
-    int selected_method = -1;
-
-    i = 0;
-    while( array_methods[i] != NULL )
+    if( nwipe_options.method == &nwipe_ops2 )
     {
-        if( nwipe_options.method == array_methods[i] )
-        {
-            selected_method = i;
-        }
-        i++;
+        method_class = NWIPE_ROUND_METHOD_OPS2;
+    }
+    else if( nwipe_options.method == &nwipe_is5enh )
+    {
+        method_class = NWIPE_ROUND_METHOD_IS5ENH;
     }
 
-    /* On exit from the while loop the selected method either equals an index to a method
-     * or it equals -1 which means no extra calculations are required that are method specific
-     */
-
-    if( nwipe_options.verify == NWIPE_VERIFY_ALL )
-    {
-        /* We must read back all passes, so double the byte count. */
-        c->pass_size *= 2;
-    }
-
-    /* Tell the parent the number of rounds that will be run. */
     c->round_count = nwipe_options.rounds;
-
-    /* Set the initial number of bytes that will be written across all rounds.
-       c->pass_size includes write AND verification passes if 'verify_all' is selected
-       but does not include the final blanking pass or the verify_last option */
-    c->round_size = c->pass_size;
-
-    /* Multiple the round_size by the number of rounds (times) the user wants to wipe the drive with this method. */
-    c->round_size *= c->round_count;
-
-    /* Now increase size based on whether blanking is enabled and verification */
-    if( nwipe_options.noblank == 0 )
-    {
-        /* Blanking enabled so increase round size */
-        c->round_size += c->device_size;
-
-        if( nwipe_options.verify == NWIPE_VERIFY_LAST || nwipe_options.verify == NWIPE_VERIFY_ALL )
-        {
-            c->round_size += c->device_size;
-        }
-    }
-    else
-    {
-        /* Blanking not enabled, check for 'Verify_last', increase round size if enabled. */
-        if( nwipe_options.verify == NWIPE_VERIFY_LAST )
-        {
-            c->round_size += c->device_size;
-        }
-    }
-
-    /* Additional method specific round_size adjustments go in this switch statement */
-
-    switch( selected_method )
-    {
-        case 0:
-            /* NWIPE_ZERO - No additional calculation required
-             * ---------- */
-            break;
-
-        case 1:
-            /* NWIPE_OPS2
-             * ---------- */
-
-            /* Required for mandatory 9th and final random pass */
-            c->round_size += c->device_size;
-
-            /* Required for selectable 9th and final random verification */
-            if( nwipe_options.verify == NWIPE_VERIFY_ALL || nwipe_options.verify == NWIPE_VERIFY_LAST )
-            {
-                c->round_size += c->device_size;
-            }
-
-            /* As no final zero blanking pass is permitted by this standard reduce round size if it's selected */
-            if( nwipe_options.noblank == 0 )
-            {
-                /* Reduce for blanking pass */
-                c->round_size -= c->device_size;
-
-                /* Reduce for blanking pass verification */
-                if( nwipe_options.verify == NWIPE_VERIFY_ALL || nwipe_options.verify == NWIPE_VERIFY_LAST )
-                {
-                    c->round_size -= c->device_size;
-                }
-            }
-            else
-            {
-                if( nwipe_options.verify == NWIPE_VERIFY_LAST )
-                {
-                    /* If blanking off & verification on reduce round size */
-                    c->round_size -= c->device_size;
-                }
-            }
-
-            break;
-
-        case 2:
-            /* DoD Short - No additional calculation required
-             * --------- */
-
-            break;
-
-        case 3:
-            /* DOD 522022m - No additional calculation required
-             * ----------- */
-
-            break;
-
-        case 4:
-            /* GutMann - No additional calculation required
-             * ------- */
-
-            break;
-
-        case 5:
-            /* PRNG (random) - No additional calculation required
-             * ------------- */
-
-            break;
-
-        case 6:
-            /* NWIPE_IS5ENH
-             * ------------ */
-
-            /* This method ALWAYS verifies the 3rd pass so increase by device size,
-             * but NOT if VERIFY_ALL has been selected, but first .. */
-
-            /* Reduce as Verify_Last already included previously if blanking was off */
-            if( nwipe_options.verify == NWIPE_VERIFY_LAST && nwipe_options.noblank == 1 )
-            {
-                c->round_size -= c->device_size;
-            }
-
-            /* Adjusts for verify on every third pass multiplied by number of rounds */
-            if( nwipe_options.verify != NWIPE_VERIFY_ALL )
-            {
-                c->round_size += ( c->device_size * c->round_count );
-            }
-
-            break;
-
-        case -1:
-            /* Method not listed so don't do any extra calculations
-             * ---------------------------------------------------- */
-            break;
-    }
+    c->round_size = (u64) nwipe_calculate_round_size_bytes( (uint64_t) c->pass_size,
+                                                            (uint64_t) c->device_size,
+                                                            c->round_count,
+                                                            nwipe_options.noblank,
+                                                            (nwipe_round_verify_t) nwipe_options.verify,
+                                                            method_class,
+                                                            &effective_pass_size );
+    c->pass_size = (u64) effective_pass_size;
 }
 
 /* eof */
