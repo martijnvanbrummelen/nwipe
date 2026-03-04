@@ -28,6 +28,7 @@
 #include "alfg/add_lagg_fibonacci_prng.h"  //Lagged Fibonacci generator prototype
 #include "xor/xoroshiro256_prng.h"  //XORoshiro-256 prototype
 #include "aes/aes_ctr_prng.h"  // AES-NI prototype
+#include "opencl/opencl_philox_prng.h"  // OpenCL Philox prototype
 
 nwipe_prng_t nwipe_twister = { "Mersenne Twister", nwipe_twister_init, nwipe_twister_read };
 
@@ -44,6 +45,11 @@ nwipe_prng_t nwipe_xoroshiro256_prng = { "XORoshiro-256", nwipe_xoroshiro256_prn
 /* AES-CTR-NI PRNG Structure */
 nwipe_prng_t nwipe_aes_ctr_prng = { "AES-CTR (Kernel)", nwipe_aes_ctr_prng_init, nwipe_aes_ctr_prng_read };
 
+/* OpenCL Philox PRNG Structure */
+nwipe_prng_t nwipe_opencl_philox_prng = { "OpenCL Philox4x32",
+                                          nwipe_opencl_philox_prng_init,
+                                          nwipe_opencl_philox_prng_read };
+
 static const nwipe_prng_t* all_prngs[] = {
     &nwipe_twister,
     &nwipe_isaac,
@@ -51,6 +57,7 @@ static const nwipe_prng_t* all_prngs[] = {
     &nwipe_add_lagg_fibonacci_prng,
     &nwipe_xoroshiro256_prng,
     &nwipe_aes_ctr_prng,
+    &nwipe_opencl_philox_prng,
 };
 
 /* Print given number of bytes from unsigned integer number to a byte stream buffer starting with low-endian. */

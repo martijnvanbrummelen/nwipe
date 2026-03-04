@@ -16,6 +16,47 @@ PKG_PROG_PKG_CONFIG
 
 # Checks for libraries.
 
+AC_ARG_ENABLE(
+	[opencl],
+	[AS_HELP_STRING([--disable-opencl], [disable optional OpenCL GPU PRNG backend])],
+	[],
+	[enable_opencl=auto]
+)
+
+OPENCL_CFLAGS=""
+OPENCL_LIBS=""
+have_opencl=no
+
+if test "x$enable_opencl" != "xno"; then
+	PKG_CHECK_MODULES(
+		[OPENCL],
+		[OpenCL],
+		[have_opencl=yes],
+		[
+			opencl_header_found=no
+			AC_CHECK_HEADERS([CL/cl.h OpenCL/opencl.h], [opencl_header_found=yes], [])
+			if test "x$opencl_header_found" = "xyes"; then
+				AC_CHECK_LIB([OpenCL], [clGetPlatformIDs], [
+					OPENCL_LIBS="-lOpenCL"
+					have_opencl=yes
+				], [])
+			fi
+		]
+	)
+
+	if test "x$have_opencl" = "xyes"; then
+		AC_DEFINE([HAVE_OPENCL], [1], [Build with OpenCL GPU PRNG support])
+	else
+		if test "x$enable_opencl" = "xyes"; then
+			AC_MSG_ERROR([OpenCL support requested but headers/runtime were not found])
+		fi
+	fi
+fi
+
+AC_SUBST([OPENCL_CFLAGS])
+AC_SUBST([OPENCL_LIBS])
+AC_CHECK_HEADERS([CL/cl.h OpenCL/opencl.h])
+
 PKG_CHECK_MODULES(
 	[PANEL],
 	[panel],
