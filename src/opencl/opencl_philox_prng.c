@@ -41,7 +41,8 @@ typedef struct nwipe_opencl_philox_state_s
 
 #ifdef HAVE_OPENCL
 static const char* nwipe_opencl_philox_kernel_source =
-    "__kernel void philox4x32_10(__global uchar *out, ulong block_base, uint key0, uint key1, uint nonce0, uint nonce1)\n"
+    "__kernel void philox4x32_10(__global uchar *out, ulong block_base, uint key0, uint key1, uint nonce0, uint "
+    "nonce1)\n"
     "{\n"
     "    const uint M0 = 0xD2511F53U;\n"
     "    const uint M1 = 0xCD9E8D57U;\n"
