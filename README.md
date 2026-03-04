@@ -26,9 +26,9 @@ It was created to run the DBAN erase engine on any Linux distribution, with bett
 
 ---
 
-## New in v0.40 (upcoming)
+## New in v0.40
 
-The upcoming **v0.40** release introduces several major improvements:
+The **v0.40** release introduces several major improvements:
 
 - **AES-256-CTR PRNG**  
   High–performance, cryptographically secure stream generator (AES-NI accelerated where available).
