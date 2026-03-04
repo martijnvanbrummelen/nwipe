@@ -46,7 +46,9 @@ int nwipe_options_parse( int argc, char** argv )
     extern nwipe_prng_t nwipe_isaac64;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
+    extern nwipe_prng_t nwipe_splitmix64_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
+    extern nwipe_prng_t nwipe_chacha20_prng;
 
     extern config_t nwipe_cfg;
     config_setting_t* setting;
@@ -859,6 +861,12 @@ int nwipe_options_parse( int argc, char** argv )
                     break;
                 }
 
+                if( strcmp( optarg, "splitmix64" ) == 0 )
+                {
+                    nwipe_options.prng = &nwipe_splitmix64_prng;
+                    break;
+                }
+
                 if( strcmp( optarg, "aes_ctr_prng" ) == 0 )
                 {
                     if( has_aes_ni() )
@@ -872,6 +880,12 @@ int nwipe_options_parse( int argc, char** argv )
                                  "but your CPU does not support AES-NI.\n" );
                         exit( EINVAL );
                     }
+                    break;
+                }
+
+                if( strcmp( optarg, "chacha20" ) == 0 )
+                {
+                    nwipe_options.prng = &nwipe_chacha20_prng;
                     break;
                 }
 
@@ -930,7 +944,9 @@ void nwipe_options_log( void )
     extern nwipe_prng_t nwipe_isaac64;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
+    extern nwipe_prng_t nwipe_splitmix64_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
+    extern nwipe_prng_t nwipe_chacha20_prng;
 
     /**
      *  Prints a manifest of options to the log.
@@ -990,9 +1006,13 @@ void nwipe_options_log( void )
     {
         nwipe_log( NWIPE_LOG_NOTICE, "  prng     = XORoshiro-256" );
     }
+    else if( nwipe_options.prng == &nwipe_splitmix64_prng )
+    {
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = SplitMix64" );
+    }
     else if( nwipe_options.prng == &nwipe_aes_ctr_prng )
     {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = AES-CTR New Instructions (EXPERIMENTAL!)" );
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = AES-CTR (CSPRNG)" );
     }
     else if( nwipe_options.prng == &nwipe_isaac )
     {
@@ -1002,9 +1022,13 @@ void nwipe_options_log( void )
     {
         nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Isaac64" );
     }
+    else if( nwipe_options.prng == &nwipe_chacha20_prng )
+    {
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = ChaCha20 (CSPRNG)" );
+    }
     else
     {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Undefined" );
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Unknown" );
     }
 
     nwipe_log( NWIPE_LOG_NOTICE, "  method   = %s", nwipe_method_label( nwipe_options.method ) );
@@ -1089,7 +1113,8 @@ void display_help()
     puts( "  -P, --PDFreportpath=PATH Path to write PDF reports to. Default is \".\"" );
     puts( "                           If set to \"noPDF\" no PDF reports are written.\n" );
     puts( "  -p, --prng=METHOD        PRNG option "
-          "(mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng|xoroshiro256_prng|aes_ctr_prng)\n" );
+          "(mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng|xoroshiro256_prng|splitmix64|aes_ctr_prng|"
+          "chacha20)\n" );
     puts( "  --prng=auto              (default)" );
     puts( "      Automatically benchmark all available PRNGs at startup and" );
     puts( "      select the fastest one for the current hardware." );

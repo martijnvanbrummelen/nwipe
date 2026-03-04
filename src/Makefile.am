@@ -6,5 +6,55 @@ AM_LDFLAGS =
 # this lists the binaries to produce, the (non-PHONY, binary) targets in
 # the previous manual Makefile
 bin_PROGRAMS = nwipe
-nwipe_SOURCES = context.h logging.h options.h prng.h version.h temperature.h nwipe.c gui.c method.h pass.c device.c gui.h isaac_rand/isaac_standard.h isaac_rand/isaac_rand.h isaac_rand/isaac_rand.c isaac_rand/isaac64.h isaac_rand/isaac64.c mt19937ar-cok/mt19937ar-cok.c nwipe.h mt19937ar-cok/mt19937ar-cok.h alfg/add_lagg_fibonacci_prng.h alfg/add_lagg_fibonacci_prng.c xor/xoroshiro256_prng.h xor/xoroshiro256_prng.c aes/aes_ctr_prng.h aes/aes_ctr_prng.cpp pass.h device.h logging.c method.c options.c prng.c version.c temperature.c PDFGen/pdfgen.h PDFGen/pdfgen.c create_pdf.c create_pdf.h create_single_disc_pdf.c create_system_multi_disc_pdf.c embedded_images/shred_db.jpg.c embedded_images/shred_db.jpg.h  embedded_images/tick_erased.jpg.c embedded_images/tick_erased.jpg.h embedded_images/redcross.c embedded_images/redcross.h hpa_dco.h hpa_dco.c miscellaneous.h miscellaneous.c embedded_images/nwipe_exclamation.jpg.h embedded_images/nwipe_exclamation.jpg.c conf.h conf.c customers.h customers.c hddtemp_scsi/hddtemp.h hddtemp_scsi/scsi.h hddtemp_scsi/scsicmds.h hddtemp_scsi/get_scsi_temp.c hddtemp_scsi/scsi.c hddtemp_scsi/scsicmds.c cpu_features.h cpu_features.c
+
+# Core sources
+NWIPE_CORE = \
+    context.h \
+    logging.c logging.h \
+    options.c options.h \
+    prng.c prng.h \
+    version.c version.h \
+    temperature.c temperature.h \
+    nwipe.c nwipe.h \
+    gui.c gui.h \
+    method.c method.h \
+    pass.c pass.h \
+    device.c device.h \
+    hpa_dco.c hpa_dco.h \
+    miscellaneous.c miscellaneous.h \
+    conf.c conf.h \
+    customers.c customers.h \
+    cpu_features.c cpu_features.h
+
+# PRNG implementations
+NWIPE_PRNG = \
+    isaac_rand/isaac_standard.h \
+    isaac_rand/isaac_rand.c isaac_rand/isaac_rand.h \
+    isaac_rand/isaac64.c isaac_rand/isaac64.h \
+    mt19937ar-cok/mt19937ar-cok.c mt19937ar-cok/mt19937ar-cok.h \
+    alfg/add_lagg_fibonacci_prng.c alfg/add_lagg_fibonacci_prng.h \
+    xor/xoroshiro256_prng.c xor/xoroshiro256_prng.h \
+    splitmix64/splitmix64.c splitmix64/splitmix64.h \
+    aes/aes_ctr_prng.cpp aes/aes_ctr_prng.h \
+    chacha20/chacha20.c chacha20/chacha20.h \
+    chacha20/chacha20_test.c chacha20/chacha20_test_vectors.c chacha20/chacha20_test.h
+
+# PDF generation and reporting
+NWIPE_PDF = \
+    PDFGen/pdfgen.c PDFGen/pdfgen.h \
+    create_pdf.c create_pdf.h \
+    create_single_disc_pdf.c \
+    create_system_multi_disc_pdf.c \
+    embedded_images/shred_db.jpg.c embedded_images/shred_db.jpg.h \
+    embedded_images/tick_erased.jpg.c embedded_images/tick_erased.jpg.h \
+    embedded_images/redcross.c embedded_images/redcross.h \
+    embedded_images/nwipe_exclamation.jpg.c embedded_images/nwipe_exclamation.jpg.h
+
+# HDD temperature (SCSI)
+NWIPE_HDDTEMP = \
+    hddtemp_scsi/hddtemp.h hddtemp_scsi/scsi.h hddtemp_scsi/scsicmds.h \
+    hddtemp_scsi/get_scsi_temp.c hddtemp_scsi/scsi.c hddtemp_scsi/scsicmds.c
+
+# Combine all sources
+nwipe_SOURCES = $(NWIPE_CORE) $(NWIPE_PRNG) $(NWIPE_PDF) $(NWIPE_HDDTEMP)
 nwipe_LDADD = $(PARTED_LIBS) $(LIBCONFIG)
