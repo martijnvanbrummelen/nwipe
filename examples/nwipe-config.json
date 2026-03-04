@@ -1,0 +1,43 @@
+{
+  "config_schema": "org.nwipe.config.v1",
+  "organization_details": {
+    "business_name": "ACME IT Service GmbH",
+    "business_address": "Hauptstrasse 1\n12345 Musterstadt",
+    "contact_name": "Hans Muster",
+    "contact_phone": "+49 123 4567890",
+    "op_tech_name": "Fabian Druschke"
+  },
+  "selected_customer": {
+    "customer_name": "ACME Finance",
+    "customer_address": "Datacenter Avenue 12\n10001 New York",
+    "contact_name": "Shane Gibson",
+    "contact_phone": "+1 555 0100"
+  },
+  "pdf_certificate": {
+    "pdf_enable": true,
+    "pdf_preview": false,
+    "pdf_tag": true,
+    "user_defined_tag": "rack-22 / batch-17"
+  },
+  "reporting": {
+    "report_directory": "./reports",
+    "json": true
+  },
+  "options": {
+    "autonuke": true,
+    "nogui": true,
+    "method": "zero",
+    "prng": "auto",
+    "rounds": 1,
+    "verify": "last",
+    "sync": 1000,
+    "io_mode": "auto",
+    "exclude": [
+      "/dev/sr0"
+    ]
+  },
+  "devices": [
+    "/dev/sda",
+    "/dev/nvme0n1"
+  ]
+}

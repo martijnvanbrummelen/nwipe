@@ -29,9 +29,59 @@
 #include "version.h"
 #include "conf.h"
 #include "cpu_features.h"
+#include "json_config.h"
 
 /* The global options struct. */
 nwipe_options_t nwipe_options;
+
+static void nwipe_copy_option_value( char* destination, size_t destination_size, const char* source )
+{
+    if( destination_size == 0 )
+    {
+        return;
+    }
+
+    strncpy( destination, source, destination_size - 1 );
+    destination[destination_size - 1] = '\0';
+}
+
+static const char* nwipe_options_find_config_path( int argc, char** argv )
+{
+    int idx;
+
+    for( idx = 1; idx < argc; idx++ )
+    {
+        if( strcmp( argv[idx], "--config" ) == 0 )
+        {
+            if( idx + 1 < argc )
+            {
+                return argv[idx + 1];
+            }
+            return NULL;
+        }
+
+        if( strncmp( argv[idx], "--config=", 9 ) == 0 )
+        {
+            return argv[idx] + 9;
+        }
+
+        if( strcmp( argv[idx], "-C" ) == 0 )
+        {
+            if( idx + 1 < argc )
+            {
+                return argv[idx + 1];
+            }
+            return NULL;
+        }
+
+        if( strncmp( argv[idx], "-C", 2 ) == 0 && argv[idx][2] != '\0' )
+        {
+            return argv[idx] + 2;
+        }
+    }
+
+    return NULL;
+}
 
 int nwipe_options_parse( int argc, char** argv )
 {
@@ -59,7 +109,7 @@ int nwipe_options_parse( int argc, char** argv )
     int i;
 
     /* The list of acceptable short options. */
-    char nwipe_options_short[] = "Vvhl:P:m:p:qr:e:";
+    char nwipe_options_short[] = "Vvhl:P:m:p:qr:e:C:";
 
     /* Used when reading value fron nwipe.conf */
     const char* read_value = NULL;
@@ -82,6 +132,9 @@ int nwipe_options_parse( int argc, char** argv )
 
         /* Log file. Corresponds to the 'l' short option. */
         { "logfile", required_argument, 0, 'l' },
+
+        /* External machine-readable configuration file. */
+        { "config", required_argument, 0, 'C' },
 
         /* PDFreport path. Corresponds to the 'P' short option. */
         { "PDFreportpath", required_argument, 0, 'P' },
@@ -181,6 +234,9 @@ int nwipe_options_parse( int argc, char** argv )
     nwipe_options.verify = NWIPE_VERIFY_LAST;
     nwipe_options.io_mode = NWIPE_IO_MODE_AUTO; /* Default: auto-select I/O mode. */
     nwipe_options.PDFtag = 0;
+    nwipe_options.JSON_enable = 0;
+    nwipe_options.config_devices_count = 0;
+    memset( nwipe_options.config_file, '\0', sizeof( nwipe_options.config_file ) );
     memset( nwipe_options.logfile, '\0', sizeof( nwipe_options.logfile ) );
     memset( nwipe_options.PDFreportpath, '\0', sizeof( nwipe_options.PDFreportpath ) );
     strncpy( nwipe_options.PDFreportpath, ".", 2 );
@@ -291,6 +347,21 @@ int nwipe_options_parse( int argc, char** argv )
     for( i = 0; i < MAX_NUMBER_EXCLUDED_DRIVES; i++ )
     {
         nwipe_options.exclude[i][0] = 0;
+        nwipe_options.config_devices[i][0] = 0;
+    }
+
+    {
+        const char* config_path = nwipe_options_find_config_path( argc, argv );
+
+        if( config_path != NULL )
+        {
+            nwipe_copy_option_value( nwipe_options.config_file, sizeof( nwipe_options.config_file ), config_path );
+            if( nwipe_json_config_load_file( config_path ) != 0 )
+            {
+                fprintf( stderr, "Error: Failed to load config file '%s'.\n", config_path );
+                exit( EINVAL );
+            }
+        }
     }
 
     /* Parse command line options. */
@@ -531,14 +602,17 @@ int nwipe_options_parse( int argc, char** argv )
 
             case 'l': /* Log file option. */
 
-                nwipe_options.logfile[strlen( optarg )] = '\0';
-                strncpy( nwipe_options.logfile, optarg, sizeof( nwipe_options.logfile ) );
+                nwipe_copy_option_value( nwipe_options.logfile, sizeof( nwipe_options.logfile ), optarg );
+                break;
+
+            case 'C': /* External config file. Already applied during pre-scan. */
+
+                nwipe_copy_option_value( nwipe_options.config_file, sizeof( nwipe_options.config_file ), optarg );
                 break;
 
             case 'P': /* PDFreport path option. */
 
-                nwipe_options.PDFreportpath[strlen( optarg )] = '\0';
-                strncpy( nwipe_options.PDFreportpath, optarg, sizeof( nwipe_options.PDFreportpath ) );
+                nwipe_copy_option_value( nwipe_options.PDFreportpath, sizeof( nwipe_options.PDFreportpath ), optarg );
 
                 /* Command line options will override what's in nwipe.conf */
                 if( strcmp( nwipe_options.PDFreportpath, "noPDF" ) == 0 )
@@ -821,6 +895,12 @@ void nwipe_options_log( void )
     nwipe_log( NWIPE_LOG_NOTICE, "  quiet    = %i", nwipe_options.quiet );
     nwipe_log( NWIPE_LOG_NOTICE, "  rounds   = %i", nwipe_options.rounds );
     nwipe_log( NWIPE_LOG_NOTICE, "  sync     = %i", nwipe_options.sync );
+    nwipe_log( NWIPE_LOG_NOTICE, "  json     = %i", nwipe_options.JSON_enable );
+
+    if( nwipe_options.config_file[0] != '\0' )
+    {
+        nwipe_log( NWIPE_LOG_NOTICE, "  config   = %s", nwipe_options.config_file );
+    }
 
     switch( nwipe_options.verify )
     {
@@ -895,6 +975,8 @@ void display_help()
     puts( "                          is5enh                 -  HMG IS5 enhanced\n" );
     puts( "                          bruce7                 -  Schneier Bruce 7-pass mixed pattern\n" );
     puts( "                          bmb                    -  BMB21-2019 mixed pattern\n" );
+    puts( "  -C, --config=FILE       Load an external JSON or legacy .conf config file." );
+    puts( "                          CLI options still override values from the file.\n" );
     puts( "  -l, --logfile=FILE      Filename to log to. Default is STDOUT\n" );
     puts( "  -P, --PDFreportpath=PATH Path to write PDF reports to. Default is \".\"" );
     puts( "                           If set to \"noPDF\" no PDF reports are written.\n" );
@@ -946,4 +1028,413 @@ void display_help()
     puts( "                           --exclude=/dev/disk/by-path/pci-0000:00:17.0-ata-1\n" );
     puts( "" );
     exit( EXIT_SUCCESS );
+}
+
+const char* nwipe_options_report_directory( void )
+{
+    if( nwipe_options.PDFreportpath[0] == '\0' || strcmp( nwipe_options.PDFreportpath, "noPDF" ) == 0 )
+    {
+        return ".";
+    }
+
+    return nwipe_options.PDFreportpath;
+}
+
+const char* nwipe_verify_label( nwipe_verify_t verify )
+{
+    switch( verify )
+    {
+        case NWIPE_VERIFY_NONE:
+            return "off";
+
+        case NWIPE_VERIFY_LAST:
+            return "last";
+
+        case NWIPE_VERIFY_ALL:
+            return "all";
+
+        default:
+            return "unknown";
+    }
+}
+
+int nwipe_options_add_config_device( const char* value )
+{
+    int idx = nwipe_options.config_devices_count;
+
+    if( value == NULL || value[0] == '\0' )
+    {
+        return -1;
+    }
+
+    if( idx >= MAX_NUMBER_EXCLUDED_DRIVES )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Too many devices specified in config file." );
+        return -1;
+    }
+
+    nwipe_copy_option_value( nwipe_options.config_devices[idx], MAX_DRIVE_PATH_LENGTH, value );
+    nwipe_options.config_devices_count++;
+    return 0;
+}
+
+int nwipe_options_add_config_exclude( const char* value )
+{
+    int idx;
+
+    if( value == NULL || value[0] == '\0' )
+    {
+        return -1;
+    }
+
+    for( idx = 0; idx < MAX_NUMBER_EXCLUDED_DRIVES; idx++ )
+    {
+        if( nwipe_options.exclude[idx][0] == '\0' )
+        {
+            nwipe_copy_option_value( nwipe_options.exclude[idx], MAX_DRIVE_PATH_LENGTH, value );
+            return 0;
+        }
+    }
+
+    nwipe_log( NWIPE_LOG_ERROR, "Too many excluded devices specified in config file." );
+    return -1;
+}
+
+int nwipe_options_apply_config_boolean( const char* key, int value )
+{
+    if( strcmp( key, "autonuke" ) == 0 )
+    {
+        nwipe_options.autonuke = value ? 1 : 0;
+        return 0;
+    }
+
+    if( strcmp( key, "autopoweroff" ) == 0 )
+    {
+        nwipe_options.autopoweroff = value ? 1 : 0;
+        return 0;
+    }
+
+    if( strcmp( key, "noblank" ) == 0 )
+    {
+        nwipe_options.noblank = value ? 1 : 0;
+        return 0;
+    }
+
+    if( strcmp( key, "nousb" ) == 0 )
+    {
+        nwipe_options.nousb = value ? 1 : 0;
+        return 0;
+    }
+
+    if( strcmp( key, "nowait" ) == 0 )
+    {
+        nwipe_options.nowait = value ? 1 : 0;
+        return 0;
+    }
+
+    if( strcmp( key, "nosignals" ) == 0 )
+    {
+        nwipe_options.nosignals = value ? 1 : 0;
+        return 0;
+    }
+
+    if( strcmp( key, "nogui" ) == 0 )
+    {
+        nwipe_options.nogui = value ? 1 : 0;
+        if( value )
+        {
+            nwipe_options.nowait = 1;
+        }
+        return 0;
+    }
+
+    if( strcmp( key, "quiet" ) == 0 )
+    {
+        nwipe_options.quiet = value ? 1 : 0;
+        return 0;
+    }
+
+    if( strcmp( key, "verbose" ) == 0 )
+    {
+        nwipe_options.verbose = value ? 1 : 0;
+        return 0;
+    }
+
+    if( strcmp( key, "json" ) == 0 || strcmp( key, "json_report" ) == 0 )
+    {
+        nwipe_options.JSON_enable = value ? 1 : 0;
+        return 0;
+    }
+
+    if( strcmp( key, "pdf_enable" ) == 0 )
+    {
+        nwipe_options.PDF_enable = value ? 1 : 0;
+        nwipe_conf_set_setting( "PDF_Certificate.PDF_Enable", value ? "ENABLED" : "DISABLED", 0 );
+        return 0;
+    }
+
+    if( strcmp( key, "pdf_preview" ) == 0 )
+    {
+        nwipe_options.PDF_preview_details = value ? 1 : 0;
+        nwipe_conf_set_setting( "PDF_Certificate.PDF_Preview", value ? "ENABLED" : "DISABLED", 0 );
+        return 0;
+    }
+
+    if( strcmp( key, "pdf_tag" ) == 0 )
+    {
+        nwipe_options.PDFtag = value ? 1 : 0;
+        nwipe_conf_set_setting( "PDF_Certificate.PDF_tag", value ? "ENABLED" : "DISABLED", 0 );
+        return 0;
+    }
+
+    if( strcmp( key, "prng_benchmark" ) == 0 )
+    {
+        nwipe_options.prng_benchmark_only = value ? 1 : 0;
+        return 0;
+    }
+
+    nwipe_log( NWIPE_LOG_WARNING, "Ignoring unsupported boolean config key '%s'.", key );
+    return -1;
+}
+
+int nwipe_options_apply_config_integer( const char* key, long long value )
+{
+    if( strcmp( key, "rounds" ) == 0 )
+    {
+        if( value < 1 )
+        {
+            return -1;
+        }
+        nwipe_options.rounds = (int) value;
+        return 0;
+    }
+
+    if( strcmp( key, "sync" ) == 0 )
+    {
+        if( value < 0 )
+        {
+            return -1;
+        }
+        nwipe_options.sync = (int) value;
+        return 0;
+    }
+
+    return nwipe_options_apply_config_double( key, (double) value );
+}
+
+int nwipe_options_apply_config_double( const char* key, double value )
+{
+    if( strcmp( key, "prng_bench_seconds" ) == 0 )
+    {
+        if( value < 0.05 )
+        {
+            value = 0.05;
+        }
+        if( value > 10.0 )
+        {
+            value = 10.0;
+        }
+        nwipe_options.prng_bench_seconds = value;
+        return 0;
+    }
+
+    nwipe_log( NWIPE_LOG_WARNING, "Ignoring unsupported numeric config key '%s'.", key );
+    return -1;
+}
+
+int nwipe_options_apply_config_string( const char* key, const char* value )
+{
+    extern nwipe_prng_t nwipe_twister;
+    extern nwipe_prng_t nwipe_isaac;
+    extern nwipe_prng_t nwipe_isaac64;
+    extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
+    extern nwipe_prng_t nwipe_xoroshiro256_prng;
+    extern nwipe_prng_t nwipe_aes_ctr_prng;
+
+    if( value == NULL )
+    {
+        return -1;
+    }
+
+    if( strcmp( key, "method" ) == 0 )
+    {
+        if( strcmp( value, "dod522022m" ) == 0 || strcmp( value, "dod" ) == 0 )
+        {
+            nwipe_options.method = &nwipe_dod522022m;
+            return 0;
+        }
+        if( strcmp( value, "dodshort" ) == 0 || strcmp( value, "dod3pass" ) == 0 )
+        {
+            nwipe_options.method = &nwipe_dodshort;
+            return 0;
+        }
+        if( strcmp( value, "gutmann" ) == 0 )
+        {
+            nwipe_options.method = &nwipe_gutmann;
+            return 0;
+        }
+        if( strcmp( value, "ops2" ) == 0 )
+        {
+            nwipe_options.method = &nwipe_ops2;
+            return 0;
+        }
+        if( strcmp( value, "random" ) == 0 || strcmp( value, "prng" ) == 0 || strcmp( value, "stream" ) == 0 )
+        {
+            nwipe_options.method = &nwipe_random;
+            return 0;
+        }
+        if( strcmp( value, "zero" ) == 0 || strcmp( value, "quick" ) == 0 )
+        {
+            nwipe_options.method = &nwipe_zero;
+            return 0;
+        }
+        if( strcmp( value, "one" ) == 0 )
+        {
+            nwipe_options.method = &nwipe_one;
+            return 0;
+        }
+        if( strcmp( value, "verify_zero" ) == 0 )
+        {
+            nwipe_options.method = &nwipe_verify_zero;
+            return 0;
+        }
+        if( strcmp( value, "verify_one" ) == 0 )
+        {
+            nwipe_options.method = &nwipe_verify_one;
+            return 0;
+        }
+        if( strcmp( value, "is5enh" ) == 0 )
+        {
+            nwipe_options.method = &nwipe_is5enh;
+            return 0;
+        }
+        if( strcmp( value, "bruce7" ) == 0 )
+        {
+            nwipe_options.method = &nwipe_bruce7;
+            return 0;
+        }
+        if( strcmp( value, "bmb" ) == 0 )
+        {
+            nwipe_options.method = &nwipe_bmb;
+            return 0;
+        }
+        return -1;
+    }
+
+    if( strcmp( key, "prng" ) == 0 )
+    {
+        if( strcmp( value, "auto" ) == 0 )
+        {
+            nwipe_options.prng_auto = 1;
+            return 0;
+        }
+        if( strcmp( value, "default" ) == 0 || strcmp( value, "manual" ) == 0 )
+        {
+            nwipe_options.prng_auto = 0;
+            return 0;
+        }
+
+        nwipe_options.prng_auto = 0;
+
+        if( strcmp( value, "mersenne" ) == 0 || strcmp( value, "twister" ) == 0 )
+        {
+            nwipe_options.prng = &nwipe_twister;
+            return 0;
+        }
+        if( strcmp( value, "isaac" ) == 0 )
+        {
+            nwipe_options.prng = &nwipe_isaac;
+            return 0;
+        }
+        if( strcmp( value, "isaac64" ) == 0 )
+        {
+            nwipe_options.prng = &nwipe_isaac64;
+            return 0;
+        }
+        if( strcmp( value, "add_lagg_fibonacci_prng" ) == 0 )
+        {
+            nwipe_options.prng = &nwipe_add_lagg_fibonacci_prng;
+            return 0;
+        }
+        if( strcmp( value, "xoroshiro256_prng" ) == 0 )
+        {
+            nwipe_options.prng = &nwipe_xoroshiro256_prng;
+            return 0;
+        }
+        if( strcmp( value, "aes_ctr_prng" ) == 0 )
+        {
+            if( !has_aes_ni() )
+            {
+                return -1;
+            }
+            nwipe_options.prng = &nwipe_aes_ctr_prng;
+            return 0;
+        }
+        return -1;
+    }
+
+    if( strcmp( key, "verify" ) == 0 )
+    {
+        if( strcmp( value, "0" ) == 0 || strcmp( value, "off" ) == 0 )
+        {
+            nwipe_options.verify = NWIPE_VERIFY_NONE;
+            return 0;
+        }
+        if( strcmp( value, "1" ) == 0 || strcmp( value, "last" ) == 0 )
+        {
+            nwipe_options.verify = NWIPE_VERIFY_LAST;
+            return 0;
+        }
+        if( strcmp( value, "2" ) == 0 || strcmp( value, "all" ) == 0 )
+        {
+            nwipe_options.verify = NWIPE_VERIFY_ALL;
+            return 0;
+        }
+        return -1;
+    }
+
+    if( strcmp( key, "io_mode" ) == 0 )
+    {
+        if( strcmp( value, "auto" ) == 0 )
+        {
+            nwipe_options.io_mode = NWIPE_IO_MODE_AUTO;
+            return 0;
+        }
+        if( strcmp( value, "direct" ) == 0 )
+        {
+            nwipe_options.io_mode = NWIPE_IO_MODE_DIRECT;
+            return 0;
+        }
+        if( strcmp( value, "cached" ) == 0 )
+        {
+            nwipe_options.io_mode = NWIPE_IO_MODE_CACHED;
+            return 0;
+        }
+        return -1;
+    }
+
+    if( strcmp( key, "logfile" ) == 0 )
+    {
+        nwipe_copy_option_value( nwipe_options.logfile, sizeof( nwipe_options.logfile ), value );
+        return 0;
+    }
+
+    if( strcmp( key, "pdf_report_path" ) == 0 || strcmp( key, "report_directory" ) == 0 )
+    {
+        nwipe_copy_option_value( nwipe_options.PDFreportpath, sizeof( nwipe_options.PDFreportpath ), value );
+        if( strcmp( value, "noPDF" ) == 0 )
+        {
+            nwipe_options.PDF_enable = 0;
+        }
+        return 0;
+    }
+
+    if( strcmp( key, "config_file" ) == 0 )
+    {
+        nwipe_copy_option_value( nwipe_options.config_file, sizeof( nwipe_options.config_file ), value );
+        return 0;
+    }
+
+    nwipe_log( NWIPE_LOG_WARNING, "Ignoring unsupported string config key '%s'.", key );
+    return -1;
 }

@@ -349,18 +349,8 @@ void save_selected_customer( char** customer )
     }
 }
 
-int nwipe_conf_update_setting( char* group_name_setting_name, char* setting_value )
+int nwipe_conf_set_setting( const char* group_name_setting_name, const char* setting_value, int write_file )
 {
-    /* You would call this function of you wanted to update an existing setting in nwipe.conf, i.e
-     *
-     * nwipe_conf_update_setting( "PDF_Certificate.PDF_Enable", "ENABLED" )
-     *
-     * It is NOT used for creating a new group or setting name.
-     */
-
-    /* -------------------------------------------------------------
-     * Write the field to nwipe's config file /etc/nwipe/nwipe.conf
-     */
     if( ( setting = config_lookup( &nwipe_cfg, group_name_setting_name ) ) )
     {
         config_setting_set_string( setting, setting_value );
@@ -372,8 +362,11 @@ int nwipe_conf_update_setting( char* group_name_setting_name, char* setting_valu
         return 1;
     }
 
-    /* Write the new configuration to nwipe.conf
-     */
+    if( !write_file )
+    {
+        return 0;
+    }
+
     if( !config_write_file( &nwipe_cfg, nwipe_config_file ) )
     {
         nwipe_log( NWIPE_LOG_ERROR, "Failed to write %s to %s", group_name_setting_name, nwipe_config_file );
@@ -389,10 +382,22 @@ int nwipe_conf_update_setting( char* group_name_setting_name, char* setting_valu
     }
 
     return 0;
+}
+
+int nwipe_conf_update_setting( char* group_name_setting_name, char* setting_value )
+{
+    /* You would call this function of you wanted to update an existing setting in nwipe.conf, i.e
+     *
+     * nwipe_conf_update_setting( "PDF_Certificate.PDF_Enable", "ENABLED" )
+     *
+     * It is NOT used for creating a new group or setting name.
+     */
+
+    return nwipe_conf_set_setting( group_name_setting_name, setting_value, 1 );
 
 }  // end nwipe_conf_update_setting()
 
-int nwipe_conf_read_setting( char* group_name_setting_name, const char** setting_value )
+int nwipe_conf_read_setting_from( config_t* cfg, const char* group_name_setting_name, const char** setting_value )
 {
     /* This function returns a setting value from nwipe's configuration file nwipe.conf
      * when provided with a groupname.settingname string.
@@ -409,8 +414,8 @@ int nwipe_conf_read_setting( char* group_name_setting_name, const char** setting
     int return_status;
     int length = strlen( group_name_setting_name );
 
-    char* group_name = calloc( length, sizeof( char ) );
-    char* setting_name = calloc( length, sizeof( char ) );
+    char* group_name = calloc( length + 1, sizeof( char ) );
+    char* setting_name = calloc( length + 1, sizeof( char ) );
 
     int idx = 0;
 
@@ -425,7 +430,7 @@ int nwipe_conf_read_setting( char* group_name_setting_name, const char** setting
     // Copy the setting name from the combined input string
     strcpy( setting_name, &group_name_setting_name[idx + 1] );
 
-    if( !( setting = config_lookup( &nwipe_cfg, group_name ) ) )
+    if( !( setting = config_lookup( cfg, group_name ) ) )
     {
         nwipe_log( NWIPE_LOG_ERROR, "Can't find group name %s.%s in %s", group_name, setting_name, nwipe_config_file );
         return_status = -1;
@@ -448,6 +453,12 @@ int nwipe_conf_read_setting( char* group_name_setting_name, const char** setting
     free( group_name );
     free( setting_name );
     return ( return_status );
+
+}  // end nwipe_conf_read_setting_from()
+
+int nwipe_conf_read_setting( char* group_name_setting_name, const char** setting_value )
+{
+    return nwipe_conf_read_setting_from( &nwipe_cfg, group_name_setting_name, setting_value );
 
 }  // end nwipe_conf_read_setting()
 

@@ -1,6 +1,8 @@
 #ifndef CONF_H_
 #define CONF_H_
 
+#include <libconfig.h>
+
 /**
  * Initialises the libconfig code, called once at the
  * start of nwipe, prior to any attempts to access
@@ -33,6 +35,7 @@ void save_selected_customer( char** );
  *             2 = Unable to write new configuration to /etc/nwipe/nwipe.conf
  */
 int nwipe_conf_update_setting( char*, char* );
+int nwipe_conf_set_setting( const char* path, const char* value, int write_file );
 
 /**
  * int nwipe_conf_read_setting( char *, char *, const char ** )
@@ -45,6 +48,7 @@ int nwipe_conf_update_setting( char*, char* );
  *             -2 = Unable to find the specified setting name
  */
 int nwipe_conf_read_setting( char*, const char** );
+int nwipe_conf_read_setting_from( config_t* cfg, const char* path, const char** setting_value );
 
 int nwipe_conf_populate( char* path, char* value );
 

@@ -521,7 +521,7 @@ int main( int argc, char** argv )
         }
     }
 
-    if( nwipe_optind == argc )
+    if( nwipe_optind == argc && nwipe_options.config_devices_count == 0 )
     {
         /* File names were not given by the user.  Scan for devices. */
         nwipe_enumerated = nwipe_device_scan( &c1 );
@@ -546,10 +546,26 @@ int main( int argc, char** argv )
     }
     else
     {
-        argv += nwipe_optind;
-        argc -= nwipe_optind;
+        if( nwipe_optind == argc && nwipe_options.config_devices_count > 0 )
+        {
+            char* config_argv[MAX_NUMBER_EXCLUDED_DRIVES];
+            int idx;
 
-        nwipe_enumerated = nwipe_device_get( &c1, argv, argc );
+            for( idx = 0; idx < nwipe_options.config_devices_count; idx++ )
+            {
+                config_argv[idx] = nwipe_options.config_devices[idx];
+            }
+
+            nwipe_enumerated =
+                nwipe_device_get( &c1, config_argv, nwipe_options.config_devices_count );
+        }
+        else
+        {
+            argv += nwipe_optind;
+            argc -= nwipe_optind;
+
+            nwipe_enumerated = nwipe_device_get( &c1, argv, argc );
+        }
         if( nwipe_enumerated == 0 )
         {
             nwipe_log( NWIPE_LOG_ERROR, "Devices not found. Check you're not excluding drives unnecessarily," );

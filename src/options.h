@@ -40,13 +40,6 @@
 #define PATHNAME_MAX 2048
 #define NWIPE_USE_DIRECT_IO
 
-/* Function prototypes for loading options from the environment and command line. */
-int nwipe_options_parse( int argc, char** argv );
-void nwipe_options_log( void );
-
-/* Function to display help text */
-void display_help();
-
 /* I/O mode for data path: auto, direct, or cached. */
 typedef enum {
     NWIPE_IO_MODE_AUTO = 0, /* Try O_DIRECT, fall back to cached I/O if not supported. */
@@ -68,9 +61,12 @@ typedef struct
     double prng_bench_seconds; /* seconds per PRNG (default e.g. 0.25 for auto, 1.0 for manual) */
     char* banner;  // The product banner shown on the top line of the screen.
     void* method;  // A function pointer to the wipe method that will be used.
+    char config_file[FILENAME_MAX];  // Optional external config file loaded at startup.
     char logfile[FILENAME_MAX];  // The filename to log the output to.
     char PDFreportpath[PATHNAME_MAX];  // The path to write the PDF report to.
     char exclude[MAX_NUMBER_EXCLUDED_DRIVES][MAX_DRIVE_PATH_LENGTH];  // Drives excluded from the search.
+    char config_devices[MAX_NUMBER_EXCLUDED_DRIVES][MAX_DRIVE_PATH_LENGTH];  // Devices supplied via config.
+    int config_devices_count;  // Number of config_devices entries currently in use.
     nwipe_prng_t* prng;  // The pseudo random number generator implementation. pointer to the function.
     int quiet;  // Anonymize serial numbers
     int rounds;  // The number of times that the wipe method should be called.
@@ -85,5 +81,20 @@ typedef struct
 } nwipe_options_t;
 
 extern nwipe_options_t nwipe_options;
+
+/* Function prototypes for loading options from the environment and command line. */
+int nwipe_options_parse( int argc, char** argv );
+void nwipe_options_log( void );
+const char* nwipe_options_report_directory( void );
+const char* nwipe_verify_label( nwipe_verify_t verify );
+int nwipe_options_apply_config_string( const char* key, const char* value );
+int nwipe_options_apply_config_boolean( const char* key, int value );
+int nwipe_options_apply_config_integer( const char* key, long long value );
+int nwipe_options_apply_config_double( const char* key, double value );
+int nwipe_options_add_config_device( const char* value );
+int nwipe_options_add_config_exclude( const char* value );
+
+/* Function to display help text */
+void display_help();
 
 #endif /* OPTIONS_H_ */

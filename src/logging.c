@@ -939,7 +939,7 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
         /* Create JSON Report if enabled */
         if( nwipe_options.JSON_enable )
         {
-            create_json( *c );
+            create_json( c[i] );
         }
     }
 
