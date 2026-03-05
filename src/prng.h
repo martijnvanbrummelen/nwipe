@@ -95,9 +95,17 @@ int nwipe_add_lagg_fibonacci_prng_read( NWIPE_PRNG_READ_SIGNATURE );
 int nwipe_xoroshiro256_prng_init( NWIPE_PRNG_INIT_SIGNATURE );
 int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE );
 
+/* SplitMix64 PRNG. */
+int nwipe_splitmix64_prng_init( NWIPE_PRNG_INIT_SIGNATURE );
+int nwipe_splitmix64_prng_read( NWIPE_PRNG_READ_SIGNATURE );
+
 /* AES-CTR-NI prototypes. */
 int nwipe_aes_ctr_prng_init( NWIPE_PRNG_INIT_SIGNATURE );
 int nwipe_aes_ctr_prng_read( NWIPE_PRNG_READ_SIGNATURE );
+
+/* ChaCha20 stream cipher CSPRNG */
+int nwipe_chacha20_prng_init( NWIPE_PRNG_INIT_SIGNATURE );
+int nwipe_chacha20_prng_read( NWIPE_PRNG_READ_SIGNATURE );
 
 /* Size of the twister is not derived from the architecture, but it is strictly 4 bytes */
 #define SIZE_OF_TWISTER 4

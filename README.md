@@ -26,9 +26,9 @@ It was created to run the DBAN erase engine on any Linux distribution, with bett
 
 ---
 
-## New in v0.40 (upcoming)
+## New in v0.40
 
-The upcoming **v0.40** release introduces several major improvements:
+The **v0.40** release introduces several major improvements:
 
 - **AES-256-CTR PRNG**  
   High–performance, cryptographically secure stream generator (AES-NI accelerated where available).
@@ -97,7 +97,13 @@ The user can select from a variety of recognised secure erase methods, including
 
 nwipe includes multiple pseudorandom number generators (PRNGs) for methods that require random data:
 
-- **AES-256-CTR** *(new in v0.40)*  
+- **SplitMix64** *(new in v0.41)*  
+  General-purpose non-cryptographic generator, optimized for 64-bit architectures.
+
+- **ChaCha20 (CSPRNG)** *(new in v0.41)*  
+  Cryptographically secure, no special hardware requirements, as used worldwide in TLS and SSH.
+
+- **AES-256-CTR (CSPRNG)** *(new in v0.40)*  
   Cryptographically secure, high–throughput counter-mode stream cipher, using hardware AES-NI where available.
 
 - **XORoshiro-256**  
@@ -385,6 +391,8 @@ nwipe_directory="nwipe_master"
 mkdir -p "$nwipe_directory"
 cd "$nwipe_directory"
 
+apt update
+
 sudo apt install -y \
   build-essential \
   pkg-config \
@@ -395,7 +403,7 @@ sudo apt install -y \
   libconfig-dev \
   libconfig++-dev \
   dmidecode \
-  readlink \
+  coreutils \
   smartmontools \
   hdparm \
   git

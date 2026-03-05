@@ -46,7 +46,9 @@ int nwipe_options_parse( int argc, char** argv )
     extern nwipe_prng_t nwipe_isaac64;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
+    extern nwipe_prng_t nwipe_splitmix64_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
+    extern nwipe_prng_t nwipe_chacha20_prng;
 
     extern config_t nwipe_cfg;
     config_setting_t* setting;
@@ -113,6 +115,12 @@ int nwipe_options_parse( int argc, char** argv )
 
         /* Whether to allow signals to interrupt a wipe. */
         { "nosignals", no_argument, 0, 0 },
+
+        /* Do NOT retry on possibly transient I/O errors. */
+        { "no-retry-on-io-errors", no_argument, 0, 0 },
+
+        /* Do NOT abort pass on block write errors. */
+        { "no-abort-on-block-errors", no_argument, 0, 0 },
 
         /* Whether to display the gui. */
         { "nogui", no_argument, 0, 0 },
@@ -181,6 +189,8 @@ int nwipe_options_parse( int argc, char** argv )
     nwipe_options.verbose = 0;
     nwipe_options.verify = NWIPE_VERIFY_LAST;
     nwipe_options.io_mode = NWIPE_IO_MODE_AUTO; /* Default: auto-select I/O mode. */
+    nwipe_options.noretry_io_errors = 0;
+    nwipe_options.noabort_block_errors = 0;
     nwipe_options.PDF_toggle_host_info = 0; /* Default: host visibility on PDF disabled */
     nwipe_options.PDFtag = 0;
     memset( nwipe_options.logfile, '\0', sizeof( nwipe_options.logfile ) );
@@ -468,6 +478,18 @@ int nwipe_options_parse( int argc, char** argv )
                                  argv[optind - 1] );
                         exit( EINVAL );
                     }
+                }
+
+                if( strcmp( nwipe_options_long[i].name, "no-retry-on-io-errors" ) == 0 )
+                {
+                    nwipe_options.noretry_io_errors = 1;
+                    break;
+                }
+
+                if( strcmp( nwipe_options_long[i].name, "no-abort-on-block-errors" ) == 0 )
+                {
+                    nwipe_options.noabort_block_errors = 1;
+                    break;
                 }
 
                 if( strcmp( nwipe_options_long[i].name, "nogui" ) == 0 )
@@ -839,6 +861,12 @@ int nwipe_options_parse( int argc, char** argv )
                     break;
                 }
 
+                if( strcmp( optarg, "splitmix64" ) == 0 )
+                {
+                    nwipe_options.prng = &nwipe_splitmix64_prng;
+                    break;
+                }
+
                 if( strcmp( optarg, "aes_ctr_prng" ) == 0 )
                 {
                     if( has_aes_ni() )
@@ -852,6 +880,12 @@ int nwipe_options_parse( int argc, char** argv )
                                  "but your CPU does not support AES-NI.\n" );
                         exit( EINVAL );
                     }
+                    break;
+                }
+
+                if( strcmp( optarg, "chacha20" ) == 0 )
+                {
+                    nwipe_options.prng = &nwipe_chacha20_prng;
                     break;
                 }
 
@@ -910,7 +944,9 @@ void nwipe_options_log( void )
     extern nwipe_prng_t nwipe_isaac64;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
+    extern nwipe_prng_t nwipe_splitmix64_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
+    extern nwipe_prng_t nwipe_chacha20_prng;
 
     /**
      *  Prints a manifest of options to the log.
@@ -970,9 +1006,13 @@ void nwipe_options_log( void )
     {
         nwipe_log( NWIPE_LOG_NOTICE, "  prng     = XORoshiro-256" );
     }
+    else if( nwipe_options.prng == &nwipe_splitmix64_prng )
+    {
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = SplitMix64" );
+    }
     else if( nwipe_options.prng == &nwipe_aes_ctr_prng )
     {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = AES-CTR New Instructions (EXPERIMENTAL!)" );
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = AES-CTR (CSPRNG)" );
     }
     else if( nwipe_options.prng == &nwipe_isaac )
     {
@@ -982,9 +1022,13 @@ void nwipe_options_log( void )
     {
         nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Isaac64" );
     }
+    else if( nwipe_options.prng == &nwipe_chacha20_prng )
+    {
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = ChaCha20 (CSPRNG)" );
+    }
     else
     {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Undefined" );
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Unknown" );
     }
 
     nwipe_log( NWIPE_LOG_NOTICE, "  method   = %s", nwipe_method_label( nwipe_options.method ) );
@@ -1069,7 +1113,8 @@ void display_help()
     puts( "  -P, --PDFreportpath=PATH Path to write PDF reports to. Default is \".\"" );
     puts( "                           If set to \"noPDF\" no PDF reports are written.\n" );
     puts( "  -p, --prng=METHOD        PRNG option "
-          "(mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng|xoroshiro256_prng|aes_ctr_prng)\n" );
+          "(mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng|xoroshiro256_prng|splitmix64|aes_ctr_prng|"
+          "chacha20)\n" );
     puts( "  --prng=auto              (default)" );
     puts( "      Automatically benchmark all available PRNGs at startup and" );
     puts( "      select the fastest one for the current hardware." );
@@ -1104,7 +1149,17 @@ void display_help()
     puts( "                           option. Send SIGUSR1 to log current stats.\n" );
     puts( "      --nousb              Do NOT show or wipe any USB devices whether in GUI" );
     puts( "                           mode, --nogui or --autonuke modes.\n" );
-    puts( "      --pdftag             Enables a field on the PDF that holds a tag that\n" );
+    puts( "      --no-retry-on-io-errors" );
+    puts( "                           Do NOT retry single failed read/write operations;" );
+    puts( "                           immediately error or skip the failing block." );
+    puts( "                           (default is retry 3 times with 5s sleep in-between)\n" );
+    puts( "      --no-abort-on-block-errors" );
+    puts( "                           Do NOT abort passes on block write errors;" );
+    puts( "                           skip the failing block and continue." );
+    puts( "                           (default is to abort the wipe for that device)" );
+    puts( "                           Beware: Faulty devices can take very long without" );
+    puts( "                           --no-retry-on-io-errors option due to many retries.\n" );
+    puts( "      --pdftag             Enables a field on the PDF that holds a tag that" );
     puts( "                           identifies the host computer\n" );
     puts( "  -e, --exclude=DEVICES    Up to ten comma separated devices to be excluded." );
     puts( "                           --exclude=/dev/sdc" );
