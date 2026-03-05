@@ -27,7 +27,9 @@ NWIPE_CORE = \
     conf.c conf.h \
     customers.c customers.h \
     cpu_features.c cpu_features.h \
-    round_size.c round_size.h
+    round_size.c round_size.h \
+    ANSI-color-codes.h \
+    display_help.c
 
 # PRNG implementations
 NWIPE_PRNG = \
