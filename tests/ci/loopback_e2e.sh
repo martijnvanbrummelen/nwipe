@@ -7,6 +7,7 @@ ARTIFACT_DIR="${NWIPE_CI_ARTIFACT_DIR:-}"
 STS_BIN="${NWIPE_STS_BIN:-}"
 STS_MIN_RATIO="${NWIPE_STS_MIN_RATIO:-0.9}"
 STS_ITERATIONS="${NWIPE_STS_ITERATIONS:-4}"
+STS_RETRIES="${NWIPE_STS_RETRIES:-0}"
 
 if [[ "${MODE}" != "full" && "${MODE}" != "smoke" ]]; then
     echo "Usage: $0 [full|smoke] [path-to-nwipe-binary]"
@@ -75,6 +76,9 @@ run_sts_ratio_check() {
     local total
     local ratio
     local ratio_ok
+    local attempt
+    local max_attempts
+    local last_error
 
     if [[ -z "${STS_BIN}" ]]; then
         return 0
@@ -85,45 +89,56 @@ run_sts_ratio_check() {
         return 1
     fi
 
-    result_file="${LOG_DIR}/${case_name}.sts/result.txt"
-    sts_log="${LOG_DIR}/${case_name}.sts/run.log"
+    max_attempts=$((STS_RETRIES + 1))
+    last_error=""
     mkdir -p "${LOG_DIR}/${case_name}.sts"
 
-    echo "==> Running STS for case ${case_name} (min ratio ${STS_MIN_RATIO}, iterations ${STS_ITERATIONS})"
+    for (( attempt=1; attempt<=max_attempts; attempt++ )); do
+        local attempt_dir="${LOG_DIR}/${case_name}.sts/attempt-${attempt}"
+        mkdir -p "${attempt_dir}"
+        result_file="${attempt_dir}/result.txt"
+        sts_log="${attempt_dir}/run.log"
 
-    set +e
-    "${STS_BIN}" -v 1 -i "${STS_ITERATIONS}" -I 1 -w "${LOG_DIR}/${case_name}.sts" -F r "${BACKING_FILE}" \
-        > >(tee "${sts_log}") 2>&1
-    local sts_rc=$?
-    set -e
+        echo "==> Running STS for case ${case_name} (attempt ${attempt}/${max_attempts}, min ratio ${STS_MIN_RATIO}, iterations ${STS_ITERATIONS})"
 
-    if [[ "${sts_rc}" -ne 0 ]]; then
-        echo "Error: STS run failed for ${case_name} with rc=${sts_rc}"
-        return 1
-    fi
+        set +e
+        "${STS_BIN}" -v 1 -i "${STS_ITERATIONS}" -I 1 -w "${attempt_dir}" -F r "${BACKING_FILE}" \
+            > >(tee "${sts_log}") 2>&1
+        local sts_rc=$?
+        set -e
 
-    if [[ ! -f "${result_file}" ]]; then
-        echo "Error: STS result file missing for ${case_name}: ${result_file}"
-        return 1
-    fi
+        if [[ "${sts_rc}" -ne 0 ]]; then
+            last_error="STS run failed for ${case_name} with rc=${sts_rc}"
+        elif [[ ! -f "${result_file}" ]]; then
+            last_error="STS result file missing for ${case_name}: ${result_file}"
+        else
+            passed="$(awk '/tests passed successfully both the analyses/ { split($1,a,"/"); print a[1]; exit }' "${result_file}")"
+            total="$(awk '/tests passed successfully both the analyses/ { split($1,a,"/"); print a[2]; exit }' "${result_file}")"
 
-    passed="$(awk '/tests passed successfully both the analyses/ { split($1,a,"/"); print a[1]; exit }' "${result_file}")"
-    total="$(awk '/tests passed successfully both the analyses/ { split($1,a,"/"); print a[2]; exit }' "${result_file}")"
+            if [[ -z "${passed}" || -z "${total}" ]]; then
+                last_error="unable to parse STS pass ratio from ${result_file}"
+            else
+                ratio="$(awk -v p="${passed}" -v t="${total}" 'BEGIN{ if (t == 0) { print "0.0" } else { printf "%.6f", p/t } }')"
+                ratio_ok="$(awk -v r="${ratio}" -v m="${STS_MIN_RATIO}" 'BEGIN{ if (r+0 >= m+0) print "1"; else print "0" }')"
 
-    if [[ -z "${passed}" || -z "${total}" ]]; then
-        echo "Error: unable to parse STS pass ratio from ${result_file}"
-        tail -n 80 "${result_file}" || true
-        return 1
-    fi
+                echo "STS ratio for ${case_name}: ${passed}/${total} = ${ratio}"
+                if [[ "${ratio_ok}" == "1" ]]; then
+                    if [[ "${attempt}" -gt 1 ]]; then
+                        echo "Warning: STS for ${case_name} passed on retry ${attempt}/${max_attempts}"
+                    fi
+                    return 0
+                fi
+                last_error="STS ratio ${ratio} is below threshold ${STS_MIN_RATIO} for ${case_name}"
+            fi
+        fi
 
-    ratio="$(awk -v p="${passed}" -v t="${total}" 'BEGIN{ if (t == 0) { print "0.0" } else { printf "%.6f", p/t } }')"
-    ratio_ok="$(awk -v r="${ratio}" -v m="${STS_MIN_RATIO}" 'BEGIN{ if (r+0 >= m+0) print "1"; else print "0" }')"
+        if [[ "${attempt}" -lt "${max_attempts}" ]]; then
+            echo "Warning: ${last_error}. Retrying STS for ${case_name}..."
+        fi
+    done
 
-    echo "STS ratio for ${case_name}: ${passed}/${total} = ${ratio}"
-    if [[ "${ratio_ok}" != "1" ]]; then
-        echo "Error: STS ratio ${ratio} is below threshold ${STS_MIN_RATIO} for ${case_name}"
-        return 1
-    fi
+    echo "Error: ${last_error}"
+    return 1
 }
 
 assert_block_is_byte() {
