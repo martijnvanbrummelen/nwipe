@@ -34,27 +34,31 @@ void display_help()
     BHCYN \
     "      --sync=NUM\n" reset \
     "        Will perform a sync after NUM writes (default: 100000)\n" \
-    "        0 - fdatasync after the disk is completely written. fdatasync errors\n" \
-    "            are not detected until completion of the wipe. 0 is not\n" \
-    "            recommended as disk errors may cause nwipe to appear to hang\n" \
-    "        1 - fdatasync after every write\n" \
+    BHCYN \
+    "        0" reset " - fdatasync after the disk is completely written. fdatasync\n" \
+    "        errors are not detected until completion of the wipe. 0 is not\n" \
+    "        recommended as disk errors may cause nwipe to appear to hang\n" \
+    BHCYN \
+    "        1" reset " - fdatasync after every write\n" \
     BRED \
     "        Warning: " reset "Lower values will reduce wipe speeds.\n" \
-    "        1000 - fdatasync after 1000 writes etc.\n\n" \
+    "        1000 - fdatasync after 1000 writes etc.\n" \
+    "        Note: Sync is not used when nwipe is operating in direct I/O mode.\n\n" \
     BHCYN \
     "      --verify=TYPE\n" reset \
     "        Whether to perform verification of erasure (default: last)\n" \
     BHCYN \
-    "        off" reset " - Do not verify\n" \
+    "        off" reset "  - Do not verify\n" \
     BHCYN \
     "        last" reset " - Verify after the last pass\n" \
     BHCYN \
-    "        all" reset " - Verify every pass\n" \
+    "        all" reset "  - Verify every pass\n" \
     "        Be aware that HMG IS5 enhanced always verifies the last (PRNG) pass\n" \
     "        regardless of this option.\n\n" \
     BHCYN \
     "      --directio\n" reset \
-    "        Force direct I/O (O_DIRECT); fail if not supported\n\n" \
+    "        Force direct I/O (O_DIRECT); fail if not supported\n" \
+    "        Note: nwipe's default I/O method is to use direct I/O\n\n" \
     BHCYN \
     "      --cachedio\n" reset \
     "        Force kernel cached I/O; never attempt O_DIRECT\n\n" \
@@ -65,17 +69,17 @@ void display_help()
     "  -m, --method=METHOD\n" reset \
     "        The wiping method. See man page for more details. (default: PRNG)\n" \
     BHCYN \
-    "        dod522022m / dod" reset "       - 7 pass DOD 5220.22-M method\n" \
+    "        dod522022m | dod" reset "       - 7 pass DOD 5220.22-M method\n" \
     BHCYN \
-    "        dodshort / dod3pass" reset "    - 3 pass DOD method\n" \
+    "        dodshort | dod3pass" reset "    - 3 pass DOD method\n" \
     BHCYN \
     "        gutmann" reset "                - Peter Gutmann's Algorithm\n" \
     BHCYN \
     "        ops2" reset "                   - RCMP TSSIT OPS-II\n" \
     BHCYN \
-    "        random / prng / stream" reset " - PRNG Stream\n" \
+    "        random | prng | stream" reset " - PRNG Stream\n" \
     BHCYN \
-    "        zero / quick" reset "           - Overwrite with zeros\n" \
+    "        zero | quick" reset "           - Overwrite with zeros\n" \
     BHCYN \
     "        one" reset "                    - Overwrite with ones (0xFF)\n" \
     BHCYN \
@@ -99,7 +103,7 @@ void display_help()
     "  -p, --prng=TYPE\n" reset \
     "        PRNG option:\n" \
     BHCYN \
-    "        mersenne/twister\n" \
+    "        mersenne | twister\n" \
     "        isaac\n" \
     "        isaac64\n" \
     "        add_lagg_fibonacci_prng\n" \
@@ -109,11 +113,11 @@ void display_help()
     "        chacha20\n\n" \
     BHCYN \
     "      --prng=auto|default\n" \
-    "        auto" reset " - Automatically benchmark all available PRNGs at startup and select the\n" \
-    "                fastest one for the current hardware. (default=auto)\n"  \
+    "        auto" reset " - Automatically benchmark all available PRNGs at startup\n" \
+    "        and select the fastest one for the current hardware. (default=auto)\n"  \
     BHCYN \
-    "        default|manual" reset " - Disable auto-selection and use the built-in default PRNG choice \n" \
-    "                (CPU-based heuristic; no benchmarking).\n\n" \
+    "        default|manual" reset " - Disable auto-selection and use the built-in\n" \
+    "        default PRNG choice (CPU-based heuristic; no benchmarking).\n\n" \
     BHCYN \
     "      --prng-benchmark\n" reset \
     "        Run a RAM-only PRNG throughput benchmark and exit.\n" \
@@ -123,7 +127,7 @@ void display_help()
     "        Seconds per PRNG during benchmarking (default: 1.0).\n" \
     "        For --prng=auto this is automatically reduced unless set.\n\n" \
     BHCYN \
-    "  -q, --quiet" reset \
+    "  -q, --quiet\n" reset \
     "        Anonymize logs and the GUI by removing unique data, i.e. serial\n" \
     "        numbers, LU WWN Device ID, and SMBIOS/DMI data. XXXXXX = S/N exists,\n" \
     "        ????? = S/N not obtainable.\n\n" \
@@ -171,8 +175,8 @@ void display_help()
     "        without the --no-retry-on-io-errors option, due to the many retries.\n\n" \
     BHCYN \
     "      --pdftag\n" reset \
-    "          Enables a field on the PDF that holds a tag that identifies the host\n"
-    "          computer.\n\n" \
+    "        Enables a field on the PDF that holds a tag that identifies the host\n"
+    "        computer.\n\n" \
     BHCYN \
     "  -e, --exclude=DEVICES\n" reset \
     "        Up to ten comma separated devices to be excluded.\n" \
