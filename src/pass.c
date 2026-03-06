@@ -1,5 +1,5 @@
 /*
- *  pass.c: Routines that read and write patterns to block devices.
+ *  pass.c: Pass-related I/O routines.
  *
  *  Copyright Darik Horn <dajhorn-dban@vanadac.com>.
  *
@@ -23,6 +23,7 @@
 #include "pass.h"
 #include "pass_internal.h"
 
+/* Logs the I/O direction for the respective operation. */
 static void nwipe_log_io_direction( nwipe_context_t* c )
 {
     nwipe_log( NWIPE_LOG_NOTICE,
@@ -31,6 +32,7 @@ static void nwipe_log_io_direction( nwipe_context_t* c )
                c->io_direction == NWIPE_IO_DIRECTION_FORWARD ? "forward" : "reverse" );
 }
 
+/* Calls the static_*_pass method for the respective c->io_direction. */
 int nwipe_static_pass( nwipe_context_t* c, nwipe_pattern_t* pattern )
 {
     nwipe_log_io_direction( c );
@@ -38,6 +40,7 @@ int nwipe_static_pass( nwipe_context_t* c, nwipe_pattern_t* pattern )
                                                          : nwipe_static_reverse_pass( c, pattern );
 }
 
+/* Calls the static_*_verify method for the respective c->io_direction. */
 int nwipe_static_verify( nwipe_context_t* c, nwipe_pattern_t* pattern )
 {
     nwipe_log_io_direction( c );
@@ -45,6 +48,7 @@ int nwipe_static_verify( nwipe_context_t* c, nwipe_pattern_t* pattern )
                                                          : nwipe_static_reverse_verify( c, pattern );
 }
 
+/* Calls the random_*_pass method for the respective c->io_direction. */
 int nwipe_random_pass( nwipe_context_t* c )
 {
     nwipe_log_io_direction( c );
@@ -52,6 +56,7 @@ int nwipe_random_pass( nwipe_context_t* c )
                                                          : nwipe_random_reverse_pass( c );
 }
 
+/* Calls the random_*_verify method for the respective c->io_direction. */
 int nwipe_random_verify( nwipe_context_t* c )
 {
     nwipe_log_io_direction( c );

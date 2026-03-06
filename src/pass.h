@@ -1,5 +1,5 @@
 /*
- *  pass.h: Routines that read and write patterns to block devices.
+ *  pass.h: Pass-related I/O routines.
  *
  *  Copyright Darik Horn <dajhorn-dban@vanadac.com>.
  *

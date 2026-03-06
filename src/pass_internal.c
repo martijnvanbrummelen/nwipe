@@ -48,7 +48,7 @@
 #endif
 
 /*
- * nwipe_(p)write_with_retry / nwipe_read_with_retry
+ * nwipe_(p)write_with_retry / nwipe_(p)read_with_retry
  *
  * Attempt the I/O up to MAX_IO_ATTEMPTS times, sleeping IO_RETRY_DELAY_S
  * seconds between attempts.  On persistent failure the last return value
@@ -442,7 +442,7 @@ size_t nwipe_effective_io_blocksize( const nwipe_context_t* c )
     }
 
     return io_bs;
-}
+} /* nwipe_effective_io_blocksize */
 
 /*
  * Allocate an I/O buffer aligned to the device block size.
@@ -486,7 +486,7 @@ void* nwipe_alloc_io_buffer( const nwipe_context_t* c, size_t size, int clear, c
     }
 
     return ptr;
-}
+} /* nwipe_alloc_io_buffer */
 
 /*
  * Compute the per-write sync rate for a given device and I/O block size.
@@ -528,7 +528,7 @@ int nwipe_compute_sync_rate_for_device( const nwipe_context_t* c, size_t io_bloc
         return INT_MAX; /* just in case */
 
     return (int) tmp;
-}
+} /* nwipe_compute_sync_rate_for_device */
 
 /*
  * Updates the erased byte count with the provided bytes remaining (z), bytes
@@ -555,7 +555,7 @@ void nwipe_update_bytes_erased( nwipe_context_t* c, u64 z, u64 bs, int synced )
             c->bytes_erased = be;
         }
     }
-}
+} /* nwipe_update_bytes_erased */
 
 /* Checks if the PRNG buffer is (1 = not all zeroes, 0 = all zeroes) */
 int nwipe_prng_is_active( const char* buf, size_t blocksize )
@@ -569,4 +569,4 @@ int nwipe_prng_is_active( const char* buf, size_t blocksize )
     }
 
     return 0;
-}
+} /* nwipe_prng_is_active */
