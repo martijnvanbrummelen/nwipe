@@ -1863,7 +1863,10 @@ void nwipe_gui_options( void )
                NWIPE_GUI_OPTIONS_METHOD_X,
                "Method:  %s%s",
                nwipe_method_label( nwipe_options.method ),
-               nwipe_options.io_direction == NWIPE_IO_DIRECTION_FORWARD ? "" : " (R)" );
+               nwipe_options.io_direction == NWIPE_IO_DIRECTION_FORWARD ? ""
+               : nwipe_options.io_direction == NWIPE_IO_DIRECTION_REVERSE
+                   ? " (R)"
+                   : " (S)" );
 
     mvwprintw( options_window, NWIPE_GUI_OPTIONS_VERIFY_Y, NWIPE_GUI_OPTIONS_VERIFY_X, "Verify:  " );
 
@@ -2055,7 +2058,10 @@ void nwipe_gui_io_direction( void )
 
     int yy;
     int keystroke;
-    int focus = nwipe_options.io_direction == NWIPE_IO_DIRECTION_FORWARD ? 0 : 1;
+    int focus = nwipe_options.io_direction == NWIPE_IO_DIRECTION_FORWARD ? 0
+               : nwipe_options.io_direction == NWIPE_IO_DIRECTION_REVERSE
+                   ? 1
+                   : 2;
 
     /* Update the footer window. */
     werase( footer_window );
@@ -2072,6 +2078,7 @@ void nwipe_gui_io_direction( void )
 
         mvwprintw( main_window, yy++, tab1, "  Start -> End (Forward)" );
         mvwprintw( main_window, yy++, tab1, "  End -> Start (Reverse)" );
+        mvwprintw( main_window, yy++, tab1, "  Random Segment Order (Scattered)" );
         yy++;
 
         mvwaddch( main_window, 2 + focus, tab1, ACS_RARROW );
@@ -2102,6 +2109,18 @@ void nwipe_gui_io_direction( void )
                 mvwprintw( main_window, yy++, tab2, "An alternative is to enable no-abort-on-bad-block" );
                 mvwprintw( main_window, yy++, tab2, "to skip over it, proceeding chosen I/O direction." );
                 break;
+
+            case 2:
+                mvwprintw( main_window, yy++, tab2, "Partitions the device into disjoint segments and " );
+                mvwprintw( main_window, yy++, tab2, "writes them in a random permutation. This still  " );
+                mvwprintw( main_window, yy++, tab2, "covers 100%% of the address space exactly once per " );
+                mvwprintw( main_window, yy++, tab2, "pass, but without linear traversal across the    " );
+                mvwprintw( main_window, yy++, tab2, "whole drive. Segment size is about 1/10000 of the" );
+                mvwprintw( main_window, yy++, tab2, "device, capped at 256 MiB and aligned to I/O size." );
+                yy++;
+                mvwprintw( main_window, yy++, tab2, "Useful for a distributed write order with a clear" );
+                mvwprintw( main_window, yy++, tab2, "coverage map and no duplicate segment writes.    " );
+                break;
         }
 
         box( main_window, 0, 0 );
@@ -2124,15 +2143,15 @@ void nwipe_gui_io_direction( void )
             case KEY_DOWN:
             case 'j':
             case 'J':
-                if( focus < 1 )
-                    focus = 1;
+                if( focus < 2 )
+                    focus += 1;
                 break;
 
             case KEY_UP:
             case 'k':
             case 'K':
                 if( focus > 0 )
-                    focus = 0;
+                    focus -= 1;
                 break;
 
             case KEY_ENTER:
@@ -2140,8 +2159,10 @@ void nwipe_gui_io_direction( void )
             case 10:
                 if( focus == 0 )
                     nwipe_options.io_direction = NWIPE_IO_DIRECTION_FORWARD;
-                else
+                else if( focus == 1 )
                     nwipe_options.io_direction = NWIPE_IO_DIRECTION_REVERSE;
+                else
+                    nwipe_options.io_direction = NWIPE_IO_DIRECTION_SCATTERED;
                 return;
 
             case KEY_BACKSPACE:
@@ -7871,8 +7892,12 @@ void* nwipe_gui_status( void* ptr )
 
                     if( c[i]->wipe_status == 1 )
                     {
-                        const char* op_prefix = c[i]->io_direction == NWIPE_IO_DIRECTION_FORWARD ? "" : "<";
-                        const char* op_suffix = c[i]->io_direction == NWIPE_IO_DIRECTION_FORWARD ? ">" : "";
+                        const char* op_prefix = c[i]->io_direction == NWIPE_IO_DIRECTION_FORWARD ? ""
+                                                : c[i]->io_direction == NWIPE_IO_DIRECTION_REVERSE ? "<"
+                                                                                                   : "S";
+                        const char* op_suffix = c[i]->io_direction == NWIPE_IO_DIRECTION_FORWARD ? ""
+                                                : c[i]->io_direction == NWIPE_IO_DIRECTION_REVERSE ? ">"
+                                                                                                   : "S";
 
                         switch( c[i]->pass_type )
                         {

@@ -1406,8 +1406,12 @@ void* signal_hand( void* ptr )
                     if( c[i]->thread )
                     {
                         char* status = "";
-                        const char* op_prefix = c[i]->io_direction == NWIPE_IO_DIRECTION_FORWARD ? "" : "<";
-                        const char* op_suffix = c[i]->io_direction == NWIPE_IO_DIRECTION_FORWARD ? ">" : "";
+                        const char* op_prefix = c[i]->io_direction == NWIPE_IO_DIRECTION_FORWARD ? ""
+                                                : c[i]->io_direction == NWIPE_IO_DIRECTION_REVERSE ? "<"
+                                                                                                   : "S";
+                        const char* op_suffix = c[i]->io_direction == NWIPE_IO_DIRECTION_FORWARD ? ""
+                                                : c[i]->io_direction == NWIPE_IO_DIRECTION_REVERSE ? ">"
+                                                                                                   : "S";
 
                         switch( c[i]->pass_type )
                         {

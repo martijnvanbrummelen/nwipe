@@ -71,6 +71,7 @@ typedef enum {
 typedef enum {
     NWIPE_IO_DIRECTION_FORWARD = 0, /* Start -> End */
     NWIPE_IO_DIRECTION_REVERSE, /* End -> Start */
+    NWIPE_IO_DIRECTION_SCATTERED, /* Random permutation of disjoint address segments. */
 } nwipe_io_direction_t;
 
 #define NWIPE_KNOB_SPEEDRING_SIZE 30

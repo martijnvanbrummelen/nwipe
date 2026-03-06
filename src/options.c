@@ -118,6 +118,7 @@ int nwipe_options_parse( int argc, char** argv )
 
         /* Reverse the I/O direction (end -> start). */
         { "reverse", no_argument, 0, 0 },
+        { "scattered", no_argument, 0, 0 },
 
         /* Do NOT retry on possibly transient I/O errors. */
         { "no-retry-on-io-errors", no_argument, 0, 0 },
@@ -487,6 +488,12 @@ int nwipe_options_parse( int argc, char** argv )
                 if( strcmp( nwipe_options_long[i].name, "reverse" ) == 0 )
                 {
                     nwipe_options.io_direction = NWIPE_IO_DIRECTION_REVERSE;
+                    break;
+                }
+
+                if( strcmp( nwipe_options_long[i].name, "scattered" ) == 0 )
+                {
+                    nwipe_options.io_direction = NWIPE_IO_DIRECTION_SCATTERED;
                     break;
                 }
 
@@ -1006,7 +1013,9 @@ void nwipe_options_log( void )
     nwipe_log( NWIPE_LOG_NOTICE,
                "  direction    = %s",
                nwipe_options.io_direction == NWIPE_IO_DIRECTION_FORWARD ? "start -> end (forward)"
-                                                                        : "end -> start (reverse)" );
+               : nwipe_options.io_direction == NWIPE_IO_DIRECTION_REVERSE
+                   ? "end -> start (reverse)"
+                   : "random permutation of disjoint segments (scattered)" );
 
     nwipe_log( NWIPE_LOG_NOTICE, "  quiet        = %i", nwipe_options.quiet );
     nwipe_log( NWIPE_LOG_NOTICE, "  rounds       = %i", nwipe_options.rounds );

@@ -172,6 +172,11 @@ void display_help()
     "        Helpful when bad blocks otherwise prevent wiping major areas of the device\n" \
     "        Beware throughput may be degraded as it writes against the spin direction\n\n" \
     BHCYN \
+    "      --scattered\n" reset \
+    "        Write the full device in a random segment order instead of linearly.\n" \
+    "        nwipe tiles the address space into disjoint segments and shuffles them,\n" \
+    "        so every byte is still covered exactly once per pass.\n\n" \
+    BHCYN \
     "      --no-retry-on-io-errors\n" reset \
     "        Do NOT retry single failed read/write operations; immediately error\n" \
     "        or skip the failing block. (default is retry 3 times with 5s sleep\n" \
