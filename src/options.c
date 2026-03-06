@@ -1005,7 +1005,8 @@ void nwipe_options_log( void )
 
     nwipe_log( NWIPE_LOG_NOTICE,
                "  direction    = %s",
-               nwipe_options.io_direction == NWIPE_IO_DIRECTION_FORWARD ? "forward" : "reverse" );
+               nwipe_options.io_direction == NWIPE_IO_DIRECTION_FORWARD ? "start -> end (forward)"
+                                                                        : "end -> start (reverse)" );
 
     nwipe_log( NWIPE_LOG_NOTICE, "  quiet        = %i", nwipe_options.quiet );
     nwipe_log( NWIPE_LOG_NOTICE, "  rounds       = %i", nwipe_options.rounds );

@@ -2088,7 +2088,7 @@ void nwipe_gui_io_direction( void )
                 mvwprintw( main_window, yy++, tab2, "is triggered erasing up to the encountered block." );
                 yy++;
                 mvwprintw( main_window, yy++, tab2, "An alternative is to enable no-abort-on-bad-block" );
-                mvwprintw( main_window, yy++, tab2, "to skip such and proceed in chosen I/O direction." );
+                mvwprintw( main_window, yy++, tab2, "to skip over it, proceeding chosen I/O direction." );
                 break;
 
             case 1:
@@ -2100,7 +2100,7 @@ void nwipe_gui_io_direction( void )
                 mvwprintw( main_window, yy++, tab2, "is triggered erasing up to the encountered block." );
                 yy++;
                 mvwprintw( main_window, yy++, tab2, "An alternative is to enable no-abort-on-bad-block" );
-                mvwprintw( main_window, yy++, tab2, "to skip such and proceed in chosen I/O direction." );
+                mvwprintw( main_window, yy++, tab2, "to skip over it, proceeding chosen I/O direction." );
                 break;
         }
 

@@ -27,9 +27,9 @@
 static void nwipe_log_io_direction( nwipe_context_t* c )
 {
     nwipe_log( NWIPE_LOG_NOTICE,
-               "I/O direction for operation on '%s' is: %s",
+               "I/O direction on '%s' is %s",
                c->device_name,
-               c->io_direction == NWIPE_IO_DIRECTION_FORWARD ? "forward" : "reverse" );
+               c->io_direction == NWIPE_IO_DIRECTION_FORWARD ? "start -> end (forward)" : "end -> start (reverse)" );
 }
 
 /* Calls the static_*_pass method for the respective c->io_direction. */
