@@ -260,7 +260,7 @@ int nwipe_random_forward_pass( NWIPE_METHOD_SIGNATURE )
                                (long long) rev_offset );
 
                     c->pass_errors += 1;
-                    c->io_direction = NWIPE_IO_DIRECTION_FORWARD;
+                    c->io_direction = nwipe_options.io_direction;
 
                     if( nwipe_fdatasync( c, __FUNCTION__ ) == 0 ) /* Best effort */
                         nwipe_update_bytes_erased( c, z, bs, 1 );
@@ -310,7 +310,7 @@ int nwipe_random_forward_pass( NWIPE_METHOD_SIGNATURE )
                        c->device_name,
                        (long long) current_offset );
 
-            c->io_direction = NWIPE_IO_DIRECTION_FORWARD;
+            c->io_direction = nwipe_options.io_direction;
 
             if( nwipe_fdatasync( c, __FUNCTION__ ) == 0 ) /* Best effort */
                 nwipe_update_bytes_erased( c, z, bs, 1 );
@@ -509,7 +509,7 @@ int nwipe_random_reverse_pass( NWIPE_METHOD_SIGNATURE )
         }
 
         /* Record the offset we're at before the write (reverse-adjusted). */
-        current_offset = (off64_t) ( z - blocksize );
+        current_offset = (off64_t) ( z - (u64) blocksize );
 
         /* Write the generated random data to the device. */
         r = (int) nwipe_pwrite_with_retry( c, c->device_fd, b, blocksize, current_offset );
@@ -593,7 +593,7 @@ int nwipe_random_reverse_pass( NWIPE_METHOD_SIGNATURE )
                                (long long) fwd_offset );
 
                     c->pass_errors += 1;
-                    c->io_direction = NWIPE_IO_DIRECTION_REVERSE;
+                    c->io_direction = nwipe_options.io_direction;
 
                     if( nwipe_fdatasync( c, __FUNCTION__ ) == 0 ) /* Best effort */
                         nwipe_update_bytes_erased( c, z, bs, 1 );
@@ -642,7 +642,7 @@ int nwipe_random_reverse_pass( NWIPE_METHOD_SIGNATURE )
                        c->device_name,
                        (long long) current_offset );
 
-            c->io_direction = NWIPE_IO_DIRECTION_REVERSE;
+            c->io_direction = nwipe_options.io_direction;
 
             if( nwipe_fdatasync( c, __FUNCTION__ ) == 0 ) /* Best effort */
                 nwipe_update_bytes_erased( c, z, bs, 1 );
@@ -1054,7 +1054,7 @@ int nwipe_random_reverse_verify( NWIPE_METHOD_SIGNATURE )
         }
 
         /* Record the offset we're at before the read (reverse-adjusted). */
-        current_offset = (off64_t) ( z - blocksize );
+        current_offset = (off64_t) ( z - (u64) blocksize );
 
         /* Read data from device. */
         r = (int) nwipe_pread_with_retry( c, c->device_fd, b, blocksize, current_offset );

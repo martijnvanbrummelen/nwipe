@@ -301,7 +301,7 @@ int nwipe_static_forward_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern 
                                (long long) rev_offset );
 
                     c->pass_errors += 1;
-                    c->io_direction = NWIPE_IO_DIRECTION_FORWARD;
+                    c->io_direction = nwipe_options.io_direction;
 
                     if( nwipe_fdatasync( c, __FUNCTION__ ) == 0 ) /* Best effort */
                         nwipe_update_bytes_erased( c, z, bs, 1 );
@@ -352,7 +352,7 @@ int nwipe_static_forward_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern 
                        c->device_name,
                        (long long) current_offset );
 
-            c->io_direction = NWIPE_IO_DIRECTION_FORWARD;
+            c->io_direction = nwipe_options.io_direction;
 
             if( nwipe_fdatasync( c, __FUNCTION__ ) == 0 ) /* Best effort */
                 nwipe_update_bytes_erased( c, z, bs, 1 );
@@ -558,7 +558,7 @@ int nwipe_static_reverse_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern 
         }
 
         /* Record the offset we're at before the write (reverse-adjusted). */
-        current_offset = (off64_t) ( z - blocksize );
+        current_offset = (off64_t) ( z - (u64) blocksize );
 
         if( pattern->length > 0 )
         {
@@ -677,7 +677,7 @@ int nwipe_static_reverse_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern 
                                (long long) fwd_offset );
 
                     c->pass_errors += 1;
-                    c->io_direction = NWIPE_IO_DIRECTION_REVERSE;
+                    c->io_direction = nwipe_options.io_direction;
 
                     if( nwipe_fdatasync( c, __FUNCTION__ ) == 0 ) /* Best effort */
                         nwipe_update_bytes_erased( c, z, bs, 1 );
@@ -727,7 +727,7 @@ int nwipe_static_reverse_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern 
                        c->device_name,
                        (long long) current_offset );
 
-            c->io_direction = NWIPE_IO_DIRECTION_REVERSE;
+            c->io_direction = nwipe_options.io_direction;
 
             if( nwipe_fdatasync( c, __FUNCTION__ ) == 0 ) /* Best effort */
                 nwipe_update_bytes_erased( c, z, bs, 1 );
@@ -1140,7 +1140,7 @@ int nwipe_static_reverse_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* patter
         }
 
         /* Record the offset we're at before the read (reverse-adjusted). */
-        current_offset = (off64_t) ( z - blocksize );
+        current_offset = (off64_t) ( z - (u64) blocksize );
 
         if( pattern->length > 0 )
         {
