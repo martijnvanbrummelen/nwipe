@@ -116,6 +116,9 @@ int nwipe_options_parse( int argc, char** argv )
         /* Whether to allow signals to interrupt a wipe. */
         { "nosignals", no_argument, 0, 0 },
 
+        /* Reverse the I/O direction (end -> start). */
+        { "reverse", no_argument, 0, 0 },
+
         /* Do NOT retry on possibly transient I/O errors. */
         { "no-retry-on-io-errors", no_argument, 0, 0 },
 
@@ -189,6 +192,7 @@ int nwipe_options_parse( int argc, char** argv )
     nwipe_options.verbose = 0;
     nwipe_options.verify = NWIPE_VERIFY_LAST;
     nwipe_options.io_mode = NWIPE_IO_MODE_AUTO; /* Default: auto-select I/O mode. */
+    nwipe_options.io_direction = NWIPE_IO_DIRECTION_FORWARD; /* Default: forward I/O direction. */
     nwipe_options.noretry_io_errors = 0;
     nwipe_options.noabort_block_errors = 0;
     nwipe_options.PDF_toggle_host_info = 0; /* Default: host visibility on PDF disabled */
@@ -478,6 +482,12 @@ int nwipe_options_parse( int argc, char** argv )
                                  argv[optind - 1] );
                         exit( EINVAL );
                     }
+                }
+
+                if( strcmp( nwipe_options_long[i].name, "reverse" ) == 0 )
+                {
+                    nwipe_options.io_direction = NWIPE_IO_DIRECTION_REVERSE;
+                    break;
                 }
 
                 if( strcmp( nwipe_options_long[i].name, "no-retry-on-io-errors" ) == 0 )
@@ -951,107 +961,69 @@ void nwipe_options_log( void )
     /**
      *  Prints a manifest of options to the log.
      */
-
     nwipe_log( NWIPE_LOG_NOTICE, "Program options are set as follows..." );
 
-    if( nwipe_options.autonuke == 1 )
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "  autonuke = %i (on)", nwipe_options.autonuke );
-    }
-    else
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "  autonuke = %i (off)", nwipe_options.autonuke );
-    }
+    nwipe_log(
+        NWIPE_LOG_NOTICE, "  autonuke     = %i (%s)", nwipe_options.autonuke, nwipe_options.autonuke ? "on" : "off" );
 
-    if( nwipe_options.autopoweroff )
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "  autopoweroff = %i (on)", nwipe_options.autopoweroff );
-    }
-    else
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "  autopoweroff = %i (off)", nwipe_options.autopoweroff );
-    }
+    nwipe_log( NWIPE_LOG_NOTICE,
+               "  autopoweroff = %i (%s)",
+               nwipe_options.autopoweroff,
+               nwipe_options.autopoweroff ? "on" : "off" );
 
     if( nwipe_options.noblank )
-    {
         nwipe_log( NWIPE_LOG_NOTICE, "  do not perform a final blank pass" );
-    }
-
     if( nwipe_options.nowait )
-    {
         nwipe_log( NWIPE_LOG_NOTICE, "  do not wait for a key before exiting" );
-    }
-
     if( nwipe_options.nosignals )
-    {
         nwipe_log( NWIPE_LOG_NOTICE, "  do not allow signals to interrupt a wipe" );
-    }
-
     if( nwipe_options.nogui )
-    {
         nwipe_log( NWIPE_LOG_NOTICE, "  do not show GUI interface" );
-    }
 
-    nwipe_log( NWIPE_LOG_NOTICE, "  banner   = %s", banner );
+    nwipe_log( NWIPE_LOG_NOTICE, "  banner       = %s", banner );
 
     if( nwipe_options.prng == &nwipe_twister )
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Mersenne Twister" );
-    }
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng         = Mersenne Twister" );
     else if( nwipe_options.prng == &nwipe_add_lagg_fibonacci_prng )
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Lagged Fibonacci generator" );
-    }
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng         = Lagged Fibonacci generator" );
     else if( nwipe_options.prng == &nwipe_xoroshiro256_prng )
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = XORoshiro-256" );
-    }
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng         = XORoshiro-256" );
     else if( nwipe_options.prng == &nwipe_splitmix64_prng )
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = SplitMix64" );
-    }
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng         = SplitMix64" );
     else if( nwipe_options.prng == &nwipe_aes_ctr_prng )
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = AES-CTR (CSPRNG)" );
-    }
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng         = AES-CTR (CSPRNG)" );
     else if( nwipe_options.prng == &nwipe_isaac )
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Isaac" );
-    }
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng         = Isaac" );
     else if( nwipe_options.prng == &nwipe_isaac64 )
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Isaac64" );
-    }
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng         = Isaac64" );
     else if( nwipe_options.prng == &nwipe_chacha20_prng )
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = ChaCha20 (CSPRNG)" );
-    }
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng         = ChaCha20 (CSPRNG)" );
     else
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Unknown" );
-    }
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng         = Unknown" );
 
-    nwipe_log( NWIPE_LOG_NOTICE, "  method   = %s", nwipe_method_label( nwipe_options.method ) );
-    nwipe_log( NWIPE_LOG_NOTICE, "  quiet    = %i", nwipe_options.quiet );
-    nwipe_log( NWIPE_LOG_NOTICE, "  rounds   = %i", nwipe_options.rounds );
-    nwipe_log( NWIPE_LOG_NOTICE, "  sync     = %i", nwipe_options.sync );
+    nwipe_log( NWIPE_LOG_NOTICE, "  method       = %s", nwipe_method_label( nwipe_options.method ) );
+
+    nwipe_log( NWIPE_LOG_NOTICE,
+               "  direction    = %s",
+               nwipe_options.io_direction == NWIPE_IO_DIRECTION_FORWARD ? "forward" : "reverse" );
+
+    nwipe_log( NWIPE_LOG_NOTICE, "  quiet        = %i", nwipe_options.quiet );
+    nwipe_log( NWIPE_LOG_NOTICE, "  rounds       = %i", nwipe_options.rounds );
+    nwipe_log( NWIPE_LOG_NOTICE, "  sync         = %i", nwipe_options.sync );
 
     switch( nwipe_options.verify )
     {
         case NWIPE_VERIFY_NONE:
-            nwipe_log( NWIPE_LOG_NOTICE, "  verify   = %i (off)", nwipe_options.verify );
+            nwipe_log( NWIPE_LOG_NOTICE, "  verify       = %i (off)", nwipe_options.verify );
             break;
-
         case NWIPE_VERIFY_LAST:
-            nwipe_log( NWIPE_LOG_NOTICE, "  verify   = %i (last pass)", nwipe_options.verify );
+            nwipe_log( NWIPE_LOG_NOTICE, "  verify       = %i (last pass)", nwipe_options.verify );
             break;
-
         case NWIPE_VERIFY_ALL:
-            nwipe_log( NWIPE_LOG_NOTICE, "  verify   = %i (all passes)", nwipe_options.verify );
+            nwipe_log( NWIPE_LOG_NOTICE, "  verify       = %i (all passes)", nwipe_options.verify );
             break;
-
         default:
-            nwipe_log( NWIPE_LOG_NOTICE, "  verify   = %i", nwipe_options.verify );
+            nwipe_log( NWIPE_LOG_NOTICE, "  verify       = %i", nwipe_options.verify );
             break;
     }
 }

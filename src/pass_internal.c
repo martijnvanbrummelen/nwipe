@@ -1,3 +1,25 @@
+/*
+ *  pass_internal.c: Internal pass-related I/O routines.
+ *
+ *  Copyright Darik Horn <dajhorn-dban@vanadac.com>.
+ *
+ *  Modifications to original dwipe Copyright Andy Beverley <andy@andybev.com>
+ *
+ *  This program is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free Software
+ *  Foundation, version 2.
+ *
+ *  This program is distributed in the hope that it will be useful, but WITHOUT
+ *  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along with
+ *  this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
+
 #define _POSIX_C_SOURCE 200809L
 #include "pass_internal.h"
 
@@ -275,6 +297,74 @@ ssize_t nwipe_read_with_retry( nwipe_context_t* c, int fd, void* buf, size_t cou
     c->retry_status = 0;
     return r;
 } /* nwipe_read_with_retry */
+
+/* Behaves like pread(), but retries up to MAX_IO_ATTEMPTS times on error or short write. */
+ssize_t nwipe_pread_with_retry( nwipe_context_t* c, int fd, void* buf, size_t count, off64_t offset )
+{
+    ssize_t r;
+    int attempt;
+    int slept_s;
+
+    for( attempt = 0; attempt < NWIPE_MAX_IO_ATTEMPTS; attempt++ )
+    {
+        r = pread( fd, buf, count, offset );
+
+        if( nwipe_options.noretry_io_errors )
+            return r; /* retrying is disabled */
+
+        if( r == (ssize_t) count || r == 0 )
+        {
+            c->retry_status = 0;
+            return r; /* full read or EOF - success */
+        }
+
+        if( r < 0 )
+        {
+            nwipe_log( NWIPE_LOG_WARNING,
+                       "%s: pread() failed on '%s' (attempt %d/%d): %s",
+                       __FUNCTION__,
+                       c->device_name,
+                       attempt + 1,
+                       NWIPE_MAX_IO_ATTEMPTS,
+                       strerror( errno ) );
+        }
+        else
+        {
+            nwipe_log( NWIPE_LOG_WARNING,
+                       "%s: short read on '%s' (attempt %d/%d): "
+                       "read %zd of %zu bytes.",
+                       __FUNCTION__,
+                       c->device_name,
+                       attempt + 1,
+                       NWIPE_MAX_IO_ATTEMPTS,
+                       r,
+                       count );
+        }
+
+        if( attempt + 1 < NWIPE_MAX_IO_ATTEMPTS )
+        {
+            c->io_retries += 1;
+            c->retry_status = 1;
+
+            nwipe_log( NWIPE_LOG_NOTICE, "%s: retrying in %d seconds ...", __FUNCTION__, NWIPE_IO_RETRY_DELAY_S );
+
+            for( slept_s = 0; slept_s < NWIPE_IO_RETRY_DELAY_S; slept_s++ )
+            {
+                sleep( 1 );
+                pthread_testcancel();
+            }
+        }
+    }
+
+    nwipe_log( NWIPE_LOG_ERROR,
+               "%s: giving up pread() on '%s' after %d attempts.",
+               __FUNCTION__,
+               c->device_name,
+               NWIPE_MAX_IO_ATTEMPTS );
+
+    c->retry_status = 0;
+    return r;
+} /* nwipe_pread_with_retry */
 
 /*
  * Performs fdatasync(), logs (and increases error count).

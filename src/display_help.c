@@ -153,6 +153,11 @@ void display_help()
     "        Do NOT show or wipe any USB devices whether in GUI mode, " BHCYN "--nogui" reset " or\n" \
     "        " BHCYN "--autonuke modes.\n\n" reset \
     BHCYN \
+    "      --reverse\n" reset \
+    "        Reverse the I/O direction (from the end of the device towards the start)\n" \
+    "        Helpful when bad blocks otherwise prevent wiping major areas of the device\n" \
+    "        Beware throughput may be degraded as it writes against the spin direction\n\n" \
+    BHCYN \
     "      --no-retry-on-io-errors\n" reset \
     "        Do NOT retry single failed read/write operations; immediately error\n" \
     "        or skip the failing block. (default is retry 3 times with 5s sleep\n" \

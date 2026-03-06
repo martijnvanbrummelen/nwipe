@@ -23,22 +23,38 @@
 #include "pass.h"
 #include "pass_internal.h"
 
+static void nwipe_log_io_direction( nwipe_context_t* c )
+{
+    nwipe_log( NWIPE_LOG_NOTICE,
+               "I/O direction for operation on '%s' is: %s",
+               c->device_name,
+               c->io_direction == NWIPE_IO_DIRECTION_FORWARD ? "forward" : "reverse" );
+}
+
 int nwipe_static_pass( nwipe_context_t* c, nwipe_pattern_t* pattern )
 {
-    return nwipe_static_forward_pass( c, pattern );
+    nwipe_log_io_direction( c );
+    return c->io_direction == NWIPE_IO_DIRECTION_FORWARD ? nwipe_static_forward_pass( c, pattern )
+                                                         : nwipe_static_reverse_pass( c, pattern );
 }
 
 int nwipe_static_verify( nwipe_context_t* c, nwipe_pattern_t* pattern )
 {
-    return nwipe_static_forward_verify( c, pattern );
+    nwipe_log_io_direction( c );
+    return c->io_direction == NWIPE_IO_DIRECTION_FORWARD ? nwipe_static_forward_verify( c, pattern )
+                                                         : nwipe_static_reverse_verify( c, pattern );
 }
 
 int nwipe_random_pass( nwipe_context_t* c )
 {
-    return nwipe_random_forward_pass( c );
+    nwipe_log_io_direction( c );
+    return c->io_direction == NWIPE_IO_DIRECTION_FORWARD ? nwipe_random_forward_pass( c )
+                                                         : nwipe_random_reverse_pass( c );
 }
 
 int nwipe_random_verify( nwipe_context_t* c )
 {
-    return nwipe_random_forward_verify( c );
+    nwipe_log_io_direction( c );
+    return c->io_direction == NWIPE_IO_DIRECTION_FORWARD ? nwipe_random_forward_verify( c )
+                                                         : nwipe_random_reverse_verify( c );
 }

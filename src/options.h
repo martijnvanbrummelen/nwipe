@@ -78,6 +78,8 @@ typedef struct
     nwipe_verify_t verify;  // A flag to indicate whether writes should be verified.
     nwipe_io_mode_t io_mode;  // Global runtime I/O mode selection (auto/direct/cached), note in auto mode each
                               // drive may use a different I/O mode if directIO isn't supported on a given drive.
+    nwipe_io_direction_t io_direction;  // Global runtime I/O direction selection (forward/reverse), note a device
+                                        // may use a different I/O direction internally (e.g. during error handling)
     int noretry_io_errors;  // 0 = retry on I/O error, 1 = do not retry on I/O error.
     int noabort_block_errors;  // 0 = abort on errors, 1 = Continue on errors.
 } nwipe_options_t;
