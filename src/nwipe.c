@@ -828,6 +828,9 @@ int main( int argc, char** argv )
             /* Initialise the wipe_status flag, -1 = wipe not yet started */
             c2[i]->wipe_status = -1;
 
+            /* Initialise the I/O direction */
+            c2[i]->io_direction = nwipe_options.io_direction;
+
             /* Open the file for reads and writes, honoring the configured I/O mode. */
             int open_flags = O_RDWR;
 
@@ -1400,10 +1403,16 @@ void* signal_hand( void* ptr )
 
                 for( i = 0; i < nwipe_misc_thread_data->nwipe_selected; i++ )
                 {
-
                     if( c[i]->thread )
                     {
                         char* status = "";
+                        const char* op_prefix = c[i]->io_direction == NWIPE_IO_DIRECTION_FORWARD ? ""
+                            : c[i]->io_direction == NWIPE_IO_DIRECTION_REVERSE                   ? "<"
+                                                                                                 : "S";
+                        const char* op_suffix = c[i]->io_direction == NWIPE_IO_DIRECTION_FORWARD ? ""
+                            : c[i]->io_direction == NWIPE_IO_DIRECTION_REVERSE                   ? ">"
+                                                                                                 : "S";
+
                         switch( c[i]->pass_type )
                         {
                             case NWIPE_PASS_FINAL_BLANK:
@@ -1437,7 +1446,7 @@ void* signal_hand( void* ptr )
                         convert_seconds_to_hours_minutes_seconds( c[i]->eta, &hours, &minutes, &seconds );
 
                         nwipe_log( NWIPE_LOG_INFO,
-                                   "%s: %05.2f%%, round %i of %i, pass %i of %i, eta %02i:%02i:%02i, %s",
+                                   "%s: %05.2f%%, round %i of %i, pass %i of %i, eta %02i:%02i:%02i, %s%s%s",
                                    c[i]->device_name,
                                    c[i]->round_percent,
                                    c[i]->round_working,
@@ -1447,7 +1456,9 @@ void* signal_hand( void* ptr )
                                    hours,
                                    minutes,
                                    seconds,
-                                   status );
+                                   status[0] != '\0' ? op_prefix : "",
+                                   status,
+                                   status[0] != '\0' ? op_suffix : "" );
                     }
                     else
                     {

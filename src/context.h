@@ -23,6 +23,7 @@
 #ifndef CONTEXT_H_
 #define CONTEXT_H_
 
+#include "nwipe.h"
 #include "prng.h"
 #ifndef __HDDTEMP_H__
 #include "hddtemp_scsi/hddtemp.h"
@@ -65,6 +66,13 @@ typedef enum {
     NWIPE_IO_MODE_DIRECT, /* Force O_DIRECT, fail if not supported. */
     NWIPE_IO_MODE_CACHED /* Force cached I/O, never attempt O_DIRECT. */
 } nwipe_io_mode_t;
+
+/* I/O direction for data path. */
+typedef enum {
+    NWIPE_IO_DIRECTION_FORWARD = 0, /* Start -> End */
+    NWIPE_IO_DIRECTION_REVERSE, /* End -> Start */
+    NWIPE_IO_DIRECTION_SCATTERED, /* Random permutation of disjoint address segments. */
+} nwipe_io_direction_t;
 
 #define NWIPE_KNOB_SPEEDRING_SIZE 30
 #define NWIPE_KNOB_SPEEDRING_GRANULARITY 10
@@ -159,7 +167,6 @@ typedef struct nwipe_context_t_
     nwipe_speedring_t speedring;  // Ring buffer for computing the rolling throughput average.
     short sync_status;  // A flag to indicate when the method is syncing.
     short retry_status;  // A flag to indicate when the method is retrying.
-    short reverse_status;  // A flag to indicate when the method is reverse wiping.
     pthread_t thread;  // The ID of the thread.
     u64 throughput;  // Average throughput in bytes per second.
     char throughput_txt[13];  // Human readable throughput.
@@ -210,6 +217,7 @@ typedef struct nwipe_context_t_
     int HPA_display_toggle_state;  // 0 or 1 Used to toggle between "[1TB] [ 33C]" and [HDA STATUS]
     time_t HPA_toggle_time;  // records a time, then if for instance 3 seconds has elapsed the display changes
     nwipe_io_mode_t io_mode;  // specific I/O method for a given drive, direct or cached.
+    nwipe_io_direction_t io_direction;  // specific I/O direction for a given drive, forward or reverse.
     int test_use1;
     int test_use2;
 
