@@ -48,6 +48,7 @@ size_t nwipe_effective_io_blocksize( const nwipe_context_t* c );
 void* nwipe_alloc_io_buffer( const nwipe_context_t* c, size_t size, int clear, const char* label );
 int nwipe_compute_sync_rate_for_device( const nwipe_context_t* c, size_t io_blocksize );
 void nwipe_update_bytes_erased( nwipe_context_t* c, u64 z, u64 bs, int synced );
+int nwipe_prng_is_active( const char* buf, size_t blocksize );
 
 int nwipe_static_forward_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern );
 int nwipe_static_reverse_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern );

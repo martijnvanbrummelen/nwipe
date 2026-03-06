@@ -40,6 +40,7 @@
 int nwipe_random_forward_pass( NWIPE_METHOD_SIGNATURE )
 {
     int r;
+    int i = 0;
     size_t blocksize;
     size_t io_blocksize;
     off64_t offset;
@@ -66,9 +67,6 @@ int nwipe_random_forward_pass( NWIPE_METHOD_SIGNATURE )
         /* Compute the per-write sync rate based on io_blocksize and old semantics. */
         syncRate = nwipe_compute_sync_rate_for_device( c, io_blocksize );
     }
-
-    int i = 0;
-    int idx;
 
     if( c->prng_seed.s == NULL )
     {
@@ -138,33 +136,13 @@ int nwipe_random_forward_pass( NWIPE_METHOD_SIGNATURE )
 
         /*
          * For the first block only, verify that the PRNG actually wrote
-         * something non-zero into the buffer. This preserves the original
-         * sanity check but works even if the I/O block size is larger than
-         * st_blksize.
+         * something non-zero into the buffer.
          */
-        if( z == c->device_size )
+        if( z == c->device_size && !nwipe_prng_is_active( b, blocksize ) )
         {
-            size_t check_len = (size_t) c->device_stat.st_blksize;
-            if( check_len > blocksize )
-                check_len = blocksize;
-
-            idx = (int) check_len - 1;
-
-            while( idx >= 0 )
-            {
-                if( b[idx] != 0 )
-                {
-                    nwipe_log( NWIPE_LOG_NOTICE, "prng stream is active" );
-                    break;
-                }
-                idx--;
-            }
-            if( idx < 0 )
-            {
-                nwipe_log( NWIPE_LOG_FATAL, "ERROR, prng wrote nothing to the buffer" );
-                free( b );
-                return -1;
-            }
+            nwipe_log( NWIPE_LOG_SANITY, "%s: PRNG returned all zeroes", __FUNCTION__ );
+            free( b );
+            return -1;
         }
 
         /* Record the offset we're at before the write. */
@@ -442,6 +420,7 @@ int nwipe_random_forward_pass( NWIPE_METHOD_SIGNATURE )
 int nwipe_random_reverse_pass( NWIPE_METHOD_SIGNATURE )
 {
     int r;
+    int i = 0;
     size_t blocksize;
     size_t io_blocksize;
     off64_t current_offset;
@@ -467,9 +446,6 @@ int nwipe_random_reverse_pass( NWIPE_METHOD_SIGNATURE )
         /* Compute the per-write sync rate based on io_blocksize and old semantics. */
         syncRate = nwipe_compute_sync_rate_for_device( c, io_blocksize );
     }
-
-    int i = 0;
-    int idx;
 
     if( c->prng_seed.s == NULL )
     {
@@ -523,33 +499,13 @@ int nwipe_random_reverse_pass( NWIPE_METHOD_SIGNATURE )
 
         /*
          * For the first block only, verify that the PRNG actually wrote
-         * something non-zero into the buffer. This preserves the original
-         * sanity check but works even if the I/O block size is larger than
-         * st_blksize.
+         * something non-zero into the buffer.
          */
-        if( z == c->device_size )
+        if( z == c->device_size && !nwipe_prng_is_active( b, blocksize ) )
         {
-            size_t check_len = (size_t) c->device_stat.st_blksize;
-            if( check_len > blocksize )
-                check_len = blocksize;
-
-            idx = (int) check_len - 1;
-
-            while( idx >= 0 )
-            {
-                if( b[idx] != 0 )
-                {
-                    nwipe_log( NWIPE_LOG_NOTICE, "prng stream is active" );
-                    break;
-                }
-                idx--;
-            }
-            if( idx < 0 )
-            {
-                nwipe_log( NWIPE_LOG_FATAL, "ERROR, prng wrote nothing to the buffer" );
-                free( b );
-                return -1;
-            }
+            nwipe_log( NWIPE_LOG_SANITY, "%s: PRNG returned all zeroes", __FUNCTION__ );
+            free( b );
+            return -1;
         }
 
         /* Record the offset we're at before the write (reverse-adjusted). */
@@ -866,6 +822,18 @@ int nwipe_random_forward_verify( NWIPE_METHOD_SIGNATURE )
         /* Generate expected random data into pattern buffer. */
         c->prng->read( &c->prng_state, d, blocksize );
 
+        /*
+         * For the first block only, verify that the PRNG actually wrote
+         * something non-zero into the buffer.
+         */
+        if( z == c->device_size && !nwipe_prng_is_active( d, blocksize ) )
+        {
+            nwipe_log( NWIPE_LOG_SANITY, "%s: PRNG returned all zeroes", __FUNCTION__ );
+            free( b );
+            free( d );
+            return -1;
+        }
+
         /* Record the offset we're at before the read. */
         current_offset = (off64_t) ( c->device_size - z );
 
@@ -1072,6 +1040,18 @@ int nwipe_random_reverse_verify( NWIPE_METHOD_SIGNATURE )
 
         /* Generate expected random data into pattern buffer. */
         c->prng->read( &c->prng_state, d, blocksize );
+
+        /*
+         * For the first block only, verify that the PRNG actually wrote
+         * something non-zero into the buffer.
+         */
+        if( z == c->device_size && !nwipe_prng_is_active( d, blocksize ) )
+        {
+            nwipe_log( NWIPE_LOG_SANITY, "%s: PRNG returned all zeroes", __FUNCTION__ );
+            free( b );
+            free( d );
+            return -1;
+        }
 
         /* Record the offset we're at before the read (reverse-adjusted). */
         current_offset = (off64_t) ( z - blocksize );

@@ -556,3 +556,17 @@ void nwipe_update_bytes_erased( nwipe_context_t* c, u64 z, u64 bs, int synced )
         }
     }
 }
+
+/* Checks if the PRNG buffer is (1 = not all zeroes, 0 = all zeroes) */
+int nwipe_prng_is_active( const char* buf, size_t blocksize )
+{
+    for( size_t i = 0; i < blocksize; i++ )
+    {
+        if( buf[i] != 0 )
+        {
+            return 1;
+        }
+    }
+
+    return 0;
+}
