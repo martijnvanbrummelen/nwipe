@@ -227,6 +227,11 @@ int nwipe_static_forward_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern 
             if( nwipe_fdatasync( c, __FUNCTION__ ) == 0 ) /* Best effort */
                 nwipe_update_bytes_erased( c, z, bs, 1 );
 
+            /* The bad block itself is unwritable, count it as skipped */
+            bs += (u64) blocksize;
+            c->round_done += (u64) blocksize;
+            z -= (u64) blocksize;
+
             c->reverse_status = 1;
 
             if( c->device_size % (u64) io_blocksize != 0 )
