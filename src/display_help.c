@@ -3,11 +3,20 @@
 
 void display_help()
 {
-    /**
+    /************************************************
      * displays the help section to STDOUT and exits.
      */
-    /* Limit line length to a maximum of 80 characters so it looks good in 80x25 terminals i.e shredos */
-    /*  ___12345678901234567890123456789012345678901234567890123456789012345678901234567890< Do not exceed */
+
+    /* Limit the line length to a maximum of 80 printable characters so it looks good in 80x25 terminals
+     * on a 4:3 ratio monitor. Note some lines include escape seqences for color coding of characters so
+     * they may appear below longer than they actually are when printed. Case in point, line 164 --nousb..
+     * that contains esc sequences to color code --nogui.
+     * "        Do NOT show or wipe any USB devices whether in GUI mode, " BHCYN "--nogui" reset " or\n" \
+     */
+
+    /*        10        20        30        40        50        60        70        80
+     *2345678901234567890123456789012345678901234567890123456789012345678901234567890< Do not exceed
+     */
 
     printf( "Usage: nwipe [options] [device1] [device2] ... \n" \
     BHCYN \
@@ -150,8 +159,9 @@ void display_help()
     BHCYN \
     "      --nogui\n" reset \
     "        Do NOT show the GUI interface. Automatically invokes the nowait\n" \
-    "        option. Must be used with the" BHCYN " --autonuke " reset "option. Send\n" \
-    "        SIGUSR1 to log current stats.\n\n" \
+    "        option. Must be used with the" BHCYN " --autonuke " reset "option.\n" \
+    "        Send a `kill -signal SIGUSR1 pid` to display current stats in the\n" \
+    "        terminal.\n\n" \
     BHCYN \
     "      --nousb\n" reset \
     "        Do NOT show or wipe any USB devices whether in GUI mode, " BHCYN "--nogui" reset " or\n" \
