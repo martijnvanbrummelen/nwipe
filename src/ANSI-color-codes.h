@@ -1,3 +1,5 @@
+#ifndef NWIPE_ANSI_COLOR_CODES_H
+#define NWIPE_ANSI_COLOR_CODES_H
 // ANSI color codes for help text
 
 // Regular text
@@ -74,3 +76,5 @@
 #define reset "\e[0m"
 #define CRESET "\e[0m"
 #define COLOR_RESET "\e[0m"
+
+#endif /* NWIPE_ANSI_COLOR_CODES_H */
