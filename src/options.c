@@ -1013,7 +1013,7 @@ void nwipe_options_log( void )
     nwipe_log( NWIPE_LOG_NOTICE,
                "  direction    = %s",
                nwipe_options.io_direction == NWIPE_IO_DIRECTION_FORWARD ? "start -> end (forward)"
-               : nwipe_options.io_direction == NWIPE_IO_DIRECTION_REVERSE
+                   : nwipe_options.io_direction == NWIPE_IO_DIRECTION_REVERSE
                    ? "end -> start (reverse)"
                    : "random permutation of disjoint segments (scattered)" );
 

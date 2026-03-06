@@ -37,10 +37,7 @@ static void nwipe_log_io_direction( nwipe_context_t* c )
         direction = "random permutation of disjoint segments (scattered)";
     }
 
-    nwipe_log( NWIPE_LOG_NOTICE,
-               "I/O direction on '%s' is %s",
-               c->device_name,
-               direction );
+    nwipe_log( NWIPE_LOG_NOTICE, "I/O direction on '%s' is %s", c->device_name, direction );
 }
 
 /* Calls the static_*_pass method for the respective c->io_direction. */

@@ -1863,10 +1863,9 @@ void nwipe_gui_options( void )
                NWIPE_GUI_OPTIONS_METHOD_X,
                "Method:  %s%s",
                nwipe_method_label( nwipe_options.method ),
-               nwipe_options.io_direction == NWIPE_IO_DIRECTION_FORWARD ? ""
-               : nwipe_options.io_direction == NWIPE_IO_DIRECTION_REVERSE
-                   ? " (R)"
-                   : " (S)" );
+               nwipe_options.io_direction == NWIPE_IO_DIRECTION_FORWARD       ? ""
+                   : nwipe_options.io_direction == NWIPE_IO_DIRECTION_REVERSE ? " (R)"
+                                                                              : " (S)" );
 
     mvwprintw( options_window, NWIPE_GUI_OPTIONS_VERIFY_Y, NWIPE_GUI_OPTIONS_VERIFY_X, "Verify:  " );
 
@@ -2059,9 +2058,8 @@ void nwipe_gui_io_direction( void )
     int yy;
     int keystroke;
     int focus = nwipe_options.io_direction == NWIPE_IO_DIRECTION_FORWARD ? 0
-               : nwipe_options.io_direction == NWIPE_IO_DIRECTION_REVERSE
-                   ? 1
-                   : 2;
+        : nwipe_options.io_direction == NWIPE_IO_DIRECTION_REVERSE       ? 1
+                                                                         : 2;
 
     /* Update the footer window. */
     werase( footer_window );
@@ -7893,11 +7891,11 @@ void* nwipe_gui_status( void* ptr )
                     if( c[i]->wipe_status == 1 )
                     {
                         const char* op_prefix = c[i]->io_direction == NWIPE_IO_DIRECTION_FORWARD ? ""
-                                                : c[i]->io_direction == NWIPE_IO_DIRECTION_REVERSE ? "<"
-                                                                                                   : "S";
+                            : c[i]->io_direction == NWIPE_IO_DIRECTION_REVERSE                   ? "<"
+                                                                                                 : "S";
                         const char* op_suffix = c[i]->io_direction == NWIPE_IO_DIRECTION_FORWARD ? ""
-                                                : c[i]->io_direction == NWIPE_IO_DIRECTION_REVERSE ? ">"
-                                                                                                   : "S";
+                            : c[i]->io_direction == NWIPE_IO_DIRECTION_REVERSE                   ? ">"
+                                                                                                 : "S";
 
                         switch( c[i]->pass_type )
                         {
