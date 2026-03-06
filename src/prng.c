@@ -17,6 +17,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#define _POSIX_C_SOURCE 200809L
+
 #include "nwipe.h"
 #include "prng.h"
 #include "context.h"
@@ -566,7 +568,7 @@ _Static_assert( ( STASH_CAPACITY % SIZE_OF_AES_CTR_PRNG ) == 0,
 #endif
 
 /** @brief Thread-local ring buffer storage for prefetched keystream. */
-NW_THREAD_LOCAL static unsigned char stash[STASH_CAPACITY] NW_ALIGN( 64 );
+static NW_THREAD_LOCAL unsigned char stash[STASH_CAPACITY] NW_ALIGN( 64 );
 
 /**
  * @name Ring indices (thread-local)
@@ -585,9 +587,9 @@ NW_THREAD_LOCAL static unsigned char stash[STASH_CAPACITY] NW_ALIGN( 64 );
  * threads. One PRNG instance per thread.
  * @}
  */
-NW_THREAD_LOCAL static size_t rb_head = 0; /* next byte to read */
-NW_THREAD_LOCAL static size_t rb_tail = 0; /* next byte to write */
-NW_THREAD_LOCAL static size_t rb_count = 0; /* occupied bytes */
+static NW_THREAD_LOCAL size_t rb_head = 0; /* next byte to read */
+static NW_THREAD_LOCAL size_t rb_tail = 0; /* next byte to write */
+static NW_THREAD_LOCAL size_t rb_count = 0; /* occupied bytes */
 
 /**
  * @brief Free space available in the ring (bytes).
