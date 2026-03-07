@@ -149,8 +149,8 @@ const char* stats_title = " Statistics ";
 
 /* Footer labels. */
 const char* main_window_footer =
-    "S=Start m=Method p=PRNG v=Verify t=Path o=Benchmark r=Rounds b=Blanking Space=Select c=Config CTRL+C=Quit";
-const char* shredos_main_window_footer = "S=Start m=Method p=PRNG v=Verify t=Path o=Benchmark r=Rounds b=Blanking "
+    "S=Start m=Method p=PRNG v=Verify r=Rounds b=Blanking d=Direction t=Path Space=Select c=Config CTRL+C=Quit";
+const char* shredos_main_window_footer = "S=Start m=Method p=PRNG v=Verify r=Rounds b=Blanking d=Direction t=Path"
                                          "Space=Select f=Font size c=Config CTRL+C=Quit";
 char** p_main_window_footer;
 const char* main_window_footer_warning_lower_case_s = "  WARNING: To start the wipe press SHIFT+S (uppercase S)  ";
@@ -1619,9 +1619,9 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                     /* Run the option dialog. */
                     nwipe_gui_verify();
                     break;
-                case 'o':
+                case 'd':
                     validkeyhit = 1;
-                    nwipe_gui_benchmark_prng();
+                    nwipe_gui_io_direction();
                     break;
 
                 case 't':
@@ -1861,8 +1861,9 @@ void nwipe_gui_options( void )
     mvwprintw( options_window,
                NWIPE_GUI_OPTIONS_METHOD_Y,
                NWIPE_GUI_OPTIONS_METHOD_X,
-               "Method:  %s",
-               nwipe_method_label( nwipe_options.method ) );
+               "Method:  %s%s",
+               nwipe_method_label( nwipe_options.method ),
+               nwipe_options.io_direction == NWIPE_IO_DIRECTION_FORWARD ? "" : " (R)" );
 
     mvwprintw( options_window, NWIPE_GUI_OPTIONS_VERIFY_Y, NWIPE_GUI_OPTIONS_VERIFY_X, "Verify:  " );
 
@@ -2044,6 +2045,113 @@ void nwipe_gui_rounds( void )
     }
 
 } /* nwipe_guid_rounds */
+
+void nwipe_gui_io_direction( void )
+{
+    extern int terminate_signal;
+
+    const int tab1 = 2;
+    const int tab2 = 30;
+
+    int yy;
+    int keystroke;
+    int focus = nwipe_options.io_direction == NWIPE_IO_DIRECTION_FORWARD ? 0 : 1;
+
+    /* Update the footer window. */
+    werase( footer_window );
+    nwipe_gui_title( footer_window, selection_footer );
+    wrefresh( footer_window );
+
+    do
+    {
+        werase( main_window );
+
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+
+        yy = 2;
+
+        mvwprintw( main_window, yy++, tab1, "  Start -> End (Forward)" );
+        mvwprintw( main_window, yy++, tab1, "  End -> Start (Reverse)" );
+        yy++;
+
+        mvwaddch( main_window, 2 + focus, tab1, ACS_RARROW );
+
+        yy = 2;
+
+        switch( focus )
+        {
+            case 0:
+                mvwprintw( main_window, yy++, tab2, "Wipes the device from the first block to the     " );
+                mvwprintw( main_window, yy++, tab2, "last. Fastest option as it writes with the spin  " );
+                mvwprintw( main_window, yy++, tab2, "direction of the disk. If a bad block is hit and " );
+                mvwprintw( main_window, yy++, tab2, "no-abort-on-block-errors is not set, reverse wipe" );
+                mvwprintw( main_window, yy++, tab2, "is triggered erasing up to the encountered block." );
+                yy++;
+                mvwprintw( main_window, yy++, tab2, "An alternative is to enable no-abort-on-bad-block" );
+                mvwprintw( main_window, yy++, tab2, "to skip over it, proceeding chosen I/O direction." );
+                break;
+
+            case 1:
+                mvwprintw( main_window, yy++, tab2, "Wipes the device from the last block to the      " );
+                mvwprintw( main_window, yy++, tab2, "first. May be slower as it writes against the    " );
+                mvwprintw( main_window, yy++, tab2, "spin direction. Useful if a bad block prevents a " );
+                mvwprintw( main_window, yy++, tab2, "forward wipe. If a bad block is hit and argument " );
+                mvwprintw( main_window, yy++, tab2, "no-abort-on-block-errors is not set, forward wipe" );
+                mvwprintw( main_window, yy++, tab2, "is triggered erasing up to the encountered block." );
+                yy++;
+                mvwprintw( main_window, yy++, tab2, "An alternative is to enable no-abort-on-bad-block" );
+                mvwprintw( main_window, yy++, tab2, "to skip over it, proceeding chosen I/O direction." );
+                break;
+        }
+
+        box( main_window, 0, 0 );
+        nwipe_gui_title( main_window, " I/O Direction " );
+        wrefresh( main_window );
+
+        /* Wait 250ms for input from getch, if nothing getch will then continue,
+         * This is necessary so that the while loop can be exited by the
+         * terminate_signal e.g.. the user pressing control-c to exit.
+         * Do not change this value, a higher value means the keys become
+         * sluggish, any slower and more time is spent unnecessarily looping
+         * which wastes CPU cycles.
+         */
+        timeout( 250 );
+        keystroke = getch();
+        timeout( -1 );
+
+        switch( keystroke )
+        {
+            case KEY_DOWN:
+            case 'j':
+            case 'J':
+                if( focus < 1 )
+                    focus = 1;
+                break;
+
+            case KEY_UP:
+            case 'k':
+            case 'K':
+                if( focus > 0 )
+                    focus = 0;
+                break;
+
+            case KEY_ENTER:
+            case ' ':
+            case 10:
+                if( focus == 0 )
+                    nwipe_options.io_direction = NWIPE_IO_DIRECTION_FORWARD;
+                else
+                    nwipe_options.io_direction = NWIPE_IO_DIRECTION_REVERSE;
+                return;
+
+            case KEY_BACKSPACE:
+            case KEY_BREAK:
+            case 27: /* ESC */
+                return;
+        }
+
+    } while( terminate_signal != 1 );
+} /* nwipe_gui_io_direction */
 
 void nwipe_gui_prng_category( void )
 {
@@ -7763,6 +7871,9 @@ void* nwipe_gui_status( void* ptr )
 
                     if( c[i]->wipe_status == 1 )
                     {
+                        const char* op_prefix = c[i]->io_direction == NWIPE_IO_DIRECTION_FORWARD ? "" : "<";
+                        const char* op_suffix = c[i]->io_direction == NWIPE_IO_DIRECTION_FORWARD ? ">" : "";
+
                         switch( c[i]->pass_type )
                         {
                             /* Each text field in square brackets should be the same number of characters
@@ -7770,28 +7881,28 @@ void* nwipe_gui_status( void* ptr )
                             case NWIPE_PASS_FINAL_BLANK:
                                 if( !c[i]->sync_status && !c[i]->retry_status )
                                 {
-                                    wprintw( main_window, "[ blanking] " );
+                                    wprintw( main_window, "%s[ blanking]%s ", op_prefix, op_suffix );
                                 }
                                 break;
 
                             case NWIPE_PASS_FINAL_OPS2:
                                 if( !c[i]->sync_status && !c[i]->retry_status )
                                 {
-                                    wprintw( main_window, "[OPS2final] " );
+                                    wprintw( main_window, "%s[OPS2final]%s ", op_prefix, op_suffix );
                                 }
                                 break;
 
                             case NWIPE_PASS_WRITE:
                                 if( !c[i]->sync_status && !c[i]->retry_status )
                                 {
-                                    wprintw( main_window, "[ writing ] " );
+                                    wprintw( main_window, "%s[ writing ]%s ", op_prefix, op_suffix );
                                 }
                                 break;
 
                             case NWIPE_PASS_VERIFY:
                                 if( !c[i]->sync_status && !c[i]->retry_status )
                                 {
-                                    wprintw( main_window, "[verifying] " );
+                                    wprintw( main_window, "%s[verifying]%s ", op_prefix, op_suffix );
                                 }
                                 break;
 
@@ -7801,17 +7912,12 @@ void* nwipe_gui_status( void* ptr )
 
                         if( c[i]->sync_status )
                         {
-                            wprintw( main_window, "[ syncing ] " );
+                            wprintw( main_window, "%s[ syncing ]%s ", op_prefix, op_suffix );
                         }
                         else if( c[i]->retry_status )
                         {
-                            wprintw( main_window, "[retrying ] " );
+                            wprintw( main_window, "%s[retrying ]%s ", op_prefix, op_suffix );
                         }
-                    }
-
-                    if( c[i]->reverse_status )
-                    {
-                        wprintw( main_window, "[R] " );
                     }
 
                     if( c[i]->wipe_status == 1 || nwipe_options.method == &nwipe_verify_zero

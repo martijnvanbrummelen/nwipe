@@ -171,10 +171,16 @@ run_nwipe_case() {
     local method="$2"
     local verify="$3"
     local prng="${4:-isaac}"
+    local reverse="${5:-0}"
 
     local log_file="${LOG_DIR}/${case_name}.log"
     local stdout_file="${LOG_DIR}/${case_name}.stdout"
     local stderr_file="${LOG_DIR}/${case_name}.stderr"
+
+    local reverse_flag=""
+    if [[ "${reverse}" -eq 1 ]]; then
+        reverse_flag="--reverse"
+    fi
 
     echo "==> Running case: ${case_name} (method=${method}, verify=${verify}, prng=${prng})"
 
@@ -191,6 +197,7 @@ run_nwipe_case() {
         --verify="${verify}" \
         --method="${method}" \
         --prng="${prng}" \
+        ${reverse_flag} \
         --PDFreportpath=noPDF \
         --logfile="${log_file}" \
         "${LOOP_DEV}" \
@@ -230,8 +237,14 @@ run_nwipe_case "verify_zero" "verify_zero" "off"
 if [[ "${MODE}" == "full" ]]; then
     run_nwipe_case "wipe_one" "one" "off"
     assert_block_is_byte "ff"
-
     run_nwipe_case "verify_one" "verify_one" "off"
+
+    # Run a PRNG test too for good measure:
+    run_nwipe_case "wipe_prng" "prng" "last"
+
+    # Run --reverse tests (different routines):
+    run_nwipe_case "reverse_wipe_one" "one" "last" "isaac" 1
+    run_nwipe_case "reverse_wipe_prng" "prng" "last" "isaac" 1
 
     echo "==> Running PRNG Stream coverage cases (each PRNG once)"
     run_nwipe_case "prng_stream_twister" "prng" "off" "twister"
@@ -244,6 +257,10 @@ if [[ "${MODE}" == "full" ]]; then
     run_sts_ratio_check "prng_stream_alfg"
     run_nwipe_case "prng_stream_xoroshiro256" "prng" "off" "xoroshiro256_prng"
     run_sts_ratio_check "prng_stream_xoroshiro256"
+    run_nwipe_case "prng_stream_splitmix64" "prng" "off" "splitmix64"
+    run_sts_ratio_check "prng_stream_splitmix64"
+    run_nwipe_case "prng_stream_chacha20" "prng" "off" "chacha20"
+    run_sts_ratio_check "prng_stream_chacha20"
 
     if cpu_supports_aes_ni; then
         run_nwipe_case "prng_stream_aes_ctr" "prng" "off" "aes_ctr_prng"
