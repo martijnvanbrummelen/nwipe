@@ -992,6 +992,16 @@ void nwipe_options_log( void )
         nwipe_log( NWIPE_LOG_NOTICE, "  do not show GUI interface" );
     }
 
+    if( nwipe_options.noretry_io_errors )
+    {
+        nwipe_log( NWIPE_LOG_NOTICE, "  do not retry I/O errors" );
+    }
+
+    if( nwipe_options.noabort_block_errors )
+    {
+        nwipe_log( NWIPE_LOG_NOTICE, "  do not abort on block errors" );
+    }
+
     nwipe_log( NWIPE_LOG_NOTICE, "  banner   = %s", banner );
 
     if( nwipe_options.prng == &nwipe_twister )
