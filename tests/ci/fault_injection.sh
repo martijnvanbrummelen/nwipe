@@ -69,12 +69,18 @@ run_fault_case() {
     local case_name="$1"
     local io="$2"
     local method="${3:-zero}"
+    local no_abort="${4:-0}"
+    local no_abort_flag=""
 
     local log_file="${LOG_DIR}/${case_name}.log"
     local stdout_file="${LOG_DIR}/${case_name}.stdout"
     local stderr_file="${LOG_DIR}/${case_name}.stderr"
 
-    echo "==> Running fault case: ${case_name} (io=${io}, method=${method})"
+    if [[ "${no_abort}" -eq 1 ]]; then
+        no_abort_flag="--no-abort-on-block-errors"
+    fi
+
+    echo "==> Running fault case: ${case_name} (io=${io}, method=${method}, no_abort=${no_abort})"
 
     set +e
     "${NWIPE_BIN}" \
@@ -90,6 +96,7 @@ run_fault_case() {
         --prng=isaac \
         --PDFreportpath=noPDF \
         --logfile="${log_file}" \
+        ${no_abort_flag} \
         "${DM_DEV}" \
         > >(tee "${stdout_file}") \
         2> >(tee "${stderr_file}" >&2)
@@ -140,8 +147,12 @@ echo "Using nwipe binary: ${NWIPE_BIN}"
 "${NWIPE_BIN}" --version || true
 
 # Zero wipe - direct + cached I/O (both must abort)
-run_fault_case "fault_zero_direct"  "directio" "zero"
-run_fault_case "fault_zero_cached"  "cachedio" "zero"
+run_fault_case "fault_zero_direct"  "directio" "zero" 0
+run_fault_case "fault_zero_cached"  "cachedio" "zero" 0
+
+# Zero wipe with --no-abort-on-block-errors (must still fail, but continues past errors)
+run_fault_case "fault_zero_direct_no_abort"  "directio" "zero" 1
+run_fault_case "fault_zero_cached_no_abort"  "cachedio" "zero" 1
 
 echo ""
 echo "Fault injection test suite passed (expected failure behavior observed)."
