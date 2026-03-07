@@ -82,9 +82,9 @@ run_fault_case() {
         --nogui \
         --nowait \
         --nosignals \
-        --${io} \
         --noblank \
         --rounds=1 \
+        --${io} \
         --verify=off \
         --method="${method}" \
         --prng=isaac \
@@ -139,8 +139,9 @@ echo "Faulty device: ${DM_DEV}"
 echo "Using nwipe binary: ${NWIPE_BIN}"
 "${NWIPE_BIN}" --version || true
 
-run_fault_case "fault_zero_cached"  "cachedio" "zero"
+# Zero wipe - direct + cached I/O (both must abort)
 run_fault_case "fault_zero_direct"  "directio" "zero"
+run_fault_case "fault_zero_cached"  "cachedio" "zero"
 
 echo ""
 echo "Fault injection test suite passed (expected failure behavior observed)."
