@@ -22,7 +22,7 @@ require_cmd() {
     fi
 }
 
-for cmd in losetup truncate dmsetup blockdev mktemp grep tail; do
+for cmd in losetup truncate dmsetup blockdev mktemp grep tail tee; do
     require_cmd "${cmd}"
 done
 
@@ -65,6 +65,57 @@ assert_log_contains() {
     fi
 }
 
+run_fault_case() {
+    local case_name="$1"
+    local io="$2"
+    local method="${3:-zero}"
+    local no_abort="${4:-0}"
+    local no_abort_flag=""
+
+    local log_file="${LOG_DIR}/${case_name}.log"
+    local stdout_file="${LOG_DIR}/${case_name}.stdout"
+    local stderr_file="${LOG_DIR}/${case_name}.stderr"
+
+    if [[ "${no_abort}" -eq 1 ]]; then
+        no_abort_flag="--no-abort-on-block-errors"
+    fi
+
+    echo "==> Running fault case: ${case_name} (io=${io}, method=${method}, no_abort=${no_abort})"
+
+    set +e
+    "${NWIPE_BIN}" \
+        --autonuke \
+        --nogui \
+        --nowait \
+        --nosignals \
+        --noblank \
+        --rounds=1 \
+        --${io} \
+        --verify=off \
+        --method="${method}" \
+        --prng=isaac \
+        --PDFreportpath=noPDF \
+        --logfile="${log_file}" \
+        ${no_abort_flag} \
+        "${DM_DEV}" \
+        > >(tee "${stdout_file}") \
+        2> >(tee "${stderr_file}" >&2)
+    local rc=$?
+    set -e
+
+    if [[ "${rc}" -eq 0 ]]; then
+        echo "Error: fault case '${case_name}' unexpectedly succeeded (rc=0)"
+        echo "--- tail ${stdout_file} ---"
+        tail -n 120 "${stdout_file}" || true
+        echo "--- tail ${stderr_file} ---"
+        tail -n 120 "${stderr_file}" || true
+        return 1
+    fi
+
+    assert_log_contains "${log_file}" "Nwipe exited with errors"
+    echo "    ${case_name}: correctly failed with rc=${rc}"
+}
+
 echo "Preparing faulty dmsetup device..."
 truncate -s 64M "${BACKING_FILE}"
 LOOP_DEV="$(losetup --find --show "${BACKING_FILE}")"
@@ -92,38 +143,16 @@ fi
 
 printf '%b' "${DM_TABLE}" | dmsetup create "${DM_NAME}"
 echo "Faulty device: ${DM_DEV}"
+echo "Using nwipe binary: ${NWIPE_BIN}"
+"${NWIPE_BIN}" --version || true
 
-LOG_FILE="${LOG_DIR}/fault_injection.log"
-STDOUT_FILE="${LOG_DIR}/fault_injection.stdout"
-STDERR_FILE="${LOG_DIR}/fault_injection.stderr"
+# Zero wipe - direct + cached I/O (both must abort)
+run_fault_case "fault_zero_direct"  "directio" "zero" 0
+run_fault_case "fault_zero_cached"  "cachedio" "zero" 0
 
-set +e
-"${NWIPE_BIN}" \
-    --autonuke \
-    --nogui \
-    --nowait \
-    --nosignals \
-    --cachedio \
-    --noblank \
-    --rounds=1 \
-    --sync=0 \
-    --verify=off \
-    --method=zero \
-    --prng=isaac \
-    --PDFreportpath=noPDF \
-    --logfile="${LOG_FILE}" \
-    "${DM_DEV}" >"${STDOUT_FILE}" 2>"${STDERR_FILE}"
-RC=$?
-set -e
+# Zero wipe with --no-abort-on-block-errors (must still fail, but continues past errors)
+run_fault_case "fault_zero_direct_no_abort"  "directio" "zero" 1
+run_fault_case "fault_zero_cached_no_abort"  "cachedio" "zero" 1
 
-if [[ "${RC}" -eq 0 ]]; then
-    echo "Error: fault injection run unexpectedly succeeded."
-    echo "--- tail ${STDOUT_FILE} ---"
-    tail -n 120 "${STDOUT_FILE}" || true
-    echo "--- tail ${STDERR_FILE} ---"
-    tail -n 120 "${STDERR_FILE}" || true
-    exit 1
-fi
-
-assert_log_contains "${LOG_FILE}" "Nwipe exited with errors"
-echo "Fault injection test passed (expected failure behavior observed)."
+echo ""
+echo "Fault injection test suite passed (expected failure behavior observed)."
