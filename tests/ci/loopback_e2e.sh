@@ -223,50 +223,50 @@ echo "Using nwipe binary: ${NWIPE_BIN}"
 "${NWIPE_BIN}" --version || true
 
 # Zero wipe + zero verify, direct I/O
-run_nwipe_case "wipe_zero" "directio" "zero" "off"
+run_nwipe_case "wipe_zero" "directio" "zero" "all"
 assert_block_is_byte "00"
 run_nwipe_case "verify_zero" "directio" "verify_zero" "off"
 
 # Zero wipe + zero verify, cached I/O
-run_nwipe_case "wipe_zero" "cachedio" "zero" "off"
+run_nwipe_case "wipe_zero" "cachedio" "zero" "all"
 assert_block_is_byte "00"
 run_nwipe_case "verify_zero" "cachedio" "verify_zero" "off"
 
 if [[ "${MODE}" == "full" ]]; then
     # One wipe + one verify, direct I/O
-    run_nwipe_case "wipe_one" "directio" "one" "off"
+    run_nwipe_case "wipe_one" "directio" "one" "all"
     assert_block_is_byte "ff"
     run_nwipe_case "verify_one" "directio" "verify_one" "off"
 
     # One wipe + one verify, cached I/O
-    run_nwipe_case "wipe_one" "cachedio" "one" "off"
+    run_nwipe_case "wipe_one" "cachedio" "one" "all"
     assert_block_is_byte "ff"
     run_nwipe_case "verify_one" "cachedio" "verify_one" "off"
 
     # PRNG wipe + PRNG verification, direct + cached I/O
-    run_nwipe_case "wipe_prng" "directio" "prng" "last"
-    run_nwipe_case "wipe_prng" "cachedio" "prng" "last"
+    run_nwipe_case "wipe_prng" "directio" "prng" "all"
+    run_nwipe_case "wipe_prng" "cachedio" "prng" "all"
 
     # PRNG statistical cases (STS)
     # Run these in direct I/O so we're not verifying a cache
     echo "==> Running PRNG Stream coverage cases (each PRNG once)"
-    run_nwipe_case "prng_stream_twister" "directio" "prng" "off" "twister"
+    run_nwipe_case "prng_stream_twister" "directio" "prng" "all" "twister"
     run_sts_ratio_check "prng_stream_twister"
-    run_nwipe_case "prng_stream_isaac" "directio" "prng" "off" "isaac"
+    run_nwipe_case "prng_stream_isaac" "directio" "prng" "all" "isaac"
     run_sts_ratio_check "prng_stream_isaac"
-    run_nwipe_case "prng_stream_isaac64" "directio" "prng" "off" "isaac64"
+    run_nwipe_case "prng_stream_isaac64" "directio" "prng" "all" "isaac64"
     run_sts_ratio_check "prng_stream_isaac64"
-    run_nwipe_case "prng_stream_alfg" "directio" "prng" "off" "add_lagg_fibonacci_prng"
+    run_nwipe_case "prng_stream_alfg" "directio" "prng" "all" "add_lagg_fibonacci_prng"
     run_sts_ratio_check "prng_stream_alfg"
-    run_nwipe_case "prng_stream_xoroshiro256" "directio" "prng" "off" "xoroshiro256_prng"
+    run_nwipe_case "prng_stream_xoroshiro256" "directio" "prng" "all" "xoroshiro256_prng"
     run_sts_ratio_check "prng_stream_xoroshiro256"
-    run_nwipe_case "prng_stream_splitmix64" "directio" "prng" "off" "splitmix64"
+    run_nwipe_case "prng_stream_splitmix64" "directio" "prng" "all" "splitmix64"
     run_sts_ratio_check "prng_stream_splitmix64"
-    run_nwipe_case "prng_stream_chacha20" "directio" "prng" "off" "chacha20"
+    run_nwipe_case "prng_stream_chacha20" "directio" "prng" "all" "chacha20"
     run_sts_ratio_check "prng_stream_chacha20"
 
     if cpu_supports_aes_ni; then
-        run_nwipe_case "prng_stream_aes_ctr" "directio" "prng" "off" "aes_ctr_prng"
+        run_nwipe_case "prng_stream_aes_ctr" "directio" "prng" "all" "aes_ctr_prng"
         run_sts_ratio_check "prng_stream_aes_ctr"
     else
         echo "Skipping aes_ctr_prng case: CPU does not expose AES-NI."
