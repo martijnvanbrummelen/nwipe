@@ -24,30 +24,6 @@
 #include "pass_internal.h"
 
 /*
- * Tunable sizes for the wiping / verification I/O path.
- *
- * NWIPE_IO_BLOCKSIZE:
- *   - Target size of individual read()/write() operations.
- *   - Default is 4 MiB, so each syscall moves a lot of data instead of only
- *     4 KiB, drastically reducing syscall overhead.
- *
- * Notes:
- *   - We do NOT depend on O_DIRECT here; all code works fine with normal,
- *     buffered I/O.
- *   - But all I/O buffers are allocated aligned to the device block size so
- *     that the same code also works with O_DIRECT when the device is opened
- *     with it.
- */
-
-#ifndef NWIPE_IO_BLOCKSIZE
-#define NWIPE_IO_BLOCKSIZE ( 4 * 1024 * 1024UL ) /* 4 MiB I/O block */
-#endif
-
-#if NWIPE_IO_BLOCKSIZE > INT_MAX
-#error "NWIPE_IO_BLOCKSIZE must fit in an int"
-#endif
-
-/*
  * nwipe_(p)write_with_retry / nwipe_(p)read_with_retry
  *
  * Attempt the I/O up to MAX_IO_ATTEMPTS times, sleeping IO_RETRY_DELAY_S
@@ -400,52 +376,7 @@ int nwipe_fdatasync( nwipe_context_t* c, const char* f )
 } /* nwipe_fdatasync */
 
 /*
- * Compute the effective I/O block size for a given device:
- *
- * - Must be at least the device's reported st_blksize (usually 4 KiB).
- * - Starts from NWIPE_IO_BLOCKSIZE (4 MiB by default) and adjusts.
- * - Rounded down to a multiple of st_blksize so it is compatible with
- *   O_DIRECT alignment rules.
- * - Never exceeds the device size.
- */
-size_t nwipe_effective_io_blocksize( const nwipe_context_t* c )
-{
-    size_t bs = (size_t) c->device_stat.st_blksize;
-
-    if( bs == 0 )
-    {
-        /* Should not happen for normal block devices; use a sane default. */
-        bs = 4096;
-    }
-
-    size_t io_bs = (size_t) NWIPE_IO_BLOCKSIZE;
-
-    if( io_bs < bs )
-    {
-        io_bs = bs;
-    }
-
-    /* Round down to a multiple of the device block size. */
-    if( io_bs % bs != 0 )
-    {
-        io_bs -= ( io_bs % bs );
-    }
-
-    if( io_bs == 0 )
-    {
-        io_bs = bs;
-    }
-
-    if( (u64) io_bs > c->device_size )
-    {
-        io_bs = (size_t) c->device_size;
-    }
-
-    return io_bs;
-} /* nwipe_effective_io_blocksize */
-
-/*
- * Allocate an I/O buffer aligned to the device block size.
+ * Allocate an I/O buffer aligned to the device's logical sector size.
  *
  * This is done with posix_memalign() so that the buffer can safely be used
  * with O_DIRECT if the device was opened with it. The same allocation is also
@@ -459,15 +390,8 @@ size_t nwipe_effective_io_blocksize( const nwipe_context_t* c )
  */
 void* nwipe_alloc_io_buffer( const nwipe_context_t* c, size_t size, int clear, const char* label )
 {
-    size_t align = (size_t) c->device_stat.st_blksize;
-    if( align < 512 )
-    {
-        /* O_DIRECT usually requires at least 512-byte alignment. */
-        align = 512;
-    }
-
     void* ptr = NULL;
-    int rc = posix_memalign( &ptr, align, size );
+    int rc = posix_memalign( &ptr, c->device_io_buffer_alignment, size );
     if( rc != 0 || ptr == NULL )
     {
         nwipe_log( NWIPE_LOG_FATAL,
@@ -475,7 +399,7 @@ void* nwipe_alloc_io_buffer( const nwipe_context_t* c, size_t size, int clear, c
                    __FUNCTION__,
                    label,
                    size,
-                   align,
+                   c->device_io_buffer_alignment,
                    rc );
         return NULL;
     }
@@ -499,6 +423,7 @@ void* nwipe_alloc_io_buffer( const nwipe_context_t* c, size_t size, int clear, c
  */
 int nwipe_compute_sync_rate_for_device( const nwipe_context_t* c, size_t io_blocksize )
 {
+    size_t st_blksize = 4096; /* Sane default */
     int syncRate = nwipe_options.sync;
 
     /* No periodic sync in direct I/O mode. */
@@ -511,9 +436,11 @@ int nwipe_compute_sync_rate_for_device( const nwipe_context_t* c, size_t io_bloc
     if( io_blocksize == 0 )
         return 0;
 
+    if( c->device_stat.st_blksize > 0 )
+        st_blksize = (size_t) c->device_stat.st_blksize;
+
     /* Old semantics: bytes between syncs = sync * st_blksize. */
-    unsigned long long bytes_between_sync =
-        (unsigned long long) syncRate * (unsigned long long) c->device_stat.st_blksize;
+    unsigned long long bytes_between_sync = (unsigned long long) syncRate * (unsigned long long) st_blksize;
 
     if( bytes_between_sync == 0 )
         return 0;
