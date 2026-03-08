@@ -299,7 +299,7 @@ int nwipe_random_forward_pass( NWIPE_METHOD_SIGNATURE )
 
                 nwipe_update_bytes_erased( c, z, bs, 0 );
 
-                rev_offset -= (off64_t) io_blocksize;
+                rev_offset -= (off64_t) rev_blocksize;
                 rev_blocksize = io_blocksize; /* must be a full I/O block now */
 
                 pthread_testcancel();
