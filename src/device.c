@@ -313,6 +313,13 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     /* Zero the allocation. */
     memset( next_device, 0, sizeof( nwipe_context_t ) );
 
+    /*
+     * Get device busy state (possibly mounted or otherwise in use)
+     * If libparted says device is safe to partition, it's safe to wipe.
+     * So for our disk wiping purposes it should be an equally good metric.
+     */
+    next_device->device_busy = ped_device_is_busy( dev );
+
     /* Get device information */
     next_device->device_model = dev->model;
     remove_ATA_prefix( next_device->device_model );
@@ -553,6 +560,11 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
                next_device->device_name,
                dev->sector_size,
                dev->phys_sector_size );
+
+    if( next_device->device_busy )
+    {
+        nwipe_log( NWIPE_LOG_WARNING, "%s is reported as IN USE (it could be mounted)", next_device->device_name );
+    }
 
     /******************************
      * Check for hidden sector_size

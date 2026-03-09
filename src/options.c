@@ -75,6 +75,9 @@ int nwipe_options_parse( int argc, char** argv )
 
     /* The list of acceptable long options. */
     static struct option nwipe_options_long[] = {
+        /* Set when user wants to allow wiping of devices that are in use. */
+        { "force", no_argument, 0, 0 },
+
         /* Set when the user wants to wipe without a confirmation prompt. */
         { "autonuke", no_argument, 0, 0 },
 
@@ -154,6 +157,7 @@ int nwipe_options_parse( int argc, char** argv )
         { 0, 0, 0, 0 } };
 
     /* Set default options. */
+    nwipe_options.force = 0;
     nwipe_options.autonuke = 0;
     nwipe_options.autopoweroff = 0;
     nwipe_options.method = &nwipe_random;
@@ -350,6 +354,11 @@ int nwipe_options_parse( int argc, char** argv )
         switch( nwipe_opt )
         {
             case 0: /* Long options without short counterparts. */
+                if( strcmp( nwipe_options_long[i].name, "force" ) == 0 )
+                {
+                    nwipe_options.force = 1;
+                    break;
+                }
 
                 if( strcmp( nwipe_options_long[i].name, "autonuke" ) == 0 )
                 {
@@ -962,6 +971,8 @@ void nwipe_options_log( void )
      *  Prints a manifest of options to the log.
      */
     nwipe_log( NWIPE_LOG_NOTICE, "Program options are set as follows..." );
+
+    nwipe_log( NWIPE_LOG_NOTICE, "  force        = %i (%s)", nwipe_options.force, nwipe_options.force ? "on" : "off" );
 
     nwipe_log(
         NWIPE_LOG_NOTICE, "  autonuke     = %i (%s)", nwipe_options.autonuke, nwipe_options.autonuke ? "on" : "off" );

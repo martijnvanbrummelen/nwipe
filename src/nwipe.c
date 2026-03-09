@@ -669,8 +669,12 @@ int main( int argc, char** argv )
     /* Now set specific nwipe options */
     for( i = 0; i < nwipe_enumerated; i++ )
     {
-
-        if( nwipe_options.autonuke == 1 )
+        if( c1[i]->device_busy && !nwipe_options.force )
+        {
+            /* Do not allow to wipe in-use devices if --force is not set. */
+            c1[i]->select = NWIPE_SELECT_DISABLED_BUSY;
+        }
+        else if( nwipe_options.autonuke == 1 )
         {
             /* When the autonuke option is set, select all disks. */
             // TODO - partitions
@@ -817,6 +821,16 @@ int main( int argc, char** argv )
         {
             /* A result buffer for the BLKGETSIZE64 ioctl. */
             u64 size64;
+
+            /* Should be filtered out earlier, but keep it as a last-minute seatbelt. */
+            if( c2[i]->device_busy && !nwipe_options.force )
+            {
+                nwipe_log( NWIPE_LOG_FATAL,
+                           "Device '%s' is IN USE but --force is not set, not wiping it.",
+                           c2[i]->device_name );
+                c2[i]->select = NWIPE_SELECT_DISABLED_BUSY;
+                continue;
+            }
 
             /* Initialise the spinner character index */
             c2[i]->spinner_idx = 0;
