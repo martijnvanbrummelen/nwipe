@@ -1,5 +1,5 @@
 /*
- *  pass.h: Routines that read and write patterns to block devices.
+ *  pass.h: Pass-related I/O routines.
  *
  *  Copyright Darik Horn <dajhorn-dban@vanadac.com>.
  *
@@ -23,11 +23,12 @@
 #ifndef PASS_H_
 #define PASS_H_
 
+#include "context.h" /* nwipe_context_t */
+#include "method.h" /* nwipe_pattern_t */
+
 int nwipe_random_pass( nwipe_context_t* c );
 int nwipe_random_verify( nwipe_context_t* c );
 int nwipe_static_pass( nwipe_context_t* c, nwipe_pattern_t* pattern );
 int nwipe_static_verify( nwipe_context_t* c, nwipe_pattern_t* pattern );
-
-void test_functionn( int count, nwipe_context_t** c );
 
 #endif /* PASS_H_ */
