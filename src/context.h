@@ -57,7 +57,8 @@ typedef enum nwipe_select_t_ {
     NWIPE_SELECT_TRUE_PARENT,  // A parent of this device has been selected, so the wipe is implied.
     NWIPE_SELECT_FALSE,  // Do not wipe this device.
     NWIPE_SELECT_FALSE_CHILD,  // A child of this device has been selected, so we can't wipe this device.
-    NWIPE_SELECT_DISABLED  // Do not wipe this device and do not allow it to be selected.
+    NWIPE_SELECT_DISABLED,  // We cannot wipe this device for technical reasons (do not allow selection).
+    NWIPE_SELECT_DISABLED_BUSY,  // The device is in use and --force is not set (do not allow selection).
 } nwipe_select_t;
 
 /* I/O mode for data path: auto, direct, or cached. */
@@ -109,6 +110,7 @@ typedef struct nwipe_context_t_
     /*
      * Device fields
      */
+    int device_busy;  // If libparted considers the device busy/mounted (0 = no, 1 = yes)
     int device_block_size;  // The soft block size reported by the device, as logical
     int device_sector_size;  // The logical sector size reported by libparted
     int device_phys_sector_size;  // The physical sector size reported by libparted

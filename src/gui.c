@@ -1244,6 +1244,15 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                         wprintw( main_window, "[????] %s ", "Unrecognized Device" );
                         break;
 
+                    case NWIPE_SELECT_DISABLED_BUSY:
+
+                        /* We can't wipe this element because it is in use and --force is not set. */
+                        wprintw( main_window,
+                                 "[----] %s %s ",
+                                 c[i + offset]->gui_device_name,
+                                 c[i + offset]->device_type_str );
+                        break;
+
                     default:
 
                         /* TODO: Handle the sanity error. */
@@ -1283,6 +1292,14 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                         wprintw( main_window, " " );
                         wprintw( main_window, "[HS? N/A]" );
                         break;
+                }
+
+                if( c[i + offset]->device_busy )
+                {
+                    wprintw( main_window, " " );
+                    wattron( main_window, COLOR_PAIR( 9 ) );
+                    wprintw( main_window, "[IN USE]" );
+                    wattroff( main_window, COLOR_PAIR( 9 ) );
                 }
 
                 /* print the drive model and serial number */

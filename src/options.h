@@ -51,6 +51,7 @@ void display_help();
 
 typedef struct
 {
+    int force;  // Allow wiping of busy/mounted devices (0 = no, 1 = yes)
     int autonuke;  // Do not prompt the user for confirmation when set.
     int autopoweroff;  // Power off on completion of wipe
     int noblank;  // Do not perform a final blanking pass.

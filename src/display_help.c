@@ -31,6 +31,11 @@ void display_help()
     "  -h, --help\n" reset \
     "        Prints this help\n\n" \
     BHCYN \
+    "      --force\n" reset \
+    "        Also allow wiping of devices that are considered in use (mounted).\n" \
+    "        Beware this option is considered dangerous and is disabled by default.\n" \
+    "        This means that by default even --autonuke will exclude any such devices.\n\n" \
+    BHCYN \
     "      --autonuke\n" reset \
     "        If no devices have been specified on the command line, starts wiping\n" \
     "        all devices immediately. If devices have been specified, starts wiping\n" \
