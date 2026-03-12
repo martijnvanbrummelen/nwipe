@@ -22,6 +22,7 @@
 
 #define _POSIX_C_SOURCE 200809L
 #include "pass_internal.h"
+#include "splitmix64/splitmix64.h"
 
 /*
  * Tunable sizes for the wiping / verification I/O path.
@@ -42,6 +43,9 @@
 #ifndef NWIPE_IO_BLOCKSIZE
 #define NWIPE_IO_BLOCKSIZE ( 4 * 1024 * 1024UL ) /* 4 MiB I/O block */
 #endif
+
+#define NWIPE_SCATTER_TARGET_SEGMENTS 10000ULL
+#define NWIPE_SCATTER_MAX_SEGMENT_BYTES ( 256ULL * 1024ULL * 1024ULL )
 
 #if NWIPE_IO_BLOCKSIZE > INT_MAX
 #error "NWIPE_IO_BLOCKSIZE must fit in an int"
@@ -67,6 +71,226 @@
 #if NWIPE_MAX_IO_ATTEMPTS < 1
 #error "NWIPE_MAX_IO_ATTEMPTS must be at least 1"
 #endif
+
+/*
+ * Scattered traversal:
+ *
+ * The address space Omega = [0, S) is partitioned into disjoint segments Q_k.
+ * A Fisher-Yates shuffle yields a permutation pi over the segment indices.
+ * The traversal then visits Q_pi(0), Q_pi(1), ..., Q_pi(N-1), so coverage is
+ * complete and each segment is visited exactly once per pass.
+ */
+
+static u64 nwipe_scatter_align_up( u64 value, u64 alignment )
+{
+    if( alignment == 0 || value % alignment == 0 )
+    {
+        return value;
+    }
+
+    return value + ( alignment - ( value % alignment ) );
+}
+
+static u64 nwipe_scatter_ceil_div( u64 num, u64 den )
+{
+    return den == 0 ? 0 : ( ( num + den - 1 ) / den );
+}
+
+static uint64_t nwipe_scatter_fnv1a64_update( uint64_t hash, const void* data, size_t len )
+{
+    const unsigned char* p = (const unsigned char*) data;
+    size_t i;
+
+    for( i = 0; i < len; ++i )
+    {
+        hash ^= (uint64_t) p[i];
+        hash *= 1099511628211ULL;
+    }
+
+    return hash;
+}
+
+static uint64_t nwipe_scatter_fnv1a64_init( void )
+{
+    return 14695981039346656037ULL;
+}
+
+static int nwipe_scatter_random_u64( splitmix64_state_t* state, u64* value )
+{
+    return splitmix64_prng_genrand_to_buf( state, (uint8_t*) value, sizeof( *value ) );
+}
+
+static u64 nwipe_scatter_segment_size( const nwipe_context_t* c, size_t io_blocksize )
+{
+    u64 quantum = nwipe_scatter_ceil_div( c->device_size, NWIPE_SCATTER_TARGET_SEGMENTS );
+    u64 alignment = (u64) io_blocksize;
+
+    if( quantum < alignment )
+    {
+        quantum = alignment;
+    }
+
+    if( quantum > NWIPE_SCATTER_MAX_SEGMENT_BYTES )
+    {
+        quantum = NWIPE_SCATTER_MAX_SEGMENT_BYTES;
+    }
+
+    quantum = nwipe_scatter_align_up( quantum, alignment );
+
+    if( quantum == 0 || quantum > c->device_size )
+    {
+        quantum = c->device_size;
+    }
+
+    return quantum;
+}
+
+static uint64_t nwipe_scatter_seed_random( const nwipe_context_t* c )
+{
+    uint64_t hash = nwipe_scatter_fnv1a64_init();
+
+    hash = nwipe_scatter_fnv1a64_update( hash, &c->device_size, sizeof( c->device_size ) );
+    hash = nwipe_scatter_fnv1a64_update( hash, &c->round_working, sizeof( c->round_working ) );
+    hash = nwipe_scatter_fnv1a64_update( hash, &c->pass_working, sizeof( c->pass_working ) );
+    hash = nwipe_scatter_fnv1a64_update( hash, &c->round_count, sizeof( c->round_count ) );
+    hash = nwipe_scatter_fnv1a64_update( hash, &c->pass_count, sizeof( c->pass_count ) );
+
+    if( c->prng_seed.s != NULL && c->prng_seed.length > 0 )
+    {
+        hash = nwipe_scatter_fnv1a64_update( hash, c->prng_seed.s, c->prng_seed.length );
+    }
+
+    return hash;
+}
+
+static uint64_t nwipe_scatter_seed_static( const nwipe_context_t* c, const nwipe_pattern_t* pattern )
+{
+    uint64_t hash = nwipe_scatter_fnv1a64_init();
+
+    hash = nwipe_scatter_fnv1a64_update( hash, &c->device_size, sizeof( c->device_size ) );
+    hash = nwipe_scatter_fnv1a64_update( hash, &c->round_working, sizeof( c->round_working ) );
+    hash = nwipe_scatter_fnv1a64_update( hash, &c->pass_working, sizeof( c->pass_working ) );
+    hash = nwipe_scatter_fnv1a64_update( hash, &c->round_count, sizeof( c->round_count ) );
+    hash = nwipe_scatter_fnv1a64_update( hash, &c->pass_count, sizeof( c->pass_count ) );
+    hash = nwipe_scatter_fnv1a64_update( hash, &pattern->length, sizeof( pattern->length ) );
+
+    if( pattern->s != NULL && pattern->length > 0 )
+    {
+        hash = nwipe_scatter_fnv1a64_update( hash, pattern->s, (size_t) pattern->length );
+    }
+
+    return hash;
+}
+
+static int nwipe_scatter_plan_init_from_seed( const nwipe_context_t* c,
+                                              size_t io_blocksize,
+                                              uint64_t seed,
+                                              nwipe_scatter_plan_t* plan )
+{
+    splitmix64_state_t state;
+    u64 i;
+
+    memset( plan, 0, sizeof( *plan ) );
+
+    plan->segment_size = nwipe_scatter_segment_size( c, io_blocksize );
+    plan->segment_count = nwipe_scatter_ceil_div( c->device_size, plan->segment_size );
+
+    if( plan->segment_count == 0 )
+    {
+        nwipe_log( NWIPE_LOG_SANITY, "%s: segment count is zero on '%s'.", __FUNCTION__, c->device_name );
+        return -1;
+    }
+
+    if( plan->segment_count > ( (u64) SIZE_MAX / sizeof( *plan->order ) ) )
+    {
+        nwipe_log( NWIPE_LOG_FATAL, "Scattered traversal plan too large for '%s'.", c->device_name );
+        return -1;
+    }
+
+    plan->order = malloc( (size_t) plan->segment_count * sizeof( *plan->order ) );
+    if( !plan->order )
+    {
+        nwipe_perror( errno, __FUNCTION__, "malloc" );
+        nwipe_log( NWIPE_LOG_FATAL, "Unable to allocate scattered traversal plan for '%s'.", c->device_name );
+        return -1;
+    }
+
+    for( i = 0; i < plan->segment_count; ++i )
+    {
+        plan->order[i] = i;
+    }
+
+    if( splitmix64_prng_init( &state, (const uint8_t*) &seed, sizeof( seed ) ) != 0 )
+    {
+        nwipe_log( NWIPE_LOG_SANITY, "%s: unable to initialize scattered traversal PRNG.", __FUNCTION__ );
+        free( plan->order );
+        plan->order = NULL;
+        return -1;
+    }
+
+    for( i = plan->segment_count - 1; i > 0; --i )
+    {
+        u64 r;
+        u64 j;
+
+        if( nwipe_scatter_random_u64( &state, &r ) != 0 )
+        {
+            nwipe_log( NWIPE_LOG_SANITY, "%s: unable to draw permutation sample.", __FUNCTION__ );
+            free( plan->order );
+            plan->order = NULL;
+            return -1;
+        }
+
+        j = r % ( i + 1 );
+        if( j != i )
+        {
+            u64 tmp = plan->order[i];
+            plan->order[i] = plan->order[j];
+            plan->order[j] = tmp;
+        }
+    }
+
+    return 0;
+}
+
+int nwipe_scatter_plan_init_random( const nwipe_context_t* c, size_t io_blocksize, nwipe_scatter_plan_t* plan )
+{
+    return nwipe_scatter_plan_init_from_seed( c, io_blocksize, nwipe_scatter_seed_random( c ), plan );
+}
+
+int nwipe_scatter_plan_init_static( const nwipe_context_t* c,
+                                    size_t io_blocksize,
+                                    const nwipe_pattern_t* pattern,
+                                    nwipe_scatter_plan_t* plan )
+{
+    return nwipe_scatter_plan_init_from_seed( c, io_blocksize, nwipe_scatter_seed_static( c, pattern ), plan );
+}
+
+void nwipe_scatter_plan_free( nwipe_scatter_plan_t* plan )
+{
+    if( plan )
+    {
+        free( plan->order );
+        plan->order = NULL;
+        plan->segment_size = 0;
+        plan->segment_count = 0;
+    }
+}
+
+void nwipe_scatter_segment_range( const nwipe_scatter_plan_t* plan,
+                                  u64 visit_index,
+                                  u64 device_size,
+                                  off64_t* offset_out,
+                                  size_t* length_out )
+{
+    u64 segment_index = plan->order[visit_index];
+    u64 offset = segment_index * plan->segment_size;
+    u64 remaining = device_size - offset;
+    u64 length = remaining < plan->segment_size ? remaining : plan->segment_size;
+
+    *offset_out = (off64_t) offset;
+    *length_out = (size_t) length;
+}
 
 /* Behaves like write(), but retries up to MAX_IO_ATTEMPTS times on error or short write.
  * Returns -1 with errno from lseek() if seeking back after a short write fails. */

@@ -26,16 +26,29 @@
 /* Logs the I/O direction for the respective operation. */
 static void nwipe_log_io_direction( nwipe_context_t* c )
 {
-    nwipe_log( NWIPE_LOG_NOTICE,
-               "I/O direction on '%s' is %s",
-               c->device_name,
-               c->io_direction == NWIPE_IO_DIRECTION_FORWARD ? "start -> end (forward)" : "end -> start (reverse)" );
+    const char* direction = "start -> end (forward)";
+
+    if( c->io_direction == NWIPE_IO_DIRECTION_REVERSE )
+    {
+        direction = "end -> start (reverse)";
+    }
+    else if( c->io_direction == NWIPE_IO_DIRECTION_SCATTERED )
+    {
+        direction = "random permutation of disjoint segments (scattered)";
+    }
+
+    nwipe_log( NWIPE_LOG_NOTICE, "I/O direction on '%s' is %s", c->device_name, direction );
 }
 
 /* Calls the static_*_pass method for the respective c->io_direction. */
 int nwipe_static_pass( nwipe_context_t* c, nwipe_pattern_t* pattern )
 {
     nwipe_log_io_direction( c );
+    if( c->io_direction == NWIPE_IO_DIRECTION_SCATTERED )
+    {
+        return nwipe_static_scattered_pass( c, pattern );
+    }
+
     return c->io_direction == NWIPE_IO_DIRECTION_FORWARD ? nwipe_static_forward_pass( c, pattern )
                                                          : nwipe_static_reverse_pass( c, pattern );
 }
@@ -44,6 +57,11 @@ int nwipe_static_pass( nwipe_context_t* c, nwipe_pattern_t* pattern )
 int nwipe_static_verify( nwipe_context_t* c, nwipe_pattern_t* pattern )
 {
     nwipe_log_io_direction( c );
+    if( c->io_direction == NWIPE_IO_DIRECTION_SCATTERED )
+    {
+        return nwipe_static_scattered_verify( c, pattern );
+    }
+
     return c->io_direction == NWIPE_IO_DIRECTION_FORWARD ? nwipe_static_forward_verify( c, pattern )
                                                          : nwipe_static_reverse_verify( c, pattern );
 }
@@ -52,6 +70,11 @@ int nwipe_static_verify( nwipe_context_t* c, nwipe_pattern_t* pattern )
 int nwipe_random_pass( nwipe_context_t* c )
 {
     nwipe_log_io_direction( c );
+    if( c->io_direction == NWIPE_IO_DIRECTION_SCATTERED )
+    {
+        return nwipe_random_scattered_pass( c );
+    }
+
     return c->io_direction == NWIPE_IO_DIRECTION_FORWARD ? nwipe_random_forward_pass( c )
                                                          : nwipe_random_reverse_pass( c );
 }
@@ -60,6 +83,11 @@ int nwipe_random_pass( nwipe_context_t* c )
 int nwipe_random_verify( nwipe_context_t* c )
 {
     nwipe_log_io_direction( c );
+    if( c->io_direction == NWIPE_IO_DIRECTION_SCATTERED )
+    {
+        return nwipe_random_scattered_verify( c );
+    }
+
     return c->io_direction == NWIPE_IO_DIRECTION_FORWARD ? nwipe_random_forward_verify( c )
                                                          : nwipe_random_reverse_verify( c );
 }

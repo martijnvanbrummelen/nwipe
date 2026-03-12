@@ -812,6 +812,204 @@ int nwipe_static_reverse_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern 
 
 } /* nwipe_static_reverse_pass */
 
+int nwipe_static_scattered_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
+{
+    int r;
+    int sync_counter = 0;
+    size_t io_blocksize;
+    char* b;
+    char* p;
+    char* wbuf;
+    const void* wsrc;
+    u64 z = c->device_size;
+    u64 bs = 0;
+    nwipe_scatter_plan_t plan;
+    int syncRate = nwipe_options.sync;
+    u64 segment_visit;
+
+    if( pattern == NULL )
+    {
+        nwipe_log( NWIPE_LOG_SANITY, "%s: Null pattern pointer.", __FUNCTION__ );
+        return -1;
+    }
+
+    if( pattern->length <= 0 )
+    {
+        nwipe_log( NWIPE_LOG_SANITY, "%s: The pattern length member is %i.", __FUNCTION__, pattern->length );
+        return -1;
+    }
+
+    io_blocksize = nwipe_effective_io_blocksize( c );
+
+    if( c->io_mode == NWIPE_IO_MODE_DIRECT )
+    {
+        syncRate = 0;
+        nwipe_log( NWIPE_LOG_NOTICE, "Disabled fdatasync for %s, DirectI/O in use.", c->device_name );
+    }
+    else
+    {
+        syncRate = nwipe_compute_sync_rate_for_device( c, io_blocksize );
+    }
+
+    if( nwipe_scatter_plan_init_static( c, io_blocksize, pattern, &plan ) != 0 )
+    {
+        return -1;
+    }
+
+    nwipe_log( NWIPE_LOG_NOTICE,
+               "Scattered traversal on '%s': segment_size=%llu bytes, segments=%llu.",
+               c->device_name,
+               (unsigned long long) plan.segment_size,
+               (unsigned long long) plan.segment_count );
+
+    b = (char*) nwipe_alloc_io_buffer(
+        c, io_blocksize + (size_t) pattern->length * 2, 0, "static_scattered_pass pattern buffer" );
+    if( !b )
+    {
+        nwipe_scatter_plan_free( &plan );
+        return -1;
+    }
+
+    for( p = b; p < b + io_blocksize + pattern->length; p += pattern->length )
+    {
+        memcpy( p, pattern->s, (size_t) pattern->length );
+    }
+
+    wbuf = (char*) nwipe_alloc_io_buffer( c, io_blocksize, 0, "static_scattered_pass write buffer" );
+    if( !wbuf )
+    {
+        free( b );
+        nwipe_scatter_plan_free( &plan );
+        return -1;
+    }
+
+    c->pass_done = 0;
+
+    for( segment_visit = 0; segment_visit < plan.segment_count; ++segment_visit )
+    {
+        off64_t segment_offset;
+        size_t segment_length;
+        size_t segment_done = 0;
+
+        nwipe_scatter_segment_range( &plan, segment_visit, c->device_size, &segment_offset, &segment_length );
+
+        while( segment_done < segment_length )
+        {
+            off64_t current_offset = segment_offset + (off64_t) segment_done;
+            size_t blocksize = io_blocksize;
+            int w = 0;
+
+            if( blocksize > segment_length - segment_done )
+            {
+                blocksize = segment_length - segment_done;
+            }
+
+            w = (int) ( current_offset % (off64_t) pattern->length );
+            if( w == 0 )
+            {
+                wsrc = &b[w];
+            }
+            else
+            {
+                memcpy( wbuf, &b[w], blocksize );
+                wsrc = wbuf;
+            }
+
+            r = (int) nwipe_pwrite_with_retry( c, c->device_fd, wsrc, blocksize, current_offset );
+
+            if( r < 0 )
+            {
+                c->pass_errors += 1;
+
+                if( nwipe_options.noabort_block_errors )
+                {
+                    nwipe_perror( errno, __FUNCTION__, "pwrite" );
+                    nwipe_log( NWIPE_LOG_ERROR,
+                               "Write error on '%s' at offset %lld, skipping %zu bytes.",
+                               c->device_name,
+                               (long long) current_offset,
+                               blocksize );
+
+                    z -= (u64) blocksize;
+                    bs += (u64) blocksize;
+                    c->round_done += (u64) blocksize;
+                    segment_done += blocksize;
+                    pthread_testcancel();
+                    continue;
+                }
+
+                nwipe_perror( errno, __FUNCTION__, "pwrite" );
+                nwipe_log( NWIPE_LOG_FATAL,
+                           "Scattered write failed on '%s' at offset %lld.",
+                           c->device_name,
+                           (long long) current_offset );
+                free( b );
+                free( wbuf );
+                nwipe_scatter_plan_free( &plan );
+                return -1;
+            }
+
+            if( r != (int) blocksize )
+            {
+                int s = (int) blocksize - r;
+
+                nwipe_log( NWIPE_LOG_ERROR,
+                           "Partial write on '%s' at offset %lld, %i bytes short.",
+                           c->device_name,
+                           (long long) current_offset,
+                           s );
+
+                c->pass_errors += 1;
+                z -= (u64) s;
+                bs += (u64) s;
+                c->round_done += (u64) s;
+            }
+
+            z -= (u64) r;
+            c->pass_done += (u64) r;
+            c->round_done += (u64) r;
+            segment_done += blocksize;
+
+            nwipe_update_bytes_erased( c, z, bs, 0 );
+
+            if( syncRate > 0 )
+            {
+                sync_counter++;
+                if( sync_counter >= syncRate )
+                {
+                    r = nwipe_fdatasync( c, __FUNCTION__ );
+                    if( r == 0 )
+                    {
+                        nwipe_update_bytes_erased( c, z, bs, 1 );
+                    }
+                    if( r == -1 )
+                    {
+                        free( b );
+                        free( wbuf );
+                        nwipe_scatter_plan_free( &plan );
+                        return -1;
+                    }
+                    sync_counter = 0;
+                }
+            }
+
+            pthread_testcancel();
+        }
+    }
+
+    free( b );
+    free( wbuf );
+    nwipe_scatter_plan_free( &plan );
+
+    r = nwipe_fdatasync( c, __FUNCTION__ );
+    if( r == 0 )
+        nwipe_update_bytes_erased( c, z, bs, 1 );
+    if( r == -1 )
+        return -1;
+
+    return 0;
+}
+
 /*
  * nwipe_static_forward_verify
  *
@@ -1241,3 +1439,145 @@ int nwipe_static_reverse_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* patter
     return 0;
 
 } /* nwipe_static_reverse_verify */
+
+int nwipe_static_scattered_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern )
+{
+    int r;
+    size_t io_blocksize;
+    char* b;
+    char* d;
+    char* q;
+    u64 z = c->device_size;
+    nwipe_scatter_plan_t plan;
+    u64 segment_visit;
+
+    if( pattern == NULL )
+    {
+        nwipe_log( NWIPE_LOG_SANITY, "nwipe_static_scattered_verify: Null entropy pointer." );
+        return -1;
+    }
+
+    if( pattern->length <= 0 )
+    {
+        nwipe_log(
+            NWIPE_LOG_SANITY, "nwipe_static_scattered_verify: The pattern length member is %i.", pattern->length );
+        return -1;
+    }
+
+    io_blocksize = nwipe_effective_io_blocksize( c );
+
+    if( nwipe_scatter_plan_init_static( c, io_blocksize, pattern, &plan ) != 0 )
+    {
+        return -1;
+    }
+
+    b = (char*) nwipe_alloc_io_buffer( c, io_blocksize, 0, "static_scattered_verify input buffer" );
+    if( !b )
+    {
+        nwipe_scatter_plan_free( &plan );
+        return -1;
+    }
+
+    d = (char*) nwipe_alloc_io_buffer(
+        c, io_blocksize + (size_t) pattern->length * 2, 0, "static_scattered_verify pattern buffer" );
+    if( !d )
+    {
+        free( b );
+        nwipe_scatter_plan_free( &plan );
+        return -1;
+    }
+
+    for( q = d; q < d + io_blocksize + pattern->length; q += pattern->length )
+    {
+        memcpy( q, pattern->s, (size_t) pattern->length );
+    }
+
+    nwipe_fdatasync( c, __FUNCTION__ );
+    c->pass_done = 0;
+
+    for( segment_visit = 0; segment_visit < plan.segment_count; ++segment_visit )
+    {
+        off64_t segment_offset;
+        size_t segment_length;
+        size_t segment_done = 0;
+
+        nwipe_scatter_segment_range( &plan, segment_visit, c->device_size, &segment_offset, &segment_length );
+
+        while( segment_done < segment_length )
+        {
+            off64_t current_offset = segment_offset + (off64_t) segment_done;
+            size_t blocksize = io_blocksize;
+            int w = 0;
+
+            if( blocksize > segment_length - segment_done )
+            {
+                blocksize = segment_length - segment_done;
+            }
+
+            w = (int) ( current_offset % (off64_t) pattern->length );
+
+            r = (int) nwipe_pread_with_retry( c, c->device_fd, b, blocksize, current_offset );
+
+            if( r < 0 )
+            {
+                c->verify_errors += 1;
+
+                if( nwipe_options.noabort_block_errors )
+                {
+                    nwipe_perror( errno, __FUNCTION__, "pread" );
+                    nwipe_log( NWIPE_LOG_ERROR,
+                               "Read error on '%s' at offset %lld, skipping %zu bytes.",
+                               c->device_name,
+                               (long long) current_offset,
+                               blocksize );
+                    z -= (u64) blocksize;
+                    c->round_done += (u64) blocksize;
+                    segment_done += blocksize;
+                    pthread_testcancel();
+                    continue;
+                }
+
+                nwipe_perror( errno, __FUNCTION__, "pread" );
+                nwipe_log(
+                    NWIPE_LOG_FATAL, "Read error on '%s' at offset %lld.", c->device_name, (long long) current_offset );
+                free( b );
+                free( d );
+                nwipe_scatter_plan_free( &plan );
+                return -1;
+            }
+
+            if( r != (int) blocksize )
+            {
+                int s = (int) blocksize - r;
+
+                nwipe_log( NWIPE_LOG_ERROR,
+                           "Partial read on '%s' at offset %lld, %i bytes short.",
+                           c->device_name,
+                           (long long) current_offset,
+                           s );
+
+                c->verify_errors += 1;
+                z -= (u64) s;
+                c->round_done += (u64) s;
+            }
+
+            if( memcmp( b, &d[w], (size_t) r ) != 0 )
+            {
+                c->verify_errors += 1;
+            }
+
+            z -= (u64) r;
+            c->pass_done += (u64) r;
+            c->round_done += (u64) r;
+            segment_done += blocksize;
+
+            pthread_testcancel();
+        }
+    }
+
+    free( b );
+    free( d );
+    nwipe_scatter_plan_free( &plan );
+
+    return 0;
+}

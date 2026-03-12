@@ -50,14 +50,37 @@ int nwipe_compute_sync_rate_for_device( const nwipe_context_t* c, size_t io_bloc
 void nwipe_update_bytes_erased( nwipe_context_t* c, u64 z, u64 bs, int synced );
 int nwipe_prng_is_active( const char* buf, size_t blocksize );
 
+typedef struct
+{
+    u64 segment_size;
+    u64 segment_count;
+    u64* order;
+} nwipe_scatter_plan_t;
+
+int nwipe_scatter_plan_init_random( const nwipe_context_t* c, size_t io_blocksize, nwipe_scatter_plan_t* plan );
+int nwipe_scatter_plan_init_static( const nwipe_context_t* c,
+                                    size_t io_blocksize,
+                                    const nwipe_pattern_t* pattern,
+                                    nwipe_scatter_plan_t* plan );
+void nwipe_scatter_plan_free( nwipe_scatter_plan_t* plan );
+void nwipe_scatter_segment_range( const nwipe_scatter_plan_t* plan,
+                                  u64 visit_index,
+                                  u64 device_size,
+                                  off64_t* offset_out,
+                                  size_t* length_out );
+
 int nwipe_static_forward_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern );
 int nwipe_static_reverse_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern );
+int nwipe_static_scattered_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern );
 int nwipe_static_forward_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern );
 int nwipe_static_reverse_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern );
+int nwipe_static_scattered_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern );
 
 int nwipe_random_forward_pass( NWIPE_METHOD_SIGNATURE );
 int nwipe_random_reverse_pass( NWIPE_METHOD_SIGNATURE );
+int nwipe_random_scattered_pass( NWIPE_METHOD_SIGNATURE );
 int nwipe_random_forward_verify( NWIPE_METHOD_SIGNATURE );
 int nwipe_random_reverse_verify( NWIPE_METHOD_SIGNATURE );
+int nwipe_random_scattered_verify( NWIPE_METHOD_SIGNATURE );
 
 #endif /* PASS_INTERNAL_H_ */
