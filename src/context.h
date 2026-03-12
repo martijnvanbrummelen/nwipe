@@ -72,6 +72,7 @@ typedef enum {
 typedef enum {
     NWIPE_IO_DIRECTION_FORWARD = 0, /* Start -> End */
     NWIPE_IO_DIRECTION_REVERSE, /* End -> Start */
+    NWIPE_IO_DIRECTION_SCATTER /* Random Order */
 } nwipe_io_direction_t;
 
 #define NWIPE_KNOB_SPEEDRING_SIZE 30
@@ -220,7 +221,7 @@ typedef struct nwipe_context_t_
     int HPA_display_toggle_state;  // 0 or 1 Used to toggle between "[1TB] [ 33C]" and [HDA STATUS]
     time_t HPA_toggle_time;  // records a time, then if for instance 3 seconds has elapsed the display changes
     nwipe_io_mode_t io_mode;  // specific I/O method for a given drive, direct or cached.
-    nwipe_io_direction_t io_direction;  // specific I/O direction for a given drive, forward or reverse.
+    nwipe_io_direction_t io_direction;  // drive-specific I/O direction, forward/reverse or scatter.
     int test_use1;
     int test_use2;
 
