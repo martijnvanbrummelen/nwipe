@@ -49,7 +49,7 @@ int nwipe_static_forward_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern 
 
     int syncRate = nwipe_options.sync;
 
-    io_blocksize = nwipe_effective_io_blocksize( c );
+    io_blocksize = c->device_io_block_size;
 
     /* For direct I/O we do not need periodic fdatasync(), I/O errors are detected
      * at write() time. Keep sync for cached I/O only. */
@@ -138,16 +138,8 @@ int nwipe_static_forward_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern 
         }
         else
         {
+            /* Last block may be smaller than I/O block size */
             blocksize = (size_t) z;
-
-            if( (u64) c->device_stat.st_blksize > z )
-            {
-                nwipe_log( NWIPE_LOG_WARNING,
-                           "%s: The size of '%s' is not a multiple of its block size %i.",
-                           __FUNCTION__,
-                           c->device_name,
-                           c->device_stat.st_blksize );
-            }
         }
 
         /* Record the offset we're at before the write. */
@@ -258,15 +250,6 @@ int nwipe_static_forward_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern 
 
             if( c->device_size % (u64) io_blocksize != 0 )
             {
-                if( c->device_size % (u64) c->device_stat.st_blksize != 0 )
-                {
-                    nwipe_log( NWIPE_LOG_WARNING,
-                               "%s: The size of '%s' is not a multiple of its block size %i.",
-                               __FUNCTION__,
-                               c->device_name,
-                               c->device_stat.st_blksize );
-                }
-
                 /* The last block of the device is smaller than our I/O blocksize, adjust it */
                 rev_offset = (off64_t) ( c->device_size - ( c->device_size % (u64) io_blocksize ) );
                 rev_blocksize = (size_t) ( c->device_size % (u64) io_blocksize );
@@ -474,7 +457,7 @@ int nwipe_static_reverse_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern 
 
     int syncRate = nwipe_options.sync;
 
-    io_blocksize = nwipe_effective_io_blocksize( c );
+    io_blocksize = c->device_io_block_size;
 
     /* For direct I/O we do not need periodic fdatasync(), I/O errors are detected
      * at write() time. Keep sync for cached I/O only. */
@@ -545,16 +528,8 @@ int nwipe_static_reverse_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern 
         }
         else
         {
+            /* Last block may be smaller than I/O block size */
             blocksize = (size_t) z;
-
-            if( (u64) c->device_stat.st_blksize > z )
-            {
-                nwipe_log( NWIPE_LOG_WARNING,
-                           "%s: The size of '%s' is not a multiple of its block size %i.",
-                           __FUNCTION__,
-                           c->device_name,
-                           c->device_stat.st_blksize );
-            }
         }
 
         /* Record the offset we're at before the write (reverse-adjusted). */
@@ -849,7 +824,7 @@ int nwipe_static_forward_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* patter
         return -1;
     }
 
-    io_blocksize = nwipe_effective_io_blocksize( c );
+    io_blocksize = c->device_io_block_size;
 
     b = (char*) nwipe_alloc_io_buffer( c, io_blocksize, 0, "static_verify input buffer" );
     if( !b )
@@ -906,16 +881,8 @@ int nwipe_static_forward_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* patter
         }
         else
         {
+            /* Last block may be smaller than I/O block size */
             blocksize = (size_t) z;
-
-            if( (u64) c->device_stat.st_blksize > z )
-            {
-                nwipe_log( NWIPE_LOG_WARNING,
-                           "%s: The size of '%s' is not a multiple of its block size %i.",
-                           __FUNCTION__,
-                           c->device_name,
-                           c->device_stat.st_blksize );
-            }
         }
 
         /* Record the offset we're at before the read. */
@@ -1088,7 +1055,7 @@ int nwipe_static_reverse_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* patter
         return -1;
     }
 
-    io_blocksize = nwipe_effective_io_blocksize( c );
+    io_blocksize = c->device_io_block_size;
 
     b = (char*) nwipe_alloc_io_buffer( c, io_blocksize, 0, "static_verify input buffer" );
     if( !b )
@@ -1127,16 +1094,8 @@ int nwipe_static_reverse_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* patter
         }
         else
         {
+            /* Last block may be smaller than I/O block size */
             blocksize = (size_t) z;
-
-            if( (u64) c->device_stat.st_blksize > z )
-            {
-                nwipe_log( NWIPE_LOG_WARNING,
-                           "%s: The size of '%s' is not a multiple of its block size %i.",
-                           __FUNCTION__,
-                           c->device_name,
-                           c->device_stat.st_blksize );
-            }
         }
 
         /* Record the offset we're at before the read (reverse-adjusted). */
