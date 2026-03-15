@@ -911,6 +911,18 @@ int nwipe_random_forward_verify( NWIPE_METHOD_SIGNATURE )
         if( memcmp( b, d, (size_t) r ) != 0 )
         {
             c->verify_errors += 1;
+
+            /* Abort verification unless noabort_block_errors is enabled */
+            if( !nwipe_options.noabort_block_errors )
+            {
+                nwipe_log( NWIPE_LOG_FATAL,
+                           "Verification mismatch on '%s' at offset %lld",
+                           c->device_name,
+                           (long long) current_offset );
+                free( b );
+                free( d );
+                return -1;
+            }
         }
 
         z -= (u64) r;
@@ -1090,6 +1102,18 @@ int nwipe_random_reverse_verify( NWIPE_METHOD_SIGNATURE )
         if( memcmp( b, d, (size_t) r ) != 0 )
         {
             c->verify_errors += 1;
+
+            /* Abort verification unless noabort_block_errors is enabled */
+            if( !nwipe_options.noabort_block_errors )
+            {
+                nwipe_log( NWIPE_LOG_FATAL,
+                           "Verification mismatch on '%s' at offset %lld",
+                           c->device_name,
+                           (long long) current_offset );
+                free( b );
+                free( d );
+                return -1;
+            }
         }
 
         z -= (u64) r;
