@@ -29,37 +29,47 @@ static void nwipe_log_io_direction( nwipe_context_t* c )
     nwipe_log( NWIPE_LOG_NOTICE,
                "I/O direction on '%s' is %s",
                c->device_name,
-               c->io_direction == NWIPE_IO_DIRECTION_FORWARD ? "start -> end (forward)" : "end -> start (reverse)" );
+               c->io_direction == NWIPE_IO_DIRECTION_FORWARD       ? "start -> end (forward)"
+                   : c->io_direction == NWIPE_IO_DIRECTION_REVERSE ? "end -> start (reverse)"
+                                                                   : "random order (scatter)" );
 }
 
 /* Calls the static_*_pass method for the respective c->io_direction. */
 int nwipe_static_pass( nwipe_context_t* c, nwipe_pattern_t* pattern )
 {
     nwipe_log_io_direction( c );
+
     return c->io_direction == NWIPE_IO_DIRECTION_FORWARD ? nwipe_static_forward_pass( c, pattern )
-                                                         : nwipe_static_reverse_pass( c, pattern );
+        : c->io_direction == NWIPE_IO_DIRECTION_REVERSE  ? nwipe_static_reverse_pass( c, pattern )
+                                                         : nwipe_static_scatter_pass( c, pattern );
 }
 
 /* Calls the static_*_verify method for the respective c->io_direction. */
 int nwipe_static_verify( nwipe_context_t* c, nwipe_pattern_t* pattern )
 {
     nwipe_log_io_direction( c );
+
     return c->io_direction == NWIPE_IO_DIRECTION_FORWARD ? nwipe_static_forward_verify( c, pattern )
-                                                         : nwipe_static_reverse_verify( c, pattern );
+        : c->io_direction == NWIPE_IO_DIRECTION_REVERSE  ? nwipe_static_reverse_verify( c, pattern )
+                                                         : nwipe_static_scatter_verify( c, pattern );
 }
 
 /* Calls the random_*_pass method for the respective c->io_direction. */
 int nwipe_random_pass( nwipe_context_t* c )
 {
     nwipe_log_io_direction( c );
+
     return c->io_direction == NWIPE_IO_DIRECTION_FORWARD ? nwipe_random_forward_pass( c )
-                                                         : nwipe_random_reverse_pass( c );
+        : c->io_direction == NWIPE_IO_DIRECTION_REVERSE  ? nwipe_random_reverse_pass( c )
+                                                         : nwipe_random_scatter_pass( c );
 }
 
 /* Calls the random_*_verify method for the respective c->io_direction. */
 int nwipe_random_verify( nwipe_context_t* c )
 {
     nwipe_log_io_direction( c );
+
     return c->io_direction == NWIPE_IO_DIRECTION_FORWARD ? nwipe_random_forward_verify( c )
-                                                         : nwipe_random_reverse_verify( c );
+        : c->io_direction == NWIPE_IO_DIRECTION_REVERSE  ? nwipe_random_reverse_verify( c )
+                                                         : nwipe_random_scatter_verify( c );
 }

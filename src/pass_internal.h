@@ -38,13 +38,27 @@
 #include "logging.h"
 #include "gui.h"
 
+typedef struct
+{
+    u64 segment_size; /* How many bytes per segment */
+    u64 segment_count; /* Total number of segments for device */
+    u64* visit_order; /* Array for segment indices */
+} nwipe_scatter_plan_t;
+
+typedef struct
+{
+    char* pattern_buffer; /* Repeated pattern */
+    int pattern_length; /* Length of pattern */
+} nwipe_scatter_patt_ctx_t;
+
+typedef int ( *nwipe_scatter_fill_fn )( nwipe_context_t*, char*, size_t, off64_t, void* );
+
 ssize_t nwipe_write_with_retry( nwipe_context_t* c, int fd, const void* buf, size_t count );
 ssize_t nwipe_pwrite_with_retry( nwipe_context_t* c, int fd, const void* buf, size_t count, off64_t offset );
 ssize_t nwipe_read_with_retry( nwipe_context_t* c, int fd, void* buf, size_t count );
 ssize_t nwipe_pread_with_retry( nwipe_context_t* c, int fd, void* buf, size_t count, off64_t offset );
 int nwipe_fdatasync( nwipe_context_t* c, const char* f );
 
-size_t nwipe_effective_io_blocksize( const nwipe_context_t* c );
 void* nwipe_alloc_io_buffer( const nwipe_context_t* c, size_t size, int clear, const char* label );
 int nwipe_compute_sync_rate_for_device( const nwipe_context_t* c, size_t io_blocksize );
 void nwipe_update_bytes_erased( nwipe_context_t* c, u64 z, u64 bs, int synced );
@@ -52,12 +66,18 @@ int nwipe_prng_is_active( const char* buf, size_t blocksize );
 
 int nwipe_static_forward_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern );
 int nwipe_static_reverse_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern );
+int nwipe_static_scatter_pass( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern );
+
 int nwipe_static_forward_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern );
 int nwipe_static_reverse_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern );
+int nwipe_static_scatter_verify( NWIPE_METHOD_SIGNATURE, nwipe_pattern_t* pattern );
 
 int nwipe_random_forward_pass( NWIPE_METHOD_SIGNATURE );
 int nwipe_random_reverse_pass( NWIPE_METHOD_SIGNATURE );
+int nwipe_random_scatter_pass( NWIPE_METHOD_SIGNATURE );
+
 int nwipe_random_forward_verify( NWIPE_METHOD_SIGNATURE );
 int nwipe_random_reverse_verify( NWIPE_METHOD_SIGNATURE );
+int nwipe_random_scatter_verify( NWIPE_METHOD_SIGNATURE );
 
 #endif /* PASS_INTERNAL_H_ */

@@ -104,7 +104,8 @@ typedef unsigned char u8;
 #define BLKSSZGET _IO( 0x12, 104 )
 #define BLKBSZGET _IOR( 0x12, 112, size_t )
 #define BLKBSZSET _IOW( 0x12, 113, size_t )
-#define BLKGETSIZE64 _IOR( 0x12, 114, sizeof( u64 ) )
+#define BLKPBSZGET _IO( 0x12, 123 )
+#define BLKGETSIZE64 _IOR( 0x12, 114, u64 )
 
 #define THREAD_CANCELLATION_TIMEOUT 10
 

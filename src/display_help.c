@@ -177,6 +177,11 @@ void display_help()
     "        Helpful when bad blocks otherwise prevent wiping major areas of the device\n" \
     "        Beware throughput may be degraded as it writes against the spin direction\n\n" \
     BHCYN \
+    "      --scatter\n" reset \
+    "        Use scattered I/O direction (random segmented order across the device)\n" \
+    "        More mechanical exercise; good for burning-in or stress-testing devices\n" \
+    "        Beware the throughput may be degraded due to random access patterns used\n\n" \
+    BHCYN \
     "      --no-retry-on-io-errors\n" reset \
     "        Do NOT retry single failed read/write operations; immediately error\n" \
     "        or skip the failing block. (default is retry 3 times with 5s sleep\n" \
