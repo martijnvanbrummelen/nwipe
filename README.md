@@ -188,10 +188,13 @@ A regular wipe was often not enough for flash storage devices:
 * Many vendors restrict low-level access to these areas to the drive’s own controller and firmware.
 
 For secure flash storage sanitization, the firmware can implement native erasing methods.
-Nwipe is now able to detect these and will offer to utilize the methods from within its GUI.
 
-**It is strongly recommended to sanitize such devices using available hardware methods first, and
-then follow up with at least one full regular PRNG wipe, both now possible through the Nwipe GUI.**
+Nwipe is now able to detect these and will offer to utilize such methods from within its GUI:
+
+![Example NVMe](images/example_nvme.gif)
+
+**It is strongly recommended to sanitize devices using the available hardware methods, and
+then always follow up with at least one full regular PRNG wipe (both are possible in the GUI).**
 
 If no new methods are offered for your device, try connecting it directly to the motherboard.
 This is especially true for ATA devices (watch out for _bad sense data_ errors in the logs), which
