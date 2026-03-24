@@ -172,22 +172,34 @@ See the `nwipe(8)` man page for detailed `--sync` semantics and examples.
 
 ---
 
-## SSD considerations and limitations
+## SSD/NVMe considerations
 
-In its current form, nwipe **cannot fully sanitise** solid state drives (SSDs) of any interface type:
+The (upcoming) **v0.41** release introduces several major improvements for:
 
 * SAS / SATA / NVMe
 * Form factors such as 2.5", 3.5", M.2, PCIe, etc.
 
-This is due to how SSDs internally manage data:
+Nwipe is now **able to sanitize ATA and NVMe devices** using native firmware capabilities.
+
+A regular wipe was often not enough for flash storage devices:
 
 * SSDs use wear-levelling and frequently maintain additional, non-host-accessible memory (overprovisioning).
 * Failed blocks may be remapped to reserved areas that are not directly addressable by the OS.
 * Many vendors restrict low-level access to these areas to the drive’s own controller and firmware.
 
-For secure SSD sanitisation, it is strongly recommended to:
+For secure flash storage sanitization, the firmware can implement native erasing methods.
+Nwipe is now able to detect these and will offer to utilize the methods from within its GUI.
 
-1. Use nwipe / ShredOS **in combination with vendor-specific tools**, for example:
+**It is strongly recommended to sanitize such devices using available hardware methods first, and
+then follow up with at least one full regular PRNG wipe, both now possible through the Nwipe GUI.**
+
+If no new methods are offered for your device, try connecting it directly to the motherboard.
+This is especially true for ATA devices (watch out for _bad sense data_ errors in the logs), which
+benefit greatly from not having to talk to Nwipe through cheap or generic USB/SATA/RAID controllers.
+
+For devices that cannot be detected or as an alternative, the previous guidance is still valid:
+
+1. Use nwipe / ShredOS in combination with vendor-specific tools, for example:
 
    * manufacturer Secure Erase,
    * NVMe format / sanitize commands, or
@@ -246,7 +258,7 @@ sudo apt install \
   dmidecode \
   coreutils \
   smartmontools \
-  hdparm \
+  hdparm
 ```
 
 ### Fedora / RHEL / CentOS Stream prerequisites
@@ -300,6 +312,33 @@ sudo zypper install -y \
 ```
 
 Note: `dmidecode`, `readlink` (from `coreutils`) and `smartmontools` are technically optional, but recommended for full feature support.
+
+### NVme Secure Erase prerequisites (optional)
+
+When `libnvme 1.16.x` (>=1.16 and <1.17) is present on the system, NVMe secure
+erase features will automatically be built and enabled. If the library is not
+present on the system, the build will warn about it missing and disable the
+NVMe secure erase features, unless `--with-libnvme` was specifically requested
+(in which case the build fails).
+
+The functionality was specifically developed around version 1.16.1, which can be
+obtained through your package manager or from below link for builing from source:
+
+  https://github.com/linux-nvme/libnvme
+
+The narrow version requirement is due to breaking specification/API changes with
+earlier versions of the library, as they are often still circulated by package
+managers, so we recommend building the lightweight library from source instead:
+
+```bash
+wget https://github.com/linux-nvme/libnvme/archive/refs/tags/v1.16.1.tar.gz
+tar xvfz v1.16.1.tar.gz
+cd libnvme-1.16.1
+meson setup .build
+meson compile -C .build
+sudo meson install -C .build
+sudo ldconfig
+```
 
 ### Compilation
 
