@@ -572,7 +572,8 @@ static void nwipe_gui_se_ata_monitor( nwipe_context_t* ctx, nwipe_se_ata_ctx* sa
         }
 
         yy++;
-        mvwprintw( main_window, yy++, tab1, "Don't forget to follow up with a regular wipe." );
+        if( !user_aborted )
+            mvwprintw( main_window, yy++, tab1, "Don't forget to follow up with a regular wipe." );
         mvwprintw( main_window, yy++, tab1, "Press Enter to leave this screen..." );
 
         box( main_window, 0, 0 );
