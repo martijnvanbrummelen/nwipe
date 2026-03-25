@@ -872,6 +872,7 @@ void nwipe_gui_se_nvme_sanitize( nwipe_context_t* ctx, nwipe_se_nvme_ctx* san )
 
         san->nodas = false; /* This is dangerous, keep it disabled */
         san->ause = true; /* This is dangerous, keep it enabled */
+        san->emvs = false; /* This is dangerous, keep it disabled */
     }
     /* Otherwise there are no options to configure for the user */
     else if( san->planned_sanact == NVME_SANITIZE_SANACT_EXIT_FAILURE
@@ -884,6 +885,7 @@ void nwipe_gui_se_nvme_sanitize( nwipe_context_t* ctx, nwipe_se_nvme_ctx* san )
 
         san->nodas = false; /* No effect, must be in zero state also */
         san->ause = false; /* No effect, must be in zero state also */
+        san->emvs = false; /* No effect, must be in zero state also */
     }
     else
     {
@@ -893,6 +895,7 @@ void nwipe_gui_se_nvme_sanitize( nwipe_context_t* ctx, nwipe_se_nvme_ctx* san )
 
         san->nodas = false; /* This is dangerous, keep it disabled */
         san->ause = true; /* This is dangerous, keep it enabled */
+        san->emvs = false; /* This is dangerous, keep it disabled */
     }
 
     /* Final confirmation screen before sanitize operation */
