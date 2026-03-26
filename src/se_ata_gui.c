@@ -783,7 +783,7 @@ static void nwipe_gui_se_ata_show_failed_state( nwipe_context_t* ctx, nwipe_se_a
 
 static int nwipe_gui_se_ata_confirm( nwipe_context_t* ctx, nwipe_se_ata_ctx* san )
 {
-    const char* ftr = "E=Erase ESC=Cancel";
+    const char* ftr = "E=Execute ESC=Cancel";
 
     werase( footer_window );
     nwipe_gui_title( footer_window, ftr );
