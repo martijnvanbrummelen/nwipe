@@ -29,7 +29,7 @@ extern void nwipe_gui_title( WINDOW* w, const char* s );
 extern void nwipe_gui_amend_footer_window( const char* footer_text );
 extern void nwipe_gui_create_all_windows_on_terminal_resize( int force, const char* footer );
 
-#define NWIPE_GUI_SE_ATA_ACTION_COUNT 3
+#define NWIPE_GUI_SE_ATA_ACTION_COUNT 4
 #define NWIPE_GUI_SE_ATA_ACTION_DESC_LINES 4
 
 typedef struct
@@ -64,6 +64,13 @@ static const nwipe_gui_se_ata_action_t nwipe_gui_se_ata_actions[NWIPE_GUI_SE_ATA
         "increases wear; prefer Block Erase or Crypto",
         "Scramble methods if the device supports them." },
       4 },
+    { NWIPE_SE_ATA_SANACT_EXIT_FAILURE,
+      "Exit Failure Mode",
+      { "Clears a previously failed sanitize status and",
+        "restores the device so that new actions can be",
+        "started.",
+        NULL },
+      3 },
 }; /* nwipe_gui_se_ata_actions */
 
 static int nwipe_gui_se_ata_action_supported( nwipe_se_ata_ctx* san, nwipe_se_ata_sanact_e act )
@@ -76,6 +83,8 @@ static int nwipe_gui_se_ata_action_supported( nwipe_se_ata_ctx* san, nwipe_se_at
             return san->cap_crypto_erase;
         case NWIPE_SE_ATA_SANACT_OVERWRITE:
             return san->cap_overwrite;
+        case NWIPE_SE_ATA_SANACT_EXIT_FAILURE:
+            return 1; /* Always allowed */
         default:
             return 0;
     }
@@ -702,6 +711,57 @@ static void nwipe_gui_se_ata_show_frozen_state( nwipe_context_t* ctx, nwipe_se_a
     } while( terminate_signal != 1 );
 } /* nwipe_gui_se_ata_show_frozen_state */
 
+static void nwipe_gui_se_ata_show_failed_state( nwipe_context_t* ctx, nwipe_se_ata_ctx* san )
+{
+    const char* ftr = "Enter=Continue";
+
+    werase( footer_window );
+    nwipe_gui_title( footer_window, ftr );
+    wrefresh( footer_window );
+
+    do
+    {
+        int yy = 2;
+        int keystroke;
+        const int tab1 = 2;
+
+        werase( main_window );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr );
+
+        nwipe_gui_se_ata_print_device( ctx, san, main_window, &yy, tab1, &san->sanact );
+        yy++;
+
+        mvwprintw( main_window, yy++, tab1, "The most recent action has FAILED!" );
+        mvwprintw( main_window, yy++, tab1, "Device status: %s", nwipe_gui_se_ata_status_str( san ) );
+        yy++;
+
+        mvwprintw( main_window, yy++, tab1, "The device may be in sanitize-failed mode." );
+        mvwprintw( main_window, yy++, tab1, "You can use 'Exit Failure Mode' from the next menu" );
+        mvwprintw( main_window, yy++, tab1, "to clear this state before starting a new sanitize." );
+
+        yy++;
+        mvwprintw( main_window, yy++, tab1, "Press Enter to continue to the action menu..." );
+
+        box( main_window, 0, 0 );
+        nwipe_gui_title( main_window, nwipe_gui_se_ata_title );
+        wrefresh( main_window );
+
+        timeout( 250 );
+        keystroke = getch();
+        timeout( -1 );
+
+        switch( keystroke )
+        {
+            case KEY_ENTER:
+            case 10:
+            case KEY_BACKSPACE:
+            case KEY_BREAK:
+            case 27: /* ESC */
+                return;
+        }
+    } while( terminate_signal != 1 );
+} /* nwipe_gui_se_ata_show_failed_state */
+
 static int nwipe_gui_se_ata_confirm( nwipe_context_t* ctx, nwipe_se_ata_ctx* san )
 {
     const char* ftr = "E=Erase ESC=Cancel";
@@ -734,11 +794,14 @@ static int nwipe_gui_se_ata_confirm( nwipe_context_t* ctx, nwipe_se_ata_ctx* san
             yy++;
         }
 
-        mvwprintw( main_window, yy++, tab1, "WARNING: All DATA on the device will be DESTROYED!" );
-        yy++;
+        if( san->planned_sanact != NWIPE_SE_ATA_SANACT_EXIT_FAILURE )
+        {
+            mvwprintw( main_window, yy++, tab1, "WARNING: All DATA on the device will be DESTROYED!" );
+            yy++;
+        }
 
         mvwprintw( main_window, yy++, tab1, "Beware that this is the FINAL CONFIRMATION screen." );
-        mvwprintw( main_window, yy++, tab1, "Press 'e' to erase now or ESC to cancel instead..." );
+        mvwprintw( main_window, yy++, tab1, "Press 'e' to execute now or ESC to cancel instead..." );
 
         box( main_window, 0, 0 );
         nwipe_gui_title( main_window, nwipe_gui_se_ata_title );
@@ -801,6 +864,12 @@ void nwipe_gui_se_ata_sanitize( nwipe_context_t* ctx, nwipe_se_ata_ctx* san )
         }
         nwipe_se_ata_close( san );
         return;
+    }
+
+    /* If a sanitize has failed, advise user how to clear failure state */
+    if( san->state == NWIPE_SE_ATA_STATE_FAILURE )
+    {
+        nwipe_gui_se_ata_show_failed_state( ctx, san );
     }
 
     /* Now let the user select a sanitize action */

@@ -640,7 +640,7 @@ static int ata_sanitize_taskfile( int fd, __u16 feature, __u64 lba, __u8 nsect, 
     r.iflags.bits.lob.lbam = 1;
     r.iflags.bits.hob.nsect = 1;
 
-    if( feature == SANITIZE_OVERWRITE_EXT )
+    if( nsect || feature == SANITIZE_OVERWRITE_EXT )
     {
         r.oflags.bits.lob.nsect = 1;
         r.lob.nsect = nsect;
@@ -801,6 +801,15 @@ int nwipe_se_ata_poll( nwipe_se_ata_ctx* san )
     {
         int eno = errno;
 
+        if( r.lob.lbal == 1 )
+        {
+            /* Device is in Sanitize Operation Failed state */
+            san->state = NWIPE_SE_ATA_STATE_FAILURE;
+            san->progress_raw = 0;
+            san->progress_pct = 0;
+            return 0; /* Not a poll error, just a known device state */
+        }
+
         snprintf( san->error_msg,
                   sizeof( san->error_msg ),
                   "%s (errno=%d, device reason: %s)",
@@ -877,17 +886,19 @@ int nwipe_se_ata_sanitize( nwipe_se_ata_ctx* san )
         case NWIPE_SE_ATA_SANACT_CRYPTO_SCRAMBLE:
             feature = SANITIZE_CRYPTO_SCRAMBLE_EXT;
             lba = SANITIZE_CRYPTO_SCRAMBLE_KEY;
+            nsect = ( 1 << 4 ); /* Allow Failure Exit */
             break;
 
         case NWIPE_SE_ATA_SANACT_BLOCK_ERASE:
             feature = SANITIZE_BLOCK_ERASE_EXT;
             lba = SANITIZE_BLOCK_ERASE_KEY;
+            nsect = ( 1 << 4 ); /* Allow Failure Exit */
             break;
 
         case NWIPE_SE_ATA_SANACT_OVERWRITE:
             feature = SANITIZE_OVERWRITE_EXT;
             lba = ( (__u64) SANITIZE_OVERWRITE_KEY << 32 ) | san->ovrpat;
-            nsect = san->owpass;
+            nsect = ( san->owpass & 0x0F ) | ( 1 << 4 ); /* Passes + Allow Failure Exit */
             break;
 
         case NWIPE_SE_ATA_SANACT_FREEZE_LOCK:
@@ -898,6 +909,11 @@ int nwipe_se_ata_sanitize( nwipe_se_ata_ctx* san )
         case NWIPE_SE_ATA_SANACT_ANTIFREEZE_LOCK:
             feature = SANITIZE_ANTIFREEZE_LOCK_EXT;
             lba = SANITIZE_ANTIFREEZE_LOCK_KEY;
+            break;
+
+        case NWIPE_SE_ATA_SANACT_EXIT_FAILURE:
+            feature = SANITIZE_STATUS_EXT;
+            nsect = 1; /* Clear Sanitize Operation Failed */
             break;
 
         default:

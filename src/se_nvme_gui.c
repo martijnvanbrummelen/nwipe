@@ -789,7 +789,7 @@ static int nwipe_gui_se_nvme_confirm( nwipe_context_t* ctx, nwipe_se_nvme_ctx* s
         }
 
         mvwprintw( main_window, yy++, tab1, "Beware that this is the FINAL CONFIRMATION screen." );
-        mvwprintw( main_window, yy++, tab1, "Press 'e' to erase now or ESC to cancel instead..." );
+        mvwprintw( main_window, yy++, tab1, "Press 'e' to execute now or ESC to cancel instead..." );
 
         box( main_window, 0, 0 );
         nwipe_gui_title( main_window, nwipe_gui_se_nvme_title );
