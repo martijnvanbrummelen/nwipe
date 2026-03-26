@@ -142,8 +142,9 @@ static void nwipe_gui_se_nvme_print_device( nwipe_context_t* ctx,
     mvwprintw( win,
                ( *y )++,
                x,
-               "Controller: %s (%s / %s)",
+               "Controller: %s [0x%02x] (%s / %s)",
                san->ctrl_path,
+               (unsigned) san->state_raw, /* For diagnostics */
                ctx->device_model ? ctx->device_model : "?",
                ctx->device_serial_no[0] ? ctx->device_serial_no : "?" );
 

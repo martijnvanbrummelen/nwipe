@@ -367,9 +367,11 @@ int nwipe_se_nvme_poll( nwipe_se_nvme_ctx* san )
     __u16 sstat = le16toh( log->sstat );
     __u32 scdw10 = le32toh( log->scdw10 );
     san->sanact = ( enum nvme_sanitize_sanact )( scdw10 & 0x7 );
+    san->state_raw = (__u8) ( sstat & NVME_SANITIZE_SSTAT_STATUS_MASK );
 
-    switch( sstat & NVME_SANITIZE_SSTAT_STATUS_MASK )
+    switch( san->state_raw )
     {
+        /* Don't fix the typo, it's in the library */
         case NVME_SANITIZE_SSTAT_STATUS_IN_PROGESS:
             san->state = NWIPE_SE_NVME_STATE_IN_PROGRESS;
             break;

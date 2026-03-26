@@ -49,6 +49,7 @@ typedef struct
 
     /* Last or current running operation */
     nwipe_se_nvme_state_e state;
+    __u8 state_raw; /* 0xFF */
     enum nvme_sanitize_sanact sanact;
     int progress_pct; /* 0-100 */
     __u16 progress_raw; /* 0xFFFF */

@@ -47,6 +47,7 @@ typedef struct
 
     /* Last or current running operation */
     nwipe_se_ata_state_e state;
+    __u8 state_raw; /* 0xFF */
     nwipe_se_ata_sanact_e sanact;
     int progress_pct; /* 0-100 */
     __u16 progress_raw; /* 0xFFFF */

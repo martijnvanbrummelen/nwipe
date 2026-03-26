@@ -828,15 +828,15 @@ int nwipe_se_ata_poll( nwipe_se_ata_ctx* san )
         return -1;
     }
 
-    __u8 nsect_hob = r.hob.nsect;
+    san->state_raw = r.hob.nsect;
 
-    if( nsect_hob & SANITIZE_FLAG_DEVICE_IN_FROZEN )
+    if( san->state_raw & SANITIZE_FLAG_DEVICE_IN_FROZEN )
     {
         san->state = NWIPE_SE_ATA_STATE_FROZEN;
         san->progress_raw = 0;
         san->progress_pct = 0;
     }
-    else if( nsect_hob & SANITIZE_FLAG_OPERATION_IN_PROGRESS )
+    else if( san->state_raw & SANITIZE_FLAG_OPERATION_IN_PROGRESS )
     {
         san->state = NWIPE_SE_ATA_STATE_IN_PROGRESS;
         san->progress_raw = ( r.lob.lbam << 8 ) | r.lob.lbal;
@@ -844,7 +844,7 @@ int nwipe_se_ata_poll( nwipe_se_ata_ctx* san )
         if( san->progress_pct > 100 )
             san->progress_pct = 100;
     }
-    else if( nsect_hob & SANITIZE_FLAG_OPERATION_SUCCEEDED )
+    else if( san->state_raw & SANITIZE_FLAG_OPERATION_SUCCEEDED )
     {
         san->state = NWIPE_SE_ATA_STATE_SUCCESS;
         san->progress_raw = UINT16_MAX;
