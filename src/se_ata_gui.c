@@ -130,11 +130,11 @@ static void nwipe_gui_se_ata_print_device( nwipe_context_t* ctx,
     mvwprintw( win,
                ( *y )++,
                x,
-               "Device: %s [0x%02x] (%s / %s)",
+               "Device: %s (%s / %s) [0x%02x]",
                san->device_path,
-               (unsigned) san->state_raw, /* For diagnostics */
                ctx->device_model ? ctx->device_model : "?",
-               ctx->device_serial_no[0] ? ctx->device_serial_no : "?" );
+               ctx->device_serial_no[0] ? ctx->device_serial_no : "?",
+               (unsigned) san->state_raw );
 
     if( act )
         mvwprintw( win, ( *y )++, x, "Action: %s", nwipe_gui_se_ata_action_str( *act ) );
