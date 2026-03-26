@@ -15,9 +15,17 @@
 #include <stdbool.h>
 #include <libnvme.h>
 
+/*
+ * While the device internal state machine has an "Idle" state,
+ * it is not exposed over the wire. Instead, devices that are idle
+ * report either the "Never Sanitized" or "Sanitize Success" states.
+ * A successful sanitize can therefore only be derived when a prior
+ * sanitize command was accepted or an "In Progress" state was seen
+ * which then transitioned to a "Sanitize Success" state afterwards.
+ */
 typedef enum {
     NWIPE_SE_NVME_STATE_UNKNOWN = 0,
-    NWIPE_SE_NVME_STATE_IDLE,
+    NWIPE_SE_NVME_STATE_NEVER_SANITIZED,
     NWIPE_SE_NVME_STATE_IN_PROGRESS,
     NWIPE_SE_NVME_STATE_SUCCESS,
     NWIPE_SE_NVME_STATE_FAILURE,

@@ -385,8 +385,12 @@ int nwipe_se_nvme_poll( nwipe_se_nvme_ctx* san )
             san->state = NWIPE_SE_NVME_STATE_FAILURE;
             break;
 
+        case NVME_SANITIZE_SSTAT_STATUS_NEVER_SANITIZED:
+            san->state = NWIPE_SE_NVME_STATE_NEVER_SANITIZED;
+            break;
+
         default:
-            san->state = NWIPE_SE_NVME_STATE_IDLE;
+            san->state = NWIPE_SE_NVME_STATE_UNKNOWN;
             break;
     }
 

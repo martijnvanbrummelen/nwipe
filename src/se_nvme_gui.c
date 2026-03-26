@@ -108,8 +108,8 @@ static const char* nwipe_gui_se_nvme_status_str( nwipe_se_nvme_ctx* san )
 {
     switch( san->state )
     {
-        case NWIPE_SE_NVME_STATE_IDLE:
-            return "Idle";
+        case NWIPE_SE_NVME_STATE_NEVER_SANITIZED:
+            return "Never Sanitized";
         case NWIPE_SE_NVME_STATE_SUCCESS:
             return "Sanitized (Success)";
         case NWIPE_SE_NVME_STATE_IN_PROGRESS:
