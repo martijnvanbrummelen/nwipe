@@ -94,8 +94,6 @@ static const char* nwipe_gui_se_ata_status_str( nwipe_se_ata_ctx* san )
 {
     switch( san->state )
     {
-        case NWIPE_SE_ATA_STATE_IDLE:
-            return "Idle";
         case NWIPE_SE_ATA_STATE_SUCCESS:
             return "Sanitized (Success)";
         case NWIPE_SE_ATA_STATE_IN_PROGRESS:

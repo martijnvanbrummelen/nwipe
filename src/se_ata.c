@@ -852,7 +852,7 @@ int nwipe_se_ata_poll( nwipe_se_ata_ctx* san )
     }
     else
     {
-        san->state = NWIPE_SE_ATA_STATE_IDLE;
+        san->state = NWIPE_SE_ATA_STATE_UNKNOWN;
         san->progress_raw = 0;
         san->progress_pct = 0;
     }

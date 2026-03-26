@@ -10,10 +10,17 @@
 #include <linux/types.h> /* __u8, __u16, __u32, __u64 */
 #include <stdbool.h>
 
+/*
+ * While the device internal state machine has an "Idle" (SD0)
+ * state, it is not exposed over the wire. Devices that are idle
+ * report "Sanitize Success" even if no sanitize was ever performed.
+ * A successful sanitize can therefore only be derived when a prior
+ * sanitize command was accepted or an "In Progress" state was seen
+ * which then transitioned to a "Sanitize Success" state afterwards.
+ */
 typedef enum {
     NWIPE_SE_ATA_STATE_UNKNOWN = 0,
     NWIPE_SE_ATA_STATE_FROZEN,
-    NWIPE_SE_ATA_STATE_IDLE,
     NWIPE_SE_ATA_STATE_IN_PROGRESS,
     NWIPE_SE_ATA_STATE_SUCCESS,
     NWIPE_SE_ATA_STATE_FAILURE,
