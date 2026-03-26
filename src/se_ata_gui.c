@@ -190,6 +190,10 @@ nwipe_gui_se_ata_show_error( nwipe_context_t* ctx, nwipe_se_ata_ctx* san, const 
             mvwprintw( main_window, yy++, tab1, "Error message: %s", error_msg );
 
         yy++;
+        mvwprintw( main_window, yy++, tab1, "State machine was at: %s", nwipe_gui_se_ata_status_str( san ) );
+        mvwprintw( main_window, yy++, tab1, "Do not derive a sanitize success/failure from this diagnostic value." );
+
+        yy++;
         mvwprintw( main_window, yy++, tab1, "Press Enter to leave this screen..." );
 
         box( main_window, 0, 0 );
