@@ -60,6 +60,7 @@ typedef struct
 
     /* Options (set before nwipe_se_nvme_sanitize) */
     enum nvme_sanitize_sanact planned_sanact;
+    int destructive_sanact; /* 0 = No, 1 = Yes */
     __u8 owpass; /* 0-15 (0-based, sent directly) */
     bool oipbp; /* invert pattern between passes */
     __u32 ovrpat; /* 32-bit overwrite pattern */

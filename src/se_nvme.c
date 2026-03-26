@@ -473,6 +473,18 @@ int nwipe_se_nvme_sanitize( nwipe_se_nvme_ctx* san )
         }
     }
 
+    switch( san->planned_sanact )
+    {
+        case NVME_SANITIZE_SANACT_START_BLOCK_ERASE:
+        case NVME_SANITIZE_SANACT_START_CRYPTO_ERASE:
+        case NVME_SANITIZE_SANACT_START_OVERWRITE:
+            san->destructive_sanact = 1;
+            break;
+        default:
+            san->destructive_sanact = 0;
+            break;
+    }
+
     nwipe_log( NWIPE_LOG_INFO, "%s: issuing SANITIZE sanact=%d", san->ctrl_path, san->planned_sanact );
 
     struct nvme_sanitize_nvm_args args;

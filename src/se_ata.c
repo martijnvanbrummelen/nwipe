@@ -926,6 +926,18 @@ int nwipe_se_ata_sanitize( nwipe_se_ata_ctx* san )
             return -1;
     }
 
+    switch( san->planned_sanact )
+    {
+        case NWIPE_SE_ATA_SANACT_BLOCK_ERASE:
+        case NWIPE_SE_ATA_SANACT_CRYPTO_SCRAMBLE:
+        case NWIPE_SE_ATA_SANACT_OVERWRITE:
+            san->destructive_sanact = 1;
+            break;
+        default:
+            san->destructive_sanact = 0;
+            break;
+    }
+
     nwipe_log( NWIPE_LOG_INFO,
                "%s: issuing SANITIZE feat=0x%04x lba=0x%012llx nsect=%u",
                san->device_path,

@@ -541,7 +541,12 @@ static void nwipe_gui_se_ata_monitor( nwipe_context_t* ctx, nwipe_se_ata_ctx* sa
         {
             mvwprintw( main_window, yy++, tab1, "Action completed with success." );
             mvwprintw( main_window, yy++, tab1, "Device status: %s", result_status_str );
-            ctx->secure_erase_status = NWIPE_SECURE_ERASE_SUCCESS; /* Global state */
+
+            if( san->destructive_sanact )
+            {
+                /* We only update global secure erase state if it was a sanitize action */
+                ctx->secure_erase_status = NWIPE_SECURE_ERASE_SUCCESS; /* Global state */
+            }
 
             if( !logged )
             {
@@ -556,7 +561,12 @@ static void nwipe_gui_se_ata_monitor( nwipe_context_t* ctx, nwipe_se_ata_ctx* sa
         {
             mvwprintw( main_window, yy++, tab1, "Action failed with errors." );
             mvwprintw( main_window, yy++, tab1, "Device status: %s", result_status_str );
-            ctx->secure_erase_status = NWIPE_SECURE_ERASE_FAILURE; /* Global state */
+
+            if( san->destructive_sanact )
+            {
+                /* We only update global secure erase state if it was a sanitize action */
+                ctx->secure_erase_status = NWIPE_SECURE_ERASE_FAILURE; /* Global state */
+            }
 
             if( !logged )
             {
@@ -572,7 +582,12 @@ static void nwipe_gui_se_ata_monitor( nwipe_context_t* ctx, nwipe_se_ata_ctx* sa
             mvwprintw( main_window, yy++, tab1, "Action completed." );
             mvwprintw( main_window, yy++, tab1, "The device did not return a success or failure." );
             mvwprintw( main_window, yy++, tab1, "Device status: %s", result_status_str );
-            ctx->secure_erase_status = NWIPE_SECURE_ERASE_SUCCESS; /* Global state */
+
+            if( san->destructive_sanact )
+            {
+                /* We only update global secure erase state if it was a sanitize action */
+                ctx->secure_erase_status = NWIPE_SECURE_ERASE_SUCCESS; /* Global state */
+            }
 
             if( !logged )
             {
@@ -585,7 +600,7 @@ static void nwipe_gui_se_ata_monitor( nwipe_context_t* ctx, nwipe_se_ata_ctx* sa
         }
 
         yy++;
-        if( !user_aborted )
+        if( !user_aborted && san->destructive_sanact )
             mvwprintw( main_window, yy++, tab1, "Don't forget to follow up with a regular wipe." );
         mvwprintw( main_window, yy++, tab1, "Press Enter to leave this screen..." );
 
@@ -798,7 +813,7 @@ static int nwipe_gui_se_ata_confirm( nwipe_context_t* ctx, nwipe_se_ata_ctx* san
             yy++;
         }
 
-        if( san->planned_sanact != NWIPE_SE_ATA_SANACT_EXIT_FAILURE )
+        if( san->destructive_sanact )
         {
             mvwprintw( main_window, yy++, tab1, "WARNING: All DATA on the device will be DESTROYED!" );
             yy++;
