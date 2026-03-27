@@ -1,7 +1,7 @@
 /*
  * se_nvme_gui.c: NVMe Secure Erase (GUI)
  * Author: Copyright (c) 2026 desertwitch (dezertwitsh@gmail.com)
- * Based on: https://github.com/linux-nvme/nvme-cli (v2.16/GPLv2)
+ * Based on: nvme-cli 2.16 - (c) 2015 NVMe-CLI Authors (GPL v2.0)
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h> /* HAVE_LIBNVME */
