@@ -560,6 +560,8 @@ static void nwipe_gui_se_ata_monitor( nwipe_context_t* ctx, nwipe_se_ata_ctx* sa
         {
             mvwprintw( main_window, yy++, tab1, "Action failed with errors." );
             mvwprintw( main_window, yy++, tab1, "Device status: %s", result_status_str );
+            yy++;
+            mvwprintw( main_window, yy++, tab1, "Use 'Exit Failure Mode' to clear a failure state." );
 
             if( san->destructive_sanact )
             {
