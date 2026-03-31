@@ -68,6 +68,19 @@ typedef enum {
     NWIPE_IO_MODE_CACHED /* Force cached I/O, never attempt O_DIRECT. */
 } nwipe_io_mode_t;
 
+typedef enum {
+    NWIPE_SECURE_ERASE_TYPE_UNKNOWN = 0,
+    NWIPE_SECURE_ERASE_TYPE_ATA, /* ATA */
+    NWIPE_SECURE_ERASE_TYPE_NVME /* NVMe */
+} nwipe_secure_erase_type_t;
+
+typedef enum {
+    NWIPE_SECURE_ERASE_UNPLANNED = 0, /* Unused: Do not run a secure erase */
+    NWIPE_SECURE_ERASE_PLANNED, /* Unused: Run a (configured) secure erase */
+    NWIPE_SECURE_ERASE_SUCCESS, /* Secure erase was successful */
+    NWIPE_SECURE_ERASE_FAILURE /* Secure erase has failed */
+} nwipe_secure_erase_status_t;
+
 /* I/O direction for data path. */
 typedef enum {
     NWIPE_IO_DIRECTION_FORWARD = 0, /* Start -> End */
@@ -221,6 +234,11 @@ typedef struct nwipe_context_t_
     nwipe_io_direction_t io_direction;  // specific I/O direction for a given drive, forward or reverse.
     int test_use1;
     int test_use2;
+
+    int secure_erase_supported; /* Secure Erase: 0 = Unsupported, 1 = Supported */
+    nwipe_secure_erase_type_t secure_erase_type; /* Secure Erase: ATA or NVMe */
+    nwipe_secure_erase_status_t secure_erase_status; /* Secure Erase: Status */
+    void* secure_erase_context; /* Secure Erase: Pointer to context */
 
     /*
      * Identity contains the raw serial number of the drive
