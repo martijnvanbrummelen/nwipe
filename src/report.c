@@ -142,10 +142,7 @@ static u64 nwipe_report_expected_size( const nwipe_context_t* ctx )
     return ctx->Calculated_real_max_size_in_bytes;
 }
 
-void nwipe_report_build_summary( const nwipe_context_t* ctx,
-                                 int user_abort,
-                                 time_t now,
-                                 nwipe_report_summary_t* out )
+void nwipe_report_build_summary( const nwipe_context_t* ctx, int user_abort, time_t now, nwipe_report_summary_t* out )
 {
     if( ctx == NULL || out == NULL )
     {
@@ -197,18 +194,15 @@ void nwipe_report_build_summary( const nwipe_context_t* ctx,
 
     out->total_duration_seconds = (u64) out->duration;
     nwipe_report_convert_seconds( out->total_duration_seconds, &out->hours, &out->minutes, &out->seconds );
-    snprintf( out->duration_str,
-              sizeof( out->duration_str ),
-              "%02i:%02i:%02i",
-              out->hours,
-              out->minutes,
-              out->seconds );
+    snprintf(
+        out->duration_str, sizeof( out->duration_str ), "%02i:%02i:%02i", out->hours, out->minutes, out->seconds );
 
     out->expected_size = nwipe_report_expected_size( ctx );
     if( out->expected_size > 0 )
     {
-        nwipe_report_format_percent(
-            out->percent_erased, sizeof( out->percent_erased ), ( (double) ctx->bytes_erased / out->expected_size ) * 100.0 );
+        nwipe_report_format_percent( out->percent_erased,
+                                     sizeof( out->percent_erased ),
+                                     ( (double) ctx->bytes_erased / out->expected_size ) * 100.0 );
     }
     else
     {
@@ -234,10 +228,7 @@ void nwipe_report_apply_summary( nwipe_context_t* ctx, const nwipe_report_summar
     }
 }
 
-void nwipe_report_build_pdf_filename( const nwipe_context_t* ctx,
-                                      const char* report_path,
-                                      char* out,
-                                      size_t out_size )
+void nwipe_report_build_pdf_filename( const nwipe_context_t* ctx, const char* report_path, char* out, size_t out_size )
 {
     char end_time_text[50] = "Unknown";
     char model[128] = "Unknown";

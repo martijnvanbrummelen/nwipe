@@ -23,14 +23,8 @@ typedef struct
     int seconds;
 } nwipe_report_summary_t;
 
-void nwipe_report_build_summary( const nwipe_context_t* ctx,
-                                 int user_abort,
-                                 time_t now,
-                                 nwipe_report_summary_t* out );
+void nwipe_report_build_summary( const nwipe_context_t* ctx, int user_abort, time_t now, nwipe_report_summary_t* out );
 void nwipe_report_apply_summary( nwipe_context_t* ctx, const nwipe_report_summary_t* summary );
-void nwipe_report_build_pdf_filename( const nwipe_context_t* ctx,
-                                      const char* report_path,
-                                      char* out,
-                                      size_t out_size );
+void nwipe_report_build_pdf_filename( const nwipe_context_t* ctx, const char* report_path, char* out, size_t out_size );
 
 #endif /* REPORT_H_ */
