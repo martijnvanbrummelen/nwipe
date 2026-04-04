@@ -42,6 +42,7 @@
 #include "prng.h"
 #include "hpa_dco.h"
 #include "miscellaneous.h"
+#include "report.h"
 #include <libconfig.h>
 #include "conf.h"
 
@@ -773,23 +774,8 @@ int create_single_disc_pdf( nwipe_context_t* ptr )
      */
     nwipe_get_smart_data( c );
 
-    /*****************************
-     * Create the reports filename
-     *
-     * Sanitize the strings that we are going to use to create the report filename
-     * by converting any non alphanumeric characters to an underscore or hyphen
-     */
-    replace_non_alphanumeric( end_time_text, '-' );
-    replace_non_alphanumeric( c->device_model, '_' );
-    replace_non_alphanumeric( c->device_serial_no, '_' );
-    snprintf( c->PDF_filename,
-              sizeof( c->PDF_filename ),
-              "%s/nwipe_report_%s_Model_%s_Serial_%s_device_%s.pdf",
-              nwipe_options.PDFreportpath,
-              end_time_text,
-              c->device_model,
-              c->device_serial_no,
-              c->device_name_terse );
+    /* Build the report filename from sanitized local copies instead of mutating the device context. */
+    nwipe_report_build_pdf_filename( c, nwipe_options.PDFreportpath, c->PDF_filename, sizeof( c->PDF_filename ) );
 
     pdf_save( pdf, c->PDF_filename );
     pdf_destroy( pdf );
