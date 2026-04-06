@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <ctype.h>
+#include <limits.h>
 
 #include "nwipe.h"
 #include "context.h"
@@ -46,6 +47,29 @@
 
 #include <parted/parted.h>
 #include <parted/debug.h>
+
+/*
+ * Tunable sizes for the wiping / verification I/O path.
+ *
+ * NWIPE_IO_BLOCKSIZE:
+ *   - Target size of individual read()/write() operations.
+ *   - Default is 4 MiB, so each syscall moves a lot of data instead of only
+ *     4 KiB, drastically reducing syscall overhead.
+ *
+ * Notes:
+ *   - We do NOT depend on O_DIRECT here; all code works fine with normal,
+ *     buffered I/O.
+ *   - But all I/O buffers are allocated aligned to the device block size so
+ *     that the same code also works with O_DIRECT when the device is opened
+ *     with it.
+ */
+#ifndef NWIPE_IO_BLOCKSIZE
+#define NWIPE_IO_BLOCKSIZE ( 4 * 1024 * 1024UL ) /* 4 MiB I/O block */
+#endif
+
+#if NWIPE_IO_BLOCKSIZE > INT_MAX
+#error "NWIPE_IO_BLOCKSIZE must fit in an int"
+#endif
 
 int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount );
 char* trim( char* str );

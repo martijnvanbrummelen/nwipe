@@ -23,32 +23,7 @@
 #ifndef DEVICE_H_
 #define DEVICE_H_
 
-#include <limits.h>
-
 #define MAX_LENGTH_OF_DEVICE_STRING 8
-
-/*
- * Tunable sizes for the wiping / verification I/O path.
- *
- * NWIPE_IO_BLOCKSIZE:
- *   - Target size of individual read()/write() operations.
- *   - Default is 4 MiB, so each syscall moves a lot of data instead of only
- *     4 KiB, drastically reducing syscall overhead.
- *
- * Notes:
- *   - We do NOT depend on O_DIRECT here; all code works fine with normal,
- *     buffered I/O.
- *   - But all I/O buffers are allocated aligned to the device block size so
- *     that the same code also works with O_DIRECT when the device is opened
- *     with it.
- */
-#ifndef NWIPE_IO_BLOCKSIZE
-#define NWIPE_IO_BLOCKSIZE ( 4 * 1024 * 1024UL ) /* 4 MiB I/O block */
-#endif
-
-#if NWIPE_IO_BLOCKSIZE > INT_MAX
-#error "NWIPE_IO_BLOCKSIZE must fit in an int"
-#endif
 
 void nwipe_device_identify( nwipe_context_t* c );  // Get hardware information about the device.
 int nwipe_device_scan( nwipe_context_t*** c );  // Find devices that we can wipe.
