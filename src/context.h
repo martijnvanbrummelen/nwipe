@@ -72,6 +72,7 @@ typedef enum {
 typedef enum {
     NWIPE_IO_DIRECTION_FORWARD = 0, /* Start -> End */
     NWIPE_IO_DIRECTION_REVERSE, /* End -> Start */
+    NWIPE_IO_DIRECTION_SCATTER /* Random Order */
 } nwipe_io_direction_t;
 
 #define NWIPE_KNOB_SPEEDRING_SIZE 30
@@ -111,9 +112,11 @@ typedef struct nwipe_context_t_
      * Device fields
      */
     int device_busy;  // If libparted considers the device busy/mounted (0 = no, 1 = yes)
-    int device_block_size;  // The soft block size reported by the device, as logical
-    int device_sector_size;  // The logical sector size reported by libparted
-    int device_phys_sector_size;  // The physical sector size reported by libparted
+    int device_sector_size;  // The logical sector size reported by the device
+    int device_phys_sector_size;  // The physical sector size reported by the device
+    size_t device_io_block_size;  // The block size for both cached and direct I/O
+    size_t device_io_block_alignment;  // The alignment for the I/O block size
+    size_t device_io_buffer_alignment;  // The alignment for allocated I/O buffers
     int device_bus;  // The device bus number.
     int device_fd;  // The file descriptor of the device file being wiped.
     int device_host;  // The host number.
@@ -218,7 +221,7 @@ typedef struct nwipe_context_t_
     int HPA_display_toggle_state;  // 0 or 1 Used to toggle between "[1TB] [ 33C]" and [HDA STATUS]
     time_t HPA_toggle_time;  // records a time, then if for instance 3 seconds has elapsed the display changes
     nwipe_io_mode_t io_mode;  // specific I/O method for a given drive, direct or cached.
-    nwipe_io_direction_t io_direction;  // specific I/O direction for a given drive, forward or reverse.
+    nwipe_io_direction_t io_direction;  // drive-specific I/O direction, forward/reverse or scatter.
     int test_use1;
     int test_use2;
 

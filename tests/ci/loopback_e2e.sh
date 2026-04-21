@@ -172,15 +172,18 @@ run_nwipe_case() {
     local method="$3"
     local verify="$4"
     local prng="${5:-isaac}"
-    local reverse="${6:-0}"
+    local iodirection="${6:-0}"
 
     local log_file="${LOG_DIR}/${case_name}.log"
     local stdout_file="${LOG_DIR}/${case_name}.stdout"
     local stderr_file="${LOG_DIR}/${case_name}.stderr"
 
-    local reverse_flag=""
-    if [[ "${reverse}" -eq 1 ]]; then
-        reverse_flag="--reverse"
+    local iodirection_flag=""
+    if [[ "${iodirection}" -eq 1 ]]; then
+        iodirection_flag="--reverse"
+    fi
+    if [[ "${iodirection}" -eq 2 ]]; then
+        iodirection_flag="--scatter"
     fi
 
     echo "==> Running case: ${case_name} (io=${io} method=${method}, verify=${verify}, prng=${prng})"
@@ -197,7 +200,7 @@ run_nwipe_case() {
         --verify="${verify}" \
         --method="${method}" \
         --prng="${prng}" \
-        ${reverse_flag} \
+        ${iodirection_flag} \
         --PDFreportpath=noPDF \
         --logfile="${log_file}" \
         "${LOOP_DEV}" \
@@ -230,35 +233,41 @@ echo "Using nwipe binary: ${NWIPE_BIN}"
 "${NWIPE_BIN}" --version || true
 
 # Zero wipe + zero verify, direct I/O
-run_nwipe_case "wipe_zero" "directio" "zero" "all"
+run_nwipe_case "direct_wipe_zero" "directio" "zero" "all"
 assert_block_is_byte "00"
-run_nwipe_case "verify_zero" "directio" "verify_zero" "off"
+run_nwipe_case "direct_verify_zero" "directio" "verify_zero" "off"
 
 # Zero wipe + zero verify, cached I/O
-run_nwipe_case "wipe_zero" "cachedio" "zero" "all"
+run_nwipe_case "cached_wipe_zero" "cachedio" "zero" "all"
 assert_block_is_byte "00"
-run_nwipe_case "verify_zero" "cachedio" "verify_zero" "off"
+run_nwipe_case "cached_verify_zero" "cachedio" "verify_zero" "off"
 
 if [[ "${MODE}" == "full" ]]; then
     # One wipe + one verify, direct I/O
-    run_nwipe_case "wipe_one" "directio" "one" "all"
+    run_nwipe_case "direct_wipe_one" "directio" "one" "all"
     assert_block_is_byte "ff"
-    run_nwipe_case "verify_one" "directio" "verify_one" "off"
+    run_nwipe_case "direct_verify_one" "directio" "verify_one" "off"
 
     # One wipe + one verify, cached I/O
-    run_nwipe_case "wipe_one" "cachedio" "one" "all"
+    run_nwipe_case "cached_wipe_one" "cachedio" "one" "all"
     assert_block_is_byte "ff"
-    run_nwipe_case "verify_one" "cachedio" "verify_one" "off"
+    run_nwipe_case "cached_verify_one" "cachedio" "verify_one" "off"
 
     # PRNG wipe + PRNG verification, direct + cached I/O
-    run_nwipe_case "wipe_prng" "directio" "prng" "all"
-    run_nwipe_case "wipe_prng" "cachedio" "prng" "all"
+    run_nwipe_case "direct_wipe_prng" "directio" "prng" "all"
+    run_nwipe_case "cached_wipe_prng" "cachedio" "prng" "all"
 
     # Run --reverse tests (different routines), direct + cached I/O:
-    run_nwipe_case "reverse_wipe_one" "directio" "one" "all" "isaac" 1
-    run_nwipe_case "reverse_wipe_prng" "directio" "prng" "all" "isaac" 1
-    run_nwipe_case "reverse_wipe_one" "cachedio" "one" "all" "isaac" 1
-    run_nwipe_case "reverse_wipe_prng" "cachedio" "prng" "all" "isaac" 1
+    run_nwipe_case "direct_reverse_wipe_one" "directio" "one" "all" "isaac" 1
+    run_nwipe_case "direct_reverse_wipe_prng" "directio" "prng" "all" "isaac" 1
+    run_nwipe_case "cached_reverse_wipe_one" "cachedio" "one" "all" "isaac" 1
+    run_nwipe_case "cached_reverse_wipe_prng" "cachedio" "prng" "all" "isaac" 1
+
+    # Run --scatter tests (different routines), direct + cached I/O:
+    run_nwipe_case "direct_scatter_wipe_one" "directio" "one" "all" "isaac" 2
+    run_nwipe_case "direct_scatter_wipe_prng" "directio" "prng" "all" "isaac" 2
+    run_nwipe_case "cached_scatter_wipe_one" "cachedio" "one" "all" "isaac" 2
+    run_nwipe_case "cached_scatter_wipe_prng" "cachedio" "prng" "all" "isaac" 2
 
     # PRNG statistical cases (STS)
     # Run these in direct I/O so we're not verifying a cache

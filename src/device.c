@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <ctype.h>
+#include <limits.h>
 
 #include "nwipe.h"
 #include "context.h"
@@ -46,6 +47,29 @@
 
 #include <parted/parted.h>
 #include <parted/debug.h>
+
+/*
+ * Tunable sizes for the wiping / verification I/O path.
+ *
+ * NWIPE_IO_BLOCKSIZE:
+ *   - Target size of individual read()/write() operations.
+ *   - Default is 4 MiB, so each syscall moves a lot of data instead of only
+ *     4 KiB, drastically reducing syscall overhead.
+ *
+ * Notes:
+ *   - We do NOT depend on O_DIRECT here; all code works fine with normal,
+ *     buffered I/O.
+ *   - But all I/O buffers are allocated aligned to the device block size so
+ *     that the same code also works with O_DIRECT when the device is opened
+ *     with it.
+ */
+#ifndef NWIPE_IO_BLOCKSIZE
+#define NWIPE_IO_BLOCKSIZE ( 4 * 1024 * 1024UL ) /* 4 MiB I/O block */
+#endif
+
+#if NWIPE_IO_BLOCKSIZE > INT_MAX
+#error "NWIPE_IO_BLOCKSIZE must fit in an int"
+#endif
 
 int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount );
 char* trim( char* str );
@@ -360,7 +384,6 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
 
     next_device->device_size = dev->length * dev->sector_size;
     next_device->device_sector_size = dev->sector_size;  // logical sector size
-    next_device->device_block_size = dev->sector_size;  // set as logical but could be a multiple of logical sector size
     next_device->device_phys_sector_size = dev->phys_sector_size;  // physical sector size
     next_device->device_size_in_sectors = next_device->device_size / next_device->device_sector_size;
     next_device->device_size_in_512byte_sectors = next_device->device_size / 512;
@@ -1137,3 +1160,256 @@ void remove_ATA_prefix( char* str )
         str[idx_post] = 0;
     }
 }
+
+/* Returns 1 if n is positive and a power of two, 0 otherwise. */
+static inline int is_positive_power_of_two( int n )
+{
+    return n > 0 && ( n & ( n - 1 ) ) == 0;
+}
+
+/*
+ * Query kernel for the device's logical/physical sector sizes via ioctl,
+ * cross-check them against the values previously obtained from libparted,
+ * and update the device context with the most trustworthy and sane result.
+ *
+ * - All sizes must be positive and a power of two.
+ * - Physical sector size must be a multiple of logical sector size.
+ * - Ioctl values are preferred over libparted when otherwise valid.
+ * - Invalid logical sector size is considered as fatal (returns -1).
+ *
+ * Returns 0 on success, -1 if no valid geometry could be established.
+ */
+static int nwipe_update_device_sectors( nwipe_context_t* c )
+{
+    int ioctl_sector_size = 0;
+    int ioctl_phys_sector_size = 0;
+    int libparted_sector_size = c->device_sector_size;
+    int libparted_phys_sector_size = c->device_phys_sector_size;
+
+    /* ---- Ioctl ( we have libparted as fallback ) ---- */
+    if( ioctl( c->device_fd, BLKSSZGET, &ioctl_sector_size ) != 0 )
+    {
+        nwipe_perror( errno, __FUNCTION__, "BLKSSZGET" );
+        nwipe_log( NWIPE_LOG_WARNING, "Device '%s' failed ioctl BLKSSZGET.", c->device_name );
+    }
+
+    if( ioctl( c->device_fd, BLKPBSZGET, &ioctl_phys_sector_size ) != 0 )
+    {
+        nwipe_perror( errno, __FUNCTION__, "BLKPBSZGET" );
+        nwipe_log( NWIPE_LOG_WARNING, "Device '%s' failed ioctl BLKPBSZGET.", c->device_name );
+    }
+
+    /* ---- Logical sector size ---- */
+    if( is_positive_power_of_two( ioctl_sector_size ) ) /* Ioctl */
+    {
+        if( ioctl_sector_size != libparted_sector_size )
+        {
+            nwipe_log( NWIPE_LOG_WARNING,
+                       "Device '%s' logical sector size mismatch: libparted=%i, ioctl=%i, using ioctl value.",
+                       c->device_name,
+                       libparted_sector_size,
+                       ioctl_sector_size );
+        }
+        c->device_sector_size = ioctl_sector_size;
+    }
+    else if( is_positive_power_of_two( libparted_sector_size ) ) /* Libparted */
+    {
+        nwipe_log( NWIPE_LOG_WARNING,
+                   "Device '%s' ioctl logical sector size invalid (%i), using libparted value (%i)",
+                   c->device_name,
+                   ioctl_sector_size,
+                   libparted_sector_size );
+        c->device_sector_size = libparted_sector_size;
+    }
+    else
+    {
+        nwipe_log( NWIPE_LOG_ERROR,
+                   "Device '%s' no valid logical sector size: libparted=%i, ioctl=%i.",
+                   c->device_name,
+                   libparted_sector_size,
+                   ioctl_sector_size );
+        return -1;
+    }
+
+    /* ---- Physical sector size ---- */
+    if( is_positive_power_of_two( ioctl_phys_sector_size )
+        && ioctl_phys_sector_size % c->device_sector_size == 0 ) /* Ioctl */
+    {
+        if( ioctl_phys_sector_size != libparted_phys_sector_size )
+        {
+            nwipe_log( NWIPE_LOG_WARNING,
+                       "Device '%s' physical sector size mismatch: libparted=%i, ioctl=%i, using ioctl value.",
+                       c->device_name,
+                       libparted_phys_sector_size,
+                       ioctl_phys_sector_size );
+        }
+        c->device_phys_sector_size = ioctl_phys_sector_size;
+    }
+    else if( is_positive_power_of_two( libparted_phys_sector_size )
+             && libparted_phys_sector_size % c->device_sector_size == 0 ) /* Libparted */
+    {
+        nwipe_log( NWIPE_LOG_WARNING,
+                   "Device '%s' ioctl physical sector size invalid (%i), using libparted value (%i).",
+                   c->device_name,
+                   ioctl_phys_sector_size,
+                   libparted_phys_sector_size );
+        c->device_phys_sector_size = libparted_phys_sector_size;
+    }
+    else
+    {
+        nwipe_log( NWIPE_LOG_WARNING,
+                   "Device '%s' no valid physical sector size: libparted=%i, ioctl=%i, using logical sector size.",
+                   c->device_name,
+                   libparted_phys_sector_size,
+                   ioctl_phys_sector_size );
+
+        /*
+         * We allow this to fail, as it's only used as a performance boost
+         * But downstream users of this variable cannot use the invalid value.
+         * It is common to use the logical sector size as a safe fallback here.
+         */
+        c->device_phys_sector_size = c->device_sector_size;
+    }
+
+    return 0;
+} /* nwipe_update_device_sectors */
+
+/*
+ * Sets minimum I/O buffer alignment for a given device context.
+ *
+ * This is the logical sector size, raised to at least 512 bytes
+ * to satisfy O_DIRECT requirements - also usable for cached I/O.
+ */
+static void nwipe_set_io_buffer_alignment( nwipe_context_t* c )
+{
+    if( c->device_sector_size < 512 )
+    {
+        /* O_DIRECT requires at least 512 bytes */
+        c->device_io_buffer_alignment = 512;
+    }
+    else
+    {
+        /* The logical sector size is the minimum requirement */
+        c->device_io_buffer_alignment = (size_t) c->device_sector_size;
+    }
+} /* nwipe_set_io_buffer_alignment */
+
+/*
+ * Sets effective I/O block size for a given device context.
+ *
+ * For direct I/O, aligns to the physical sector size (falling back to
+ * logical sector size) for performance (where possible). For cached I/O,
+ * uses st_blksize as a performance hint; alignment is left to the kernel.
+ *
+ * It is a multiple of the alignment base and never exceeds device_size.
+ * A warning is printed if device_size is misaligned with logical sector size.
+ */
+static void nwipe_set_io_block_size( nwipe_context_t* c )
+{
+    size_t bs = 0;
+    size_t io_bs = (size_t) NWIPE_IO_BLOCKSIZE;
+    size_t st_blksize = 4096; /* Sane default (covers 4K and 512) */
+    size_t dev_sector_size = (size_t) c->device_sector_size;
+    size_t dev_phy_sector_size = (size_t) c->device_phys_sector_size;
+
+    /* We use external values only if we can trust them to be accurate */
+
+    if( is_positive_power_of_two( (int) c->device_stat.st_blksize ) )
+        st_blksize = (size_t) c->device_stat.st_blksize;
+
+    /* Sanity-check the device size and warn if it's not a multiple of the logical sector size */
+
+    if( c->device_size > 0 && c->device_size % (u64) dev_sector_size != 0 )
+    {
+        nwipe_log( NWIPE_LOG_WARNING,
+                   "%s: The size of '%s' is not a multiple of its logical sector size %zu.",
+                   __FUNCTION__,
+                   c->device_name,
+                   dev_sector_size );
+    }
+
+    /* Now calculate the I/O size based on the I/O access mode requirements */
+
+    if( c->io_mode == NWIPE_IO_MODE_DIRECT )
+    {
+        /* Alignment with logical sector size is the hard requirement */
+        bs = dev_sector_size;
+
+        if( dev_phy_sector_size % dev_sector_size == 0 )
+        {
+            /*
+             * For best performance, we align to the physical sector size.
+             * We can only do this if it is aligned to the logical sector size.
+             * But this is usually always the case with any sane block devices.
+             */
+            bs = dev_phy_sector_size;
+        }
+    }
+    else
+    {
+        /*
+         * In cached I/O we use the recommended buffered block size,
+         * we do not need to consider any direct I/O alignment rules.
+         */
+        bs = st_blksize;
+    }
+
+    c->device_io_block_alignment = bs;
+
+    /* We cannot go lower than our chosen minimum block size */
+    if( io_bs < bs )
+    {
+        io_bs = bs;
+    }
+
+    /* Round down to next multiple of the minimum block size. */
+    if( io_bs % bs != 0 )
+    {
+        io_bs -= ( io_bs % bs );
+    }
+
+    /* This shouldn't be possible here, but just in case. */
+    if( io_bs == 0 )
+    {
+        io_bs = bs;
+    }
+
+    /*
+     * Clamp to device size; safe because device_size should be a multiple of
+     * logical sector size, so the result would also be aligned for direct I/O.
+     */
+    if( (u64) io_bs > c->device_size )
+    {
+        io_bs = (size_t) c->device_size;
+        io_bs -= ( io_bs % bs );
+        if( io_bs == 0 )
+            io_bs = bs;
+    }
+
+    c->device_io_block_size = io_bs;
+
+} /* nwipe_set_io_block_size */
+
+/*
+ * Request device geometry from the kernel and compute I/O parameters.
+ * This populates the context with the correct values usable for any I/O.
+ *
+ * Queries sector sizes via ioctl (with libparted as fallback), then
+ * sets the alignment and block size used by subsequent I/O operations.
+ *
+ * Returns 0 on success, -1 if no valid geometry could be established.
+ * Requires open FD; call right before a wipe begins (but after HPA/DCO).
+ */
+int nwipe_update_geometry_for_io( nwipe_context_t* c )
+{
+    if( nwipe_update_device_sectors( c ) != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "No sane sector sizes for '%s'.", c->device_name );
+        return -1;
+    }
+
+    nwipe_set_io_buffer_alignment( c );
+    nwipe_set_io_block_size( c );
+
+    return 0;
+} /* nwipe_update_geometry_for_io */
