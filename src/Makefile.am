@@ -22,7 +22,7 @@ NWIPE_CORE = \
     method.c method.h \
     pass.c pass.h \
     pass_internal.c pass_internal.h \
-    pass_static.c pass_random.c \
+    pass_static.c pass_random.c pass_scatter.c \
     device.c device.h \
     se_ata.c se_ata.h se_ata_gui.c se_ata_gui.h \
     se_nvme.c se_nvme.h se_nvme_gui.c se_nvme_gui.h \
