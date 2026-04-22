@@ -5,7 +5,6 @@ AC_PREREQ([2.63])
 AC_INIT([nwipe],[0.40],[git@brumit.nl])
 AM_INIT_AUTOMAKE(foreign subdir-objects)
 AC_CONFIG_FILES([Makefile src/Makefile man/Makefile])
-AC_OUTPUT
 AC_CONFIG_SRCDIR([src/nwipe.c])
 AC_CONFIG_HEADERS([config.h])
 
@@ -67,6 +66,23 @@ PKG_CHECK_MODULES(
 		])
 	    ], [AC_MSG_ERROR([libconfig library not found])])]
 )
+
+AC_ARG_WITH([libnvme],
+  [AS_HELP_STRING([--without-libnvme], [Build without NVMe secure erase support])],
+  [], [with_libnvme=check])
+have_libnvme=no
+AS_IF([test "x$with_libnvme" != xno],
+  [PKG_CHECK_MODULES([LIBNVME], [libnvme >= 1.16 libnvme < 1.17],
+    [
+      AC_DEFINE([HAVE_LIBNVME], [1], [Define if libnvme is available])
+      CFLAGS="${CFLAGS} ${LIBNVME_CFLAGS}"
+      LIBS="${LIBS} ${LIBNVME_LIBS}"
+      have_libnvme=yes
+    ],
+    [AS_IF([test "x$with_libnvme" = xyes],
+      [AC_MSG_ERROR([libnvme >= 1.16 and < 1.17 required but not found])],
+      [AC_MSG_WARN([libnvme not found, NVMe secure erase support disabled])])])])
+AM_CONDITIONAL([HAVE_LIBNVME], [test "x$have_libnvme" = xyes])
 
 # Libraries needed for static linking with parted
 if echo "$LDFLAGS" | grep -q "static"; then
