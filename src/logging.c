@@ -39,6 +39,7 @@
 #include "create_pdf.h"
 #include "miscellaneous.h"
 #include "hpa_dco.h"
+#include "report.h"
 
 /* Global array to hold log values to print when logging to STDOUT */
 char** log_lines;
@@ -690,38 +691,31 @@ void nwipe_log_summary( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t** ptr, in
      */
 
     int i;
-    int idx_src;
-    int idx_dest;
     char device[18];
     char status[9];
     char throughput[13];
     char total_throughput_string[13];
-    char summary_top_border[256];
-    char summary_top_column_titles[256];
     char blank[3];
     char verify[3];
-    // char duration[5];
-    char duration[314];
     char model[18];
     char serial_no[NWIPE_SERIALNUMBER_LENGTH + 1];
     char exclamation_flag[2];
     int hours;
     int minutes;
     int seconds;
-    u64 total_duration_seconds;
     u64 total_throughput;
+    nwipe_report_summary_t report_summary;
+    extern int user_abort;
     nwipe_context_t** c;
     c = ptr;
+    (void) ptrx;
 
     exclamation_flag[0] = 0;
     device[0] = 0;
     status[0] = 0;
     throughput[0] = 0;
-    summary_top_border[0] = 0;
-    summary_top_column_titles[0] = 0;
     blank[0] = 0;
     verify[0] = 0;
-    duration[0] = 0;
     model[0] = 0;
     serial_no[0] = 0;
     hours = 0;
@@ -739,6 +733,9 @@ void nwipe_log_summary( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t** ptr, in
     {
         return;
     }
+
+    /* Use one consistent timestamp for summary/report derivation. */
+    t = time( NULL );
 
     /* Print the pass and verifications table */
 
@@ -768,11 +765,6 @@ void nwipe_log_summary( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t** ptr, in
          * characters eg "   sda", prefixed with space to 6 characters, note that
          * we are processing the strings right to left */
 
-        idx_dest = 6;
-        device[idx_dest--] = 0;
-        idx_src = strlen( c[i]->device_name );
-        idx_src--;
-
         nwipe_strip_path( device, c[i]->device_name );
 
         nwipe_log( NWIPE_LOG_NOTIMESTAMP,
@@ -799,37 +791,22 @@ void nwipe_log_summary( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t** ptr, in
 
         for( i = 0; i < nwipe_selected; i++ )
         {
-            u64 expected_size;
-            char percent_str[7];
-            char percent_display[8];
+            char percent_display[9];
 
             nwipe_strip_path( device, c[i]->device_name );
+            nwipe_report_build_summary( c[i], user_abort, t, &report_summary );
 
-            /* Determine the expected total size based on device type / HPA status */
-            if( c[i]->device_type == NWIPE_DEVICE_NVME || c[i]->device_type == NWIPE_DEVICE_VIRT
-                || c[i]->HPA_status == HPA_NOT_APPLICABLE )
+            if( strcmp( report_summary.percent_erased, "N/A" ) == 0 )
             {
-                expected_size = c[i]->device_size;
+                snprintf( percent_display, sizeof( percent_display ), "%s", report_summary.percent_erased );
             }
             else
             {
-                expected_size = c[i]->Calculated_real_max_size_in_bytes;
-            }
-
-            /* Calculate percentage (same method as in PDF) */
-            if( expected_size > 0 )
-            {
-                convert_double_to_string( percent_str,
-                                          (double) ( (double) c[i]->bytes_erased / (double) expected_size ) * 100 );
-                snprintf( percent_display, sizeof( percent_display ), "%s%%", percent_str );
-            }
-            else
-            {
-                snprintf( percent_display, sizeof( percent_display ), "N/A" );
+                snprintf( percent_display, sizeof( percent_display ), "%s%%", report_summary.percent_erased );
             }
 
             /* Set exclamation flag if bytes erased doesn't match expected */
-            if( c[i]->bytes_erased != expected_size )
+            if( c[i]->bytes_erased != report_summary.expected_size )
             {
                 strncpy( exclamation_flag, "!", 1 );
                 exclamation_flag[1] = 0;
@@ -845,7 +822,7 @@ void nwipe_log_summary( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t** ptr, in
                        exclamation_flag,
                        device,
                        c[i]->bytes_erased,
-                       expected_size,
+                       report_summary.expected_size,
                        percent_display );
         }
 
@@ -858,8 +835,6 @@ void nwipe_log_summary( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t** ptr, in
     /* initialise */
     total_throughput = 0;
 
-    /* Get the current time. */
-    t = time( NULL );
     p = localtime( &t );
     /* IMPORTANT: Keep maximum columns (line length) to 80 characters for use with 80x30 terminals, Shredos, ALT-F2 etc
      * --------------------------------01234567890123456789012345678901234567890123456789012345678901234567890123456789-*/
@@ -882,96 +857,21 @@ void nwipe_log_summary( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t** ptr, in
 
         nwipe_strip_path( device, c[i]->device_name );
 
-        extern int user_abort;
+        nwipe_report_build_summary( c[i], user_abort, t, &report_summary );
+        nwipe_report_apply_summary( c[i], &report_summary );
 
-        /* Any errors ? if so set the exclamation_flag and fail message,
-         * All status messages should be eight characters EXACTLY !
-         */
-        if( c[i]->pass_errors != 0 || c[i]->verify_errors != 0 || c[i]->fsyncdata_errors != 0 )
-        {
-            strncpy( exclamation_flag, "!", 1 );
-            exclamation_flag[1] = 0;
-
-            strncpy( status, "-FAILED-", 8 );
-            status[8] = 0;
-
-            strcpy( c[i]->wipe_status_txt, "FAILED" );  // copy to context for use by certificate
-        }
-        else
-        {
-            if( c[i]->wipe_status == 0 /* && user_abort != 1 */ )
-            {
-                strncpy( exclamation_flag, " ", 1 );
-                exclamation_flag[1] = 0;
-
-                strncpy( status, " Erased ", 8 );
-                status[8] = 0;
-
-                strcpy( c[i]->wipe_status_txt, "ERASED" );  // copy to context for use by certificate
-            }
-            else
-            {
-                if( c[i]->wipe_status == 1 && user_abort == 1 )
-                {
-                    strncpy( exclamation_flag, "!", 1 );
-                    exclamation_flag[1] = 0;
-
-                    strncpy( status, "UABORTED", 8 );
-                    status[8] = 0;
-
-                    strcpy( c[i]->wipe_status_txt, "ABORTED" );  // copy to context for use by certificate
-                }
-                else
-                {
-                    /* If this ever happens, there is a bug ! */
-                    strncpy( exclamation_flag, " ", 1 );
-                    exclamation_flag[1] = 0;
-
-                    strncpy( status, "INSANITY", 8 );
-                    status[8] = 0;
-
-                    strcpy( c[i]->wipe_status_txt, "INSANITY" );  // copy to context for use by certificate
-                }
-            }
-        }
-
-        /* Determine the size of throughput so that the correct nomenclature can be used */
-        Determine_C_B_nomenclature( c[i]->throughput, throughput, 13 );
-
-        /* write the duration string to the drive context for later use by create_pdf() */
-        snprintf( c[i]->throughput_txt, sizeof( c[i]->throughput_txt ), "%s", throughput );
+        strncpy( exclamation_flag, report_summary.exclamation_flag, sizeof( exclamation_flag ) );
+        exclamation_flag[sizeof( exclamation_flag ) - 1] = 0;
+        strncpy( status, report_summary.display_status, sizeof( status ) - 1 );
+        status[sizeof( status ) - 1] = 0;
+        strncpy( throughput, report_summary.throughput_txt, sizeof( throughput ) );
+        throughput[sizeof( throughput ) - 1] = 0;
 
         /* Add this devices throughput to the total throughput */
         total_throughput += c[i]->throughput;
-
-        /* Retrieve the duration of the wipe in seconds and convert to hours and minutes and seconds */
-
-        if( c[i]->start_time != 0 && c[i]->end_time != 0 )
-        {
-            /* For a summary when the wipe has finished */
-            c[i]->duration = difftime( c[i]->end_time, c[i]->start_time );
-        }
-        else
-        {
-            if( c[i]->start_time != 0 && c[i]->end_time == 0 )
-            {
-                /* For a summary in the event of a system shutdown, user abort */
-                c[i]->duration = difftime( t, c[i]->start_time );
-
-                /* If end_time is zero, which may occur if the wipe is aborted, then set
-                 * end_time to current time. Important to do as endtime is used by
-                 * the PDF report function */
-                c[i]->end_time = time( &t );
-            }
-        }
-
-        total_duration_seconds = (u64) c[i]->duration;
-
-        /* Convert binary seconds into three binary variables, hours, minutes and seconds */
-        convert_seconds_to_hours_minutes_seconds( total_duration_seconds, &hours, &minutes, &seconds );
-
-        /* write the duration string to the drive context for later use by create_pdf() */
-        snprintf( c[i]->duration_str, sizeof( c[i]->duration_str ), "%02i:%02i:%02i", hours, minutes, seconds );
+        hours = report_summary.hours;
+        minutes = report_summary.minutes;
+        seconds = report_summary.seconds;
 
         /* Device Model */
         strncpy( model, c[i]->device_model, 17 );
