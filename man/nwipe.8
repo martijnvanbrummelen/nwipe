@@ -173,11 +173,6 @@ is5enh                 \- HMG IS5 enhanced
 bruce7                 \- Schneier Bruce 7-pass mixed pattern
 .IP
 bmb                    \- Chinese BMB21-2019 State Secrets Bureau standard.
-                         This method overwrites the device with ones (0xFF),
-                         then zeros (0x00), followed by three passes of PRNG-
-                         generated random data, and finishes with a final pass
-                         of ones (0xFF). Designed to meet the BMB21-2019
-                         technical sanitization requirements.
 .TP
 \fB\-l\fR, \fB\-\-logfile\fR=\fIFILE\fR
 Filename to log to. Default is STDOUT.
