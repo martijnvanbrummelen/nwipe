@@ -19,6 +19,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h> /* HAVE_LIBNVME */
+#endif
 
 #ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE
@@ -44,6 +47,8 @@
 #include <ctype.h>
 #include "hpa_dco.h"
 #include "miscellaneous.h"
+#include "se_ata.h"
+#include "se_nvme.h"
 
 #include <parted/parted.h>
 #include <parted/debug.h>
@@ -74,6 +79,12 @@
 int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount );
 char* trim( char* str );
 static void nwipe_normalize_serial( char* serial );
+
+#ifdef HAVE_LIBNVME
+/* This is expensive, we can't do it for every single device */
+static nwipe_se_nvme_topo nvme_topo;
+static int nvme_topo_ready = 0;
+#endif
 
 /*
  * Resolve a device path (including /dev/disk/by-* symlinks) to its
@@ -186,6 +197,160 @@ static int nwipe_is_excluded_device( const char* candidate_devnode )
     }
 
     return 0;
+}
+
+/* Helper function for ATA Secure Erase, run ONCE per device */
+static int nwipe_device_ata_se_setup( nwipe_context_t* c )
+{
+    c->secure_erase_supported = 0;
+    c->secure_erase_context = NULL;
+
+    nwipe_se_ata_ctx* se_ata = malloc( sizeof( nwipe_se_ata_ctx ) );
+    if( !se_ata )
+    {
+        nwipe_perror( errno, __FUNCTION__, "malloc" );
+        nwipe_log(
+            NWIPE_LOG_ERROR, "%s: %s: Failed to allocate context for ATA Sanitize", __FUNCTION__, c->device_name );
+        return -1;
+    }
+
+    if( nwipe_se_ata_init( c->device_name, se_ata ) != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "%s: %s: Failed to initialise ATA Sanitize context", __FUNCTION__, c->device_name );
+        free( se_ata );
+        return -1;
+    }
+
+    if( nwipe_se_ata_open( se_ata ) != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR,
+                   "%s: %s: Failed to open ATA device for Sanitize capability query",
+                   __FUNCTION__,
+                   c->device_name );
+        nwipe_se_ata_destroy( se_ata );
+        free( se_ata );
+        return -1;
+    }
+
+    if( nwipe_se_ata_sancap( se_ata ) != 0 || !se_ata->cap_caps_valid )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "%s: %s: Failed to query ATA Sanitize capabilities", __FUNCTION__, c->device_name );
+        nwipe_se_ata_close( se_ata );
+        nwipe_se_ata_destroy( se_ata );
+        free( se_ata );
+        return -1;
+    }
+
+    nwipe_log( NWIPE_LOG_INFO,
+               "%s: ATA Sanitize capabilities: sanitize=%d block_erase=%d crypto_scramble=%d overwrite=%d",
+               c->device_name,
+               se_ata->cap_sanitize,
+               se_ata->cap_block_erase,
+               se_ata->cap_crypto_erase,
+               se_ata->cap_overwrite );
+
+    nwipe_se_ata_close( se_ata );
+
+    if( se_ata->cap_sanitize )
+    {
+        c->secure_erase_supported = 1;
+        c->secure_erase_context = se_ata;
+        c->secure_erase_type = NWIPE_SECURE_ERASE_TYPE_ATA;
+        return 0;
+    }
+
+    nwipe_log( NWIPE_LOG_INFO, "%s: ATA Sanitize feature set not supported", c->device_name );
+    nwipe_se_ata_destroy( se_ata );
+    free( se_ata );
+    return -1;
+}
+
+/* Helper function for NVMe Secure Erase, run ONCE per device */
+static int nwipe_device_nvme_se_setup( nwipe_context_t* c )
+{
+    c->secure_erase_supported = 0;
+    c->secure_erase_context = NULL;
+#ifdef HAVE_LIBNVME
+    /* Lazy init on first encountered NVMe device (expensive operation) */
+    if( !nvme_topo_ready )
+    {
+        if( nwipe_se_nvme_topo_init( &nvme_topo ) != 0 )
+        {
+            nwipe_log( NWIPE_LOG_ERROR, "%s: NVMe topology scan failed: NVMe Sanitize unavailable", __FUNCTION__ );
+            return -1;
+        }
+        nvme_topo_ready = 1;
+    }
+
+    nwipe_se_nvme_ctx* se_nvme = malloc( sizeof( nwipe_se_nvme_ctx ) );
+    if( !se_nvme )
+    {
+        nwipe_perror( errno, __FUNCTION__, "malloc" );
+        nwipe_log(
+            NWIPE_LOG_ERROR, "%s: %s: Failed to allocate context for NVMe Sanitize", __FUNCTION__, c->device_name );
+        return -1;
+    }
+
+    if( nwipe_se_nvme_init( c->device_name, se_nvme, &nvme_topo ) != 0 )
+    {
+        nwipe_log(
+            NWIPE_LOG_ERROR, "%s: %s: Failed to initialise NVMe Sanitize context", __FUNCTION__, c->device_name );
+        free( se_nvme );
+        return -1;
+    }
+
+    if( nwipe_se_nvme_open( se_nvme ) != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR,
+                   "%s: %s: Failed to open NVMe controller for Sanitize capability query",
+                   __FUNCTION__,
+                   c->device_name );
+        nwipe_se_nvme_destroy( se_nvme );
+        free( se_nvme );
+        return -1;
+    }
+
+    nwipe_log( NWIPE_LOG_INFO,
+               "NVMe namespace '%s' belongs to NVMe controller '%s' (ns_count=%d)",
+               c->device_name,
+               se_nvme->ctrl_path,
+               se_nvme->ns_count );
+
+    if( nwipe_se_nvme_sancap( se_nvme ) != 0 || !se_nvme->cap_caps_valid )
+    {
+        nwipe_log(
+            NWIPE_LOG_ERROR, "%s: %s: Failed to query NVMe Sanitize capabilities", __FUNCTION__, c->device_name );
+        nwipe_se_nvme_close( se_nvme );
+        nwipe_se_nvme_destroy( se_nvme );
+        free( se_nvme );
+        return -1;
+    }
+
+    nwipe_log( NWIPE_LOG_INFO,
+               "%s: NVMe Sanitize capabilities: block_erase=%d crypto_erase=%d overwrite=%d",
+               c->device_name,
+               se_nvme->cap_block_erase,
+               se_nvme->cap_crypto_erase,
+               se_nvme->cap_overwrite );
+
+    nwipe_se_nvme_close( se_nvme );
+
+    if( se_nvme->cap_block_erase || se_nvme->cap_crypto_erase || se_nvme->cap_overwrite )
+    {
+        c->secure_erase_supported = 1;
+        c->secure_erase_context = se_nvme;
+        c->secure_erase_type = NWIPE_SECURE_ERASE_TYPE_NVME;
+        return 0;
+    }
+
+    nwipe_log( NWIPE_LOG_INFO, "%s: NVMe controller reports no sanitize methods supported", c->device_name );
+    nwipe_se_nvme_destroy( se_nvme );
+    free( se_nvme );
+    return -1;
+#else
+    nwipe_log( NWIPE_LOG_WARNING, "Nwipe not compiled with libnvme: NVMe Sanitize unavailable" );
+    return -1; /* NO-OP */
+#endif /* HAVE_LIBNVME */
 }
 
 extern int terminate_signal;
@@ -609,6 +774,25 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     else
     {
         nwipe_log( NWIPE_LOG_INFO, "No UUID available for %s\n", next_device->device_name );
+    }
+
+    /***********************************************
+     * Secure Erase: initialise context and detect capabilities
+     * Setup helpers are self-contained (internally log as required)
+     */
+    switch( next_device->device_type )
+    {
+        case NWIPE_DEVICE_ATA:
+        case NWIPE_DEVICE_USB:
+        case NWIPE_DEVICE_IDE:
+        case NWIPE_DEVICE_SCSI:
+            nwipe_device_ata_se_setup( next_device );
+            break;
+        case NWIPE_DEVICE_NVME:
+            nwipe_device_nvme_se_setup( next_device );
+            break;
+        default:
+            break;
     }
 
     /* print an empty line to separate the drives in the log */

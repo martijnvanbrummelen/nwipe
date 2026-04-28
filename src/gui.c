@@ -28,6 +28,9 @@
  *   and things like ncurses libmenu are not worth the storage overhead.
  *
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h> /* HAVE_LIBNVME */
+#endif
 
 #ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE
@@ -65,6 +68,8 @@
 #include "conf.h"
 #include "unistd.h"
 #include "cpu_features.h"
+#include "se_ata_gui.h"
+#include "se_nvme_gui.h"
 
 #define NWIPE_GUI_PANE 8
 
@@ -1104,7 +1109,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
         getmaxyx( main_window, wlines, wcols );
 
         /* Less two lines for the box and two lines for padding. */
-        slots = wlines - 4;
+        slots = ( wlines - 4 ) / 2; /* ( / 2 for worst-case with Secure Erase ) */
         if( slots < 0 )
         {
             slots = 0;
@@ -1330,6 +1335,39 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                            slots,
                            focus,
                            offset );
+            }
+
+            /* Secure Erase */
+            if( c[i + offset]->select != NWIPE_SELECT_DISABLED && c[i + offset]->select != NWIPE_SELECT_DISABLED_BUSY )
+            {
+                if( c[i + offset]->secure_erase_supported && c[i + offset]->secure_erase_context )
+                {
+                    nwipe_gui_draw_acs_prefix( main_window, yy, 4 );
+                    switch( c[i + offset]->secure_erase_status )
+                    {
+                        case NWIPE_SECURE_ERASE_SUCCESS:
+                            mvwprintw( main_window,
+                                       yy,
+                                       7,
+                                       " Secure Erase: Device sanitized, recommended to do a regular wipe now." );
+                            break;
+
+                        case NWIPE_SECURE_ERASE_FAILURE:
+                            mvwprintw( main_window,
+                                       yy,
+                                       7,
+                                       " Secure Erase: Device sanitize failed, press right arrow to try again." );
+                            break;
+
+                        default:
+                            mvwprintw( main_window,
+                                       yy,
+                                       7,
+                                       " Secure Erase: Sanitize is available, press right arrow to configure..." );
+                            break;
+                    }
+                    yy++;
+                }
             }
 
         } /* for */
@@ -1597,6 +1635,33 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                     } /* if NWIPE_SELECT_FALSE */
 
                     /* TODO: Explain to the user why they can't change this. */
+                    break;
+
+                case KEY_RIGHT:
+
+                    validkeyhit = 1;
+
+                    if( c[focus]->select == NWIPE_SELECT_DISABLED || c[focus]->select == NWIPE_SELECT_DISABLED_BUSY )
+                        break;
+
+                    if( !c[focus]->secure_erase_supported || !c[focus]->secure_erase_context )
+                        break;
+
+                    switch( c[focus]->secure_erase_type )
+                    {
+#ifdef HAVE_LIBNVME
+                        case NWIPE_SECURE_ERASE_TYPE_NVME:
+                            nwipe_gui_se_nvme_sanitize( c[focus], (nwipe_se_nvme_ctx*) c[focus]->secure_erase_context );
+                            break;
+#endif
+                        case NWIPE_SECURE_ERASE_TYPE_ATA:
+                            nwipe_gui_se_ata_sanitize( c[focus], (nwipe_se_ata_ctx*) c[focus]->secure_erase_context );
+                            break;
+
+                        default:
+                            break;
+                    }
+
                     break;
 
                 case 'm':
