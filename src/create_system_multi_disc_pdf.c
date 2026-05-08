@@ -464,10 +464,12 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
     }
 
     /************************************************************************************
-     * Display the appropriate status icon (green tick, red cross, tick with exclamation)
+     * Display the appropriate status icon (green tick, red cross, tick with exclamation).
      * On a multidisc pdf we may not know the status of all the drives until we
-     * are on the second page so we will need to create all the pages and process
-     * all discs then once we know the overall status then write the status icon to all pages.
+     * have written the individual drive entries, so prior to the following function, we
+     * have created all the drive erasure pages first plus all the smart data pages. Once
+     * we know the overall status of ALL drives, then we can go back and write the overall
+     * status icon that represents the overall system, to each individual page.
      */
     for( i = 0; i < page_number; i++ )
     {

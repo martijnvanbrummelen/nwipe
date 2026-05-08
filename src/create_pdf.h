@@ -38,6 +38,10 @@
 #define PDF_PAGE_ERASURE_DATA 2
 
 #define LEFT_MARGIN_TEXT 60
+#define LEFT_MARGIN_SMART_DATA 50
+
+#define TOP_OF_TEXT_WINDOW_Y 630
+#define START_OF_SMART_DATA_TEXT_Y_MULTIDISC 610
 
 /* Additional colors that supplement the standard colors in pdfgen.h
  */
@@ -85,7 +89,20 @@ void pdf_add_text_size_real( float xoff, float yoff, nwipe_context_t* c );
 void pdf_add_text_bytes_erased( float xoff, float yoff, nwipe_context_t* c );
 
 void pdf_add_text_prng_type( float xoff, float yoff, uint32_t colour );
-
+/**
+ *  Print status of erasure text and ellipse
+ *  Automatically determines text and ellipse color
+ *  based on the status of erasure.
+ *  @param text x offset
+ *  @param text y offset
+ *  @param ellipse x offset
+ *  @param ellipse y offset
+ *  @param ellipse x radius
+ *  @param ellipse y radius
+ *  @param text rotation angle of text in radians
+ *  @param pointer to a drive context
+ *  @return
+ */
 void pdf_add_text_status_of_erasure( float, float, float, float, float, float, float, nwipe_context_t* c );
 
 /**

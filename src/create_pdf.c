@@ -79,6 +79,7 @@ int nwipe_get_smart_data( size_t pdf_type, size_t* page_number, nwipe_context_t*
     char smartctl_command4[] = "/usr/sbin/smartctl -a %s";
     char final_cmd_smartctl[sizeof( smartctl_command3 ) + 256];
     char result[512];
+    char buffer[512];
     char smartctl_labels_to_anonymize[][18] = {
         "serial number:", "lu wwn device id:", "logical unit id:", "" /* Don't remove this empty string !, important */
     };
@@ -133,8 +134,20 @@ int nwipe_get_smart_data( size_t pdf_type, size_t* page_number, nwipe_context_t*
         }
         else
         {
-            x = 50;  // left side of page
-            y = 630;  // top row of page
+            x = LEFT_MARGIN_SMART_DATA;  // left side of page
+
+            /* For multidisc the smart data starts slighlty lower to accomodate
+             * the erasure status ellipse & text
+             */
+            if( pdf_type == PDF_TYPE_SINGLE_DISC )
+            {
+                y = TOP_OF_TEXT_WINDOW_Y;  // top row of page
+            }
+            else
+            {
+                y = START_OF_SMART_DATA_TEXT_Y_MULTIDISC;  // start of smart data
+            }
+
             ( *page_number )++;
 
             /* Create the next page of the report. This shows the drives smart data
@@ -150,7 +163,10 @@ int nwipe_get_smart_data( size_t pdf_type, size_t* page_number, nwipe_context_t*
             snprintf( page_title, sizeof( page_title ), "Page %zu - Smart Data", *page_number );
             pdf_header_footer_text( c, page_title, pdf_type, PDF_PAGE_SMART_DATA );
 
-            /* Display the appropriate status icon (green tick, red cross, tick with exclamation) */
+            /* Display the appropriate status icon (green tick, red cross, tick with exclamation) for
+             * the single disk PDF. For multi disc PDFs the status icon is written upon completion
+             * of the entire PDF within the create_system_multidisc_pdf() function.
+             */
             if( pdf_type == PDF_TYPE_SINGLE_DISC )
             {
                 pdf_display_status_icon( PDF_TYPE_SINGLE_DISC, NULL );
@@ -159,6 +175,25 @@ int nwipe_get_smart_data( size_t pdf_type, size_t* page_number, nwipe_context_t*
             /* Read the output a line at a time - output it. */
             while( fgets( result, sizeof( result ) - 1, fp ) != NULL )
             {
+                if( pdf_type == PDF_TYPE_MULTI_DISC && y == START_OF_SMART_DATA_TEXT_Y_MULTIDISC )
+                {
+                    /* Write the erasure status of this drive at the top of each smart data page
+                     * for system multi disc pdf only
+                     */
+                    pdf_set_font( pdf, "Helvetica-Bold" );
+                    snprintf( buffer, sizeof( buffer ), "Erasure Status of this disk: S/N %s", c->device_serial_no );
+                    pdf_add_text( pdf, NULL, buffer, 10, 160, TOP_OF_TEXT_WINDOW_Y + 2, PDF_BLACK );
+                    pdf_add_text_status_of_erasure( LEFT_MARGIN_SMART_DATA + 25,
+                                                    TOP_OF_TEXT_WINDOW_Y,
+                                                    LEFT_MARGIN_SMART_DATA + 50,
+                                                    TOP_OF_TEXT_WINDOW_Y + 5,
+                                                    45,
+                                                    10,
+                                                    0,
+                                                    c );
+                    pdf_set_font( pdf, "Courier" );
+                }
+
                 /* Convert the label, i.e everything before the ':' to lower case, it's required to
                  * convert to lower case as smartctl seems to use inconsistent case when labeling
                  * for serial number, i.e mostly it produces labels "Serial Number:" but occasionally
@@ -214,8 +249,14 @@ int nwipe_get_smart_data( size_t pdf_type, size_t* page_number, nwipe_context_t*
                             NWIPE_LOG_INFO, "Failed to allocate memory when adding new page = %zu", *page_number );
                         return -1;
                     }
-                    y = 630;
-
+                    if( pdf_type == PDF_TYPE_SINGLE_DISC )
+                    {
+                        y = TOP_OF_TEXT_WINDOW_Y;
+                    }
+                    else
+                    {
+                        y = START_OF_SMART_DATA_TEXT_Y_MULTIDISC;
+                    }
                     /* create the header and footer for the next page */
                     snprintf( page_title, sizeof( page_title ), "Page %zu - Smart Data", *page_number );
                     pdf_header_footer_text( c, page_title, pdf_type, PDF_PAGE_SMART_DATA );
