@@ -2,6 +2,7 @@
  *  logging.c:  Logging facilities for nwipe.
  *
  *  Copyright Darik Horn <dajhorn-dban@vanadac.com>.
+ *            @PartialVolume <shredos_eraser@gmail.com>
  *
  *  This program is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free Software
@@ -1005,7 +1006,7 @@ void nwipe_log_summary( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t** ptr, in
     }
 
     /* Create a PDF that contains, system information and wipe status for all drives */
-    // create_system_multi_disc_pdf( ptrx );
+    create_system_multi_disc_pdf( ptrx );
 
     /* Determine the size of throughput so that the correct nomenclature can be used */
     Determine_C_B_nomenclature( total_throughput, total_throughput_string, 13 );
