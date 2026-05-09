@@ -81,6 +81,9 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
     extern config_t nwipe_cfg;
     extern char nwipe_config_file[];
 
+    extern char dmidecode_system_uuid[];
+    extern char dmidecode_system_serial_number[];
+
     //    char pdf_footer[MAX_PDF_FOOTER_TEXT_LENGTH];
 
     /* Set up the structs we will use for the data required. */
@@ -484,11 +487,15 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
      */
     char PDF_filename[FILENAME_MAX];  // The filename of the PDF certificate/report.
     replace_non_alphanumeric( end_time_text, '-' );
+    replace_non_alphanumeric( dmidecode_system_uuid, '-' );
+    replace_non_alphanumeric( dmidecode_system_serial_number, '-' );
     snprintf( PDF_filename,
               sizeof( PDF_filename ),
-              "%s/nwipe_system_report_%s.pdf",
+              "%s/nwipe_system_report_%s_host-UUID-%s_host-SN-%s.pdf",
               nwipe_options.PDFreportpath,
-              end_time_text );
+              end_time_text,
+              dmidecode_system_uuid,
+              dmidecode_system_serial_number );
 
     /***********************
      * Write the PDF to disk
