@@ -106,6 +106,8 @@ typedef struct nwipe_speedring_t_
 
 #define NWIPE_DEVICE_SYSFS_PATH_LENGTH 512
 
+#define DMIDECODE_RESULT_LENGTH 64
+
 typedef struct nwipe_context_t_
 {
     /*
@@ -248,6 +250,27 @@ typedef struct
     u64 errors;  // The combined number of errors of all processes.
     u64 io_retries;  // The combined number of I/O retries of all processes.
     pthread_t* gui_thread;  // The ID of GUI thread.
+    char dmidecode_bios_version[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_bios_release_date[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_system_manufacturer[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_system_product_name[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_system_version[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_system_serial_number[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_system_uuid[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_baseboard_manufacturer[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_baseboard_product_name[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_baseboard_version[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_baseboard_serial_number[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_baseboard_asset_tag[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_chassis_manufacturer[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_chassis_type[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_chassis_version[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_chassis_serial_number[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_chassis_asset_tag[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_processor_family[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_processor_manufacturer[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_processor_version[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_processor_frequency[DMIDECODE_RESULT_LENGTH];  // host info
 } nwipe_misc_thread_data_t;
 
 /*

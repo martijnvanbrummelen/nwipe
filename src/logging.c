@@ -509,12 +509,9 @@ void nwipe_log_OSinfo()
     return;
 }
 
-/* Globally accessable dmidecode host identifiable data. */
-char dmidecode_system_serial_number[DMIDECODE_RESULT_LENGTH];
-char dmidecode_system_uuid[DMIDECODE_RESULT_LENGTH];
-char dmidecode_baseboard_serial_number[DMIDECODE_RESULT_LENGTH];
+// char dmidecode_baseboard_serial_number[DMIDECODE_RESULT_LENGTH];
 
-int nwipe_log_sysinfo()
+int nwipe_log_sysinfo( nwipe_misc_thread_data_t* ptrx )
 {
     FILE* fp;
     char path[256];
@@ -573,7 +570,8 @@ int nwipe_log_sysinfo()
     /* Initialise every character in the string with zero */
     for( i = 0; i < DMIDECODE_RESULT_LENGTH; i++ )
     {
-        dmidecode_system_serial_number[i] = 0;
+
+        // dmidecode_system_serial_number[i] = 0;
     }
 
     p_dmidecode_command = 0;
@@ -637,13 +635,13 @@ int nwipe_log_sysinfo()
                         /* if system-serial-number copy result to extern string */
                         if( keywords_idx == 5 )
                         {
-                            strncpy( dmidecode_system_serial_number, path, DMIDECODE_RESULT_LENGTH );
-                            dmidecode_system_serial_number[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                            strncpy( ptrx->dmidecode_system_serial_number, path, DMIDECODE_RESULT_LENGTH );
+                            ptrx->dmidecode_system_serial_number[DMIDECODE_RESULT_LENGTH - 1] = 0;
                         }
                         if( keywords_idx == 6 )
                         {
-                            strncpy( dmidecode_system_uuid, path, DMIDECODE_RESULT_LENGTH );
-                            dmidecode_system_uuid[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                            strncpy( ptrx->dmidecode_system_uuid, path, DMIDECODE_RESULT_LENGTH );
+                            ptrx->dmidecode_system_uuid[DMIDECODE_RESULT_LENGTH - 1] = 0;
                         }
                     }
                 }
@@ -654,13 +652,13 @@ int nwipe_log_sysinfo()
                     /* if system-serial-number copy result to extern string */
                     if( keywords_idx == 5 )
                     {
-                        strncpy( dmidecode_system_serial_number, path, DMIDECODE_RESULT_LENGTH );
-                        dmidecode_system_serial_number[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        strncpy( ptrx->dmidecode_system_serial_number, path, DMIDECODE_RESULT_LENGTH );
+                        ptrx->dmidecode_system_serial_number[DMIDECODE_RESULT_LENGTH - 1] = 0;
                     }
                     if( keywords_idx == 6 )
                     {
-                        strncpy( dmidecode_system_uuid, path, DMIDECODE_RESULT_LENGTH );
-                        dmidecode_system_uuid[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        strncpy( ptrx->dmidecode_system_uuid, path, DMIDECODE_RESULT_LENGTH );
+                        ptrx->dmidecode_system_uuid[DMIDECODE_RESULT_LENGTH - 1] = 0;
                     }
                 }
             }
@@ -1001,7 +999,7 @@ void nwipe_log_summary( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t** ptr, in
         {
             /* to have some progress indication. can help if there are many/slow disks */
             fprintf( stderr, "." );
-            create_single_disc_pdf( c[i] );
+            create_single_disc_pdf( ptrx, c[i] );
         }
     }
 

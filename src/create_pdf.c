@@ -64,7 +64,7 @@ size_t status_icon_green = FALSE;  // used by multidisc system PDF
 size_t status_icon_yellow = FALSE;  // used by multidisc system PDF
 size_t status_icon_red = FALSE;  // used by multidisc system PDF
 
-int nwipe_get_smart_data( size_t pdf_type, size_t* page_number, nwipe_context_t* c )
+int nwipe_get_smart_data( nwipe_misc_thread_data_t* d, size_t pdf_type, size_t* page_number, nwipe_context_t* c )
 {
     extern struct pdf_object** pdf_page_array;
 
@@ -161,7 +161,7 @@ int nwipe_get_smart_data( size_t pdf_type, size_t* page_number, nwipe_context_t*
 
             /* Create the header and footer for page 2, the start of the smart data */
             snprintf( page_title, sizeof( page_title ), "Page %zu - Smart Data", *page_number );
-            pdf_header_footer_text( c, page_title, pdf_type, PDF_PAGE_SMART_DATA );
+            pdf_header_footer_text( d, c, page_title, pdf_type, PDF_PAGE_SMART_DATA );
 
             /* Display the appropriate status icon (green tick, red cross, tick with exclamation) for
              * the single disk PDF. For multi disc PDFs the status icon is written upon completion
@@ -259,7 +259,7 @@ int nwipe_get_smart_data( size_t pdf_type, size_t* page_number, nwipe_context_t*
                     }
                     /* create the header and footer for the next page */
                     snprintf( page_title, sizeof( page_title ), "Page %zu - Smart Data", *page_number );
-                    pdf_header_footer_text( c, page_title, pdf_type, PDF_PAGE_SMART_DATA );
+                    pdf_header_footer_text( d, c, page_title, pdf_type, PDF_PAGE_SMART_DATA );
                     /* Display the appropriate status icon (green tick, red cross, tick with exclamation) */
                     pdf_display_status_icon( PDF_TYPE_SINGLE_DISC, NULL );
                 }
@@ -274,11 +274,12 @@ int nwipe_get_smart_data( size_t pdf_type, size_t* page_number, nwipe_context_t*
     return set_return_value;
 }
 
-void pdf_header_footer_text( nwipe_context_t* c, char* page_title, size_t pdf_type, size_t pdf_page_type )
+void pdf_header_footer_text( nwipe_misc_thread_data_t* d,
+                             nwipe_context_t* c,
+                             char* page_title,
+                             size_t pdf_type,
+                             size_t pdf_page_type )
 {
-    extern char dmidecode_system_serial_number[DMIDECODE_RESULT_LENGTH];
-    extern char dmidecode_system_uuid[DMIDECODE_RESULT_LENGTH];
-
     const char* user_defined_tag;
 
     char disk_erasure_report[] = "Disk Erasure Report";
@@ -316,10 +317,10 @@ void pdf_header_footer_text( nwipe_context_t* c, char* page_title, size_t pdf_ty
         if( nwipe_options.PDF_toggle_host_info || pdf_type == PDF_TYPE_MULTI_DISC )
         {
             snprintf(
-                hostid_header, sizeof( hostid_header ), " %s: %s ", "System S/N", dmidecode_system_serial_number );
+                hostid_header, sizeof( hostid_header ), " %s: %s ", "System S/N", d->dmidecode_system_serial_number );
             pdf_add_text_wrap(
                 pdf, NULL, hostid_header, 11, 0, 688, 0, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
-            snprintf( hostid_header, sizeof( hostid_header ), " %s: %s ", "System uuid", dmidecode_system_uuid );
+            snprintf( hostid_header, sizeof( hostid_header ), " %s: %s ", "System uuid", d->dmidecode_system_uuid );
             pdf_add_text_wrap(
                 pdf, NULL, hostid_header, 11, 0, 673, 0, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
         }

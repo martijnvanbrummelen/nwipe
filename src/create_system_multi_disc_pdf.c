@@ -81,20 +81,19 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
     extern config_t nwipe_cfg;
     extern char nwipe_config_file[];
 
-    extern char dmidecode_system_uuid[];
-    extern char dmidecode_system_serial_number[];
-
-    //    char pdf_footer[MAX_PDF_FOOTER_TEXT_LENGTH];
+    // extern char dmidecode_system_uuid[];
 
     /* Set up the structs we will use for the data required. */
     nwipe_thread_data_ptr_t* nwipe_thread_data_ptr;
     nwipe_context_t** c;
     nwipe_misc_thread_data_t* nwipe_misc_thread_data;
+    nwipe_misc_thread_data_t* d;
 
     /* Retrieve from the pointer passed to the function. */
     nwipe_thread_data_ptr = (nwipe_thread_data_ptr_t*) ptrx;
     c = nwipe_thread_data_ptr->c;
     nwipe_misc_thread_data = nwipe_thread_data_ptr->nwipe_misc_thread_data;
+    d = nwipe_misc_thread_data;
 
     size_t i;  // general index
     uint32_t text_color_size_apparent;  // local use of color
@@ -157,7 +156,7 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
      * tick/red icon which is set from the 'status' section below
      */
 
-    pdf_header_footer_text( c[0], "Page 1 - Erasure Status", PDF_TYPE_MULTI_DISC, PDF_PAGE_ERASURE_DATA );
+    pdf_header_footer_text( d, c[0], "Page 1 - Erasure Status", PDF_TYPE_MULTI_DISC, PDF_PAGE_ERASURE_DATA );
 
     /* ------------------------ */
     /* Organisation Information */
@@ -282,7 +281,7 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
 
             /* Create the header and footer for page 2 */
             snprintf( page_title, sizeof( page_title ), "Page %zu - Erasure Status", page_number );
-            pdf_header_footer_text( c[i], page_title, PDF_TYPE_MULTI_DISC, PDF_PAGE_ERASURE_DATA );
+            pdf_header_footer_text( d, c[i], page_title, PDF_TYPE_MULTI_DISC, PDF_PAGE_ERASURE_DATA );
         }
         if( c[i]->device_serial_no[0] == 0 )
         {
@@ -457,7 +456,7 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
      */
     for( i = 0; i < nwipe_misc_thread_data->nwipe_selected; i++ )
     {
-        result = nwipe_get_smart_data( PDF_TYPE_MULTI_DISC, &page_number, c[i] );
+        result = nwipe_get_smart_data( d, PDF_TYPE_MULTI_DISC, &page_number, c[i] );
         if( result != 0 )
         {
             // fatal error, don't bother trying to save the file'
@@ -487,15 +486,15 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
      */
     char PDF_filename[FILENAME_MAX];  // The filename of the PDF certificate/report.
     replace_non_alphanumeric( end_time_text, '-' );
-    replace_non_alphanumeric( dmidecode_system_uuid, '-' );
-    replace_non_alphanumeric( dmidecode_system_serial_number, '-' );
+    replace_non_alphanumeric( d->dmidecode_system_uuid, '-' );
+    replace_non_alphanumeric( d->dmidecode_system_serial_number, '-' );
     snprintf( PDF_filename,
               sizeof( PDF_filename ),
               "%s/nwipe_system_report_%s_host-UUID-%s_host-SN-%s.pdf",
               nwipe_options.PDFreportpath,
               end_time_text,
-              dmidecode_system_uuid,
-              dmidecode_system_serial_number );
+              d->dmidecode_system_uuid,
+              d->dmidecode_system_serial_number );
 
     /***********************
      * Write the PDF to disk

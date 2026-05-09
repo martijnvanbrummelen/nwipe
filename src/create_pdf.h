@@ -59,11 +59,11 @@
  * @param pointer to a drive context
  * @return returns 0 on success < 1 on error
  */
-int create_single_disc_pdf( nwipe_context_t* ptr );
+int create_single_disc_pdf( nwipe_thread_data_ptr_t*, nwipe_context_t* ptr );
 
-int nwipe_get_smart_data( size_t, size_t*, nwipe_context_t* );
+int nwipe_get_smart_data( nwipe_misc_thread_data_t*, size_t, size_t*, nwipe_context_t* );
 
-void pdf_header_footer_text( nwipe_context_t*, char*, size_t, size_t );
+void pdf_header_footer_text( nwipe_misc_thread_data_t*, nwipe_context_t*, char*, size_t, size_t );
 
 /**
  * Create the disk erase report for system/multiple disk
