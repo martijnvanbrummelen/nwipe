@@ -41,7 +41,9 @@
 #define LEFT_MARGIN_SMART_DATA 50
 
 #define TOP_OF_TEXT_WINDOW_Y 630
-#define START_OF_SMART_DATA_TEXT_Y_MULTIDISC 610
+#define START_OF_SMART_DATA_TEXT_Y_MULTIDISC 608
+
+#define TEXT_SIZE_DATA 10
 
 /* Additional colors that supplement the standard colors in pdfgen.h
  */
@@ -59,11 +61,11 @@
  * @param pointer to a drive context
  * @return returns 0 on success < 1 on error
  */
-int create_single_disc_pdf( nwipe_context_t* ptr );
+int create_single_disc_pdf( nwipe_thread_data_ptr_t*, nwipe_context_t* ptr );
 
-int nwipe_get_smart_data( size_t, size_t*, nwipe_context_t* );
+int nwipe_get_smart_data( nwipe_misc_thread_data_t*, size_t, size_t*, nwipe_context_t* );
 
-void pdf_header_footer_text( nwipe_context_t*, char*, size_t, size_t );
+void pdf_header_footer_text( nwipe_misc_thread_data_t*, nwipe_context_t*, char*, size_t, size_t );
 
 /**
  * Create the disk erase report for system/multiple disk
@@ -125,5 +127,24 @@ void pdf_add_text_hpa_size( float, float, float, nwipe_context_t* );
 void pdf_add_text_hpa_status( float, float, float, nwipe_context_t* );
 
 struct pdf_object* pdf_append_page_and_update_index( void*, size_t );
+
+/**
+ * write the SMBIOS/DMI information to a new page.
+ * @param pointer to PDF document
+ * @param pointer to page number
+ * @param text xoffset
+ * @param text yoffset
+ * @param PDF type, PDF_TYPE_SINGLE_DISC or PDF_TYPE_MULTI_DISC
+ * @param pointer to drive context structure
+ * @param pointer to miscellaneous data structure
+ * @return
+ */
+void pdf_add_text_host_info_page( void*,
+                                  size_t*,
+                                  float,
+                                  float,
+                                  size_t,
+                                  nwipe_context_t* c,
+                                  nwipe_misc_thread_data_t* d );
 
 #endif /* CREATE_PDF_H_ */

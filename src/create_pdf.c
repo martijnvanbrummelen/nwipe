@@ -64,7 +64,7 @@ size_t status_icon_green = FALSE;  // used by multidisc system PDF
 size_t status_icon_yellow = FALSE;  // used by multidisc system PDF
 size_t status_icon_red = FALSE;  // used by multidisc system PDF
 
-int nwipe_get_smart_data( size_t pdf_type, size_t* page_number, nwipe_context_t* c )
+int nwipe_get_smart_data( nwipe_misc_thread_data_t* d, size_t pdf_type, size_t* page_number, nwipe_context_t* c )
 {
     extern struct pdf_object** pdf_page_array;
 
@@ -161,7 +161,7 @@ int nwipe_get_smart_data( size_t pdf_type, size_t* page_number, nwipe_context_t*
 
             /* Create the header and footer for page 2, the start of the smart data */
             snprintf( page_title, sizeof( page_title ), "Page %zu - Smart Data", *page_number );
-            pdf_header_footer_text( c, page_title, pdf_type, PDF_PAGE_SMART_DATA );
+            pdf_header_footer_text( d, c, page_title, pdf_type, PDF_PAGE_SMART_DATA );
 
             /* Display the appropriate status icon (green tick, red cross, tick with exclamation) for
              * the single disk PDF. For multi disc PDFs the status icon is written upon completion
@@ -182,11 +182,11 @@ int nwipe_get_smart_data( size_t pdf_type, size_t* page_number, nwipe_context_t*
                      */
                     pdf_set_font( pdf, "Helvetica-Bold" );
                     snprintf( buffer, sizeof( buffer ), "Erasure Status of this disk: S/N %s", c->device_serial_no );
-                    pdf_add_text( pdf, NULL, buffer, 10, 160, TOP_OF_TEXT_WINDOW_Y + 2, PDF_BLACK );
+                    pdf_add_text( pdf, NULL, buffer, 10, 160, TOP_OF_TEXT_WINDOW_Y - 3, PDF_BLACK );
                     pdf_add_text_status_of_erasure( LEFT_MARGIN_SMART_DATA + 25,
-                                                    TOP_OF_TEXT_WINDOW_Y,
+                                                    TOP_OF_TEXT_WINDOW_Y - 4,
                                                     LEFT_MARGIN_SMART_DATA + 50,
-                                                    TOP_OF_TEXT_WINDOW_Y + 5,
+                                                    TOP_OF_TEXT_WINDOW_Y + 1,
                                                     45,
                                                     10,
                                                     0,
@@ -235,7 +235,7 @@ int nwipe_get_smart_data( size_t pdf_type, size_t* page_number, nwipe_context_t*
 
                 pdf_set_font( pdf, "Courier" );
                 pdf_add_text( pdf, NULL, result, 8, x, y, PDF_BLACK );
-                y -= 9;
+                y -= 9;  // line spacing
 
                 /* Have we reached the bottom of the page yet */
                 if( y < 60 )
@@ -259,7 +259,7 @@ int nwipe_get_smart_data( size_t pdf_type, size_t* page_number, nwipe_context_t*
                     }
                     /* create the header and footer for the next page */
                     snprintf( page_title, sizeof( page_title ), "Page %zu - Smart Data", *page_number );
-                    pdf_header_footer_text( c, page_title, pdf_type, PDF_PAGE_SMART_DATA );
+                    pdf_header_footer_text( d, c, page_title, pdf_type, PDF_PAGE_SMART_DATA );
                     /* Display the appropriate status icon (green tick, red cross, tick with exclamation) */
                     pdf_display_status_icon( PDF_TYPE_SINGLE_DISC, NULL );
                 }
@@ -274,11 +274,12 @@ int nwipe_get_smart_data( size_t pdf_type, size_t* page_number, nwipe_context_t*
     return set_return_value;
 }
 
-void pdf_header_footer_text( nwipe_context_t* c, char* page_title, size_t pdf_type, size_t pdf_page_type )
+void pdf_header_footer_text( nwipe_misc_thread_data_t* d,
+                             nwipe_context_t* c,
+                             char* page_title,
+                             size_t pdf_type,
+                             size_t pdf_page_type )
 {
-    extern char dmidecode_system_serial_number[DMIDECODE_RESULT_LENGTH];
-    extern char dmidecode_system_uuid[DMIDECODE_RESULT_LENGTH];
-
     const char* user_defined_tag;
 
     char disk_erasure_report[] = "Disk Erasure Report";
@@ -316,10 +317,10 @@ void pdf_header_footer_text( nwipe_context_t* c, char* page_title, size_t pdf_ty
         if( nwipe_options.PDF_toggle_host_info || pdf_type == PDF_TYPE_MULTI_DISC )
         {
             snprintf(
-                hostid_header, sizeof( hostid_header ), " %s: %s ", "System S/N", dmidecode_system_serial_number );
+                hostid_header, sizeof( hostid_header ), " %s: %s ", "System S/N", d->dmidecode_system_serial_number );
             pdf_add_text_wrap(
                 pdf, NULL, hostid_header, 11, 0, 688, 0, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
-            snprintf( hostid_header, sizeof( hostid_header ), " %s: %s ", "System uuid", dmidecode_system_uuid );
+            snprintf( hostid_header, sizeof( hostid_header ), " %s: %s ", "System uuid", d->dmidecode_system_uuid );
             pdf_add_text_wrap(
                 pdf, NULL, hostid_header, 11, 0, 673, 0, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
         }
@@ -363,10 +364,12 @@ void pdf_header_footer_text( nwipe_context_t* c, char* page_title, size_t pdf_ty
     switch( pdf_type )
     {
         case PDF_TYPE_SINGLE_DISC:
+            snprintf( barcode, sizeof( barcode ), "%s:%s", c->device_model, c->device_serial_no );
             erasure_report_title = disk_erasure_report;
             break;
 
         case PDF_TYPE_MULTI_DISC:
+            snprintf( barcode, sizeof( barcode ), "%s", d->dmidecode_system_uuid );
             erasure_report_title = system_erasure_report;
             break;
 
@@ -376,7 +379,8 @@ void pdf_header_footer_text( nwipe_context_t* c, char* page_title, size_t pdf_ty
 
     pdf_add_text_wrap(
         pdf, NULL, erasure_report_title, 24, 0, 765, 0, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
-    snprintf( barcode, sizeof( barcode ), "%s:%s", c->device_model, c->device_serial_no );
+
+    barcode[sizeof barcode - 1] = 0;
     pdf_add_text_wrap( pdf, NULL, page_title, 14, 0, 745, 0, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
     pdf_add_barcode( pdf, NULL, PDF_BARCODE_128A, 100, 790, 400, 25, barcode, PDF_BLACK );
 }
@@ -870,6 +874,10 @@ struct pdf_object* pdf_append_page_and_update_index( void* pdf, size_t page_numb
      * to the pages including smart data. After all discs are processed and we
      * know whether each individual disc was erased or failed then we can write
      * the appropriate status icon to every page on a multidisc system pdf.
+     *
+     * NOTE page_number must be updated prior to calling this function.
+     * I may well change this in the future so that a pointer to page number is
+     * passed and the page number updated inside this function, to reduce code.
      */
     struct pdf_object* page;
 
@@ -889,4 +897,66 @@ struct pdf_object* pdf_append_page_and_update_index( void* pdf, size_t page_numb
     /* Append the pdf page pointer to the array */
     pdf_page_array[page_number - 1] = page;
     return page;
+}
+
+void pdf_add_text_host_info_page( void* pdf,
+                                  size_t* page_number,
+                                  float xoff,
+                                  float yoff,
+                                  size_t pdf_type,
+                                  nwipe_context_t* c,
+                                  nwipe_misc_thread_data_t* d )
+{
+    char page_title[50];
+    char buffer[512];
+
+    size_t i;
+
+    // Keep trailing spaces, required for column
+    // alignment in PDF
+    char dmi_labels[NUMBER_DMI_OBJECTS][24] = {
+        "Bios Version           ", "Bios Release Date      ", "System Manufacturer    ", "System Product Name    ",
+        "System Version         ", "System Serial Number   ", "System UUID            ", "Baseboard Manufacturer ",
+        "Baseboard Product Name ", "Baseboard Version      ", "Baseboard Serial Number", "Baseboard Asset Tag    ",
+        "Chassis Manufacturer   ", "Chassis Type           ", "Chassis Version        ", "Chassis Serial Number  ",
+        "Chassis Asset Tag      ", "Processor Family       ", "Processor Manufacturer ", "Processor Version      ",
+        "Processor Frequency    " };
+
+    char* dmi_result[NUMBER_DMI_OBJECTS] = { d->dmidecode_bios_version,
+                                             d->dmidecode_bios_release_date,
+                                             d->dmidecode_system_manufacturer,
+                                             d->dmidecode_system_product_name,
+                                             d->dmidecode_system_version,
+                                             d->dmidecode_system_serial_number,
+                                             d->dmidecode_system_uuid,
+                                             d->dmidecode_baseboard_manufacturer,
+                                             d->dmidecode_baseboard_product_name,
+                                             d->dmidecode_baseboard_version,
+                                             d->dmidecode_baseboard_serial_number,
+                                             d->dmidecode_baseboard_asset_tag,
+                                             d->dmidecode_chassis_manufacturer,
+                                             d->dmidecode_chassis_type,
+                                             d->dmidecode_chassis_version,
+                                             d->dmidecode_chassis_serial_number,
+                                             d->dmidecode_chassis_asset_tag,
+                                             d->dmidecode_processor_family,
+                                             d->dmidecode_processor_manufacturer,
+                                             d->dmidecode_processor_version,
+                                             d->dmidecode_processor_frequency };
+
+    /* Create a new page */
+    ( *page_number )++;
+    pdf_append_page_and_update_index( pdf, *page_number );
+
+    /* Create the header and footer for this host data page */
+    snprintf( page_title, sizeof( page_title ), "Page %zu - SMBIOS/DMI Host Data", *page_number );
+    pdf_header_footer_text( d, c, page_title, pdf_type, PDF_PAGE_ERASURE_DATA );
+    pdf_set_font( pdf, "Courier" );
+
+    for( i = 0; i < NUMBER_DMI_OBJECTS; i++ )
+    {
+        snprintf( buffer, sizeof( buffer ), "%s = %s", dmi_labels[i], dmi_result[i] );
+        pdf_add_text( pdf, NULL, buffer, TEXT_SIZE_DATA, xoff, yoff, PDF_BLACK );
+        yoff -= 12;
+    }
 }

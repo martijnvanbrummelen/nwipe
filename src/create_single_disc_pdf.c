@@ -60,7 +60,7 @@ extern float height;
 extern float page_width;
 extern int status_icon;
 
-int create_single_disc_pdf( nwipe_context_t* ptr )
+int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr )
 {
     /* Used by libconfig functions to retrieve data from nwipe.conf defined in conf.c */
     extern config_t nwipe_cfg;
@@ -94,6 +94,15 @@ int create_single_disc_pdf( nwipe_context_t* ptr )
     const char *business_name, *business_address, *contact_name, *contact_phone, *op_tech_name, *customer_name,
         *customer_address, *customer_contact_name, *customer_contact_phone;
 
+    /* Set up the structs we will use for the data required. */
+    nwipe_thread_data_ptr_t* nwipe_thread_data_ptr;
+    nwipe_misc_thread_data_t* nwipe_misc_thread_data;
+    nwipe_misc_thread_data_t* d;
+
+    /* Retrieve from the pointer passed to the function. */
+    nwipe_thread_data_ptr = (nwipe_thread_data_ptr_t*) ptrx;
+    nwipe_misc_thread_data = nwipe_thread_data_ptr->nwipe_misc_thread_data;
+    d = nwipe_misc_thread_data;
     /* ------------------ */
     /* Initialise Various */
 
@@ -126,7 +135,7 @@ int create_single_disc_pdf( nwipe_context_t* ptr )
      * tick/red icon which is set from the 'status' section below
      */
 
-    pdf_header_footer_text( c, "Page 1 - Erasure Status", PDF_TYPE_SINGLE_DISC, PDF_PAGE_ERASURE_DATA );
+    pdf_header_footer_text( d, c, "Page 1 - Erasure Status", PDF_TYPE_SINGLE_DISC, PDF_PAGE_ERASURE_DATA );
 
     /* ------------------------ */
     /* Organisation Information */
@@ -480,7 +489,7 @@ int create_single_disc_pdf( nwipe_context_t* ptr )
     /***************************************
      * Populate subsequent pages with smart data
      */
-    nwipe_get_smart_data( PDF_TYPE_SINGLE_DISC, &page_number, c );
+    nwipe_get_smart_data( d, PDF_TYPE_SINGLE_DISC, &page_number, c );
 
     /*****************************
      * Create the reports filename
