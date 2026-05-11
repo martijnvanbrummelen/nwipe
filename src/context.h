@@ -108,6 +108,8 @@ typedef struct nwipe_speedring_t_
 
 #define DMIDECODE_RESULT_LENGTH 64
 
+#define NUMBER_DMI_OBJECTS 21
+
 typedef struct nwipe_context_t_
 {
     /*
@@ -250,6 +252,9 @@ typedef struct
     u64 errors;  // The combined number of errors of all processes.
     u64 io_retries;  // The combined number of I/O retries of all processes.
     pthread_t* gui_thread;  // The ID of GUI thread.
+    // Note, If you alter the dmidecode entries below you may also need
+    // to update dmi_labels and dmi_result arrays in the function
+    // pdf_add_text_host_info_page() in create_pdf.c
     char dmidecode_bios_version[DMIDECODE_RESULT_LENGTH];  // host info
     char dmidecode_bios_release_date[DMIDECODE_RESULT_LENGTH];  // host info
     char dmidecode_system_manufacturer[DMIDECODE_RESULT_LENGTH];  // host info

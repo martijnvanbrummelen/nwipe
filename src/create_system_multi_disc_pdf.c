@@ -46,8 +46,6 @@
 #include <libconfig.h>
 #include "conf.h"
 
-#define TEXT_SIZE_DATA 10
-
 extern struct pdf_doc* pdf;
 extern struct pdf_object* page;
 
@@ -450,6 +448,12 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
 
         yoffset = yoffset - ( line_spacing * 2 );  // insert a blank line between individual disc details
     }
+
+    /***************************************
+     * Add SMBIOS/DMI host data page
+     */
+    pdf_add_text_host_info_page(
+        pdf, &page_number, LEFT_MARGIN_TEXT, TOP_OF_TEXT_WINDOW_Y, PDF_TYPE_MULTI_DISC, NULL, d );
 
     /***************************************
      * Populate subsequent pages with smart data for each drive
