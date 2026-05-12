@@ -570,9 +570,6 @@ int main( int argc, char** argv )
         exit( 1 );
     }
 
-    /* Log the System information */
-    nwipe_log_sysinfo();
-
     /* The array of pointers to contexts that will actually be wiped. */
     nwipe_context_t** c2 = (nwipe_context_t**) malloc( nwipe_enumerated * sizeof( nwipe_context_t* ) );
     if( c2 == NULL )
@@ -617,6 +614,9 @@ int main( int argc, char** argv )
 
         pthread_create( &nwipe_sigint_thread, &pthread_attr, signal_hand, &nwipe_thread_data_ptr );
     }
+
+    /* Log the System information */
+    nwipe_log_sysinfo( &nwipe_misc_thread_data );
 
     /* Makesure the drivetemp module is loaded, else drives hwmon entries won't appear in /sys/class/hwmon */
     final_cmd_modprobe[0] = 0;

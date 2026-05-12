@@ -29,7 +29,7 @@
 #define OS_info_Line_offset 31 /* OS_info line offset in log */
 #define OS_info_Line_Length 48 /* OS_info line length */
 
-#define DMIDECODE_RESULT_LENGTH 64
+// #define DMIDECODE_RESULT_LENGTH 64
 
 typedef enum nwipe_log_t_ {
     NWIPE_LOG_NONE = 0,
@@ -61,7 +61,7 @@ void nwipe_log( nwipe_log_t level, const char* format, ... );
 
 void nwipe_perror( int nwipe_errno, const char* f, const char* s );
 void nwipe_log_OSinfo();
-int nwipe_log_sysinfo();
+int nwipe_log_sysinfo( nwipe_misc_thread_data_t* );
 void nwipe_log_summary( nwipe_thread_data_ptr_t*,
                         nwipe_context_t**,
                         int );  // This produces the wipe status table on exit

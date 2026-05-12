@@ -46,8 +46,6 @@
 #include <libconfig.h>
 #include "conf.h"
 
-#define text_size_data 10
-
 extern struct pdf_doc* pdf;
 extern struct pdf_object* page;
 
@@ -60,6 +58,10 @@ extern char tag_header[MAX_PDF_TAG_LENGTH];
 extern float height;
 extern float page_width;
 extern int status_icon;
+extern struct pdf_object** pdf_page_array;
+
+void append_page_array( struct pdf_object***, struct pdf_object* );
+void pdf_display_status_icon( size_t, void* );
 
 int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
 {
@@ -77,41 +79,34 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
     extern config_t nwipe_cfg;
     extern char nwipe_config_file[];
 
-    //    char pdf_footer[MAX_PDF_FOOTER_TEXT_LENGTH];
+    // extern char dmidecode_system_uuid[];
 
     /* Set up the structs we will use for the data required. */
     nwipe_thread_data_ptr_t* nwipe_thread_data_ptr;
     nwipe_context_t** c;
     nwipe_misc_thread_data_t* nwipe_misc_thread_data;
+    nwipe_misc_thread_data_t* d;
 
     /* Retrieve from the pointer passed to the function. */
     nwipe_thread_data_ptr = (nwipe_thread_data_ptr_t*) ptrx;
     c = nwipe_thread_data_ptr->c;
     nwipe_misc_thread_data = nwipe_thread_data_ptr->nwipe_misc_thread_data;
+    d = nwipe_misc_thread_data;
 
-    int i;  // general index
+    size_t i;  // general index
+    uint32_t text_color_size_apparent;  // local use of color
 
-    //    char model_header[50] = ""; /* Model text in the header */
-    //    char serial_header[30] = ""; /* Serial number text in the header */
     char device_size[100] = ""; /* Device size in the form xMB (xxxx bytes) */
-    //    char barcode[100] = ""; /* Contents of the barcode, i.e model:serial */
-    char verify[20] = ""; /* Verify option text */
-    char blank[10] = ""; /* blanking pass, none, zeros, ones */
-    char rounds[50] = ""; /* rounds ASCII numeric */
-    char prng_type[50] = ""; /* type of prng, twister, isaac, isaac64 */
     char start_time_text[50] = "";
     char end_time_text[50] = "";
-    char bytes_erased[50] = "";
-    char HPA_status_text[50] = "";
-    char HPA_size_text[50] = "";
     char errors[50] = "";
     char throughput_txt[50] = "";
-    char bytes_percent_str[7] = "";
+    char page_title[50];
 
-    //    int status_icon;
-
-    //    float height;
-    //    float page_width;
+    size_t yoffset;
+    size_t line_spacing;
+    size_t page_number;
+    int result;
 
     struct pdf_info info = { .creator = "https://github.com/PartialVolume/shredos.x86_64",
                              .producer = "https://github.com/martijnvanbrummelen/nwipe",
@@ -147,12 +142,19 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
     /* Obtain page page_width */
     page_width = pdf_page_width( page_1 );
 
+    /* create a single element array for the pointers to each page object,
+     * this array will be expanded for each new page pointer added */
+    pdf_page_array = malloc( sizeof( struct pdf_object* ) );
+
+    /* Save the pointer for the first page */
+    pdf_page_array[0] = page_1;
+
     /*********************************************************************
      * Create header and footer on page 1, with the exception of the green
      * tick/red icon which is set from the 'status' section below
      */
 
-    pdf_header_footer_text( c[0], "Page 1 - Erasure Status" );
+    pdf_header_footer_text( d, c[0], "Page 1 - Erasure Status", PDF_TYPE_MULTI_DISC, PDF_PAGE_ERASURE_DATA );
 
     /* ------------------------ */
     /* Organisation Information */
@@ -171,19 +173,19 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
         pdf_set_font( pdf, "Helvetica-Bold" );
         if( config_setting_lookup_string( setting, "Business_Name", &business_name ) )
         {
-            pdf_add_text( pdf, NULL, business_name, text_size_data, 153, 610, PDF_BLACK );
+            pdf_add_text( pdf, NULL, business_name, TEXT_SIZE_DATA, 153, 610, PDF_BLACK );
         }
         if( config_setting_lookup_string( setting, "Business_Address", &business_address ) )
         {
-            pdf_add_text( pdf, NULL, business_address, text_size_data, 165, 590, PDF_BLACK );
+            pdf_add_text( pdf, NULL, business_address, TEXT_SIZE_DATA, 165, 590, PDF_BLACK );
         }
         if( config_setting_lookup_string( setting, "Contact_Name", &contact_name ) )
         {
-            pdf_add_text( pdf, NULL, contact_name, text_size_data, 145, 570, PDF_BLACK );
+            pdf_add_text( pdf, NULL, contact_name, TEXT_SIZE_DATA, 145, 570, PDF_BLACK );
         }
         if( config_setting_lookup_string( setting, "Contact_Phone", &contact_phone ) )
         {
-            pdf_add_text( pdf, NULL, contact_phone, text_size_data, 390, 570, PDF_BLACK );
+            pdf_add_text( pdf, NULL, contact_phone, TEXT_SIZE_DATA, 390, 570, PDF_BLACK );
         }
         pdf_set_font( pdf, "Helvetica" );
     }
@@ -208,19 +210,19 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
         pdf_set_font( pdf, "Helvetica-Bold" );
         if( config_setting_lookup_string( setting, "Customer_Name", &customer_name ) )
         {
-            pdf_add_text( pdf, NULL, customer_name, text_size_data, 100, 510, PDF_BLACK );
+            pdf_add_text( pdf, NULL, customer_name, TEXT_SIZE_DATA, 100, 510, PDF_BLACK );
         }
         if( config_setting_lookup_string( setting, "Customer_Address", &customer_address ) )
         {
-            pdf_add_text( pdf, NULL, customer_address, text_size_data, 110, 490, PDF_BLACK );
+            pdf_add_text( pdf, NULL, customer_address, TEXT_SIZE_DATA, 110, 490, PDF_BLACK );
         }
         if( config_setting_lookup_string( setting, "Contact_Name", &customer_contact_name ) )
         {
-            pdf_add_text( pdf, NULL, customer_contact_name, text_size_data, 145, 470, PDF_BLACK );
+            pdf_add_text( pdf, NULL, customer_contact_name, TEXT_SIZE_DATA, 145, 470, PDF_BLACK );
         }
         if( config_setting_lookup_string( setting, "Contact_Phone", &customer_contact_phone ) )
         {
-            pdf_add_text( pdf, NULL, customer_contact_phone, text_size_data, 390, 470, PDF_BLACK );
+            pdf_add_text( pdf, NULL, customer_contact_phone, TEXT_SIZE_DATA, 390, 470, PDF_BLACK );
         }
         pdf_set_font( pdf, "Helvetica" );
     }
@@ -232,38 +234,252 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
     /******************
      * Disk Information
      */
-    pdf_add_line( pdf, NULL, 50, 350, 550, 350, 1, PDF_GRAY );
-    pdf_add_text( pdf, NULL, "Disk Information", 12, 50, 430, PDF_BLUE );
+    pdf_add_text( pdf, NULL, "Disk Erasure status", 12, 50, 430, PDF_BLUE );
 
-    /* For each disc wiped, print an entry */
-    for( i = 0; i < nwipe_misc_thread_data->nwipe_enumerated; i++ )
+    /************************
+     * Technician/Operator ID
+     */
+    pdf_add_line( pdf, NULL, 50, 120, 550, 120, 1, PDF_GRAY );
+    pdf_add_text( pdf, NULL, "Technician/Operator ID", 12, 50, 100, PDF_BLUE );
+    pdf_add_text( pdf, NULL, "Name/ID:", 12, 60, 80, PDF_GRAY );
+    pdf_add_text( pdf, NULL, "Signature:", 12, 300, 100, PDF_BLUE );
+    pdf_add_line( pdf, NULL, 360, 65, 550, 65, 1, PDF_GRAY );
+
+    pdf_set_font( pdf, "Helvetica-Bold" );
+    /* Obtain organisational details from nwipe.conf - See conf.c */
+    setting = config_lookup( &nwipe_cfg, "Organisation_Details" );
+    if( config_setting_lookup_string( setting, "Op_Tech_Name", &op_tech_name ) )
     {
-        if( c[0]->device_serial_no[0] == 0 )
+        pdf_add_text( pdf, NULL, op_tech_name, TEXT_SIZE_DATA, 120, 80, PDF_BLACK );
+    }
+    pdf_set_font( pdf, "Helvetica" );
+
+    yoffset = 410;  // start y offset of disc details
+    line_spacing = 10;  // vertical distance between lines
+    page_number = 1;
+
+    /*************************************
+     * For each disc wiped, print an entry
+     */
+    for( i = 0; i < nwipe_misc_thread_data->nwipe_selected; i++ )
+    {
+        // create a new page if we have already reached the bottom of the page.
+        if( yoffset < 210 )
         {
-            snprintf( c[0]->device_serial_no, sizeof( c[0]->device_serial_no ), "Unknown" );
+            yoffset = 630;
+            page_number++;
+
+            /* create a new page and save it's page pointer to the page index */
+            page = pdf_append_page_and_update_index( pdf, page_number );
+            if( page == NULL )
+            {
+                nwipe_log( NWIPE_LOG_INFO, "Failed to allocate memory when adding new page = %zu", page_number );
+                return -1;
+            }
+
+            /* Create the header and footer for page 2 */
+            snprintf( page_title, sizeof( page_title ), "Page %zu - Erasure Status", page_number );
+            pdf_header_footer_text( d, c[i], page_title, PDF_TYPE_MULTI_DISC, PDF_PAGE_ERASURE_DATA );
         }
-        // WARNING DELETE THIS NWIPE_LOG command
-        nwipe_log( NWIPE_LOG_WARNING, "Model: %s", c[i]->device_name_without_path );
+        if( c[i]->device_serial_no[0] == 0 )
+        {
+            snprintf( c[i]->device_serial_no, sizeof( c[i]->device_serial_no ), "Unknown" );
+        }
 
         /************
          * Make/model/serial number
          */
         pdf_set_font( pdf, "Courier-Bold" );
-        pdf_add_text( pdf, NULL, "Make:", text_size_data, 60, 410, PDF_DARK_GREEN );
-        pdf_add_text( pdf, NULL, c[i]->device_model, text_size_data, 90, 410, PDF_DARK_GREEN );
-        pdf_add_text( pdf, NULL, "S/N:", text_size_data, 200, 410, PDF_DARK_GREEN );
-        pdf_add_text( pdf, NULL, c[i]->device_serial_no, text_size_data, 230, 410, PDF_DARK_GREEN );
-        snprintf( device_size, sizeof( device_size ), "%s, %lli bytes", c[i]->device_size_text, c[i]->device_size );
-        if( ( c[i]->device_size == c[i]->Calculated_real_max_size_in_bytes ) || c[i]->device_type == NWIPE_DEVICE_NVME
-            || c[i]->device_type == NWIPE_DEVICE_VIRT || c[i]->HPA_status == HPA_NOT_APPLICABLE
-            || c[i]->HPA_status != HPA_UNKNOWN )
+        pdf_add_text( pdf, NULL, "Make:", TEXT_SIZE_DATA, LEFT_MARGIN_TEXT, yoffset, PDF_GRAY );
+        pdf_add_text( pdf, NULL, c[i]->device_model, TEXT_SIZE_DATA, 90, yoffset, PDF_DARK_GREEN );
+        pdf_add_text( pdf, NULL, "S/N:", TEXT_SIZE_DATA, 300, yoffset, PDF_GRAY );
+        pdf_add_text( pdf, NULL, c[i]->device_serial_no, TEXT_SIZE_DATA, 330, yoffset, PDF_DARK_GREEN );
+        snprintf( device_size, sizeof( device_size ), "%s,%llib", c[i]->device_size_text, c[i]->device_size );
+
+        /************
+         * Size (apparent)
+         */
+        yoffset = yoffset - line_spacing;  // next line
+        pdf_add_text( pdf, NULL, "Size(Apparent): ", TEXT_SIZE_DATA, LEFT_MARGIN_TEXT, yoffset, PDF_GRAY );
+        snprintf( device_size, sizeof( device_size ), "%s,%llib", c[i]->device_size_text, c[i]->device_size );
+        text_color_size_apparent =
+            determine_color_for_size_apparent( c[i] );  // RED hidden sectors detected, GREEN actual size
+        pdf_add_text( pdf, NULL, device_size, TEXT_SIZE_DATA, 150, yoffset, text_color_size_apparent );
+
+        /************
+         * Size (real)
+         */
+        pdf_add_text( pdf, NULL, "Size(Real): ", TEXT_SIZE_DATA, 300, yoffset, PDF_GRAY );
+        pdf_add_text_size_real( 370, yoffset, c[i] );
+
+        /************
+         * start time
+         */
+        yoffset = yoffset - line_spacing;  // next line
+        pdf_add_text( pdf, NULL, "Start time:", TEXT_SIZE_DATA, LEFT_MARGIN_TEXT, yoffset, PDF_GRAY );
+        p = localtime( &c[i]->start_time );
+        snprintf( start_time_text,
+                  sizeof( start_time_text ),
+                  "%i/%02i/%02i %02i:%02i:%02i",
+                  1900 + p->tm_year,
+                  1 + p->tm_mon,
+                  p->tm_mday,
+                  p->tm_hour,
+                  p->tm_min,
+                  p->tm_sec );
+        pdf_add_text( pdf, NULL, start_time_text, TEXT_SIZE_DATA, 150, yoffset, PDF_BLACK );
+
+        /*************
+         * end time
+         */
+        pdf_add_text( pdf, NULL, "End time:", TEXT_SIZE_DATA, 300, yoffset, PDF_GRAY );
+        p = localtime( &c[i]->end_time );
+        snprintf( end_time_text,
+                  sizeof( end_time_text ),
+                  "%i/%02i/%02i %02i:%02i:%02i",
+                  1900 + p->tm_year,
+                  1 + p->tm_mon,
+                  p->tm_mday,
+                  p->tm_hour,
+                  p->tm_min,
+                  p->tm_sec );
+        pdf_add_text( pdf, NULL, end_time_text, TEXT_SIZE_DATA, 360, yoffset, PDF_BLACK );
+
+        /*************
+         * Duration
+         */
+        yoffset = yoffset - line_spacing;  // next line
+        pdf_add_text( pdf, NULL, "Duration:", TEXT_SIZE_DATA, LEFT_MARGIN_TEXT, yoffset, PDF_GRAY );
+        pdf_add_text( pdf, NULL, c[i]->duration_str, TEXT_SIZE_DATA, 150, yoffset, PDF_BLACK );
+
+        /********
+         * Errors
+         */
+        pdf_add_text( pdf, NULL, "Errors(pass/sync/verify):", TEXT_SIZE_DATA, 300, yoffset, PDF_GRAY );
+        snprintf( errors,
+                  sizeof( errors ),
+                  "%llu/%llu/%llu",
+                  c[i]->pass_errors,
+                  c[i]->fsyncdata_errors,
+                  c[i]->verify_errors );
+        if( c[i]->pass_errors != 0 || c[i]->fsyncdata_errors != 0 || c[i]->verify_errors != 0 )
         {
-            pdf_add_text( pdf, NULL, device_size, text_size_data, 350, 410, PDF_DARK_GREEN );
+            pdf_add_text( pdf, NULL, errors, TEXT_SIZE_DATA, 450, yoffset, PDF_RED );
         }
         else
         {
-            pdf_add_text( pdf, NULL, device_size, text_size_data, 350, 410, PDF_RED );
+            pdf_add_text( pdf, NULL, errors, TEXT_SIZE_DATA, 450, yoffset, PDF_DARK_GREEN );
         }
+
+        /* ************
+         * bytes erased
+         */
+        yoffset = yoffset - line_spacing;  // next line
+        pdf_add_text( pdf, NULL, "*Bytes Erased:", TEXT_SIZE_DATA, LEFT_MARGIN_TEXT, yoffset, PDF_GRAY );
+        pdf_add_text_bytes_erased( 150, yoffset, c[i] );
+
+        /************
+         * Throughput
+         */
+        pdf_add_text( pdf, NULL, "Throughput:", TEXT_SIZE_DATA, 300, yoffset, PDF_GRAY );
+        snprintf( throughput_txt, sizeof( throughput_txt ), "%s/sec", c[i]->throughput_txt );
+        pdf_add_text( pdf, NULL, throughput_txt, TEXT_SIZE_DATA, 360, yoffset, PDF_BLACK );
+
+        /********
+         * Method
+         */
+        yoffset = yoffset - line_spacing;  // next line
+        pdf_add_text( pdf, NULL, "Method:", TEXT_SIZE_DATA, LEFT_MARGIN_TEXT, yoffset, PDF_GRAY );
+        pdf_add_text( pdf, NULL, nwipe_method_label( nwipe_options.method ), TEXT_SIZE_DATA, 150, yoffset, PDF_BLACK );
+
+        /***********
+         * prng type
+         */
+        pdf_add_text( pdf, NULL, "PRNG algorithm:", TEXT_SIZE_DATA, 300, yoffset, PDF_GRAY );
+        pdf_add_text_prng_type( 395, yoffset, PDF_BLACK );
+
+        /***********
+         * Blanking pass
+         */
+        yoffset = yoffset - line_spacing;  // next
+        pdf_add_text( pdf, NULL, "Blanking Pass:", TEXT_SIZE_DATA, LEFT_MARGIN_TEXT, yoffset, PDF_GRAY );
+        pdf_add_text_blanking( TEXT_SIZE_DATA, 150, yoffset );
+
+        /***********
+         * Verify
+         */
+        pdf_add_text( pdf, NULL, "Verify(Last/All/None):", TEXT_SIZE_DATA, 300, yoffset, PDF_GRAY );
+        pdf_add_text_verify( TEXT_SIZE_DATA, 450, yoffset );
+
+        /**********
+         * HPA, DCO status
+         */
+        yoffset = yoffset - line_spacing;  // next
+        pdf_add_text( pdf, NULL, "HPA/DCO:", TEXT_SIZE_DATA, LEFT_MARGIN_TEXT, yoffset, PDF_GRAY );
+        pdf_add_text_hpa_status( TEXT_SIZE_DATA, 150, yoffset, c[i] );
+
+        /************************
+         * HPA, DCO size
+         */
+        pdf_add_text( pdf, NULL, "HPA/DCO Size:", TEXT_SIZE_DATA, 300, yoffset, PDF_GRAY );
+        pdf_add_text_hpa_size( TEXT_SIZE_DATA, 390, yoffset, c[i] );
+
+        /***********
+         * Rounds
+         */
+        yoffset = yoffset - line_spacing;  // next
+        pdf_add_text( pdf, NULL, "Rounds(completed/requested):", TEXT_SIZE_DATA, LEFT_MARGIN_TEXT, yoffset, PDF_GRAY );
+        pdf_add_text_rounds( TEXT_SIZE_DATA, 230, yoffset, c[i] );
+
+        /***********
+         * Status of Erasure
+         */
+        pdf_add_text_status_of_erasure(
+            LEFT_MARGIN_TEXT - 12, yoffset + 20, LEFT_MARGIN_TEXT - 15, yoffset + 40, 10, 35, 1.5707, c[i] );
+
+        /* ****************
+         * Display warning if hidden sectors found or if HPA/DCO status cannot be determined
+         */
+        if( !strcmp( c[i]->wipe_status_txt, "ERASED" )
+            && ( c[i]->HPA_status == HPA_ENABLED || c[i]->HPA_status == HPA_UNKNOWN ) )
+        {
+            pdf_add_text( pdf, NULL, "See Warning !", TEXT_SIZE_DATA, 300, yoffset, PDF_RED );
+        }
+
+        yoffset = yoffset - ( line_spacing * 2 );  // insert a blank line between individual disc details
+    }
+
+    /***************************************
+     * Add SMBIOS/DMI host data page
+     */
+    pdf_add_text_host_info_page(
+        pdf, &page_number, LEFT_MARGIN_TEXT, TOP_OF_TEXT_WINDOW_Y, PDF_TYPE_MULTI_DISC, NULL, d );
+
+    /***************************************
+     * Populate subsequent pages with smart data for each drive
+     */
+    for( i = 0; i < nwipe_misc_thread_data->nwipe_selected; i++ )
+    {
+        result = nwipe_get_smart_data( d, PDF_TYPE_MULTI_DISC, &page_number, c[i] );
+        if( result != 0 )
+        {
+            // fatal error, don't bother trying to save the file'
+            nwipe_log( NWIPE_LOG_ERROR, "Function nwipe_get_smart_data() returned an error %u", result );
+            goto cleanup;
+        }
+    }
+
+    /************************************************************************************
+     * Display the appropriate status icon (green tick, red cross, tick with exclamation).
+     * On a multidisc pdf we may not know the status of all the drives until we
+     * have written the individual drive entries, so prior to the following function, we
+     * have created all the drive erasure pages first plus all the smart data pages. Once
+     * we know the overall status of ALL drives, then we can go back and write the overall
+     * status icon that represents the overall system, to each individual page.
+     */
+    for( i = 0; i < page_number; i++ )
+    {
+        pdf_display_status_icon( PDF_TYPE_MULTI_DISC, pdf_page_array[i] );
     }
 
     /*****************************
@@ -274,9 +490,26 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
      */
     char PDF_filename[FILENAME_MAX];  // The filename of the PDF certificate/report.
     replace_non_alphanumeric( end_time_text, '-' );
-    snprintf( PDF_filename, sizeof( PDF_filename ), "nwipe_report_system.pdf" );
+    replace_non_alphanumeric( d->dmidecode_system_uuid, '-' );
+    replace_non_alphanumeric( d->dmidecode_system_serial_number, '-' );
+    snprintf( PDF_filename,
+              sizeof( PDF_filename ),
+              "%s/nwipe_system_report_%s_host-UUID-%s_host-SN-%s.pdf",
+              nwipe_options.PDFreportpath,
+              end_time_text,
+              d->dmidecode_system_uuid,
+              d->dmidecode_system_serial_number );
 
+    /***********************
+     * Write the PDF to disk
+     */
     pdf_save( pdf, PDF_filename );
+
+/**********************
+ * Clean up and free memory
+ */
+cleanup:
     pdf_destroy( pdf );
+    free( pdf_page_array );
     return 0;
 }
