@@ -1,5 +1,43 @@
 RELEASE NOTES
 =============
+v0.41
+-----------------------
+## Notable New Features
+* **SYSTEM PDF REPORT** "In response to the needs of organizations & individuals refurbishing and reselling hardware, nwipe has expanded its reporting capabilities. In addition to individual drive certificates, nwipe can now generate a single system-focused erasure certificate. This document consolidates the erasure status and SMART data of all installed drives and captures essential SMBIOS/DMI identifiers to ensure full auditability of the host, whether server, desktop or laptop." Note: The population of SMBIOS/DMI fields varies by manufacturer. While tier-one brands generally ensure high data integrity, some hardware vendors may provide incomplete or unpopulated data fields." Thanks @PartialVolume #717 #724 #752 #753 #754 Example: [nwipe_system_report (anonymized)](https://github.com/user-attachments/files/27805435/nwipe_system_report_2026-05-13-01-45-44_host-UUID-XXXXXXXXXXXXXXX_host-SN-XXXXXXXXXXXXXXX.pdf)
+
+
+## What's Changed (auto generated list of all changes)
+* Restructure PDF source files. We now have a separate source file for each type of PDF created. by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/717
+* Major bugfixes & bad block/error handling by @desertwitch in https://github.com/martijnvanbrummelen/nwipe/pull/720
+* Add optional non-fatal handling of block write errors in forward passes by @Knogle in https://github.com/martijnvanbrummelen/nwipe/pull/685
+* Merge pull request #717 from PartialVolume/restructure_PDF_source_files by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/723
+* Initial work on system multi disc PDF, work in progress by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/724
+* Update installation instructions in README.md by @TheSuperGiant in https://github.com/martijnvanbrummelen/nwipe/pull/726
+* Reverse wiping, verification skip bad blocks & minor fixes by @desertwitch in https://github.com/martijnvanbrummelen/nwipe/pull/722
+* PRNGs: Two new PRNGs + GUI Selection Screen by @desertwitch in https://github.com/martijnvanbrummelen/nwipe/pull/727
+* CI unit testing for nwipe by @Knogle in https://github.com/martijnvanbrummelen/nwipe/pull/725
+* Tidy up display_help function by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/730
+* Add the .clang-format-ignore file by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/731
+* Bump minor version as a test of .clang-format-ignore by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/732
+* Minor formatting fixes by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/733
+* Some additional help info for display_help() by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/734
+* Fix v0.40 regression (failing -std=c99, Fedora packaging) by @desertwitch in https://github.com/martijnvanbrummelen/nwipe/pull/736
+* ci: add workflows for -std=c99/c11/c17 by @desertwitch in https://github.com/martijnvanbrummelen/nwipe/pull/737
+* Added contribution guidelines, especially regarding the use of AI agents by @Knogle in https://github.com/martijnvanbrummelen/nwipe/pull/739
+* CI: Test `--directio` and `--cachedio` I/O modes by @desertwitch in https://github.com/martijnvanbrummelen/nwipe/pull/740
+* I/O direction selection (--reverse) by @desertwitch in https://github.com/martijnvanbrummelen/nwipe/pull/735
+* feat: introduce --force for in use devices by @desertwitch in https://github.com/martijnvanbrummelen/nwipe/pull/742
+* Device geometry, scattered I/O, verification error paths by @desertwitch in https://github.com/martijnvanbrummelen/nwipe/pull/743
+* fix(gui): do not select disabled devices by @desertwitch in https://github.com/martijnvanbrummelen/nwipe/pull/751
+* System pdf by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/752
+* Add system host UUID and serial number by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/753
+* Add smbios dmi page to system pdf by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/754
+
+## New Contributors
+* @TheSuperGiant made their first contribution in https://github.com/martijnvanbrummelen/nwipe/pull/726
+
+**Full Changelog**: https://github.com/martijnvanbrummelen/nwipe/compare/v0.40...v0.41
+
 v0.40
 -----------------------
 includes the following changes:
