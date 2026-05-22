@@ -759,7 +759,9 @@ u64 nwipe_read_dco_real_max_sectors( char* device )
      */
     char sense_buffer_hex[( SENSE_BUFFER_SIZE * 3 ) + 1];
 
-    int i, i2;  // index
+    /* Zero the hex output buffer */
+    memset( sense_buffer_hex, 0, sizeof( sense_buffer_hex ) );
+
     int fd;  // file descripter
 
     if( ( fd = open( device, O_RDWR ) ) < 0 )
@@ -785,15 +787,30 @@ u64 nwipe_read_dco_real_max_sectors( char* device )
 
     if( ioctl( fd, SG_IO, &io_hdr ) < 0 )
     {
-        nwipe_log( NWIPE_LOG_ERROR, "IOCTL command failed retrieving DCO" );
-        i2 = 0;
-        for( i = 0, i2 = 0; i < SENSE_BUFFER_SIZE; i++, i2 += 3 )
+        nwipe_log( NWIPE_LOG_ERROR, "IOCTL command failed retrieving DCO - %s", strerror( errno ) );
+
+        /* Only display sense data if error was not ENNOTY ( Inappropriate ioctl for device ) */
+        if( errno != ENOTTY )
         {
-            /* IOCTL returned an error */
-            snprintf( &sense_buffer_hex[i2], sizeof( sense_buffer_hex ), "%02x ", sense_buffer[i] );
+            char* dst = sense_buffer_hex;
+            char* end = sense_buffer_hex + sizeof( sense_buffer_hex );
+
+            for( int i = 0; i < SENSE_BUFFER_SIZE; i++ )
+            {
+                // Guarantee we never write past the physical end of sense_buffer_hex
+                // We need 4 bytes of breathing room: 3 for "%02x " and 1 for '\0'
+                if( end - dst < 4 )
+                {
+                    dst = 0;
+                    break;
+                }
+
+                // Advance the pointer by exactly 3 bytes on every successful write
+                dst += snprintf( dst, end - dst, "%02x ", sense_buffer[i] );
+            }
+
+            nwipe_log( NWIPE_LOG_DEBUG, "Sense buffer from failed DCO identify cmd:%s", sense_buffer_hex );
         }
-        sense_buffer_hex[i2] = 0;  // terminate string
-        nwipe_log( NWIPE_LOG_DEBUG, "Sense buffer from failed DCO identify cmd:%s", sense_buffer_hex );
         return -2;
     }
 
