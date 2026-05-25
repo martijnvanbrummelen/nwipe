@@ -76,6 +76,7 @@ typedef struct
     int PDF_preview_details;  // 0=Disable preview Org/Cust/date/time before drive selection, 1=Enable Preview
     int PDF_toggle_host_info;  // 0=Disable visibility of host Info on PDF. UUID & S/N
     int PDFtag;  // Enable display of hostID, such as UUID or serial no. on PDF report.
+    int PDF_duplex;  // Enables duplex mode, each section starts on a odd page, intentionally blank pages are inserted.
     nwipe_verify_t verify;  // A flag to indicate whether writes should be verified.
     nwipe_io_mode_t io_mode;  // Global runtime I/O mode selection (auto/direct/cached), note in auto mode each
                               // drive may use a different I/O mode if directIO isn't supported on a given drive.

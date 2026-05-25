@@ -452,6 +452,18 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
     /***************************************
      * Add SMBIOS/DMI host data page
      */
+
+    /* If the command line option --pdfduplex is active, insert a blank odd (recto) page before an even (verso) page. */
+    if( nwipe_options.PDF_duplex == 1 )
+    {
+        if( !( ( page_number + 1 ) % 2 ) )
+        {
+            pdf_add_blank_page(
+                pdf, &page_number, INTENTIONALLY_BLANK_X, INTENTIONALLY_BLANK_Y, PDF_TYPE_MULTI_DISC, NULL, d );
+        }
+    }
+
+    /* Write the SMBIOS/DMI info page to the PDF */
     pdf_add_text_host_info_page(
         pdf, &page_number, LEFT_MARGIN_TEXT, TOP_OF_TEXT_WINDOW_Y, PDF_TYPE_MULTI_DISC, NULL, d );
 
@@ -460,6 +472,18 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
      */
     for( i = 0; i < nwipe_misc_thread_data->nwipe_selected; i++ )
     {
+        /* If the command line option --pdfduplex is active, insert a blank odd (recto) page before an even (verso)
+         * page. */
+        if( nwipe_options.PDF_duplex == 1 )
+        {
+            if( !( ( page_number + 1 ) % 2 ) )
+            {
+                pdf_add_blank_page(
+                    pdf, &page_number, INTENTIONALLY_BLANK_X, INTENTIONALLY_BLANK_Y, PDF_TYPE_MULTI_DISC, NULL, d );
+            }
+        }
+
+        /* Write the smart data for a selected drive */
         result = nwipe_get_smart_data( d, PDF_TYPE_MULTI_DISC, &page_number, c[i] );
         if( result != 0 )
         {
