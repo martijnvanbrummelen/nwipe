@@ -40,6 +40,10 @@
 #define LEFT_MARGIN_TEXT 60
 #define LEFT_MARGIN_SMART_DATA 50
 
+#define INTENTIONALLY_BLANK_X 150
+#define INTENTIONALLY_BLANK_Y 400
+#define INTENTIONALLY_BLANK_TEXT_SIZE 18
+
 #define TOP_OF_TEXT_WINDOW_Y 630
 #define START_OF_SMART_DATA_TEXT_Y_MULTIDISC 608
 
@@ -146,5 +150,17 @@ void pdf_add_text_host_info_page( void*,
                                   size_t,
                                   nwipe_context_t* c,
                                   nwipe_misc_thread_data_t* d );
+/**
+ * Insert an intenionally blank page for duplex printing
+ * @param pointer to PDF document
+ * @param pointer to page number
+ * @param text xoffset
+ * @param text yoffset
+ * @param PDF type, PDF_TYPE_SINGLE_DISC or PDF_TYPE_MULTI_DISC
+ * @param pointer to drive context structure
+ * @param pointer to miscellaneous data structure
+ * @return
+ */
+void pdf_add_blank_page( void*, size_t*, float, float, size_t, nwipe_context_t* c, nwipe_misc_thread_data_t* d );
 
 #endif /* CREATE_PDF_H_ */

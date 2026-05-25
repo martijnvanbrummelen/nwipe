@@ -486,6 +486,19 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr 
     }
     pdf_set_font( pdf, "Helvetica" );
 
+    /**********************************
+     * If the command line option --pdfduplex is active, insert a blank odd (recto) page
+     * before an even (verso) page.
+     */
+    if( nwipe_options.PDF_duplex == 1 )
+    {
+        if( !( ( page_number + 1 ) % 2 ) )
+        {
+            pdf_add_blank_page(
+                pdf, &page_number, INTENTIONALLY_BLANK_X, INTENTIONALLY_BLANK_Y, PDF_TYPE_SINGLE_DISC, c, d );
+        }
+    }
+
     /***************************************
      * Populate subsequent pages with smart data
      */

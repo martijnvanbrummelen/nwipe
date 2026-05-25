@@ -150,6 +150,9 @@ int nwipe_options_parse( int argc, char** argv )
         /* Enables a field on the PDF that holds a tag that identifies the host computer */
         { "pdftag", no_argument, 0, 0 },
 
+        /* Enables PDF duplex mode where each new section starts on a odd (recto) page */
+        { "pdfduplex", no_argument, 0, 0 },
+
         /* Display program version. */
         { "verbose", no_argument, 0, 0 },
 
@@ -204,6 +207,7 @@ int nwipe_options_parse( int argc, char** argv )
     nwipe_options.noabort_block_errors = 0;
     nwipe_options.PDF_toggle_host_info = 0; /* Default: host visibility on PDF disabled */
     nwipe_options.PDFtag = 0;
+    nwipe_options.PDF_duplex = 0;  // 0 = duplex switched off, 1 = on.
     memset( nwipe_options.logfile, '\0', sizeof( nwipe_options.logfile ) );
     memset( nwipe_options.PDFreportpath, '\0', sizeof( nwipe_options.PDFreportpath ) );
     strncpy( nwipe_options.PDFreportpath, ".", 2 );
@@ -656,6 +660,12 @@ int nwipe_options_parse( int argc, char** argv )
                 if( strcmp( nwipe_options_long[i].name, "pdftag" ) == 0 )
                 {
                     nwipe_options.PDFtag = 1;
+                    break;
+                }
+
+                if( strcmp( nwipe_options_long[i].name, "pdfduplex" ) == 0 )
+                {
+                    nwipe_options.PDF_duplex = 1;
                     break;
                 }
 

@@ -960,3 +960,34 @@ void pdf_add_text_host_info_page( void* pdf,
         yoff -= 12;
     }
 }
+
+void pdf_add_blank_page( void* pdf,
+                         size_t* page_number,
+                         float xoff,
+                         float yoff,
+                         size_t pdf_type,
+                         nwipe_context_t* c,
+                         nwipe_misc_thread_data_t* d )
+{
+    char page_title[50];
+
+    /* Create a new page */
+    ( *page_number )++;
+    pdf_append_page_and_update_index( pdf, *page_number );
+
+    /* Create the header and footer for this host data page */
+    snprintf( page_title, sizeof( page_title ), "Page %zu - Intentionally Blank", *page_number );
+    pdf_header_footer_text( d, c, page_title, pdf_type, PDF_PAGE_ERASURE_DATA );
+    pdf_set_font( pdf, "Courier-Bold" );
+
+    pdf_add_text( pdf, NULL, "Page Intentionally Blank", INTENTIONALLY_BLANK_TEXT_SIZE, xoff, yoff, PDF_BLACK );
+
+    /* Display the appropriate status icon (green tick, red cross, tick with exclamation) for
+     * the single disk PDF. For multi disc PDFs the status icon is written upon completion
+     * of the entire PDF within the create_system_multidisc_pdf() function.
+     */
+    if( pdf_type == PDF_TYPE_SINGLE_DISC )
+    {
+        pdf_display_status_icon( PDF_TYPE_SINGLE_DISC, NULL );
+    }
+}
