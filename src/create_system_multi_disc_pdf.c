@@ -355,20 +355,21 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
         /********
          * Errors
          */
-        pdf_add_text( pdf, NULL, "Errors(pass/sync/verify):", TEXT_SIZE_DATA, 300, yoffset, PDF_GRAY );
+        pdf_add_text( pdf, NULL, "Errors(pass/sync/verify/retries):", TEXT_SIZE_DATA, 300, yoffset, PDF_GRAY );
         snprintf( errors,
                   sizeof( errors ),
-                  "%llu/%llu/%llu",
+                  "%llu/%llu/%llu/%llu",
                   c[i]->pass_errors,
                   c[i]->fsyncdata_errors,
-                  c[i]->verify_errors );
-        if( c[i]->pass_errors != 0 || c[i]->fsyncdata_errors != 0 || c[i]->verify_errors != 0 )
+                  c[i]->verify_errors,
+                  c[i]->io_retries );
+        if( c[i]->pass_errors != 0 || c[i]->fsyncdata_errors != 0 || c[i]->verify_errors != 0 || c[i]->io_retries != 0 )
         {
-            pdf_add_text( pdf, NULL, errors, TEXT_SIZE_DATA, 450, yoffset, PDF_RED );
+            pdf_add_text( pdf, NULL, errors, TEXT_SIZE_DATA, 500, yoffset, PDF_RED );
         }
         else
         {
-            pdf_add_text( pdf, NULL, errors, TEXT_SIZE_DATA, 450, yoffset, PDF_DARK_GREEN );
+            pdf_add_text( pdf, NULL, errors, TEXT_SIZE_DATA, 500, yoffset, PDF_DARK_GREEN );
         }
 
         /* ************
