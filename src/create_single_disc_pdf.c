@@ -402,16 +402,22 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr 
     /********
      * Errors
      */
-    pdf_add_text( pdf, NULL, "Errors(pass/sync/verify):", 12, 60, 190, PDF_GRAY );
+    pdf_add_text( pdf, NULL, "Errors(pass/sync/verify/retries):", 12, 60, 190, PDF_GRAY );
     pdf_set_font( pdf, "Helvetica-Bold" );
-    snprintf( errors, sizeof( errors ), "%llu/%llu/%llu", c->pass_errors, c->fsyncdata_errors, c->verify_errors );
-    if( c->pass_errors != 0 || c->fsyncdata_errors != 0 || c->verify_errors != 0 )
+    snprintf( errors,
+              sizeof( errors ),
+              "%llu/%llu/%llu/%llu",
+              c->pass_errors,
+              c->fsyncdata_errors,
+              c->verify_errors,
+              c->io_retries );
+    if( c->pass_errors != 0 || c->fsyncdata_errors != 0 || c->verify_errors != 0 || c->io_retries != 0 )
     {
-        pdf_add_text( pdf, NULL, errors, text_size_data, 195, 190, PDF_RED );
+        pdf_add_text( pdf, NULL, errors, text_size_data, 230, 190, PDF_RED );
     }
     else
     {
-        pdf_add_text( pdf, NULL, errors, text_size_data, 195, 190, PDF_DARK_GREEN );
+        pdf_add_text( pdf, NULL, errors, text_size_data, 230, 190, PDF_DARK_GREEN );
     }
     pdf_set_font( pdf, "Helvetica" );
 

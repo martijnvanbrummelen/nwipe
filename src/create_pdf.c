@@ -599,7 +599,7 @@ void pdf_add_text_status_of_erasure( float text_xoff,
     else
     {
         if( !strcmp( c->wipe_status_txt, "ERASED" )
-            && ( c->HPA_status == HPA_ENABLED || c->HPA_status == HPA_UNKNOWN ) )
+            && ( c->HPA_status == HPA_ENABLED || c->HPA_status == HPA_UNKNOWN || c->io_retries != 0 ) )
         {
             pdf_add_ellipse(
                 pdf, NULL, ellipse_xoff, ellipse_yoff, ellipse_xradius, ellipse_yradius, 2, PDF_RED, PDF_BLACK );
