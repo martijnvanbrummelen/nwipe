@@ -578,7 +578,7 @@ void pdf_add_text_status_of_erasure( float text_xoff,
                                      float angle,
                                      nwipe_context_t* c )
 {
-    if( !strcmp( c->wipe_status_txt, "ERASED" )
+    if( !strcmp( c->wipe_status_txt, "ERASED" ) && c->io_retries == 0
         && ( c->HPA_status == HPA_DISABLED || c->HPA_status == HPA_NOT_APPLICABLE || c->device_type == NWIPE_DEVICE_NVME
              || c->device_type == NWIPE_DEVICE_VIRT ) )
     {
