@@ -129,7 +129,7 @@ void display_help()
     BHCYN \
     "      --prng=opencl_philox_prng\n" reset \
     "        Experimental GPU-backed Philox4x32 PRNG via OpenCL.\n" \
-    "        Requires an OpenCL-enabled build and a usable GPU device.\n\n" \
+    "        Requires an OpenCL build and a GPU/accelerator runtime.\n\n" \
     BHCYN \
     "      --prng=auto|default\n" \
     "        auto" reset " - Automatically benchmark all available PRNGs at startup\n" \

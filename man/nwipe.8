@@ -192,8 +192,9 @@ cryptographically strong stream generator. It is seeded via
 and requires kernel crypto support for AES\-CTR.
 .IP
 \fBopencl_philox_prng\fR uses an experimental OpenCL backend to run a
-counter-based Philox4x32 generator on a GPU. It requires an OpenCL-enabled
-build and a usable GPU runtime.
+counter-based Philox4x32 generator on a GPU or accelerator. It requires an
+OpenCL-enabled build and a usable GPU/accelerator runtime. CPU-only OpenCL
+runtimes are not used for this backend.
 .TP
 \fB\-q\fR, \fB\-\-quiet\fR
 Anonymize serial numbers, GUI & logs display:

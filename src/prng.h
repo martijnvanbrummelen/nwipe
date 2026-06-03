@@ -77,6 +77,8 @@ const nwipe_prng_t* nwipe_prng_select_fastest( double seconds_per_prng,
                                                nwipe_prng_bench_result_t* results,
                                                size_t results_count );
 
+void nwipe_prng_free_state( const nwipe_prng_t* prng, void** state );
+
 /* Mersenne Twister prototypes. */
 int nwipe_twister_init( NWIPE_PRNG_INIT_SIGNATURE );
 int nwipe_twister_read( NWIPE_PRNG_READ_SIGNATURE );
@@ -107,6 +109,7 @@ int nwipe_aes_ctr_prng_read( NWIPE_PRNG_READ_SIGNATURE );
 int nwipe_opencl_philox_prng_init( NWIPE_PRNG_INIT_SIGNATURE );
 int nwipe_opencl_philox_prng_read( NWIPE_PRNG_READ_SIGNATURE );
 int nwipe_opencl_philox_prng_available( void );
+void nwipe_opencl_philox_prng_free( void** state );
 
 /* ChaCha20 stream cipher CSPRNG */
 int nwipe_chacha20_prng_init( NWIPE_PRNG_INIT_SIGNATURE );

@@ -72,6 +72,23 @@ static const nwipe_prng_t* all_prngs[] = {
     &nwipe_chacha20_prng,
 };
 
+void nwipe_prng_free_state( const nwipe_prng_t* prng, void** state )
+{
+    if( state == NULL || *state == NULL )
+    {
+        return;
+    }
+
+    if( prng == &nwipe_opencl_philox_prng )
+    {
+        nwipe_opencl_philox_prng_free( state );
+        return;
+    }
+
+    free( *state );
+    *state = NULL;
+}
+
 /* Print given number of bytes from unsigned integer number to a byte stream buffer starting with low-endian. */
 static inline void u32_to_buffer( u8* restrict buffer, u32 val, const int len )
 {
@@ -936,8 +953,7 @@ static void nwipe_prng_bench_one( const nwipe_prng_t* prng,
     if( rc != 0 )
     {
         out->rc = rc;
-        if( state )
-            free( state );
+        nwipe_prng_free_state( prng, &state );
         return;
     }
 
@@ -970,8 +986,7 @@ static void nwipe_prng_bench_one( const nwipe_prng_t* prng,
     if( out->rc == 0 && out->seconds > 0.0 )
         out->mbps = ( (double) out->bytes / ( 1024.0 * 1024.0 ) ) / out->seconds;
 
-    if( state )
-        free( state );
+    nwipe_prng_free_state( prng, &state );
 }
 
 /* --- benchmark all with live current-PRNG spinner ----------------------- */

@@ -1,3 +1,7 @@
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200809L
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -10,12 +14,23 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 #ifdef HAVE_OPENCL
+#ifndef CL_USE_DEPRECATED_OPENCL_1_2_APIS
+#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
+#endif
 #if defined( HAVE_OPENCL_OPENCL_H )
 #include <OpenCL/opencl.h>
 #else
 #include <CL/cl.h>
+#endif
+
+#ifndef CL_PLATFORM_NOT_FOUND_KHR
+#define CL_PLATFORM_NOT_FOUND_KHR -1001
 #endif
 #endif
 
@@ -40,6 +55,20 @@ typedef struct nwipe_opencl_philox_state_s
 } nwipe_opencl_philox_state_t;
 
 #ifdef HAVE_OPENCL
+#define NWIPE_OPENCL_DEVICE_BENCH_BYTES ( 8u * 1024u * 1024u )
+#define NWIPE_OPENCL_DEVICE_BENCH_ROUNDS 2
+
+typedef struct nwipe_opencl_candidate_s
+{
+    cl_platform_id platform;
+    cl_device_id device;
+    cl_device_type type;
+    cl_uint compute_units;
+    cl_uint clock_mhz;
+    double mbps;
+    char name[128];
+} nwipe_opencl_candidate_t;
+
 static const char* nwipe_opencl_philox_kernel_source =
     "__kernel void philox4x32_10(__global uchar *out, ulong block_base, uint key0, uint key1, uint nonce0, uint "
     "nonce1)\n"
@@ -110,6 +139,28 @@ static void nwipe_seed_to_key_nonce( nwipe_entropy_t* seed, uint32_t key[2], uin
     nonce[1] = nwipe_load_le32( folded + 12 );
 }
 
+static double nwipe_opencl_monotonic_seconds( void )
+{
+    struct timespec ts;
+    clock_gettime( CLOCK_MONOTONIC, &ts );
+    return (double) ts.tv_sec + (double) ts.tv_nsec / 1000000000.0;
+}
+
+static void nwipe_opencl_device_name( cl_device_id device, char* out, size_t out_size )
+{
+    if( out_size == 0 )
+    {
+        return;
+    }
+
+    out[0] = '\0';
+    if( clGetDeviceInfo( device, CL_DEVICE_NAME, out_size, out, NULL ) != CL_SUCCESS || out[0] == '\0' )
+    {
+        snprintf( out, out_size, "unknown OpenCL device" );
+    }
+    out[out_size - 1] = '\0';
+}
+
 static void nwipe_opencl_release_state( nwipe_opencl_philox_state_t* state )
 {
     if( !state )
@@ -148,15 +199,24 @@ static void nwipe_opencl_release_state( nwipe_opencl_philox_state_t* state )
     state->output_capacity = 0;
 }
 
-static int nwipe_opencl_pick_device( cl_platform_id* out_platform, cl_device_id* out_device )
+static int nwipe_opencl_collect_gpu_devices( nwipe_opencl_candidate_t** out_candidates, size_t* out_count )
 {
     cl_int err;
     cl_uint platform_count = 0;
     cl_platform_id* platforms = NULL;
+    nwipe_opencl_candidate_t* candidates = NULL;
+    size_t candidate_count = 0;
     int rc = -1;
 
+    *out_candidates = NULL;
+    *out_count = 0;
+
     err = clGetPlatformIDs( 0, NULL, &platform_count );
-    if( err != CL_SUCCESS || platform_count == 0 )
+    if( err == CL_PLATFORM_NOT_FOUND_KHR || platform_count == 0 )
+    {
+        return -1;
+    }
+    if( err != CL_SUCCESS )
     {
         return -1;
     }
@@ -175,26 +235,130 @@ static int nwipe_opencl_pick_device( cl_platform_id* out_platform, cl_device_id*
 
     for( cl_uint i = 0; i < platform_count; ++i )
     {
+        const cl_device_type wanted = CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_ACCELERATOR;
         cl_uint device_count = 0;
-        err = clGetDeviceIDs( platforms[i], CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_ACCELERATOR, 0, NULL, &device_count );
+        cl_device_id* devices = NULL;
+
+        err = clGetDeviceIDs( platforms[i], wanted, 0, NULL, &device_count );
         if( err != CL_SUCCESS || device_count == 0 )
         {
             continue;
         }
 
-        err = clGetDeviceIDs(
-            platforms[i], CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_ACCELERATOR, 1, out_device, &device_count );
-        if( err == CL_SUCCESS )
+        devices = (cl_device_id*) calloc( device_count, sizeof( cl_device_id ) );
+        if( !devices )
         {
-            *out_platform = platforms[i];
-            rc = 0;
-            break;
+            goto out;
         }
+
+        err = clGetDeviceIDs( platforms[i], wanted, device_count, devices, NULL );
+        if( err != CL_SUCCESS )
+        {
+            free( devices );
+            continue;
+        }
+
+        for( cl_uint j = 0; j < device_count; ++j )
+        {
+            cl_bool available = CL_FALSE;
+            cl_bool compiler_available = CL_FALSE;
+            nwipe_opencl_candidate_t* grown;
+
+            if( clGetDeviceInfo( devices[j], CL_DEVICE_AVAILABLE, sizeof( available ), &available, NULL )
+                    != CL_SUCCESS
+                || available != CL_TRUE )
+            {
+                continue;
+            }
+            if( clGetDeviceInfo(
+                    devices[j], CL_DEVICE_COMPILER_AVAILABLE, sizeof( compiler_available ), &compiler_available, NULL )
+                    != CL_SUCCESS
+                || compiler_available != CL_TRUE )
+            {
+                continue;
+            }
+
+            grown =
+                (nwipe_opencl_candidate_t*) realloc( candidates, ( candidate_count + 1 ) * sizeof( *candidates ) );
+            if( !grown )
+            {
+                free( devices );
+                goto out;
+            }
+            candidates = grown;
+
+            memset( &candidates[candidate_count], 0, sizeof( candidates[candidate_count] ) );
+            candidates[candidate_count].platform = platforms[i];
+            candidates[candidate_count].device = devices[j];
+            clGetDeviceInfo(
+                devices[j], CL_DEVICE_TYPE, sizeof( candidates[candidate_count].type ), &candidates[candidate_count].type, NULL );
+            clGetDeviceInfo( devices[j],
+                             CL_DEVICE_MAX_COMPUTE_UNITS,
+                             sizeof( candidates[candidate_count].compute_units ),
+                             &candidates[candidate_count].compute_units,
+                             NULL );
+            clGetDeviceInfo( devices[j],
+                             CL_DEVICE_MAX_CLOCK_FREQUENCY,
+                             sizeof( candidates[candidate_count].clock_mhz ),
+                             &candidates[candidate_count].clock_mhz,
+                             NULL );
+            nwipe_opencl_device_name( devices[j],
+                                      candidates[candidate_count].name,
+                                      sizeof( candidates[candidate_count].name ) );
+            candidate_count++;
+        }
+
+        free( devices );
+    }
+
+    if( candidate_count > 0 )
+    {
+        *out_candidates = candidates;
+        *out_count = candidate_count;
+        candidates = NULL;
+        rc = 0;
     }
 
 out:
+    free( candidates );
     free( platforms );
     return rc;
+}
+
+static int nwipe_opencl_build_program( nwipe_opencl_philox_state_t* state );
+
+static int nwipe_opencl_create_backend( nwipe_opencl_philox_state_t* state,
+                                        cl_platform_id platform,
+                                        cl_device_id device )
+{
+    cl_int err;
+    const cl_context_properties context_props[] = { CL_CONTEXT_PLATFORM, (cl_context_properties) platform, 0 };
+
+    state->platform = platform;
+    state->device = device;
+    state->context = clCreateContext( context_props, 1, &state->device, NULL, NULL, &err );
+    if( err != CL_SUCCESS || !state->context )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "OpenCL Philox: clCreateContext failed (err=%d)", err );
+        nwipe_opencl_release_state( state );
+        return -1;
+    }
+
+    state->queue = clCreateCommandQueue( state->context, state->device, 0, &err );
+    if( err != CL_SUCCESS || !state->queue )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "OpenCL Philox: clCreateCommandQueue failed (err=%d)", err );
+        nwipe_opencl_release_state( state );
+        return -1;
+    }
+
+    if( nwipe_opencl_build_program( state ) != 0 )
+    {
+        nwipe_opencl_release_state( state );
+        return -1;
+    }
+
+    return 0;
 }
 
 static int nwipe_opencl_build_program( nwipe_opencl_philox_state_t* state )
@@ -318,21 +482,175 @@ static int nwipe_opencl_generate_blocks( nwipe_opencl_philox_state_t* state, uns
     state->block_counter += blocks;
     return 0;
 }
+
+static unsigned long long nwipe_opencl_device_score( const nwipe_opencl_candidate_t* candidate )
+{
+    unsigned long long score = 1;
+
+    if( candidate->compute_units > 0 )
+    {
+        score *= candidate->compute_units;
+    }
+    if( candidate->clock_mhz > 0 )
+    {
+        score *= candidate->clock_mhz;
+    }
+    if( candidate->type & CL_DEVICE_TYPE_GPU )
+    {
+        score *= 2;
+    }
+
+    return score;
+}
+
+static double nwipe_opencl_benchmark_candidate( const nwipe_opencl_candidate_t* candidate )
+{
+    nwipe_opencl_philox_state_t state;
+    unsigned char* buffer;
+    const size_t bytes = NWIPE_OPENCL_DEVICE_BENCH_BYTES;
+    const size_t blocks = bytes / SIZE_OF_OPENCL_PHILOX_PRNG;
+    double best_mbps = 0.0;
+
+    memset( &state, 0, sizeof( state ) );
+    state.key[0] = 0x243F6A88U;
+    state.key[1] = 0x85A308D3U;
+    state.nonce[0] = 0x13198A2EU;
+    state.nonce[1] = 0x03707344U;
+
+    buffer = (unsigned char*) malloc( bytes );
+    if( !buffer )
+    {
+        return 0.0;
+    }
+
+    if( nwipe_opencl_create_backend( &state, candidate->platform, candidate->device ) != 0 )
+    {
+        free( buffer );
+        return 0.0;
+    }
+
+    if( nwipe_opencl_generate_blocks( &state, buffer, blocks ) != 0 )
+    {
+        nwipe_opencl_release_state( &state );
+        free( buffer );
+        return 0.0;
+    }
+
+    for( int i = 0; i < NWIPE_OPENCL_DEVICE_BENCH_ROUNDS; ++i )
+    {
+        const double t0 = nwipe_opencl_monotonic_seconds();
+        const int rc = nwipe_opencl_generate_blocks( &state, buffer, blocks );
+        const double seconds = nwipe_opencl_monotonic_seconds() - t0;
+
+        if( rc != 0 )
+        {
+            best_mbps = 0.0;
+            break;
+        }
+        if( seconds > 0.0 )
+        {
+            const double mbps = ( (double) bytes / ( 1024.0 * 1024.0 ) ) / seconds;
+            if( mbps > best_mbps )
+            {
+                best_mbps = mbps;
+            }
+        }
+    }
+
+    nwipe_opencl_release_state( &state );
+    free( buffer );
+    return best_mbps;
+}
+
+static int nwipe_opencl_pick_best_device( cl_platform_id* out_platform, cl_device_id* out_device )
+{
+    static int cached = 0;
+    static cl_platform_id cached_platform = NULL;
+    static cl_device_id cached_device = NULL;
+
+    nwipe_opencl_candidate_t* candidates = NULL;
+    size_t candidate_count = 0;
+    size_t best = 0;
+    double best_mbps = 0.0;
+
+    if( cached )
+    {
+        *out_platform = cached_platform;
+        *out_device = cached_device;
+        return 0;
+    }
+
+    if( nwipe_opencl_collect_gpu_devices( &candidates, &candidate_count ) != 0 || candidate_count == 0 )
+    {
+        return -1;
+    }
+
+    if( candidate_count > 1 )
+    {
+        unsigned long long best_score = 0;
+        for( size_t i = 0; i < candidate_count; ++i )
+        {
+            candidates[i].mbps = nwipe_opencl_benchmark_candidate( &candidates[i] );
+            if( candidates[i].mbps > best_mbps )
+            {
+                best = i;
+                best_mbps = candidates[i].mbps;
+            }
+
+            if( best_mbps == 0.0 )
+            {
+                const unsigned long long score = nwipe_opencl_device_score( &candidates[i] );
+                if( score > best_score )
+                {
+                    best = i;
+                    best_score = score;
+                }
+            }
+        }
+    }
+
+    cached_platform = candidates[best].platform;
+    cached_device = candidates[best].device;
+    cached = 1;
+
+    *out_platform = cached_platform;
+    *out_device = cached_device;
+
+    if( candidate_count > 1 && best_mbps > 0.0 )
+    {
+        nwipe_log( NWIPE_LOG_NOTICE,
+                   "OpenCL Philox selected device '%s' from %zu GPU/accelerator candidates (%.1f MB/s mini-bench).",
+                   candidates[best].name,
+                   candidate_count,
+                   best_mbps );
+    }
+    else
+    {
+        nwipe_log( NWIPE_LOG_NOTICE,
+                   "OpenCL Philox selected device '%s' from %zu GPU/accelerator candidate(s).",
+                   candidates[best].name,
+                   candidate_count );
+    }
+
+    free( candidates );
+    return 0;
+}
 #endif
 
 int nwipe_opencl_philox_prng_available( void )
 {
 #ifdef HAVE_OPENCL
     static int cached = -1;
-    cl_platform_id platform = NULL;
-    cl_device_id device = NULL;
+    nwipe_opencl_candidate_t* candidates = NULL;
+    size_t candidate_count = 0;
 
     if( cached != -1 )
     {
         return cached;
     }
 
-    cached = ( nwipe_opencl_pick_device( &platform, &device ) == 0 ) ? 1 : 0;
+    cached = ( nwipe_opencl_collect_gpu_devices( &candidates, &candidate_count ) == 0 && candidate_count > 0 ) ? 1 : 0;
+    free( candidates );
     return cached;
 #else
     return 0;
@@ -342,7 +660,6 @@ int nwipe_opencl_philox_prng_available( void )
 int nwipe_opencl_philox_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
 {
 #ifdef HAVE_OPENCL
-    cl_int err;
     nwipe_opencl_philox_state_t* philox_state = *state;
 
     nwipe_log( NWIPE_LOG_NOTICE, "Initialising OpenCL Philox4x32 PRNG" );
@@ -369,43 +686,14 @@ int nwipe_opencl_philox_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
         return 0;
     }
 
-    if( nwipe_opencl_pick_device( &philox_state->platform, &philox_state->device ) != 0 )
+    if( nwipe_opencl_pick_best_device( &philox_state->platform, &philox_state->device ) != 0 )
     {
-        nwipe_log( NWIPE_LOG_ERROR, "OpenCL Philox: no usable GPU/accelerator device found." );
+        nwipe_log( NWIPE_LOG_ERROR,
+                   "OpenCL Philox: no usable GPU/accelerator device found. CPU-only OpenCL runtimes are ignored." );
         return -1;
     }
 
-    philox_state->context = clCreateContext( NULL, 1, &philox_state->device, NULL, NULL, &err );
-    if( err != CL_SUCCESS || !philox_state->context )
-    {
-        nwipe_log( NWIPE_LOG_ERROR, "OpenCL Philox: clCreateContext failed (err=%d)", err );
-        nwipe_opencl_release_state( philox_state );
-        return -1;
-    }
-
-#if defined( CL_VERSION_2_0 )
-    {
-        const cl_queue_properties queue_props[] = { 0 };
-        philox_state->queue =
-            clCreateCommandQueueWithProperties( philox_state->context, philox_state->device, queue_props, &err );
-    }
-#else
-    philox_state->queue = clCreateCommandQueue( philox_state->context, philox_state->device, 0, &err );
-#endif
-    if( err != CL_SUCCESS || !philox_state->queue )
-    {
-        nwipe_log( NWIPE_LOG_ERROR, "OpenCL Philox: clCreateCommandQueue failed (err=%d)", err );
-        nwipe_opencl_release_state( philox_state );
-        return -1;
-    }
-
-    if( nwipe_opencl_build_program( philox_state ) != 0 )
-    {
-        nwipe_opencl_release_state( philox_state );
-        return -1;
-    }
-
-    return 0;
+    return nwipe_opencl_create_backend( philox_state, philox_state->platform, philox_state->device );
 #else
     (void) state;
     (void) seed;
@@ -478,4 +766,18 @@ int nwipe_opencl_philox_prng_read( NWIPE_PRNG_READ_SIGNATURE )
     nwipe_log( NWIPE_LOG_ERROR, "OpenCL Philox PRNG read requested but this build has no OpenCL support." );
     return -1;
 #endif
+}
+
+void nwipe_opencl_philox_prng_free( void** state )
+{
+    if( state == NULL || *state == NULL )
+    {
+        return;
+    }
+
+#ifdef HAVE_OPENCL
+    nwipe_opencl_release_state( (nwipe_opencl_philox_state_t*) *state );
+#endif
+    free( *state );
+    *state = NULL;
 }

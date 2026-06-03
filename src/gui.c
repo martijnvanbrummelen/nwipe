@@ -298,8 +298,7 @@ static void nwipe_gui_bench_one_prng( const nwipe_prng_t* prng,
     if( rc != 0 )
     {
         out->rc = rc;
-        if( state )
-            free( state );
+        nwipe_prng_free_state( prng, &state );
         return;
     }
 
@@ -325,8 +324,7 @@ static void nwipe_gui_bench_one_prng( const nwipe_prng_t* prng,
         out->mbps = ( (double) out->bytes / ( 1024.0 * 1024.0 ) ) / out->seconds;
     }
 
-    if( state )
-        free( state );
+    nwipe_prng_free_state( prng, &state );
 }
 
 static void nwipe_gui_trim_to_devices( const char* in, const char** out_start )
