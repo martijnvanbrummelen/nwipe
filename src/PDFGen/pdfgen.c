@@ -1,14 +1,9 @@
-/* pdfgen.c provided courtesy of https://github.com/AndreRenaud/PDFGen
- *
- * Thank You !
- */
-
 /**
  * Simple engine for creating PDF files.
  * It supports text, shapes, images etc...
  * Capable of handling millions of objects without too much performance
  * penalty.
- * Public domain license - no warrenty implied; use at your own risk.
+ * Public domain license - no warranty implied; use at your own risk.
  */
 
 /**
@@ -118,6 +113,7 @@ typedef SSIZE_T ssize_t;
 #include <ctype.h>
 #include <errno.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <locale.h>
 #include <math.h>
 #include <stdarg.h>
@@ -143,6 +139,8 @@ typedef SSIZE_T ssize_t;
 #define snprintf _snprintf
 #define strcasecmp _stricmp
 #define strncasecmp _strnicmp
+#define fileno _fileno
+#define fstat _fstat
 #ifdef stat
 #undef stat
 #endif
@@ -210,6 +208,15 @@ static const char png_chunk_palette[] = "PLTE";
 static const char png_chunk_data[] = "IDAT";
 static const char png_chunk_end[] = "IEND";
 
+// PDF standard fonts
+static const char *valid_fonts[] = {
+    "Times-Roman",       "Times-Bold",
+    "Times-Italic",      "Times-BoldItalic",
+    "Helvetica",         "Helvetica-Bold",
+    "Helvetica-Oblique", "Helvetica-BoldOblique",
+    "Courier",           "Courier-Bold",
+    "Courier-Oblique",   "Courier-BoldOblique"};
+
 typedef struct pdf_object pdf_object;
 
 enum {
@@ -258,7 +265,10 @@ struct pdf_object {
             struct pdf_object *parent;
             struct flexarray children;
         } bookmark;
-        struct dstr stream;
+        struct {
+            struct pdf_object *page;
+            struct dstr stream;
+        } stream;
         struct {
             float width;
             float height;
@@ -351,7 +361,7 @@ static int bin_offset[] = {
 static inline int flexarray_get_bin(const struct flexarray *flex, int index)
 {
     (void)flex;
-    for (size_t i = 0; i < ARRAY_SIZE(bin_offset); i++)
+    for (int i = 0; i < (int)ARRAY_SIZE(bin_offset); i++)
         if (index < bin_offset[i])
             return i - 1;
     return -1;
@@ -642,7 +652,7 @@ static void pdf_object_destroy(struct pdf_object *object)
     switch (object->type) {
     case OBJ_stream:
     case OBJ_image:
-        dstr_free(&object->stream);
+        dstr_free(&object->stream.stream);
         break;
     case OBJ_page:
         flexarray_clear(&object->page.children);
@@ -827,6 +837,22 @@ int pdf_set_font(struct pdf_doc *pdf, const char *font)
 {
     struct pdf_object *obj;
     int last_index = 0;
+    bool found = false;
+
+    // PDF requires one of the 14 standard fonts to be used, so check that
+    // the font name is valid and canonicalise it to the correct case if it is
+    for (size_t i = 0; i < sizeof(valid_fonts) / sizeof(valid_fonts[0]);
+         i++) {
+        if (strcasecmp(font, valid_fonts[i]) == 0) {
+            font = valid_fonts[i];
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        return pdf_set_err(pdf, -EINVAL, "Invalid font name '%s'", font);
+    }
 
     /* See if we've used this font before */
     for (obj = pdf_find_first_object(pdf, OBJ_font); obj; obj = obj->next) {
@@ -863,6 +889,24 @@ struct pdf_object *pdf_append_page(struct pdf_doc *pdf)
     page->page.height = pdf->height;
 
     return page;
+}
+
+struct pdf_object *pdf_get_page(struct pdf_doc *pdf, int page_number)
+{
+    if (page_number <= 0) {
+        pdf_set_err(pdf, -EINVAL, "page number must be >= 1");
+        return NULL;
+    }
+
+    for (struct pdf_object *obj = pdf_find_first_object(pdf, OBJ_page); obj;
+         obj = obj->next, page_number--) {
+        if (page_number == 1) {
+            return obj;
+        }
+    }
+
+    pdf_set_err(pdf, -EINVAL, "no such page");
+    return NULL;
 }
 
 int pdf_page_set_size(struct pdf_doc *pdf, struct pdf_object *page,
@@ -910,7 +954,8 @@ static int pdf_save_object(struct pdf_doc *pdf, FILE *fp, int index)
     switch (object->type) {
     case OBJ_stream:
     case OBJ_image: {
-        fwrite(dstr_data(&object->stream), dstr_len(&object->stream), 1, fp);
+        fwrite(dstr_data(&object->stream.stream),
+               dstr_len(&object->stream.stream), 1, fp);
         break;
     }
     case OBJ_info: {
@@ -935,7 +980,7 @@ static int pdf_save_object(struct pdf_doc *pdf, FILE *fp, int index)
 
     case OBJ_page: {
         struct pdf_object *pages = pdf_find_first_object(pdf, OBJ_pages);
-        struct pdf_object *image = pdf_find_first_object(pdf, OBJ_image);
+        bool printed_xobjects = false;
 
         fprintf(fp,
                 "<<\r\n"
@@ -959,13 +1004,19 @@ static int pdf_save_object(struct pdf_doc *pdf, FILE *fp, int index)
         }
         fprintf(fp, "    >>\r\n");
 
-        if (image) {
-            fprintf(fp, "    /XObject <<");
-            for (; image; image = image->next)
+        for (struct pdf_object *image = pdf_find_first_object(pdf, OBJ_image);
+             image; image = image->next) {
+            if (image->stream.page == object) {
+                if (!printed_xobjects) {
+                    fprintf(fp, "    /XObject <<");
+                    printed_xobjects = true;
+                }
                 fprintf(fp, "      /Image%d %d 0 R ", image->index,
                         image->index);
-            fprintf(fp, "    >>\r\n");
+            }
         }
+        if (printed_xobjects)
+            fprintf(fp, "    >>\r\n");
         fprintf(fp, "  >>\r\n");
 
         fprintf(fp, "  /Contents [\r\n");
@@ -1114,7 +1165,7 @@ static int pdf_save_object(struct pdf_doc *pdf, FILE *fp, int index)
                 "  /Type /Annot\r\n"
                 "  /Subtype /Link\r\n"
                 "  /Rect [%f %f %f %f]\r\n"
-                "  /Dest [%u 0 R /XYZ %f %f null]\r\n"
+                "  /Dest [%d 0 R /XYZ %f %f null]\r\n"
                 "  /Border [0 0 0]\r\n"
                 ">>\r\n",
                 object->link.llx, object->link.lly, object->link.urx,
@@ -1242,9 +1293,9 @@ static int pdf_add_stream(struct pdf_doc *pdf, struct pdf_object *page,
     if (!obj)
         return pdf->errval;
 
-    dstr_printf(&obj->stream, "<< /Length %zu >>stream\r\n", len);
-    dstr_append_data(&obj->stream, buffer, len);
-    dstr_append(&obj->stream, "\r\nendstream\r\n");
+    dstr_printf(&obj->stream.stream, "<< /Length %zu >>stream\r\n", len);
+    dstr_append_data(&obj->stream.stream, buffer, len);
+    dstr_append(&obj->stream.stream, "\r\nendstream\r\n");
 
     return flexarray_append(&page->page.children, obj);
 }
@@ -1379,43 +1430,94 @@ static int utf8_to_pdfencoding(struct pdf_doc *pdf, const char *utf8, int len,
     if (code > 255) {
         /* We support *some* minimal UTF-8 characters */
         // See Appendix D of
-        // https://www.adobe.com/content/dam/acom/en/devnet/pdf/pdfs/pdf_reference_archives/PDFReference.pdf
+        // https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/pdfreference1.7old.pdf
         // These are all in WinAnsiEncoding
         switch (code) {
-        case 0x160: // Latin Capital Letter S with Caron
+        case 0x152: // Latin Capital Ligature OE
+            *res = 0214;
+            break;
+        case 0x153: // Latin Small Ligature oe
+            *res = 0234;
+            break;
+        case 0x160: // Latin Capital Letter S with caron
             *res = 0212;
             break;
-        case 0x161: // Latin Small Letter S with Caron
+        case 0x161: // Latin Small Letter S with caron
             *res = 0232;
             break;
-        case 0x17d: // Latin Capital Letter Z with Caron
+        case 0x178: // Latin Capital Letter y with diaeresis
+            *res = 0237;
+            break;
+        case 0x17d: // Latin Capital Letter Z with caron
             *res = 0216;
             break;
-        case 0x17e: // Latin Small Letter Z with Caron
+        case 0x17e: // Latin Small Letter Z with caron
             *res = 0236;
             break;
-        case 0x2014: // emdash
+        case 0x192: // Latin Small Letter F with hook
+            *res = 0203;
+            break;
+        case 0x2c6: // Modifier Letter Circumflex Accent
+            *res = 0210;
+            break;
+        case 0x2dc: // Small Tilde
+            *res = 0230;
+            break;
+        case 0x2013: // Endash
+            *res = 0226;
+            break;
+        case 0x2014: // Emdash
             *res = 0227;
             break;
-        case 0x2018: // left single quote
+        case 0x2018: // Left Single Quote
             *res = 0221;
             break;
-        case 0x2019: // right single quote
+        case 0x2019: // Right Single Quote
             *res = 0222;
             break;
-        case 0x201c: // left double quote
+        case 0x201a: // Single low-9 Quotation Mark
+            *res = 0202;
+            break;
+        case 0x201c: // Left Double Quote
             *res = 0223;
             break;
-        case 0x201d: // right double quote
+        case 0x201d: // Right Double Quote
             *res = 0224;
+            break;
+        case 0x201e: // Double low-9 Quotation Mark
+            *res = 0204;
+            break;
+        case 0x2020: // Dagger
+            *res = 0206;
+            break;
+        case 0x2021: // Double Dagger
+            *res = 0207;
+            break;
+        case 0x2022: // Bullet
+            *res = 0225;
+            break;
+        case 0x2026: // Horizontal Ellipsis
+            *res = 0205;
+            break;
+        case 0x2030: // Per Mille Sign
+            *res = 0211;
+            break;
+        case 0x2039: // Single Left-pointing Angle Quotation Mark
+            *res = 0213;
+            break;
+        case 0x203a: // Single Right-pointing Angle Quotation Mark
+            *res = 0233;
             break;
         case 0x20ac: // Euro
             *res = 0200;
             break;
+        case 0x2122: // Trade Mark Sign
+            *res = 0231;
+            break;
         default:
             return pdf_set_err(pdf, -EINVAL,
-                               "Unsupported UTF-8 character: 0x%x 0o%o", code,
-                               code);
+                               "Unsupported UTF-8 character: 0x%x 0o%o %s",
+                               code, code, utf8);
         }
     } else {
         *res = code;
@@ -1425,7 +1527,8 @@ static int utf8_to_pdfencoding(struct pdf_doc *pdf, const char *utf8, int len,
 
 static int pdf_add_text_spacing(struct pdf_doc *pdf, struct pdf_object *page,
                                 const char *text, float size, float xoff,
-                                float yoff, uint32_t colour, float spacing)
+                                float yoff, uint32_t colour, float spacing,
+                                float angle)
 {
     int ret;
     size_t len = text ? strlen(text) : 0;
@@ -1438,7 +1541,12 @@ static int pdf_add_text_spacing(struct pdf_doc *pdf, struct pdf_object *page,
 
     dstr_append(&str, "BT ");
     dstr_printf(&str, "/GS%d gs ", alpha);
-    dstr_printf(&str, "%f %f TD ", xoff, yoff);
+    if (angle != 0) {
+        dstr_printf(&str, "%f %f %f %f %f %f Tm ", cosf(angle), sinf(angle),
+                    -sinf(angle), cosf(angle), xoff, yoff);
+    } else {
+        dstr_printf(&str, "%f %f TD ", xoff, yoff);
+    }
     dstr_printf(&str, "/F%d %f Tf ", pdf->current_font->font.index, size);
     dstr_printf(&str, "%f %f %f rg ", PDF_RGB_R(colour), PDF_RGB_G(colour),
                 PDF_RGB_B(colour));
@@ -1483,7 +1591,16 @@ int pdf_add_text(struct pdf_doc *pdf, struct pdf_object *page,
                  const char *text, float size, float xoff, float yoff,
                  uint32_t colour)
 {
-    return pdf_add_text_spacing(pdf, page, text, size, xoff, yoff, colour, 0);
+    return pdf_add_text_spacing(pdf, page, text, size, xoff, yoff, colour, 0,
+                                0);
+}
+
+int pdf_add_text_rotate(struct pdf_doc *pdf, struct pdf_object *page,
+                        const char *text, float size, float xoff, float yoff,
+                        float angle, uint32_t colour)
+{
+    return pdf_add_text_spacing(pdf, page, text, size, xoff, yoff, colour, 0,
+                                angle);
 }
 
 /* How wide is each character, in points, at size 14 */
@@ -1808,8 +1925,10 @@ int pdf_get_font_text_width(struct pdf_doc *pdf, const char *font_name,
 
 static const char *find_word_break(const char *string)
 {
+    if (!string)
+        return NULL;
     /* Skip over the actual word */
-    while (string && *string && (*string < 0 || !isspace(*string)))
+    while (*string && !isspace((unsigned char)*string))
         string++;
 
     return string;
@@ -1817,8 +1936,8 @@ static const char *find_word_break(const char *string)
 
 int pdf_add_text_wrap(struct pdf_doc *pdf, struct pdf_object *page,
                       const char *text, float size, float xoff, float yoff,
-                      uint32_t colour, float wrap_width, int align,
-                      float *height)
+                      float angle, uint32_t colour, float wrap_width,
+                      int align, float *height)
 {
     /* Move through the text string, stopping at word boundaries,
      * trying to find the longest text string we can fit in the given width
@@ -1918,7 +2037,7 @@ int pdf_add_text_wrap(struct pdf_doc *pdf, struct pdf_object *page,
 
             if (align != PDF_ALIGN_NO_WRITE) {
                 pdf_add_text_spacing(pdf, page, line, size, xoff_align, yoff,
-                                     colour, char_spacing);
+                                     colour, char_spacing, angle);
             }
 
             if (*end == ' ')
@@ -1990,7 +2109,7 @@ int pdf_add_quadratic_bezier(struct pdf_doc *pdf, struct pdf_object *page,
 }
 
 int pdf_add_custom_path(struct pdf_doc *pdf, struct pdf_object *page,
-                        struct pdf_path_operation *operations,
+                        const struct pdf_path_operation *operations,
                         int operation_count, float stroke_width,
                         uint32_t stroke_colour, uint32_t fill_colour)
 {
@@ -2056,8 +2175,8 @@ int pdf_add_ellipse(struct pdf_doc *pdf, struct pdf_object *page, float x,
     struct dstr str = INIT_DSTR;
     float lx, ly;
 
-    lx = (4.0f / 3.0f) * (M_SQRT2 - 1) * xradius;
-    ly = (4.0f / 3.0f) * (M_SQRT2 - 1) * yradius;
+    lx = (4.0f / 3.0f) * (float)(M_SQRT2 - 1) * xradius;
+    ly = (4.0f / 3.0f) * (float)(M_SQRT2 - 1) * yradius;
 
     if (!PDF_IS_TRANSPARENT(fill_colour)) {
         dstr_printf(&str, "/DeviceRGB CS\r\n");
@@ -2499,9 +2618,9 @@ static void pdf_barcode_eanupc_calc_dims(int type, float width, float height,
     *bar_ext = *x * 5;
     *bar_height =
         eanupc_dimensions[type - PDF_BARCODE_EAN13].height_bar * scale;
-    *font_size = 8.0 * scale;
-    *x_off = (width - *new_width) / 2.0;
-    *y_off = (height - *new_height) / 2.0;
+    *font_size = 8.0f * scale;
+    *x_off = (width - *new_width) / 2.0f;
+    *y_off = (height - *new_height) / 2.0f;
 }
 
 static int pdf_barcode_eanupc_ch(struct pdf_doc *pdf, struct pdf_object *page,
@@ -2519,24 +2638,24 @@ static int pdf_barcode_eanupc_ch(struct pdf_doc *pdf, struct pdf_object *page,
     for (int i = 3; i >= 0; i--) {
         int shift = (set == 1 ? 3 - i : i) * 4;
         int bar = (set == 2 && i & 0x1) || (set != 2 && (i & 0x1) == 0);
-        float width = (code >> shift) & 0xf;
+        float width = (float)((code >> shift) & 0xf);
 
         switch (ch) {
         case '1':
         case '2':
             if ((set == 0 && bar) || (set != 0 && !bar)) {
-                width -= 1.0 / 13.0;
+                width -= 1.0f / 13.0f;
             } else {
-                width += 1.0 / 13.0;
+                width += 1.0f / 13.0f;
             }
             break;
 
         case '7':
         case '8':
             if ((set == 0 && bar) || (set != 0 && !bar)) {
-                width += 1.0 / 13.0;
+                width += 1.0f / 13.0f;
             } else {
-                width -= 1.0 / 13.0;
+                width -= 1.0f / 13.0f;
             }
             break;
         }
@@ -2637,7 +2756,7 @@ static int pdf_add_barcode_ean13(struct pdf_doc *pdf, struct pdf_object *page,
 
     for (int i = 0; i != 6; i++) {
         text[0] = *string;
-        e = pdf_add_text_wrap(pdf, page, text, font, x, y, colour,
+        e = pdf_add_text_wrap(pdf, page, text, font, x, y, 0, colour,
                               7 * x_width, PDF_ALIGN_CENTER, NULL);
         if (e < 0) {
             pdf_set_font(pdf, save_font);
@@ -2664,7 +2783,7 @@ static int pdf_add_barcode_ean13(struct pdf_doc *pdf, struct pdf_object *page,
 
     for (int i = 0; i != 6; i++) {
         text[0] = *string;
-        e = pdf_add_text_wrap(pdf, page, text, font, x, y, colour,
+        e = pdf_add_text_wrap(pdf, page, text, font, x, y, 0, colour,
                               7 * x_width, PDF_ALIGN_CENTER, NULL);
         if (e < 0) {
             pdf_set_font(pdf, save_font);
@@ -2733,7 +2852,7 @@ static int pdf_add_barcode_upca(struct pdf_doc *pdf, struct pdf_object *page,
     char text[2];
     text[1] = 0;
     text[0] = *string;
-    e = pdf_add_text(pdf, page, text, font * 4.0 / 7.0, x, y, colour);
+    e = pdf_add_text(pdf, page, text, font * 4.0f / 7.0f, x, y, colour);
     if (e < 0) {
         pdf_set_font(pdf, save_font);
         return e;
@@ -2751,7 +2870,7 @@ static int pdf_add_barcode_upca(struct pdf_doc *pdf, struct pdf_object *page,
     for (int i = 0; i != 6; i++) {
         text[0] = *string;
         if (i) {
-            e = pdf_add_text_wrap(pdf, page, text, font, x, y, colour,
+            e = pdf_add_text_wrap(pdf, page, text, font, x, y, 0, colour,
                                   7 * x_width, PDF_ALIGN_CENTER, NULL);
             if (e < 0) {
                 pdf_set_font(pdf, save_font);
@@ -2780,7 +2899,7 @@ static int pdf_add_barcode_upca(struct pdf_doc *pdf, struct pdf_object *page,
     for (int i = 0; i != 6; i++) {
         text[0] = *string;
         if (i != 5) {
-            e = pdf_add_text_wrap(pdf, page, text, font, x, y, colour,
+            e = pdf_add_text_wrap(pdf, page, text, font, x, y, 0, colour,
                                   7 * x_width, PDF_ALIGN_CENTER, NULL);
             if (e < 0) {
                 pdf_set_font(pdf, save_font);
@@ -2810,7 +2929,7 @@ static int pdf_add_barcode_upca(struct pdf_doc *pdf, struct pdf_object *page,
 
     x += eanupc_dimensions[1].quiet_right * x_width -
          604.0f * font * 4.0f / 7.0f / (14.0f * 72.0f);
-    e = pdf_add_text(pdf, page, text, font * 4.0 / 7.0, x, y, colour);
+    e = pdf_add_text(pdf, page, text, font * 4.0f / 7.0f, x, y, colour);
     if (e < 0) {
         pdf_set_font(pdf, save_font);
         return e;
@@ -2869,7 +2988,7 @@ static int pdf_add_barcode_ean8(struct pdf_doc *pdf, struct pdf_object *page,
 
     for (int i = 0; i != 4; i++) {
         text[0] = *string;
-        e = pdf_add_text_wrap(pdf, page, text, font, x, y, colour,
+        e = pdf_add_text_wrap(pdf, page, text, font, x, y, 0, colour,
                               7 * x_width, PDF_ALIGN_CENTER, NULL);
         if (e < 0) {
             pdf_set_font(pdf, save_font);
@@ -2895,7 +3014,7 @@ static int pdf_add_barcode_ean8(struct pdf_doc *pdf, struct pdf_object *page,
 
     for (int i = 0; i != 4; i++) {
         text[0] = *string;
-        e = pdf_add_text_wrap(pdf, page, text, font, x, y, colour,
+        e = pdf_add_text_wrap(pdf, page, text, font, x, y, 0, colour,
                               7 * x_width, PDF_ALIGN_CENTER, NULL);
         if (e < 0) {
             pdf_set_font(pdf, save_font);
@@ -2974,7 +3093,7 @@ static int pdf_add_barcode_upce(struct pdf_doc *pdf, struct pdf_object *page,
     char text[2];
     text[1] = 0;
     text[0] = string[0];
-    e = pdf_add_text(pdf, page, text, font * 4.0 / 7.0, x, y, colour);
+    e = pdf_add_text(pdf, page, text, font * 4.0f / 7.0f, x, y, colour);
     if (e < 0) {
         pdf_set_font(pdf, save_font);
         return e;
@@ -3018,7 +3137,7 @@ static int pdf_add_barcode_upce(struct pdf_doc *pdf, struct pdf_object *page,
 
     for (int i = 0; i != 6; i++) {
         text[0] = X[i];
-        e = pdf_add_text_wrap(pdf, page, text, font, x, y, colour,
+        e = pdf_add_text_wrap(pdf, page, text, font, x, y, 0, colour,
                               7 * x_width, PDF_ALIGN_CENTER, NULL);
         if (e < 0) {
             pdf_set_font(pdf, save_font);
@@ -3044,7 +3163,7 @@ static int pdf_add_barcode_upce(struct pdf_doc *pdf, struct pdf_object *page,
     text[0] = string[11];
     x += eanupc_dimensions[0].quiet_right * x_width -
          604.0f * font * 4.0f / 7.0f / (14.0f * 72.0f);
-    e = pdf_add_text(pdf, page, text, font * 4.0 / 7.0, x, y, colour);
+    e = pdf_add_text(pdf, page, text, font * 4.0f / 7.0f, x, y, colour);
     if (e < 0) {
         pdf_set_font(pdf, save_font);
         return e;
@@ -3122,7 +3241,7 @@ static pdf_object *pdf_add_raw_grayscale8(struct pdf_doc *pdf,
         dstr_free(&str);
         return NULL;
     }
-    obj->stream = str;
+    obj->stream.stream = str;
 
     return obj;
 }
@@ -3165,7 +3284,7 @@ static struct pdf_object *pdf_add_raw_rgb24(struct pdf_doc *pdf,
         dstr_free(&str);
         return NULL;
     }
-    obj->stream = str;
+    obj->stream.stream = str;
 
     return obj;
 }
@@ -3222,7 +3341,7 @@ pdf_add_raw_jpeg_data(struct pdf_doc *pdf, const struct pdf_img_info *info,
     if (!obj)
         return NULL;
 
-    dstr_printf(&obj->stream,
+    dstr_printf(&obj->stream.stream,
                 "<<\r\n"
                 "  /Type /XObject\r\n"
                 "  /Name /Image%d\r\n"
@@ -3237,9 +3356,9 @@ pdf_add_raw_jpeg_data(struct pdf_doc *pdf, const struct pdf_img_info *info,
                 flexarray_size(&pdf->objects),
                 (info->jpeg.ncolours == 1) ? "/DeviceGray" : "/DeviceRGB",
                 info->width, info->height, len);
-    dstr_append_data(&obj->stream, jpeg_data, len);
+    dstr_append_data(&obj->stream.stream, jpeg_data, len);
 
-    dstr_printf(&obj->stream, "\r\nendstream\r\n");
+    dstr_printf(&obj->stream.stream, "\r\nendstream\r\n");
 
     return obj;
 }
@@ -3290,6 +3409,22 @@ static int pdf_add_image(struct pdf_doc *pdf, struct pdf_object *page,
 {
     int ret;
     struct dstr str = INIT_DSTR;
+
+    if (!page)
+        page = pdf_find_last_object(pdf, OBJ_page);
+
+    if (!page)
+        return pdf_set_err(pdf, -EINVAL, "Invalid pdf page");
+
+    if (image->type != OBJ_image)
+        return pdf_set_err(pdf, -EINVAL,
+                           "adding an image, but wrong object type %d",
+                           image->type);
+
+    if (image->stream.page != NULL)
+        return pdf_set_err(pdf, -EEXIST, "image already on a page");
+
+    image->stream.page = page;
 
     dstr_append(&str, "q ");
     dstr_printf(&str, "%f 0 0 %f %f %f cm ", width, height, x, y);
@@ -3796,7 +3931,7 @@ static int pdf_add_png_data(struct pdf_doc *pdf, struct pdf_object *page,
         goto free_buffers;
     }
 
-    dstr_append_data(&obj->stream, final_data, written);
+    dstr_append_data(&obj->stream.stream, final_data, written);
 
     if (get_img_display_dimensions(pdf, header->width, header->height,
                                    &display_width, &display_height)) {
@@ -3839,7 +3974,7 @@ static int parse_bmp_header(struct pdf_img_info *info, const uint8_t *data,
         snprintf(err_msg, err_msg_length, "BMP has negative width");
         return -EINVAL;
     }
-    if (info->bmp.biHeight == -2147483648) { // 1 << 31
+    if (info->bmp.biHeight == INT_MIN) {
         snprintf(err_msg, err_msg_length, "BMP height overflow");
         return -EINVAL;
     }

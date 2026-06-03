@@ -17,6 +17,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#define _POSIX_C_SOURCE 200809L
+
 #include "nwipe.h"
 #include "prng.h"
 #include "context.h"
@@ -27,13 +29,15 @@
 #include "isaac_rand/isaac64.h"
 #include "alfg/add_lagg_fibonacci_prng.h"  //Lagged Fibonacci generator prototype
 #include "xor/xoroshiro256_prng.h"  //XORoshiro-256 prototype
+#include "splitmix64/splitmix64.h"  // SplitMix64 PRNG
 #include "aes/aes_ctr_prng.h"  // AES-NI prototype
 #include "opencl/opencl_philox_prng.h"  // OpenCL Philox prototype
+#include "chacha20/chacha20.h"  // ChaCha20 stream cipher CSPRNG
 
 nwipe_prng_t nwipe_twister = { "Mersenne Twister", nwipe_twister_init, nwipe_twister_read };
 
-nwipe_prng_t nwipe_isaac = { "ISAAC", nwipe_isaac_init, nwipe_isaac_read };
-nwipe_prng_t nwipe_isaac64 = { "ISAAC-64", nwipe_isaac64_init, nwipe_isaac64_read };
+nwipe_prng_t nwipe_isaac = { "ISAAC (CSPRNG)", nwipe_isaac_init, nwipe_isaac_read };
+nwipe_prng_t nwipe_isaac64 = { "ISAAC-64 (CSPRNG)", nwipe_isaac64_init, nwipe_isaac64_read };
 
 /* ALFG PRNG Structure */
 nwipe_prng_t nwipe_add_lagg_fibonacci_prng = { "Lagged Fibonacci",
@@ -42,8 +46,14 @@ nwipe_prng_t nwipe_add_lagg_fibonacci_prng = { "Lagged Fibonacci",
 /* XOROSHIRO-256 PRNG Structure */
 nwipe_prng_t nwipe_xoroshiro256_prng = { "XORoshiro-256", nwipe_xoroshiro256_prng_init, nwipe_xoroshiro256_prng_read };
 
+/* SplitMix64 PRNG */
+nwipe_prng_t nwipe_splitmix64_prng = { "SplitMix64", nwipe_splitmix64_prng_init, nwipe_splitmix64_prng_read };
+
 /* AES-CTR-NI PRNG Structure */
-nwipe_prng_t nwipe_aes_ctr_prng = { "AES-CTR (Kernel)", nwipe_aes_ctr_prng_init, nwipe_aes_ctr_prng_read };
+nwipe_prng_t nwipe_aes_ctr_prng = { "AES-CTR (CSPRNG)", nwipe_aes_ctr_prng_init, nwipe_aes_ctr_prng_read };
+
+/* ChaCha20 stream cipher CSPRNG */
+nwipe_prng_t nwipe_chacha20_prng = { "ChaCha20 (CSPRNG)", nwipe_chacha20_prng_init, nwipe_chacha20_prng_read };
 
 /* OpenCL Philox PRNG Structure */
 nwipe_prng_t nwipe_opencl_philox_prng = { "OpenCL Philox4x32",
@@ -56,8 +66,10 @@ static const nwipe_prng_t* all_prngs[] = {
     &nwipe_isaac64,
     &nwipe_add_lagg_fibonacci_prng,
     &nwipe_xoroshiro256_prng,
+    &nwipe_splitmix64_prng,
     &nwipe_aes_ctr_prng,
     &nwipe_opencl_philox_prng,
+    &nwipe_chacha20_prng,
 };
 
 /* Print given number of bytes from unsigned integer number to a byte stream buffer starting with low-endian. */
@@ -100,7 +112,7 @@ static inline u64 isaac64_nextval( rand64ctx* restrict ctx )
 
 int nwipe_twister_init( NWIPE_PRNG_INIT_SIGNATURE )
 {
-    nwipe_log( NWIPE_LOG_NOTICE, "Initialising Mersenne Twister prng" );
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising Mersenne Twister PRNG" );
 
     if( *state == NULL )
     {
@@ -139,7 +151,7 @@ int nwipe_isaac_init( NWIPE_PRNG_INIT_SIGNATURE )
     int count;
     randctx* isaac_state = *state;
 
-    nwipe_log( NWIPE_LOG_NOTICE, "Initialising Isaac prng" );
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising Isaac (CSPRNG)" );
 
     if( *state == NULL )
     {
@@ -213,7 +225,7 @@ int nwipe_isaac64_init( NWIPE_PRNG_INIT_SIGNATURE )
     int count;
     rand64ctx* isaac_state = *state;
 
-    nwipe_log( NWIPE_LOG_NOTICE, "Initialising ISAAC-64 prng" );
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising ISAAC-64 (CSPRNG)" );
 
     if( *state == NULL )
     {
@@ -285,7 +297,7 @@ int nwipe_add_lagg_fibonacci_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
 {
     if( *state == NULL )
     {
-        nwipe_log( NWIPE_LOG_NOTICE, "Initialising Lagged Fibonacci generator PRNG" );
+        nwipe_log( NWIPE_LOG_NOTICE, "Initialising Lagged Fibonacci Generator PRNG" );
         *state = malloc( sizeof( add_lagg_fibonacci_state_t ) );
     }
     add_lagg_fibonacci_init(
@@ -294,10 +306,10 @@ int nwipe_add_lagg_fibonacci_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
     return 0;
 }
 
-/* Implementation of XORoroshiro256 algorithm to provide high-quality, but a lot of random numbers */
+/* Implementation of XORoshiro-256 algorithm to provide high-quality, but a lot of random numbers */
 int nwipe_xoroshiro256_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
 {
-    nwipe_log( NWIPE_LOG_NOTICE, "Initialising XORoroshiro-256 PRNG" );
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising XORoshiro-256 PRNG" );
 
     if( *state == NULL )
     {
@@ -359,6 +371,114 @@ int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE )
     }
 
     return 0;  // Success
+}
+
+int nwipe_splitmix64_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
+{
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising SplitMix64 PRNG" );
+
+    if( *state == NULL )
+    {
+        *state = malloc( sizeof( splitmix64_state_t ) );
+        if( *state == NULL )
+        {
+            nwipe_log( NWIPE_LOG_FATAL, "Unable to allocate memory for SplitMix64 PRNG" );
+            return -1;
+        }
+    }
+
+    /* Shouldn't happen with current defaults */
+    if( seed->length < 8 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Seed is shorter than SplitMix64 requires (%zu/8 bytes)", seed->length );
+        return -1;
+    }
+
+    int rc = splitmix64_prng_init( (splitmix64_state_t*) *state, (const uint8_t*) seed->s, seed->length );
+    if( rc != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "splitmix64_prng_init() failed" );
+        return -1;
+    }
+
+    return 0;
+}
+
+int nwipe_splitmix64_prng_read( NWIPE_PRNG_READ_SIGNATURE )
+{
+    int rc = splitmix64_prng_genrand_to_buf( (splitmix64_state_t*) *state, (uint8_t*) buffer, count );
+
+    if( rc != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "splitmix64_prng_genrand_to_buf() failed" );
+        return -1;
+    }
+
+    return 0;
+}
+
+int nwipe_chacha20_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
+{
+    int rc;
+
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising ChaCha20 (CSPRNG)" );
+
+    /*
+     * We always run the self-tests to ensure that the CSPRNG is safe to use.
+     * Users specifically chose security over throughput, so we'll make sure.
+     */
+    rc = chacha20_self_test();
+    if( rc == 0 )
+    {
+        nwipe_log( NWIPE_LOG_NOTICE, "Self-test has passed for ChaCha20 (CSPRNG)" );
+    }
+    else
+    {
+        nwipe_log( NWIPE_LOG_SANITY,
+                   "Self-test has FAILED (code %d) for ChaCha20 (CSPRNG), "
+                   "report failure to developers and choose another PRNG",
+                   rc );
+        return -1;
+    }
+
+    if( *state == NULL )
+    {
+        *state = malloc( sizeof( chacha20_state_t ) );
+        if( *state == NULL )
+        {
+            nwipe_log( NWIPE_LOG_FATAL, "Unable to allocate memory for ChaCha20 (CSPRNG)" );
+            return -1;
+        }
+    }
+
+    /* Shouldn't happen with current defaults */
+    if( seed->length < 40 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Seed is shorter than ChaCha20 (CSPRNG) requires (%zu/40 bytes)", seed->length );
+        return -1;
+    }
+
+    rc = chacha20_prng_init( (chacha20_state_t*) *state, (const uint8_t*) seed->s, seed->length );
+    if( rc != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "chacha20_prng_init() failed" );
+        return -1;
+    }
+
+    return 0;
+}
+
+int nwipe_chacha20_prng_read( NWIPE_PRNG_READ_SIGNATURE )
+{
+    int rc = chacha20_prng_genrand_to_buf( (chacha20_state_t*) *state, (uint8_t*) buffer, count );
+
+    if( rc != 0 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "chacha20_prng_genrand_to_buf() failed" );
+        return -1;
+    }
+
+    return 0;
 }
 
 /**
@@ -455,7 +575,7 @@ _Static_assert( ( STASH_CAPACITY % SIZE_OF_AES_CTR_PRNG ) == 0,
 #endif
 
 /** @brief Thread-local ring buffer storage for prefetched keystream. */
-NW_THREAD_LOCAL static unsigned char stash[STASH_CAPACITY] NW_ALIGN( 64 );
+static NW_THREAD_LOCAL unsigned char stash[STASH_CAPACITY] NW_ALIGN( 64 );
 
 /**
  * @name Ring indices (thread-local)
@@ -474,9 +594,9 @@ NW_THREAD_LOCAL static unsigned char stash[STASH_CAPACITY] NW_ALIGN( 64 );
  * threads. One PRNG instance per thread.
  * @}
  */
-NW_THREAD_LOCAL static size_t rb_head = 0; /* next byte to read */
-NW_THREAD_LOCAL static size_t rb_tail = 0; /* next byte to write */
-NW_THREAD_LOCAL static size_t rb_count = 0; /* occupied bytes */
+static NW_THREAD_LOCAL size_t rb_head = 0; /* next byte to read */
+static NW_THREAD_LOCAL size_t rb_tail = 0; /* next byte to write */
+static NW_THREAD_LOCAL size_t rb_count = 0; /* occupied bytes */
 
 /**
  * @brief Free space available in the ring (bytes).
@@ -587,7 +707,7 @@ static int refill_stash_thread_local( void* state, size_t need )
  */
 int nwipe_aes_ctr_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
 {
-    nwipe_log( NWIPE_LOG_NOTICE, "Initializing AES-CTR PRNG (thread-local ring buffer)" );
+    nwipe_log( NWIPE_LOG_NOTICE, "Initializing AES-CTR (CSPRNG)" );
 
     if( *state == NULL )
     {

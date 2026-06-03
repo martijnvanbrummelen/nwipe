@@ -46,6 +46,9 @@ int nwipe_get_device_bus_type_and_serialno( char* device,
                                             char* serialnumber,
                                             char* sysfs_path,
                                             size_t sysfs_path_size );
+
+int nwipe_update_geometry_for_io( nwipe_context_t* c );
+
 void strip_CR_LF( char* );
 void determine_disk_capacity_nomenclature( u64, char* );
 void remove_ATA_prefix( char* );

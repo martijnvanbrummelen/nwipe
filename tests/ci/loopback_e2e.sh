@@ -7,6 +7,7 @@ ARTIFACT_DIR="${NWIPE_CI_ARTIFACT_DIR:-}"
 STS_BIN="${NWIPE_STS_BIN:-}"
 STS_MIN_RATIO="${NWIPE_STS_MIN_RATIO:-0.9}"
 STS_ITERATIONS="${NWIPE_STS_ITERATIONS:-4}"
+STS_RETRIES="${NWIPE_STS_RETRIES:-0}"
 
 if [[ "${MODE}" != "full" && "${MODE}" != "smoke" ]]; then
     echo "Usage: $0 [full|smoke] [path-to-nwipe-binary]"
@@ -75,6 +76,9 @@ run_sts_ratio_check() {
     local total
     local ratio
     local ratio_ok
+    local attempt
+    local max_attempts
+    local last_error
 
     if [[ -z "${STS_BIN}" ]]; then
         return 0
@@ -85,45 +89,56 @@ run_sts_ratio_check() {
         return 1
     fi
 
-    result_file="${LOG_DIR}/${case_name}.sts/result.txt"
-    sts_log="${LOG_DIR}/${case_name}.sts/run.log"
+    max_attempts=$((STS_RETRIES + 1))
+    last_error=""
     mkdir -p "${LOG_DIR}/${case_name}.sts"
 
-    echo "==> Running STS for case ${case_name} (min ratio ${STS_MIN_RATIO}, iterations ${STS_ITERATIONS})"
+    for (( attempt=1; attempt<=max_attempts; attempt++ )); do
+        local attempt_dir="${LOG_DIR}/${case_name}.sts/attempt-${attempt}"
+        mkdir -p "${attempt_dir}"
+        result_file="${attempt_dir}/result.txt"
+        sts_log="${attempt_dir}/run.log"
 
-    set +e
-    "${STS_BIN}" -v 1 -i "${STS_ITERATIONS}" -I 1 -w "${LOG_DIR}/${case_name}.sts" -F r "${BACKING_FILE}" \
-        > >(tee "${sts_log}") 2>&1
-    local sts_rc=$?
-    set -e
+        echo "==> Running STS for case ${case_name} (attempt ${attempt}/${max_attempts}, min ratio ${STS_MIN_RATIO}, iterations ${STS_ITERATIONS})"
 
-    if [[ "${sts_rc}" -ne 0 ]]; then
-        echo "Error: STS run failed for ${case_name} with rc=${sts_rc}"
-        return 1
-    fi
+        set +e
+        "${STS_BIN}" -v 1 -i "${STS_ITERATIONS}" -I 1 -w "${attempt_dir}" -F r "${BACKING_FILE}" \
+            > >(tee "${sts_log}") 2>&1
+        local sts_rc=$?
+        set -e
 
-    if [[ ! -f "${result_file}" ]]; then
-        echo "Error: STS result file missing for ${case_name}: ${result_file}"
-        return 1
-    fi
+        if [[ "${sts_rc}" -ne 0 ]]; then
+            last_error="STS run failed for ${case_name} with rc=${sts_rc}"
+        elif [[ ! -f "${result_file}" ]]; then
+            last_error="STS result file missing for ${case_name}: ${result_file}"
+        else
+            passed="$(awk '/tests passed successfully both the analyses/ { split($1,a,"/"); print a[1]; exit }' "${result_file}")"
+            total="$(awk '/tests passed successfully both the analyses/ { split($1,a,"/"); print a[2]; exit }' "${result_file}")"
 
-    passed="$(awk '/tests passed successfully both the analyses/ { split($1,a,"/"); print a[1]; exit }' "${result_file}")"
-    total="$(awk '/tests passed successfully both the analyses/ { split($1,a,"/"); print a[2]; exit }' "${result_file}")"
+            if [[ -z "${passed}" || -z "${total}" ]]; then
+                last_error="unable to parse STS pass ratio from ${result_file}"
+            else
+                ratio="$(awk -v p="${passed}" -v t="${total}" 'BEGIN{ if (t == 0) { print "0.0" } else { printf "%.6f", p/t } }')"
+                ratio_ok="$(awk -v r="${ratio}" -v m="${STS_MIN_RATIO}" 'BEGIN{ if (r+0 >= m+0) print "1"; else print "0" }')"
 
-    if [[ -z "${passed}" || -z "${total}" ]]; then
-        echo "Error: unable to parse STS pass ratio from ${result_file}"
-        tail -n 80 "${result_file}" || true
-        return 1
-    fi
+                echo "STS ratio for ${case_name}: ${passed}/${total} = ${ratio}"
+                if [[ "${ratio_ok}" == "1" ]]; then
+                    if [[ "${attempt}" -gt 1 ]]; then
+                        echo "Warning: STS for ${case_name} passed on retry ${attempt}/${max_attempts}"
+                    fi
+                    return 0
+                fi
+                last_error="STS ratio ${ratio} is below threshold ${STS_MIN_RATIO} for ${case_name}"
+            fi
+        fi
 
-    ratio="$(awk -v p="${passed}" -v t="${total}" 'BEGIN{ if (t == 0) { print "0.0" } else { printf "%.6f", p/t } }')"
-    ratio_ok="$(awk -v r="${ratio}" -v m="${STS_MIN_RATIO}" 'BEGIN{ if (r+0 >= m+0) print "1"; else print "0" }')"
+        if [[ "${attempt}" -lt "${max_attempts}" ]]; then
+            echo "Warning: ${last_error}. Retrying STS for ${case_name}..."
+        fi
+    done
 
-    echo "STS ratio for ${case_name}: ${passed}/${total} = ${ratio}"
-    if [[ "${ratio_ok}" != "1" ]]; then
-        echo "Error: STS ratio ${ratio} is below threshold ${STS_MIN_RATIO} for ${case_name}"
-        return 1
-    fi
+    echo "Error: ${last_error}"
+    return 1
 }
 
 assert_block_is_byte() {
@@ -153,15 +168,25 @@ assert_block_is_byte() {
 
 run_nwipe_case() {
     local case_name="$1"
-    local method="$2"
-    local verify="$3"
-    local prng="${4:-isaac}"
+    local io="$2"
+    local method="$3"
+    local verify="$4"
+    local prng="${5:-isaac}"
+    local iodirection="${6:-0}"
 
     local log_file="${LOG_DIR}/${case_name}.log"
     local stdout_file="${LOG_DIR}/${case_name}.stdout"
     local stderr_file="${LOG_DIR}/${case_name}.stderr"
 
-    echo "==> Running case: ${case_name} (method=${method}, verify=${verify}, prng=${prng})"
+    local iodirection_flag=""
+    if [[ "${iodirection}" -eq 1 ]]; then
+        iodirection_flag="--reverse"
+    fi
+    if [[ "${iodirection}" -eq 2 ]]; then
+        iodirection_flag="--scatter"
+    fi
+
+    echo "==> Running case: ${case_name} (io=${io} method=${method}, verify=${verify}, prng=${prng})"
 
     set +e
     "${NWIPE_BIN}" \
@@ -169,13 +194,13 @@ run_nwipe_case() {
         --nogui \
         --nowait \
         --nosignals \
-        --cachedio \
         --noblank \
         --rounds=1 \
-        --sync=0 \
+        --${io} \
         --verify="${verify}" \
         --method="${method}" \
         --prng="${prng}" \
+        ${iodirection_flag} \
         --PDFreportpath=noPDF \
         --logfile="${log_file}" \
         "${LOOP_DEV}" \
@@ -207,31 +232,63 @@ echo "Loop device: ${LOOP_DEV}"
 echo "Using nwipe binary: ${NWIPE_BIN}"
 "${NWIPE_BIN}" --version || true
 
-run_nwipe_case "wipe_zero" "zero" "off"
+# Zero wipe + zero verify, direct I/O
+run_nwipe_case "direct_wipe_zero" "directio" "zero" "all"
 assert_block_is_byte "00"
+run_nwipe_case "direct_verify_zero" "directio" "verify_zero" "off"
 
-run_nwipe_case "verify_zero" "verify_zero" "off"
+# Zero wipe + zero verify, cached I/O
+run_nwipe_case "cached_wipe_zero" "cachedio" "zero" "all"
+assert_block_is_byte "00"
+run_nwipe_case "cached_verify_zero" "cachedio" "verify_zero" "off"
 
 if [[ "${MODE}" == "full" ]]; then
-    run_nwipe_case "wipe_one" "one" "off"
+    # One wipe + one verify, direct I/O
+    run_nwipe_case "direct_wipe_one" "directio" "one" "all"
     assert_block_is_byte "ff"
+    run_nwipe_case "direct_verify_one" "directio" "verify_one" "off"
 
-    run_nwipe_case "verify_one" "verify_one" "off"
+    # One wipe + one verify, cached I/O
+    run_nwipe_case "cached_wipe_one" "cachedio" "one" "all"
+    assert_block_is_byte "ff"
+    run_nwipe_case "cached_verify_one" "cachedio" "verify_one" "off"
 
+    # PRNG wipe + PRNG verification, direct + cached I/O
+    run_nwipe_case "direct_wipe_prng" "directio" "prng" "all"
+    run_nwipe_case "cached_wipe_prng" "cachedio" "prng" "all"
+
+    # Run --reverse tests (different routines), direct + cached I/O:
+    run_nwipe_case "direct_reverse_wipe_one" "directio" "one" "all" "isaac" 1
+    run_nwipe_case "direct_reverse_wipe_prng" "directio" "prng" "all" "isaac" 1
+    run_nwipe_case "cached_reverse_wipe_one" "cachedio" "one" "all" "isaac" 1
+    run_nwipe_case "cached_reverse_wipe_prng" "cachedio" "prng" "all" "isaac" 1
+
+    # Run --scatter tests (different routines), direct + cached I/O:
+    run_nwipe_case "direct_scatter_wipe_one" "directio" "one" "all" "isaac" 2
+    run_nwipe_case "direct_scatter_wipe_prng" "directio" "prng" "all" "isaac" 2
+    run_nwipe_case "cached_scatter_wipe_one" "cachedio" "one" "all" "isaac" 2
+    run_nwipe_case "cached_scatter_wipe_prng" "cachedio" "prng" "all" "isaac" 2
+
+    # PRNG statistical cases (STS)
+    # Run these in direct I/O so we're not verifying a cache
     echo "==> Running PRNG Stream coverage cases (each PRNG once)"
-    run_nwipe_case "prng_stream_twister" "prng" "off" "twister"
+    run_nwipe_case "prng_stream_twister" "directio" "prng" "all" "twister"
     run_sts_ratio_check "prng_stream_twister"
-    run_nwipe_case "prng_stream_isaac" "prng" "off" "isaac"
+    run_nwipe_case "prng_stream_isaac" "directio" "prng" "all" "isaac"
     run_sts_ratio_check "prng_stream_isaac"
-    run_nwipe_case "prng_stream_isaac64" "prng" "off" "isaac64"
+    run_nwipe_case "prng_stream_isaac64" "directio" "prng" "all" "isaac64"
     run_sts_ratio_check "prng_stream_isaac64"
-    run_nwipe_case "prng_stream_alfg" "prng" "off" "add_lagg_fibonacci_prng"
+    run_nwipe_case "prng_stream_alfg" "directio" "prng" "all" "add_lagg_fibonacci_prng"
     run_sts_ratio_check "prng_stream_alfg"
-    run_nwipe_case "prng_stream_xoroshiro256" "prng" "off" "xoroshiro256_prng"
+    run_nwipe_case "prng_stream_xoroshiro256" "directio" "prng" "all" "xoroshiro256_prng"
     run_sts_ratio_check "prng_stream_xoroshiro256"
+    run_nwipe_case "prng_stream_splitmix64" "directio" "prng" "all" "splitmix64"
+    run_sts_ratio_check "prng_stream_splitmix64"
+    run_nwipe_case "prng_stream_chacha20" "directio" "prng" "all" "chacha20"
+    run_sts_ratio_check "prng_stream_chacha20"
 
     if cpu_supports_aes_ni; then
-        run_nwipe_case "prng_stream_aes_ctr" "prng" "off" "aes_ctr_prng"
+        run_nwipe_case "prng_stream_aes_ctr" "directio" "prng" "all" "aes_ctr_prng"
         run_sts_ratio_check "prng_stream_aes_ctr"
     else
         echo "Skipping aes_ctr_prng case: CPU does not expose AES-NI."

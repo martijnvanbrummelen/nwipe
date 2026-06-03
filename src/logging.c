@@ -2,6 +2,7 @@
  *  logging.c:  Logging facilities for nwipe.
  *
  *  Copyright Darik Horn <dajhorn-dban@vanadac.com>.
+ *            @PartialVolume <shredos_eraser@gmail.com>
  *
  *  This program is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free Software
@@ -38,6 +39,7 @@
 #include "logging.h"
 #include "create_pdf.h"
 #include "miscellaneous.h"
+#include "hpa_dco.h"
 
 /* Global array to hold log values to print when logging to STDOUT */
 char** log_lines;
@@ -507,12 +509,9 @@ void nwipe_log_OSinfo()
     return;
 }
 
-/* Globally accessable dmidecode host identifiable data. */
-char dmidecode_system_serial_number[DMIDECODE_RESULT_LENGTH];
-char dmidecode_system_uuid[DMIDECODE_RESULT_LENGTH];
-char dmidecode_baseboard_serial_number[DMIDECODE_RESULT_LENGTH];
+// char dmidecode_baseboard_serial_number[DMIDECODE_RESULT_LENGTH];
 
-int nwipe_log_sysinfo()
+int nwipe_log_sysinfo( nwipe_misc_thread_data_t* ptrx )
 {
     FILE* fp;
     char path[256];
@@ -571,7 +570,8 @@ int nwipe_log_sysinfo()
     /* Initialise every character in the string with zero */
     for( i = 0; i < DMIDECODE_RESULT_LENGTH; i++ )
     {
-        dmidecode_system_serial_number[i] = 0;
+
+        // dmidecode_system_serial_number[i] = 0;
     }
 
     p_dmidecode_command = 0;
@@ -621,6 +621,9 @@ int nwipe_log_sysinfo()
                 {
                     path[len - 1] = 0;
                 }
+
+                /* Print all DMI data to the log, annoymizing identifiable data if -q (--quiet) enabled
+                 */
                 if( nwipe_options.quiet )
                 {
                     if( *( &dmidecode_keywords[keywords_idx][1][0] ) == '0' )
@@ -631,35 +634,154 @@ int nwipe_log_sysinfo()
                     else
                     {
                         nwipe_log( NWIPE_LOG_INFO, "%s = %s", &dmidecode_keywords[keywords_idx][0][0], path );
-
-                        /* if system-serial-number copy result to extern string */
-                        if( keywords_idx == 5 )
-                        {
-                            strncpy( dmidecode_system_serial_number, path, DMIDECODE_RESULT_LENGTH );
-                            dmidecode_system_serial_number[DMIDECODE_RESULT_LENGTH - 1] = 0;
-                        }
-                        if( keywords_idx == 6 )
-                        {
-                            strncpy( dmidecode_system_uuid, path, DMIDECODE_RESULT_LENGTH );
-                            dmidecode_system_uuid[DMIDECODE_RESULT_LENGTH - 1] = 0;
-                        }
                     }
                 }
                 else
                 {
                     nwipe_log( NWIPE_LOG_INFO, "%s = %s", &dmidecode_keywords[keywords_idx][0][0], path );
+                }
+                /* Save all DMI data to the structure for access later by the PDF creation functions and others.
+                 * For unique dmi identifiable data check for the -q (--quiet) option and redact data.
+                 */
+                switch( keywords_idx )
+                {
+                    case 0:
+                        strncpy( ptrx->dmidecode_bios_version, path, DMIDECODE_RESULT_LENGTH );
+                        ptrx->dmidecode_bios_version[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        break;
+                    case 1:
+                        strncpy( ptrx->dmidecode_bios_release_date, path, DMIDECODE_RESULT_LENGTH );
+                        ptrx->dmidecode_bios_release_date[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        break;
+                    case 2:
+                        strncpy( ptrx->dmidecode_system_manufacturer, path, DMIDECODE_RESULT_LENGTH );
+                        ptrx->dmidecode_system_manufacturer[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        break;
+                    case 3:
+                        strncpy( ptrx->dmidecode_system_product_name, path, DMIDECODE_RESULT_LENGTH );
+                        ptrx->dmidecode_system_product_name[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        break;
+                    case 4:
+                        strncpy( ptrx->dmidecode_system_version, path, DMIDECODE_RESULT_LENGTH );
+                        ptrx->dmidecode_system_version[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        break;
+                    case 5:
+                        if( nwipe_options.quiet )
+                        {
+                            strncpy( ptrx->dmidecode_system_serial_number, "XXXXXXXXXXXXXXX", DMIDECODE_RESULT_LENGTH );
+                            ptrx->dmidecode_system_serial_number[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        }
+                        else
+                        {
+                            strncpy( ptrx->dmidecode_system_serial_number, path, DMIDECODE_RESULT_LENGTH );
+                            ptrx->dmidecode_system_serial_number[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        }
+                        break;
+                    case 6:
+                        if( nwipe_options.quiet )
+                        {
+                            strncpy( ptrx->dmidecode_system_uuid, "XXXXXXXXXXXXXXX", DMIDECODE_RESULT_LENGTH );
+                            ptrx->dmidecode_system_uuid[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        }
+                        else
+                        {
+                            strncpy( ptrx->dmidecode_system_uuid, path, DMIDECODE_RESULT_LENGTH );
+                            ptrx->dmidecode_system_uuid[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        }
+                        break;
+                    case 7:
+                        strncpy( ptrx->dmidecode_baseboard_manufacturer, path, DMIDECODE_RESULT_LENGTH );
+                        ptrx->dmidecode_baseboard_manufacturer[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        break;
+                    case 8:
+                        strncpy( ptrx->dmidecode_baseboard_product_name, path, DMIDECODE_RESULT_LENGTH );
+                        ptrx->dmidecode_baseboard_product_name[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        break;
+                    case 9:
+                        strncpy( ptrx->dmidecode_baseboard_version, path, DMIDECODE_RESULT_LENGTH );
+                        ptrx->dmidecode_baseboard_version[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        break;
+                    case 10:
+                        if( nwipe_options.quiet )
+                        {
+                            strncpy(
+                                ptrx->dmidecode_baseboard_serial_number, "XXXXXXXXXXXXXXX", DMIDECODE_RESULT_LENGTH );
+                            ptrx->dmidecode_baseboard_serial_number[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        }
+                        else
+                        {
+                            strncpy( ptrx->dmidecode_baseboard_serial_number, path, DMIDECODE_RESULT_LENGTH );
+                            ptrx->dmidecode_baseboard_serial_number[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        }
+                        break;
 
-                    /* if system-serial-number copy result to extern string */
-                    if( keywords_idx == 5 )
-                    {
-                        strncpy( dmidecode_system_serial_number, path, DMIDECODE_RESULT_LENGTH );
-                        dmidecode_system_serial_number[DMIDECODE_RESULT_LENGTH - 1] = 0;
-                    }
-                    if( keywords_idx == 6 )
-                    {
-                        strncpy( dmidecode_system_uuid, path, DMIDECODE_RESULT_LENGTH );
-                        dmidecode_system_uuid[DMIDECODE_RESULT_LENGTH - 1] = 0;
-                    }
+                    case 11:
+                        if( nwipe_options.quiet )
+                        {
+                            strncpy( ptrx->dmidecode_baseboard_asset_tag, "XXXXXXXXXXXXXXX", DMIDECODE_RESULT_LENGTH );
+                            ptrx->dmidecode_baseboard_asset_tag[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        }
+                        else
+                        {
+                            strncpy( ptrx->dmidecode_baseboard_asset_tag, path, DMIDECODE_RESULT_LENGTH );
+                            ptrx->dmidecode_baseboard_asset_tag[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        }
+                        break;
+                    case 12:
+                        strncpy( ptrx->dmidecode_chassis_manufacturer, path, DMIDECODE_RESULT_LENGTH );
+                        ptrx->dmidecode_chassis_manufacturer[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        break;
+                    case 13:
+                        strncpy( ptrx->dmidecode_chassis_type, path, DMIDECODE_RESULT_LENGTH );
+                        ptrx->dmidecode_chassis_type[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        break;
+                    case 14:
+                        strncpy( ptrx->dmidecode_chassis_version, path, DMIDECODE_RESULT_LENGTH );
+                        ptrx->dmidecode_chassis_version[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        break;
+                    case 15:
+                        if( nwipe_options.quiet )
+                        {
+                            strncpy(
+                                ptrx->dmidecode_chassis_serial_number, "XXXXXXXXXXXXXXX", DMIDECODE_RESULT_LENGTH );
+                            ptrx->dmidecode_chassis_serial_number[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        }
+                        else
+                        {
+                            strncpy( ptrx->dmidecode_chassis_serial_number, path, DMIDECODE_RESULT_LENGTH );
+                            ptrx->dmidecode_chassis_serial_number[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        }
+                        break;
+                    case 16:
+                        if( nwipe_options.quiet )
+                        {
+                            strncpy( ptrx->dmidecode_chassis_asset_tag, "XXXXXXXXXXXXXXX", DMIDECODE_RESULT_LENGTH );
+                            ptrx->dmidecode_chassis_asset_tag[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        }
+                        else
+                        {
+                            strncpy( ptrx->dmidecode_chassis_asset_tag, path, DMIDECODE_RESULT_LENGTH );
+                            ptrx->dmidecode_chassis_asset_tag[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        }
+                        break;
+                    case 17:
+                        strncpy( ptrx->dmidecode_processor_family, path, DMIDECODE_RESULT_LENGTH );
+                        ptrx->dmidecode_processor_family[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        break;
+                    case 18:
+                        strncpy( ptrx->dmidecode_processor_manufacturer, path, DMIDECODE_RESULT_LENGTH );
+                        ptrx->dmidecode_processor_manufacturer[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        break;
+                    case 19:
+                        strncpy( ptrx->dmidecode_processor_version, path, DMIDECODE_RESULT_LENGTH );
+                        ptrx->dmidecode_processor_version[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        break;
+                    case 20:
+                        strncpy( ptrx->dmidecode_processor_frequency, path, DMIDECODE_RESULT_LENGTH );
+                        ptrx->dmidecode_processor_frequency[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        break;
+                    default:
+                        break;
                 }
             }
             /* close */
@@ -678,7 +800,7 @@ int nwipe_log_sysinfo()
     return 0;
 }
 
-void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
+void nwipe_log_summary( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t** ptr, int nwipe_selected )
 {
     /* Prints two summary tables, the first is the device pass and verification summary
      * and the second is the main summary table detaining the drives, status, throughput,
@@ -785,6 +907,72 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
 
     nwipe_log( NWIPE_LOG_NOTIMESTAMP,
                "********************************************************************************" );
+
+    /* Print the bytes erased summary table, but not for verify only methods */
+    if( nwipe_options.method != &nwipe_verify_one && nwipe_options.method != &nwipe_verify_zero )
+    {
+        nwipe_log( NWIPE_LOG_NOTIMESTAMP, "" );
+        nwipe_log( NWIPE_LOG_NOTIMESTAMP,
+                   "******************************* Erasure Summary ********************************" );
+        nwipe_log( NWIPE_LOG_NOTIMESTAMP, "!   Device |      Bytes Erased |      Bytes Total | Percentage Erased" );
+        nwipe_log( NWIPE_LOG_NOTIMESTAMP,
+                   "--------------------------------------------------------------------------------" );
+
+        for( i = 0; i < nwipe_selected; i++ )
+        {
+            u64 expected_size;
+            char percent_str[7];
+            char percent_display[8];
+
+            nwipe_strip_path( device, c[i]->device_name );
+
+            /* Determine the expected total size based on device type / HPA status */
+            if( c[i]->device_type == NWIPE_DEVICE_NVME || c[i]->device_type == NWIPE_DEVICE_VIRT
+                || c[i]->HPA_status == HPA_NOT_APPLICABLE )
+            {
+                expected_size = c[i]->device_size;
+            }
+            else
+            {
+                expected_size = c[i]->Calculated_real_max_size_in_bytes;
+            }
+
+            /* Calculate percentage (same method as in PDF) */
+            if( expected_size > 0 )
+            {
+                convert_double_to_string( percent_str,
+                                          (double) ( (double) c[i]->bytes_erased / (double) expected_size ) * 100 );
+                snprintf( percent_display, sizeof( percent_display ), "%s%%", percent_str );
+            }
+            else
+            {
+                snprintf( percent_display, sizeof( percent_display ), "N/A" );
+            }
+
+            /* Set exclamation flag if bytes erased doesn't match expected */
+            if( c[i]->bytes_erased != expected_size )
+            {
+                strncpy( exclamation_flag, "!", 1 );
+                exclamation_flag[1] = 0;
+            }
+            else
+            {
+                strncpy( exclamation_flag, " ", 1 );
+                exclamation_flag[1] = 0;
+            }
+
+            nwipe_log( NWIPE_LOG_NOTIMESTAMP,
+                       "%s %s | %17llu | %16llu | %17s",
+                       exclamation_flag,
+                       device,
+                       c[i]->bytes_erased,
+                       expected_size,
+                       percent_display );
+        }
+
+        nwipe_log( NWIPE_LOG_NOTIMESTAMP,
+                   "********************************************************************************" );
+    }
 
     /* Print the main summary table */
 
@@ -933,9 +1121,12 @@ void nwipe_log_summary( nwipe_context_t** ptr, int nwipe_selected )
         {
             /* to have some progress indication. can help if there are many/slow disks */
             fprintf( stderr, "." );
-            create_pdf( c[i] );
+            create_single_disc_pdf( ptrx, c[i] );
         }
     }
+
+    /* Create a PDF that contains, system information and wipe status for all drives */
+    create_system_multi_disc_pdf( ptrx );
 
     /* Determine the size of throughput so that the correct nomenclature can be used */
     Determine_C_B_nomenclature( total_throughput, total_throughput_string, 13 );

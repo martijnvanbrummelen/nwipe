@@ -2,10 +2,9 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
-AC_INIT([nwipe],[0.40],[git@brumit.nl])
+AC_INIT([nwipe],[0.41],[git@brumit.nl])
 AM_INIT_AUTOMAKE(foreign subdir-objects)
 AC_CONFIG_FILES([Makefile src/Makefile man/Makefile])
-AC_OUTPUT
 AC_CONFIG_SRCDIR([src/nwipe.c])
 AC_CONFIG_HEADERS([config.h])
 

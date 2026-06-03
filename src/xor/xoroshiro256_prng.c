@@ -67,7 +67,7 @@ void xoroshiro256_genrand_uint256_to_buf( xoroshiro256_state_t* state, unsigned 
     state->s[3] = rotl( state->s[3], 45 );
 
     // Note: 'result_starstar' was only used for demonstration purposes and is not part of the
-    // original Xoroshiro256** specification. Here, we write the complete state into the buffer.
+    // original XORoshiro-256** specification. Here, we write the complete state into the buffer.
     // Ensure that 'bufpos' has enough storage space (256 bits / 32 bytes).
 
     memcpy( bufpos, state->s, 32 );  // Copies the entire 256-bit (32 bytes) state into 'bufpos'

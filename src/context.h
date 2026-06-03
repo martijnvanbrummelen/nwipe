@@ -23,6 +23,7 @@
 #ifndef CONTEXT_H_
 #define CONTEXT_H_
 
+#include "nwipe.h"
 #include "prng.h"
 #ifndef __HDDTEMP_H__
 #include "hddtemp_scsi/hddtemp.h"
@@ -56,7 +57,8 @@ typedef enum nwipe_select_t_ {
     NWIPE_SELECT_TRUE_PARENT,  // A parent of this device has been selected, so the wipe is implied.
     NWIPE_SELECT_FALSE,  // Do not wipe this device.
     NWIPE_SELECT_FALSE_CHILD,  // A child of this device has been selected, so we can't wipe this device.
-    NWIPE_SELECT_DISABLED  // Do not wipe this device and do not allow it to be selected.
+    NWIPE_SELECT_DISABLED,  // We cannot wipe this device for technical reasons (do not allow selection).
+    NWIPE_SELECT_DISABLED_BUSY,  // The device is in use and --force is not set (do not allow selection).
 } nwipe_select_t;
 
 /* I/O mode for data path: auto, direct, or cached. */
@@ -65,6 +67,13 @@ typedef enum {
     NWIPE_IO_MODE_DIRECT, /* Force O_DIRECT, fail if not supported. */
     NWIPE_IO_MODE_CACHED /* Force cached I/O, never attempt O_DIRECT. */
 } nwipe_io_mode_t;
+
+/* I/O direction for data path. */
+typedef enum {
+    NWIPE_IO_DIRECTION_FORWARD = 0, /* Start -> End */
+    NWIPE_IO_DIRECTION_REVERSE, /* End -> Start */
+    NWIPE_IO_DIRECTION_SCATTER /* Random Order */
+} nwipe_io_direction_t;
 
 #define NWIPE_KNOB_SPEEDRING_SIZE 30
 #define NWIPE_KNOB_SPEEDRING_GRANULARITY 10
@@ -97,14 +106,21 @@ typedef struct nwipe_speedring_t_
 
 #define NWIPE_DEVICE_SYSFS_PATH_LENGTH 512
 
+#define DMIDECODE_RESULT_LENGTH 64
+
+#define NUMBER_DMI_OBJECTS 21
+
 typedef struct nwipe_context_t_
 {
     /*
      * Device fields
      */
-    int device_block_size;  // The soft block size reported by the device, as logical
-    int device_sector_size;  // The logical sector size reported by libparted
-    int device_phys_sector_size;  // The physical sector size reported by libparted
+    int device_busy;  // If libparted considers the device busy/mounted (0 = no, 1 = yes)
+    int device_sector_size;  // The logical sector size reported by the device
+    int device_phys_sector_size;  // The physical sector size reported by the device
+    size_t device_io_block_size;  // The block size for both cached and direct I/O
+    size_t device_io_block_alignment;  // The alignment for the I/O block size
+    size_t device_io_buffer_alignment;  // The alignment for allocated I/O buffers
     int device_bus;  // The device bus number.
     int device_fd;  // The file descriptor of the device file being wiped.
     int device_host;  // The host number.
@@ -158,6 +174,7 @@ typedef struct nwipe_context_t_
     int signal;  // Set when the child is killed by a signal.
     nwipe_speedring_t speedring;  // Ring buffer for computing the rolling throughput average.
     short sync_status;  // A flag to indicate when the method is syncing.
+    short retry_status;  // A flag to indicate when the method is retrying.
     pthread_t thread;  // The ID of the thread.
     u64 throughput;  // Average throughput in bytes per second.
     char throughput_txt[13];  // Human readable throughput.
@@ -189,6 +206,7 @@ typedef struct nwipe_context_t_
     time_t start_time;  // Start time of wipe
     time_t end_time;  // End time of wipe
     u64 fsyncdata_errors;  // The number of fsyncdata errors across all passes.
+    u64 io_retries;  // The number of I/O retries across all passes.
     char PDF_filename[FILENAME_MAX];  // The filename of the PDF certificate/report.
     int HPA_status;  // 0 = No HPA found/disabled, 1 = HPA detected, 2 = Unknown, unable to checked,
                      // 3 = Not applicable to this device
@@ -207,6 +225,7 @@ typedef struct nwipe_context_t_
     int HPA_display_toggle_state;  // 0 or 1 Used to toggle between "[1TB] [ 33C]" and [HDA STATUS]
     time_t HPA_toggle_time;  // records a time, then if for instance 3 seconds has elapsed the display changes
     nwipe_io_mode_t io_mode;  // specific I/O method for a given drive, direct or cached.
+    nwipe_io_direction_t io_direction;  // drive-specific I/O direction, forward/reverse or scatter.
     int test_use1;
     int test_use2;
 
@@ -231,7 +250,32 @@ typedef struct
     time_t maxeta;  // The estimated runtime of the slowest device.
     u64 throughput;  // Total throughput.
     u64 errors;  // The combined number of errors of all processes.
+    u64 io_retries;  // The combined number of I/O retries of all processes.
     pthread_t* gui_thread;  // The ID of GUI thread.
+    // Note, If you alter the dmidecode entries below you may also need
+    // to update dmi_labels and dmi_result arrays in the function
+    // pdf_add_text_host_info_page() in create_pdf.c
+    char dmidecode_bios_version[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_bios_release_date[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_system_manufacturer[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_system_product_name[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_system_version[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_system_serial_number[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_system_uuid[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_baseboard_manufacturer[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_baseboard_product_name[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_baseboard_version[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_baseboard_serial_number[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_baseboard_asset_tag[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_chassis_manufacturer[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_chassis_type[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_chassis_version[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_chassis_serial_number[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_chassis_asset_tag[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_processor_family[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_processor_manufacturer[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_processor_version[DMIDECODE_RESULT_LENGTH];  // host info
+    char dmidecode_processor_frequency[DMIDECODE_RESULT_LENGTH];  // host info
 } nwipe_misc_thread_data_t;
 
 /*

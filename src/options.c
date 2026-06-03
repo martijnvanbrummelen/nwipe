@@ -46,8 +46,10 @@ int nwipe_options_parse( int argc, char** argv )
     extern nwipe_prng_t nwipe_isaac64;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
+    extern nwipe_prng_t nwipe_splitmix64_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
     extern nwipe_prng_t nwipe_opencl_philox_prng;
+    extern nwipe_prng_t nwipe_chacha20_prng;
 
     extern config_t nwipe_cfg;
     config_setting_t* setting;
@@ -74,6 +76,9 @@ int nwipe_options_parse( int argc, char** argv )
 
     /* The list of acceptable long options. */
     static struct option nwipe_options_long[] = {
+        /* Set when user wants to allow wiping of devices that are in use. */
+        { "force", no_argument, 0, 0 },
+
         /* Set when the user wants to wipe without a confirmation prompt. */
         { "autonuke", no_argument, 0, 0 },
 
@@ -115,6 +120,18 @@ int nwipe_options_parse( int argc, char** argv )
         /* Whether to allow signals to interrupt a wipe. */
         { "nosignals", no_argument, 0, 0 },
 
+        /* Reverse the I/O direction (end -> start). */
+        { "reverse", no_argument, 0, 0 },
+
+        /* Scatter the I/O direction (random order). */
+        { "scatter", no_argument, 0, 0 },
+
+        /* Do NOT retry on possibly transient I/O errors. */
+        { "no-retry-on-io-errors", no_argument, 0, 0 },
+
+        /* Do NOT abort pass on block write errors. */
+        { "no-abort-on-block-errors", no_argument, 0, 0 },
+
         /* Whether to display the gui. */
         { "nogui", no_argument, 0, 0 },
 
@@ -134,6 +151,9 @@ int nwipe_options_parse( int argc, char** argv )
         /* Enables a field on the PDF that holds a tag that identifies the host computer */
         { "pdftag", no_argument, 0, 0 },
 
+        /* Enables PDF duplex mode where each new section starts on a odd (recto) page */
+        { "pdfduplex", no_argument, 0, 0 },
+
         /* Display program version. */
         { "verbose", no_argument, 0, 0 },
 
@@ -144,6 +164,7 @@ int nwipe_options_parse( int argc, char** argv )
         { 0, 0, 0, 0 } };
 
     /* Set default options. */
+    nwipe_options.force = 0;
     nwipe_options.autonuke = 0;
     nwipe_options.autopoweroff = 0;
     nwipe_options.method = &nwipe_random;
@@ -182,8 +203,12 @@ int nwipe_options_parse( int argc, char** argv )
     nwipe_options.verbose = 0;
     nwipe_options.verify = NWIPE_VERIFY_LAST;
     nwipe_options.io_mode = NWIPE_IO_MODE_AUTO; /* Default: auto-select I/O mode. */
+    nwipe_options.io_direction = NWIPE_IO_DIRECTION_FORWARD; /* Default: forward I/O direction. */
+    nwipe_options.noretry_io_errors = 0;
+    nwipe_options.noabort_block_errors = 0;
     nwipe_options.PDF_toggle_host_info = 0; /* Default: host visibility on PDF disabled */
     nwipe_options.PDFtag = 0;
+    nwipe_options.PDF_duplex = 0;  // 0 = duplex switched off, 1 = on.
     memset( nwipe_options.logfile, '\0', sizeof( nwipe_options.logfile ) );
     memset( nwipe_options.PDFreportpath, '\0', sizeof( nwipe_options.PDFreportpath ) );
     strncpy( nwipe_options.PDFreportpath, ".", 2 );
@@ -337,6 +362,11 @@ int nwipe_options_parse( int argc, char** argv )
         switch( nwipe_opt )
         {
             case 0: /* Long options without short counterparts. */
+                if( strcmp( nwipe_options_long[i].name, "force" ) == 0 )
+                {
+                    nwipe_options.force = 1;
+                    break;
+                }
 
                 if( strcmp( nwipe_options_long[i].name, "autonuke" ) == 0 )
                 {
@@ -469,6 +499,30 @@ int nwipe_options_parse( int argc, char** argv )
                                  argv[optind - 1] );
                         exit( EINVAL );
                     }
+                }
+
+                if( strcmp( nwipe_options_long[i].name, "reverse" ) == 0 )
+                {
+                    nwipe_options.io_direction = NWIPE_IO_DIRECTION_REVERSE;
+                    break;
+                }
+
+                if( strcmp( nwipe_options_long[i].name, "scatter" ) == 0 )
+                {
+                    nwipe_options.io_direction = NWIPE_IO_DIRECTION_SCATTER;
+                    break;
+                }
+
+                if( strcmp( nwipe_options_long[i].name, "no-retry-on-io-errors" ) == 0 )
+                {
+                    nwipe_options.noretry_io_errors = 1;
+                    break;
+                }
+
+                if( strcmp( nwipe_options_long[i].name, "no-abort-on-block-errors" ) == 0 )
+                {
+                    nwipe_options.noabort_block_errors = 1;
+                    break;
                 }
 
                 if( strcmp( nwipe_options_long[i].name, "nogui" ) == 0 )
@@ -607,6 +661,12 @@ int nwipe_options_parse( int argc, char** argv )
                 if( strcmp( nwipe_options_long[i].name, "pdftag" ) == 0 )
                 {
                     nwipe_options.PDFtag = 1;
+                    break;
+                }
+
+                if( strcmp( nwipe_options_long[i].name, "pdfduplex" ) == 0 )
+                {
+                    nwipe_options.PDF_duplex = 1;
                     break;
                 }
 
@@ -840,6 +900,12 @@ int nwipe_options_parse( int argc, char** argv )
                     break;
                 }
 
+                if( strcmp( optarg, "splitmix64" ) == 0 )
+                {
+                    nwipe_options.prng = &nwipe_splitmix64_prng;
+                    break;
+                }
+
                 if( strcmp( optarg, "aes_ctr_prng" ) == 0 )
                 {
                     if( has_aes_ni() )
@@ -869,6 +935,12 @@ int nwipe_options_parse( int argc, char** argv )
                                  "device.\n" );
                         exit( EINVAL );
                     }
+                    break;
+                }
+
+                if( strcmp( optarg, "chacha20" ) == 0 )
+                {
+                    nwipe_options.prng = &nwipe_chacha20_prng;
                     break;
                 }
 
@@ -927,217 +999,87 @@ void nwipe_options_log( void )
     extern nwipe_prng_t nwipe_isaac64;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
+    extern nwipe_prng_t nwipe_splitmix64_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
     extern nwipe_prng_t nwipe_opencl_philox_prng;
+    extern nwipe_prng_t nwipe_chacha20_prng;
 
     /**
      *  Prints a manifest of options to the log.
      */
-
     nwipe_log( NWIPE_LOG_NOTICE, "Program options are set as follows..." );
 
-    if( nwipe_options.autonuke == 1 )
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "  autonuke = %i (on)", nwipe_options.autonuke );
-    }
-    else
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "  autonuke = %i (off)", nwipe_options.autonuke );
-    }
+    nwipe_log( NWIPE_LOG_NOTICE, "  force        = %i (%s)", nwipe_options.force, nwipe_options.force ? "on" : "off" );
 
-    if( nwipe_options.autopoweroff )
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "  autopoweroff = %i (on)", nwipe_options.autopoweroff );
-    }
-    else
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "  autopoweroff = %i (off)", nwipe_options.autopoweroff );
-    }
+    nwipe_log(
+        NWIPE_LOG_NOTICE, "  autonuke     = %i (%s)", nwipe_options.autonuke, nwipe_options.autonuke ? "on" : "off" );
+
+    nwipe_log( NWIPE_LOG_NOTICE,
+               "  autopoweroff = %i (%s)",
+               nwipe_options.autopoweroff,
+               nwipe_options.autopoweroff ? "on" : "off" );
 
     if( nwipe_options.noblank )
-    {
         nwipe_log( NWIPE_LOG_NOTICE, "  do not perform a final blank pass" );
-    }
-
     if( nwipe_options.nowait )
-    {
         nwipe_log( NWIPE_LOG_NOTICE, "  do not wait for a key before exiting" );
-    }
-
     if( nwipe_options.nosignals )
-    {
         nwipe_log( NWIPE_LOG_NOTICE, "  do not allow signals to interrupt a wipe" );
-    }
-
     if( nwipe_options.nogui )
-    {
         nwipe_log( NWIPE_LOG_NOTICE, "  do not show GUI interface" );
-    }
+    if( nwipe_options.noretry_io_errors )
+        nwipe_log( NWIPE_LOG_NOTICE, "  do not retry I/O errors" );
+    if( nwipe_options.noabort_block_errors )
+        nwipe_log( NWIPE_LOG_NOTICE, "  do not abort on block errors" );
 
-    nwipe_log( NWIPE_LOG_NOTICE, "  banner   = %s", banner );
+    nwipe_log( NWIPE_LOG_NOTICE, "  banner       = %s", banner );
 
     if( nwipe_options.prng == &nwipe_twister )
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Mersenne Twister" );
-    }
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng         = Mersenne Twister" );
     else if( nwipe_options.prng == &nwipe_add_lagg_fibonacci_prng )
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Lagged Fibonacci generator" );
-    }
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng         = Lagged Fibonacci generator" );
     else if( nwipe_options.prng == &nwipe_xoroshiro256_prng )
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = XORoshiro-256" );
-    }
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng         = XORoshiro-256" );
+    else if( nwipe_options.prng == &nwipe_splitmix64_prng )
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng         = SplitMix64" );
     else if( nwipe_options.prng == &nwipe_aes_ctr_prng )
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = AES-CTR New Instructions (EXPERIMENTAL!)" );
-    }
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng         = AES-CTR (CSPRNG)" );
     else if( nwipe_options.prng == &nwipe_opencl_philox_prng )
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = OpenCL Philox4x32 GPU backend" );
-    }
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng         = OpenCL Philox4x32 GPU backend" );
     else if( nwipe_options.prng == &nwipe_isaac )
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Isaac" );
-    }
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng         = Isaac" );
     else if( nwipe_options.prng == &nwipe_isaac64 )
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Isaac64" );
-    }
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng         = Isaac64" );
+    else if( nwipe_options.prng == &nwipe_chacha20_prng )
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng         = ChaCha20 (CSPRNG)" );
     else
-    {
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng     = Undefined" );
-    }
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng         = Unknown" );
 
-    nwipe_log( NWIPE_LOG_NOTICE, "  method   = %s", nwipe_method_label( nwipe_options.method ) );
-    nwipe_log( NWIPE_LOG_NOTICE, "  quiet    = %i", nwipe_options.quiet );
-    nwipe_log( NWIPE_LOG_NOTICE, "  rounds   = %i", nwipe_options.rounds );
-    nwipe_log( NWIPE_LOG_NOTICE, "  sync     = %i", nwipe_options.sync );
+    nwipe_log( NWIPE_LOG_NOTICE, "  method       = %s", nwipe_method_label( nwipe_options.method ) );
+
+    nwipe_log( NWIPE_LOG_NOTICE,
+               "  direction    = %s",
+               nwipe_options.io_direction == NWIPE_IO_DIRECTION_FORWARD       ? "start -> end (forward)"
+                   : nwipe_options.io_direction == NWIPE_IO_DIRECTION_REVERSE ? "end -> start (reverse)"
+                                                                              : "random order (scatter)" );
+
+    nwipe_log( NWIPE_LOG_NOTICE, "  quiet        = %i", nwipe_options.quiet );
+    nwipe_log( NWIPE_LOG_NOTICE, "  rounds       = %i", nwipe_options.rounds );
+    nwipe_log( NWIPE_LOG_NOTICE, "  sync         = %i", nwipe_options.sync );
 
     switch( nwipe_options.verify )
     {
         case NWIPE_VERIFY_NONE:
-            nwipe_log( NWIPE_LOG_NOTICE, "  verify   = %i (off)", nwipe_options.verify );
+            nwipe_log( NWIPE_LOG_NOTICE, "  verify       = %i (off)", nwipe_options.verify );
             break;
-
         case NWIPE_VERIFY_LAST:
-            nwipe_log( NWIPE_LOG_NOTICE, "  verify   = %i (last pass)", nwipe_options.verify );
+            nwipe_log( NWIPE_LOG_NOTICE, "  verify       = %i (last pass)", nwipe_options.verify );
             break;
-
         case NWIPE_VERIFY_ALL:
-            nwipe_log( NWIPE_LOG_NOTICE, "  verify   = %i (all passes)", nwipe_options.verify );
+            nwipe_log( NWIPE_LOG_NOTICE, "  verify       = %i (all passes)", nwipe_options.verify );
             break;
-
         default:
-            nwipe_log( NWIPE_LOG_NOTICE, "  verify   = %i", nwipe_options.verify );
+            nwipe_log( NWIPE_LOG_NOTICE, "  verify       = %i", nwipe_options.verify );
             break;
     }
-}
-
-void display_help()
-{
-    /**
-     * displays the help section to STDOUT and exits.
-     */
-
-    printf( "Usage: %s [options] [device1] [device2] ...\n", program_name );
-    printf( "Options:\n" );
-    /* Limit line length to a maximum of 80 characters so it looks good in 80x25 terminals i.e shredos */
-    /*  ___12345678901234567890123456789012345678901234567890123456789012345678901234567890< Do not exceed */
-    puts( "  -V, --version           Prints the version number\n" );
-    puts( "  -v, --verbose           Prints more messages to the log\n" );
-    puts( "  -h, --help              Prints this help\n" );
-    puts( "      --autonuke          If no devices have been specified on the command line," );
-    puts( "                          starts wiping all devices immediately. If devices have" );
-    puts( "                          been specified, starts wiping only those specified" );
-    puts( "                          devices immediately.\n" );
-    puts( "      --autopoweroff      Power off system on completion of wipe delayed for" );
-    puts( "                          for one minute. During this one minute delay you can" );
-    puts( "                          abort the shutdown by typing sudo shutdown -c\n" );
-    printf( "      --sync=NUM          Will perform a sync after NUM writes (default: %d)\n", DEFAULT_SYNC_RATE );
-    puts( "                          0    - fdatasync after the disk is completely written" );
-    puts( "                                 fdatasync errors not detected until completion." );
-    puts( "                                 0 is not recommended as disk errors may cause" );
-    puts( "                                 nwipe to appear to hang" );
-    puts( "                          1    - fdatasync after every write" );
-    puts( "                                 Warning: Lower values will reduce wipe speeds." );
-    puts( "                          1000 - fdatasync after 1000 writes etc.\n" );
-    puts( "      --verify=TYPE       Whether to perform verification of erasure" );
-    puts( "                          (default: last)" );
-    puts( "                          off   - Do not verify" );
-    puts( "                          last  - Verify after the last pass" );
-    puts( "                          all   - Verify every pass" );
-    puts( "                          " );
-    puts( "      --directio          Force direct I/O (O_DIRECT); fail if not supported" );
-    puts( "      --cachedio          Force kernel cached I/O; never attempt O_DIRECT" );
-    puts( "      --io-mode=MODE      I/O mode: auto (default), direct, cached\n" );
-    puts( "                          Please mind that HMG IS5 enhanced always verifies the" );
-    puts( "                          last (PRNG) pass regardless of this option.\n" );
-    puts( "  -m, --method=METHOD     The wiping method. See man page for more details." );
-    puts( "                          (default: dodshort)" );
-    puts( "                          dod522022m / dod       - 7 pass DOD 5220.22-M method" );
-    puts( "                          dodshort / dod3pass    - 3 pass DOD method" );
-    puts( "                          gutmann                - Peter Gutmann's Algorithm" );
-    puts( "                          ops2                   - RCMP TSSIT OPS-II" );
-    puts( "                          random / prng / stream - PRNG Stream" );
-    puts( "                          zero / quick           - Overwrite with zeros" );
-    puts( "                          one                    - Overwrite with ones (0xFF)" );
-    puts( "                          verify_zero            - Verifies disk is zero filled" );
-    puts( "                          verify_one             - Verifies disk is 0xFF filled" );
-    puts( "                          is5enh                 -  HMG IS5 enhanced\n" );
-    puts( "                          bruce7                 -  Schneier Bruce 7-pass mixed pattern\n" );
-    puts( "                          bmb                    -  BMB21-2019 mixed pattern\n" );
-    puts( "  -l, --logfile=FILE      Filename to log to. Default is STDOUT\n" );
-    puts( "  -P, --PDFreportpath=PATH Path to write PDF reports to. Default is \".\"" );
-    puts( "                           If set to \"noPDF\" no PDF reports are written.\n" );
-    puts( "  -p, --prng=METHOD        PRNG option "
-          "(mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng|xoroshiro256_prng|aes_ctr_prng|opencl_philox_prng)"
-          "\n" );
-    puts( "  --prng=auto              (default)" );
-    puts( "      Automatically benchmark all available PRNGs at startup and" );
-    puts( "      select the fastest one for the current hardware." );
-    puts( "" );
-    puts( "  --prng=opencl_philox_prng" );
-    puts( "      Experimental GPU-backed Philox4x32 PRNG via OpenCL." );
-    puts( "      Requires an OpenCL-enabled build and a usable GPU device." );
-    puts( "" );
-
-    puts( "  --prng=default" );
-    puts( "      Disable auto-selection and use the built-in default PRNG choice" );
-    puts( "      (CPU-based heuristic; no benchmarking)." );
-    puts( "      Alias: --prng=manual" );
-    puts( "" );
-    puts( "  --prng-benchmark" );
-    puts( "      Run a RAM-only PRNG throughput benchmark and exit." );
-    puts( "      Prints a sorted leaderboard (MB/s). No wipe is performed." );
-    puts( "" );
-    puts( "  --prng-bench-seconds=N" );
-    puts( "      Seconds per PRNG during benchmarking (default: 1.0)." );
-    puts( "      For --prng=auto this is automatically reduced unless set." );
-
-    puts( "  -q, --quiet              Anonymize logs and the GUI by removing unique data, i.e." );
-    puts( "                           serial numbers, LU WWN Device ID, and SMBIOS/DMI data." );
-    puts( "                           XXXXXX = S/N exists, ????? = S/N not obtainable\n" );
-    puts( "  -r, --rounds=NUM         Number of times to wipe the device using the selected" );
-    puts( "                           method. (default: 1)\n" );
-    puts( "      --noblank            Do NOT blank disk after wipe." );
-    puts( "                           (default is to complete a final blank pass)\n" );
-    puts( "      --nowait             Do NOT wait for a key before exiting." );
-    puts( "                           (default is to wait)\n" );
-    puts( "      --nosignals          Do NOT allow signals to interrupt a wipe." );
-    puts( "                           (default is to allow)\n" );
-    puts( "      --nogui              Do NOT show the GUI interface. Automatically invokes" );
-    puts( "                           the nowait option. Must be used with the --autonuke" );
-    puts( "                           option. Send SIGUSR1 to log current stats.\n" );
-    puts( "      --nousb              Do NOT show or wipe any USB devices whether in GUI" );
-    puts( "                           mode, --nogui or --autonuke modes.\n" );
-    puts( "      --pdftag             Enables a field on the PDF that holds a tag that\n" );
-    puts( "                           identifies the host computer\n" );
-    puts( "  -e, --exclude=DEVICES    Up to ten comma separated devices to be excluded." );
-    puts( "                           --exclude=/dev/sdc" );
-    puts( "                           --exclude=/dev/sdc,/dev/sdd" );
-    puts( "                           --exclude=/dev/sdc,/dev/sdd,/dev/mapper/cryptswap1\n" );
-    puts( "                           --exclude=/dev/disk/by-id/ata-XXXXXXXX" );
-    puts( "                           --exclude=/dev/disk/by-path/pci-0000:00:17.0-ata-1\n" );
-    puts( "" );
 }

@@ -1,0 +1,30 @@
+name: ci-ubuntu-latest-hard-std-c99
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      BASE_CFLAGS: "-O1 -g -std=c99 -Wall -Wextra -Wconversion -Wsign-conversion -Wsign-compare -Wshadow -Wfloat-conversion -Wuninitialized -Wformat-truncation -Wstrict-overflow=2 -Wcast-align -Wno-system-headers"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Update system packages
+        run: sudo apt-get update
+
+      - name: Install dependencies
+        run: sudo apt-get install -y build-essential pkg-config automake libncurses5-dev autotools-dev libparted-dev libconfig-dev libconfig++-dev dmidecode
+
+      - name: Generate autogen files
+        run: ./autogen.sh
+
+      - name: Configure the program with more warnings
+        run: ./configure CFLAGS="$BASE_CFLAGS" CXXFLAGS="$BASE_CFLAGS"
+  
+      - name: Compile the program
+        run: make CFLAGS="$BASE_CFLAGS -fanalyzer" CXXFLAGS="$BASE_CFLAGS -fanalyzer"

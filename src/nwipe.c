@@ -570,9 +570,6 @@ int main( int argc, char** argv )
         exit( 1 );
     }
 
-    /* Log the System information */
-    nwipe_log_sysinfo();
-
     /* The array of pointers to contexts that will actually be wiped. */
     nwipe_context_t** c2 = (nwipe_context_t**) malloc( nwipe_enumerated * sizeof( nwipe_context_t* ) );
     if( c2 == NULL )
@@ -617,6 +614,9 @@ int main( int argc, char** argv )
 
         pthread_create( &nwipe_sigint_thread, &pthread_attr, signal_hand, &nwipe_thread_data_ptr );
     }
+
+    /* Log the System information */
+    nwipe_log_sysinfo( &nwipe_misc_thread_data );
 
     /* Makesure the drivetemp module is loaded, else drives hwmon entries won't appear in /sys/class/hwmon */
     final_cmd_modprobe[0] = 0;
@@ -669,8 +669,12 @@ int main( int argc, char** argv )
     /* Now set specific nwipe options */
     for( i = 0; i < nwipe_enumerated; i++ )
     {
-
-        if( nwipe_options.autonuke == 1 )
+        if( c1[i]->device_busy && !nwipe_options.force )
+        {
+            /* Do not allow to wipe in-use devices if --force is not set. */
+            c1[i]->select = NWIPE_SELECT_DISABLED_BUSY;
+        }
+        else if( nwipe_options.autonuke == 1 )
         {
             /* When the autonuke option is set, select all disks. */
             // TODO - partitions
@@ -818,6 +822,16 @@ int main( int argc, char** argv )
             /* A result buffer for the BLKGETSIZE64 ioctl. */
             u64 size64;
 
+            /* Should be filtered out earlier, but keep it as a last-minute seatbelt. */
+            if( c2[i]->device_busy && !nwipe_options.force )
+            {
+                nwipe_log( NWIPE_LOG_FATAL,
+                           "Device '%s' is IN USE but --force is not set, not wiping it.",
+                           c2[i]->device_name );
+                c2[i]->select = NWIPE_SELECT_DISABLED_BUSY;
+                continue;
+            }
+
             /* Initialise the spinner character index */
             c2[i]->spinner_idx = 0;
 
@@ -827,6 +841,9 @@ int main( int argc, char** argv )
 
             /* Initialise the wipe_status flag, -1 = wipe not yet started */
             c2[i]->wipe_status = -1;
+
+            /* Initialise the I/O direction */
+            c2[i]->io_direction = nwipe_options.io_direction;
 
             /* Open the file for reads and writes, honoring the configured I/O mode. */
             int open_flags = O_RDWR;
@@ -948,24 +965,6 @@ int main( int argc, char** argv )
                 nwipe_log( NWIPE_LOG_NOTICE, "%s has serial number %s", c2[i]->device_name, c2[i]->device_serial_no );
             }
 
-            /* Do sector size and block size checking. I don't think this does anything useful as logical/Physical
-             * sector sizes are obtained by libparted in check.c */
-            if( ioctl( c2[i]->device_fd, BLKSSZGET, &c2[i]->device_sector_size ) == 0 )
-            {
-
-                if( ioctl( c2[i]->device_fd, BLKBSZGET, &c2[i]->device_block_size ) != 0 )
-                {
-                    nwipe_log( NWIPE_LOG_WARNING, "Device '%s' failed BLKBSZGET ioctl.", c2[i]->device_name );
-                    c2[i]->device_block_size = 0;
-                }
-            }
-            else
-            {
-                nwipe_log( NWIPE_LOG_WARNING, "Device '%s' failed BLKSSZGET ioctl.", c2[i]->device_name );
-                c2[i]->device_sector_size = 0;
-                c2[i]->device_block_size = 0;
-            }
-
             /* The st_size field is zero for block devices. */
             /* ioctl( c2[i]->device_fd, BLKGETSIZE64, &c2[i]->device_size ); */
 
@@ -1015,23 +1014,36 @@ int main( int argc, char** argv )
             if( c2[i]->device_size == 0 )
             {
                 nwipe_log( NWIPE_LOG_ERROR,
-                           "%s, sect/blk/dev %i/%i/%llu",
+                           "%s, log/phy/dev %i/%i/%llu",
                            c2[i]->device_name,
                            c2[i]->device_sector_size,
-                           c2[i]->device_block_size,
+                           c2[i]->device_phys_sector_size,
                            c2[i]->device_size );
                 nwipe_error++;
                 continue;
             }
-            else
+
+            /*
+             * Right before the wipe, but after HPA/DCO is done, we get the
+             * device sector sizes from the kernel. This step ensures they are
+             * compatible for direct I/O and its strict alignment requirements.
+             * The function call populates also I/O parameters like the aligned
+             * block size - all of which can be used for cached and direct I/O.
+             */
+            if( nwipe_update_geometry_for_io( c2[i] ) != 0 )
             {
-                nwipe_log( NWIPE_LOG_NOTICE,
-                           "%s, sect/blk/dev %i/%i/%llu",
-                           c2[i]->device_name,
-                           c2[i]->device_sector_size,
-                           c2[i]->device_block_size,
-                           c2[i]->device_size );
+                nwipe_log( NWIPE_LOG_ERROR, "No sane device geometry for '%s'.", c2[i]->device_name );
+                nwipe_error++;
+                continue;
             }
+
+            nwipe_log( NWIPE_LOG_NOTICE, "%s: Device geometry is as follows...", c2[i]->device_name );
+            nwipe_log( NWIPE_LOG_NOTICE, "  Logical sector size  = %i", c2[i]->device_sector_size );
+            nwipe_log( NWIPE_LOG_NOTICE, "  Physical sector size = %i", c2[i]->device_phys_sector_size );
+            nwipe_log( NWIPE_LOG_NOTICE, "  I/O block size       = %zu", c2[i]->device_io_block_size );
+            nwipe_log( NWIPE_LOG_NOTICE, "  I/O block alignment  = %zu", c2[i]->device_io_block_alignment );
+            nwipe_log( NWIPE_LOG_NOTICE, "  I/O buffer alignment = %zu", c2[i]->device_io_buffer_alignment );
+            nwipe_log( NWIPE_LOG_NOTICE, "  Total device bytes   = %llu", c2[i]->device_size );
 
             /* Fork a child process. */
             errno = pthread_create( &c2[i]->thread, NULL, nwipe_options.method, (void*) c2[i] );
@@ -1078,7 +1090,11 @@ int main( int argc, char** argv )
             break;
         }
 
-        if( c2[i]->wipe_status != 0 )
+        /*
+         * If the wipe is not done and a thread (still) exists, keep waiting.
+         * It also covers "continue;" error cases where thread was not started.
+         */
+        if( c2[i]->wipe_status != 0 && c2[i]->thread != 0 )
         {
             i = 0;
         }
@@ -1287,15 +1303,14 @@ int main( int argc, char** argv )
             if( c2[i]->result != 0 || c2[i]->pass_errors != 0 || c2[i]->verify_errors != 0
                 || c2[i]->fsyncdata_errors != 0 )
             {
-                /* If the run_method ever returns anything other than zero then makesure there is at least one pass
-                 * error This is so that the log summary tables correctly show a failure when one occurs as it only
-                 * shows pass, verification and fdatasync errors. */
-                if( c2[i]->result != 0 )
+                /*
+                 * If the wipe finished with non-zero but did not internally increase
+                 * any error count, set at least one pass error for consistency between
+                 * the shown FAILURE/IOERROR status and the error count (also done in GUI).
+                 */
+                if( c2[i]->pass_errors == 0 && c2[i]->verify_errors == 0 && c2[i]->fsyncdata_errors == 0 )
                 {
-                    if( c2[i]->pass_errors == 0 )
-                    {
-                        c2[i]->pass_errors = 1;
-                    }
+                    c2[i]->pass_errors = 1;
                 }
 
                 nwipe_log( NWIPE_LOG_FATAL,
@@ -1315,7 +1330,7 @@ int main( int argc, char** argv )
     }
 
     /* Generate and send the drive status summary to the log */
-    nwipe_log_summary( c2, nwipe_selected );
+    nwipe_log_summary( &nwipe_thread_data_ptr, c2, nwipe_selected );
 
     /* Print a one line status message for the user */
     if( return_status == 0 || return_status == 1 )
@@ -1401,10 +1416,16 @@ void* signal_hand( void* ptr )
 
                 for( i = 0; i < nwipe_misc_thread_data->nwipe_selected; i++ )
                 {
-
                     if( c[i]->thread )
                     {
                         char* status = "";
+                        const char* op_prefix = c[i]->io_direction == NWIPE_IO_DIRECTION_FORWARD ? ""
+                            : c[i]->io_direction == NWIPE_IO_DIRECTION_REVERSE                   ? "<"
+                                                                                                 : "";
+                        const char* op_suffix = c[i]->io_direction == NWIPE_IO_DIRECTION_FORWARD ? ">"
+                            : c[i]->io_direction == NWIPE_IO_DIRECTION_REVERSE                   ? ""
+                                                                                                 : "";
+
                         switch( c[i]->pass_type )
                         {
                             case NWIPE_PASS_FINAL_BLANK:
@@ -1430,11 +1451,15 @@ void* signal_hand( void* ptr )
                         {
                             status = "[syncing]";
                         }
+                        if( c[i]->retry_status )
+                        {
+                            status = "[retrying]";
+                        }
 
                         convert_seconds_to_hours_minutes_seconds( c[i]->eta, &hours, &minutes, &seconds );
 
                         nwipe_log( NWIPE_LOG_INFO,
-                                   "%s: %05.2f%%, round %i of %i, pass %i of %i, eta %02i:%02i:%02i, %s",
+                                   "%s: %05.2f%%, round %i of %i, pass %i of %i, eta %02i:%02i:%02i, %s%s%s",
                                    c[i]->device_name,
                                    c[i]->round_percent,
                                    c[i]->round_working,
@@ -1444,7 +1469,9 @@ void* signal_hand( void* ptr )
                                    hours,
                                    minutes,
                                    seconds,
-                                   status );
+                                   status[0] != '\0' ? op_prefix : "",
+                                   status,
+                                   status[0] != '\0' ? op_suffix : "" );
                     }
                     else
                     {

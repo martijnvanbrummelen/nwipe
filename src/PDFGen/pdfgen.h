@@ -384,6 +384,17 @@ float pdf_page_width(const struct pdf_object *page);
 struct pdf_object *pdf_append_page(struct pdf_doc *pdf);
 
 /**
+ * Retrieve a page by its number.
+ *
+ * Note: The page must have already been created via \ref pdf_append_page
+ *
+ * @param pdf PDF document to get page from
+ * @param page_number Page number to retrieve, starting from 1.
+ * @return Page object if the given page is found, NULL otherwise
+ */
+struct pdf_object *pdf_get_page(struct pdf_doc *pdf, int page_number);
+
+/**
  * Adjust the width/height of a specific page
  * @param pdf PDF document that the page belongs to
  * @param page object returned from @ref pdf_append_page
@@ -426,6 +437,21 @@ int pdf_add_text(struct pdf_doc *pdf, struct pdf_object *page,
                  uint32_t colour);
 
 /**
+ * Add a text string to the document at a rotated angle
+ * @param pdf PDF document to add to
+ * @param page Page to add object to (NULL => most recently added page)
+ * @param text String to display
+ * @param size Point size of the font
+ * @param xoff X location to put it in
+ * @param yoff Y location to put it in
+ * @param angle Rotation angle of text (in radians)
+ * @param colour Colour to draw the text
+ * @return 0 on success, < 0 on failure
+ */
+int pdf_add_text_rotate(struct pdf_doc *pdf, struct pdf_object *page,
+                        const char *text, float size, float xoff, float yoff,
+                        float angle, uint32_t colour);
+/**
  * Add a text string to the document, making it wrap if it is too
  * long
  * @param pdf PDF document to add to
@@ -434,6 +460,7 @@ int pdf_add_text(struct pdf_doc *pdf, struct pdf_object *page,
  * @param size Point size of the font
  * @param xoff X location to put it in
  * @param yoff Y location to put it in
+ * @param angle Rotation angle of text (in radians)
  * @param colour Colour to draw the text
  * @param wrap_width Width at which to wrap the text
  * @param align Text alignment (see PDF_ALIGN_xxx)
@@ -442,8 +469,8 @@ int pdf_add_text(struct pdf_doc *pdf, struct pdf_object *page,
  */
 int pdf_add_text_wrap(struct pdf_doc *pdf, struct pdf_object *page,
                       const char *text, float size, float xoff, float yoff,
-                      uint32_t colour, float wrap_width, int align,
-                      float *height);
+                      float angle, uint32_t colour, float wrap_width,
+                      int align, float *height);
 
 /**
  * Add a line to the document
@@ -512,7 +539,7 @@ int pdf_add_quadratic_bezier(struct pdf_doc *pdf, struct pdf_object *page,
  * @return 0 on success, < 0 on failure
  */
 int pdf_add_custom_path(struct pdf_doc *pdf, struct pdf_object *page,
-                        struct pdf_path_operation *operations,
+                        const struct pdf_path_operation *operations,
                         int operation_count, float stroke_width,
                         uint32_t stroke_colour, uint32_t fill_colour);
 

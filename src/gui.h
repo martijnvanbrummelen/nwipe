@@ -49,6 +49,8 @@ void nwipe_gui_select( int count, nwipe_context_t** c );  // Select devices to w
 void* nwipe_gui_status( void* ptr );  // Update operation progress.
 void nwipe_gui_method( void );  // Change the method option.
 void nwipe_gui_options( void );  // Update the options window.
+void nwipe_gui_io_direction( void );  // Change the I/O direction.
+void nwipe_gui_prng_category( void );  // Change the prng category.
 void nwipe_gui_prng( void );  // Change the prng option.
 void nwipe_gui_rounds( void );  // Change the rounds option.
 void nwipe_gui_verify( void );  // Change the verify option.
