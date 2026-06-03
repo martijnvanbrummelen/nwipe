@@ -31,6 +31,7 @@
 #include "xor/xoroshiro256_prng.h"  //XORoshiro-256 prototype
 #include "splitmix64/splitmix64.h"  // SplitMix64 PRNG
 #include "aes/aes_ctr_prng.h"  // AES-NI prototype
+#include "opencl/opencl_philox_prng.h"  // OpenCL Philox prototype
 #include "chacha20/chacha20.h"  // ChaCha20 stream cipher CSPRNG
 
 nwipe_prng_t nwipe_twister = { "Mersenne Twister", nwipe_twister_init, nwipe_twister_read };
@@ -54,6 +55,11 @@ nwipe_prng_t nwipe_aes_ctr_prng = { "AES-CTR (CSPRNG)", nwipe_aes_ctr_prng_init,
 /* ChaCha20 stream cipher CSPRNG */
 nwipe_prng_t nwipe_chacha20_prng = { "ChaCha20 (CSPRNG)", nwipe_chacha20_prng_init, nwipe_chacha20_prng_read };
 
+/* OpenCL Philox PRNG Structure */
+nwipe_prng_t nwipe_opencl_philox_prng = { "OpenCL Philox4x32",
+                                          nwipe_opencl_philox_prng_init,
+                                          nwipe_opencl_philox_prng_read };
+
 static const nwipe_prng_t* all_prngs[] = {
     &nwipe_twister,
     &nwipe_isaac,
@@ -62,8 +68,26 @@ static const nwipe_prng_t* all_prngs[] = {
     &nwipe_xoroshiro256_prng,
     &nwipe_splitmix64_prng,
     &nwipe_aes_ctr_prng,
+    &nwipe_opencl_philox_prng,
     &nwipe_chacha20_prng,
 };
+
+void nwipe_prng_free_state( const nwipe_prng_t* prng, void** state )
+{
+    if( state == NULL || *state == NULL )
+    {
+        return;
+    }
+
+    if( prng == &nwipe_opencl_philox_prng )
+    {
+        nwipe_opencl_philox_prng_free( state );
+        return;
+    }
+
+    free( *state );
+    *state = NULL;
+}
 
 /* Print given number of bytes from unsigned integer number to a byte stream buffer starting with low-endian. */
 static inline void u32_to_buffer( u8* restrict buffer, u32 val, const int len )
@@ -929,8 +953,7 @@ static void nwipe_prng_bench_one( const nwipe_prng_t* prng,
     if( rc != 0 )
     {
         out->rc = rc;
-        if( state )
-            free( state );
+        nwipe_prng_free_state( prng, &state );
         return;
     }
 
@@ -963,8 +986,7 @@ static void nwipe_prng_bench_one( const nwipe_prng_t* prng,
     if( out->rc == 0 && out->seconds > 0.0 )
         out->mbps = ( (double) out->bytes / ( 1024.0 * 1024.0 ) ) / out->seconds;
 
-    if( state )
-        free( state );
+    nwipe_prng_free_state( prng, &state );
 }
 
 /* --- benchmark all with live current-PRNG spinner ----------------------- */

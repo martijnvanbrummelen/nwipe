@@ -298,8 +298,7 @@ static void nwipe_gui_bench_one_prng( const nwipe_prng_t* prng,
     if( rc != 0 )
     {
         out->rc = rc;
-        if( state )
-            free( state );
+        nwipe_prng_free_state( prng, &state );
         return;
     }
 
@@ -325,8 +324,7 @@ static void nwipe_gui_bench_one_prng( const nwipe_prng_t* prng,
         out->mbps = ( (double) out->bytes / ( 1024.0 * 1024.0 ) ) / out->seconds;
     }
 
-    if( state )
-        free( state );
+    nwipe_prng_free_state( prng, &state );
 }
 
 static void nwipe_gui_trim_to_devices( const char* in, const char** out_start )
@@ -779,6 +777,7 @@ void nwipe_gui_benchmark_prng( void )
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
     extern nwipe_prng_t nwipe_splitmix64_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
+    extern nwipe_prng_t nwipe_opencl_philox_prng;
     extern nwipe_prng_t nwipe_chacha20_prng;
 
     extern int terminate_signal;
@@ -791,12 +790,13 @@ void nwipe_gui_benchmark_prng( void )
         &nwipe_xoroshiro256_prng,
         &nwipe_splitmix64_prng,
         &nwipe_aes_ctr_prng,
+        &nwipe_opencl_philox_prng,
         &nwipe_chacha20_prng,
     };
 
     const int prng_count = (int) ( sizeof( prngs ) / sizeof( prngs[0] ) );
 
-    nwipe_prng_bench_result_t results[8];
+    nwipe_prng_bench_result_t results[9];
     memset( results, 0, sizeof( results ) );
 
     /* Settings: keep it quick and comparable */
@@ -2318,15 +2318,17 @@ void nwipe_gui_prng( void )
     extern nwipe_prng_t nwipe_splitmix64_prng;
     extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
+    extern nwipe_prng_t nwipe_opencl_philox_prng;
     extern nwipe_prng_t nwipe_chacha20_prng;
 
     extern int terminate_signal;
 
     /* The number of implemented PRNGs. */
-    const nwipe_prng_t* prngs[8]; /* 8 PRNGs */
+    const nwipe_prng_t* prngs[9]; /* 9 PRNGs */
 
     /* AES-NI */
     const int aes_ctr_available = has_aes_ni();
+    const int opencl_philox_available = nwipe_opencl_philox_prng_available();
 
     /* The first tabstop. */
     const int tab1 = 2;
@@ -2357,6 +2359,7 @@ void nwipe_gui_prng( void )
         prngs[count++] = &nwipe_add_lagg_fibonacci_prng;
         prngs[count++] = &nwipe_xoroshiro256_prng;
         prngs[count++] = &nwipe_splitmix64_prng;
+        prngs[count++] = &nwipe_opencl_philox_prng;
     }
     else /* Cryptographically secure */
     {
@@ -2375,7 +2378,6 @@ void nwipe_gui_prng( void )
             break;
         }
     }
-
     do
     {
         /* Clear the main window. */
@@ -2390,6 +2392,10 @@ void nwipe_gui_prng( void )
         for( int i = 0; i < count; i++ )
         {
             if( prngs[i] == &nwipe_aes_ctr_prng && !aes_ctr_available )
+            {
+                mvwprintw( main_window, yy++, tab1, "  %s (N/A)", prngs[i]->label );
+            }
+            else if( prngs[i] == &nwipe_opencl_philox_prng && !opencl_philox_available )
             {
                 mvwprintw( main_window, yy++, tab1, "  %s (N/A)", prngs[i]->label );
             }
@@ -2505,6 +2511,33 @@ void nwipe_gui_prng( void )
                 wattroff( main_window, A_DIM );
             }
         }
+        else if( focused_prng == &nwipe_opencl_philox_prng )
+        {
+            if( opencl_philox_available )
+            {
+                mvwprintw( main_window, yy++, tab2, "Counter-based Philox4x32 PRNG executed on a " );
+                mvwprintw( main_window, yy++, tab2, "GPU through OpenCL. It is designed for very  " );
+                mvwprintw( main_window, yy++, tab2, "high throughput and deterministic replay by  " );
+                mvwprintw( main_window, yy++, tab2, "byte offset, which keeps nwipe verification  " );
+                mvwprintw( main_window, yy++, tab2, "compatible with the existing PRNG pass model." );
+                mvwprintw( main_window, yy++, tab2, "                                             " );
+                mvwprintw( main_window, yy++, tab2, "Best suited to systems where GPU generation  " );
+                mvwprintw( main_window, yy++, tab2, "plus host readback beats CPU PRNG throughput." );
+                mvwprintw( main_window, yy++, tab2, "                                             " );
+                mvwprintw( main_window, yy++, tab2, "Experimental backend. Benchmark before use.  " );
+            }
+            else
+            {
+                wattron( main_window, A_DIM );
+                mvwprintw( main_window, yy++, tab2, "OpenCL Philox4x32 is NOT available on this   " );
+                mvwprintw( main_window, yy++, tab2, "system. It requires an OpenCL-enabled build  " );
+                mvwprintw( main_window, yy++, tab2, "and a usable GPU device discovered at runtime." );
+                mvwprintw( main_window, yy++, tab2, "                                             " );
+                mvwprintw( main_window, yy++, tab2, "If OpenCL support is built and a GPU runtime " );
+                mvwprintw( main_window, yy++, tab2, "is installed, this entry becomes selectable. " );
+                wattroff( main_window, A_DIM );
+            }
+        }
         else if( focused_prng == &nwipe_chacha20_prng )
         {
             mvwprintw( main_window, yy++, tab2, "ChaCha20 is a stream cipher by Daniel Bernstein  " );
@@ -2572,6 +2605,11 @@ void nwipe_gui_prng( void )
                 const nwipe_prng_t* selected = prngs[focus];
 
                 if( selected == &nwipe_aes_ctr_prng && !aes_ctr_available )
+                {
+                    beep();
+                    break;
+                }
+                if( selected == &nwipe_opencl_philox_prng && !opencl_philox_available )
                 {
                     beep();
                     break;

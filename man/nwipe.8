@@ -184,12 +184,17 @@ If \fIDIR\fR is set to \fInoPDF\fR no report PDF files are written.
 .TP
 \fB\-p\fR, \fB\-\-prng\fR=\fIMETHOD\fR
 The PRNG option (default: aes_ctr_prng).
-(mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng|xoroshiro256_prng|splitmix64|aes_ctr_prng|chacha20)
+(mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng|xoroshiro256_prng|splitmix64|aes_ctr_prng|opencl_philox_prng|chacha20)
 .IP
 \fBaes_ctr_prng\fR uses the Linux kernel AF_ALG interface to AES\-CTR as a
 cryptographically strong stream generator. It is seeded via
 .BR getrandom (2)
 and requires kernel crypto support for AES\-CTR.
+.IP
+\fBopencl_philox_prng\fR uses an experimental OpenCL backend to run a
+counter-based Philox4x32 generator on a GPU or accelerator. It requires an
+OpenCL-enabled build and a usable GPU/accelerator runtime. CPU-only OpenCL
+runtimes are not used for this backend.
 .TP
 \fB\-q\fR, \fB\-\-quiet\fR
 Anonymize serial numbers, GUI & logs display:

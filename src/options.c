@@ -48,6 +48,7 @@ int nwipe_options_parse( int argc, char** argv )
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
     extern nwipe_prng_t nwipe_splitmix64_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
+    extern nwipe_prng_t nwipe_opencl_philox_prng;
     extern nwipe_prng_t nwipe_chacha20_prng;
 
     extern config_t nwipe_cfg;
@@ -921,6 +922,22 @@ int nwipe_options_parse( int argc, char** argv )
                     break;
                 }
 
+                if( strcmp( optarg, "opencl_philox_prng" ) == 0 )
+                {
+                    if( nwipe_opencl_philox_prng_available() )
+                    {
+                        nwipe_options.prng = &nwipe_opencl_philox_prng;
+                    }
+                    else
+                    {
+                        fprintf( stderr,
+                                 "Error: opencl_philox_prng requires an OpenCL-enabled build and a usable GPU "
+                                 "device.\n" );
+                        exit( EINVAL );
+                    }
+                    break;
+                }
+
                 if( strcmp( optarg, "chacha20" ) == 0 )
                 {
                     nwipe_options.prng = &nwipe_chacha20_prng;
@@ -984,6 +1001,7 @@ void nwipe_options_log( void )
     extern nwipe_prng_t nwipe_xoroshiro256_prng;
     extern nwipe_prng_t nwipe_splitmix64_prng;
     extern nwipe_prng_t nwipe_aes_ctr_prng;
+    extern nwipe_prng_t nwipe_opencl_philox_prng;
     extern nwipe_prng_t nwipe_chacha20_prng;
 
     /**
@@ -1026,6 +1044,8 @@ void nwipe_options_log( void )
         nwipe_log( NWIPE_LOG_NOTICE, "  prng         = SplitMix64" );
     else if( nwipe_options.prng == &nwipe_aes_ctr_prng )
         nwipe_log( NWIPE_LOG_NOTICE, "  prng         = AES-CTR (CSPRNG)" );
+    else if( nwipe_options.prng == &nwipe_opencl_philox_prng )
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng         = OpenCL Philox4x32 GPU backend" );
     else if( nwipe_options.prng == &nwipe_isaac )
         nwipe_log( NWIPE_LOG_NOTICE, "  prng         = Isaac" );
     else if( nwipe_options.prng == &nwipe_isaac64 )

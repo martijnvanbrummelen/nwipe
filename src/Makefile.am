@@ -1,6 +1,6 @@
 # what flags you want to pass to the C compiler & linker
 #CFLAGS = -lncurses -lparted
-AM_CFLAGS =
+AM_CFLAGS = $(OPENCL_CFLAGS)
 AM_LDFLAGS =
 check_PROGRAMS = test_round_size
 TESTS = test_round_size
@@ -43,6 +43,7 @@ NWIPE_PRNG = \
     xor/xoroshiro256_prng.c xor/xoroshiro256_prng.h \
     splitmix64/splitmix64.c splitmix64/splitmix64.h \
     aes/aes_ctr_prng.cpp aes/aes_ctr_prng.h \
+    opencl/opencl_philox_prng.c opencl/opencl_philox_prng.h \
     chacha20/chacha20.c chacha20/chacha20.h \
     chacha20/chacha20_test.c chacha20/chacha20_test_vectors.c chacha20/chacha20_test.h
 
@@ -64,7 +65,7 @@ NWIPE_HDDTEMP = \
 
 # Combine all sources
 nwipe_SOURCES = $(NWIPE_CORE) $(NWIPE_PRNG) $(NWIPE_PDF) $(NWIPE_HDDTEMP)
-nwipe_LDADD = $(PARTED_LIBS) $(LIBCONFIG)
+nwipe_LDADD = $(PARTED_LIBS) $(LIBCONFIG) $(OPENCL_LIBS)
 
 test_round_size_SOURCES = ../tests/unit/test_round_size.c round_size.c round_size.h
 test_round_size_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)

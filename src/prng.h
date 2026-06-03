@@ -77,6 +77,8 @@ const nwipe_prng_t* nwipe_prng_select_fastest( double seconds_per_prng,
                                                nwipe_prng_bench_result_t* results,
                                                size_t results_count );
 
+void nwipe_prng_free_state( const nwipe_prng_t* prng, void** state );
+
 /* Mersenne Twister prototypes. */
 int nwipe_twister_init( NWIPE_PRNG_INIT_SIGNATURE );
 int nwipe_twister_read( NWIPE_PRNG_READ_SIGNATURE );
@@ -103,6 +105,12 @@ int nwipe_splitmix64_prng_read( NWIPE_PRNG_READ_SIGNATURE );
 int nwipe_aes_ctr_prng_init( NWIPE_PRNG_INIT_SIGNATURE );
 int nwipe_aes_ctr_prng_read( NWIPE_PRNG_READ_SIGNATURE );
 
+/* OpenCL Philox prototypes. */
+int nwipe_opencl_philox_prng_init( NWIPE_PRNG_INIT_SIGNATURE );
+int nwipe_opencl_philox_prng_read( NWIPE_PRNG_READ_SIGNATURE );
+int nwipe_opencl_philox_prng_available( void );
+void nwipe_opencl_philox_prng_free( void** state );
+
 /* ChaCha20 stream cipher CSPRNG */
 int nwipe_chacha20_prng_init( NWIPE_PRNG_INIT_SIGNATURE );
 int nwipe_chacha20_prng_read( NWIPE_PRNG_READ_SIGNATURE );
@@ -122,6 +130,9 @@ int nwipe_chacha20_prng_read( NWIPE_PRNG_READ_SIGNATURE );
 
 /* AES-CTR generation chunk size: fixed 128 KiB (not architecture-dependent) */
 #define SIZE_OF_AES_CTR_PRNG ( 128 * 1024 )
+
+/* Philox4x32 generation block size: 128 bits = 16 bytes */
+#define SIZE_OF_OPENCL_PHILOX_PRNG 16
 
 /* Thread-local prefetch ring buffer capacity: 1 MiB */
 #define STASH_CAPACITY ( 1024 * 1024 )

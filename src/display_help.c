@@ -124,7 +124,12 @@ void display_help()
     "        xoroshiro256_prng\n" \
     "        splitmix64\n" \
     "        aes_ctr_prng\n" \
+    "        opencl_philox_prng\n" \
     "        chacha20\n\n" \
+    BHCYN \
+    "      --prng=opencl_philox_prng\n" reset \
+    "        Experimental GPU-backed Philox4x32 PRNG via OpenCL.\n" \
+    "        Requires an OpenCL build and a GPU/accelerator runtime.\n\n" \
     BHCYN \
     "      --prng=auto|default\n" \
     "        auto" reset " - Automatically benchmark all available PRNGs at startup\n" \
