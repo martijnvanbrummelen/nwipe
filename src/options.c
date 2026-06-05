@@ -173,8 +173,8 @@ int nwipe_options_parse( int argc, char** argv )
 
     /*
      * Determines and sets the default PRNG based on AES-NI support and system architecture.
-     * It selects AES-CTR PRNG if AES-NI is supported, xoroshiro256 for 64-bit systems without AES-NI,
-     * and add lagged Fibonacci for 32-bit systems.
+     * It selects AES-256-CTR CSPRNG if AES-NI is supported, XORoshiro-256 for 64-bit systems without AES-NI,
+     * and Additive Lagged Fibonacci Generator for 32-bit systems.
      */
 
     if( has_aes_ni() )
@@ -445,7 +445,7 @@ int nwipe_options_parse( int argc, char** argv )
 
                 if( strcmp( nwipe_options_long[i].name, "nousb" ) == 0 )
                 {
-                    /* check for the full option name, as getopt_long() allows abreviations and can lead to unintended
+                    /* check for the full option name, as getopt_long() allows abbreviations and can lead to unintended
                      * consequences when the user makes a typo */
                     if( strcmp( argv[optind - 1], "--nousb" ) == 0 )
                     {
@@ -1025,11 +1025,11 @@ void nwipe_options_log( void )
     else if( nwipe_options.prng == &nwipe_splitmix64_prng )
         nwipe_log( NWIPE_LOG_NOTICE, "  prng         = SplitMix64" );
     else if( nwipe_options.prng == &nwipe_aes_ctr_prng )
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng         = AES-CTR (CSPRNG)" );
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng         = AES-256-CTR (CSPRNG)" );
     else if( nwipe_options.prng == &nwipe_isaac )
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng         = Isaac" );
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng         = ISAAC (CSPRNG)" );
     else if( nwipe_options.prng == &nwipe_isaac64 )
-        nwipe_log( NWIPE_LOG_NOTICE, "  prng         = Isaac64" );
+        nwipe_log( NWIPE_LOG_NOTICE, "  prng         = ISAAC-64 (CSPRNG)" );
     else if( nwipe_options.prng == &nwipe_chacha20_prng )
         nwipe_log( NWIPE_LOG_NOTICE, "  prng         = ChaCha20 (CSPRNG)" );
     else

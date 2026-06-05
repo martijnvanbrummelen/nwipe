@@ -62,12 +62,11 @@ The user can select from a variety of recognised secure erase methods, including
 - **RCMP TSSIT OPS-II**  
   Royal Canadian Mounted Police Technical Security Standard, OPS-II.
 
-- **DoD Short**  
-  U.S. Department of Defense 5220.22-M **short** 3-pass wipe  
-  (passes 1, 2 & 7 from the full specification).
+- **DoD 5220.22-M (Short)**  
+  U.S. Department of Defense 5220.22-M short 3-pass wipe (passes 1, 2 & 7).
 
 - **DoD 5220.22-M (Full)**  
-  Full 7-pass U.S. DoD 5220.22-M wipe.
+  U.S. Department of Defense 5220.22-M full 7-pass wipe.
 
 - **Gutmann Wipe**  
   Peter Gutmann's 35-pass method (“Secure Deletion of Data from Magnetic and Solid-State Memory”).
@@ -89,7 +88,6 @@ The user can select from a variety of recognised secure erase methods, including
 
 - **BMB21-2019** *(new in v0.40)*  
   Chinese State Secrets Bureau BMB21-2019 technical requirement for data sanitisation.  
-  This method overwrites the device with ones (`0xFF`), then zeros (`0x00`), followed by three passes of PRNG-generated random data, and finishes with a final pass of ones (`0xFF`).
 
 ---
 
@@ -109,13 +107,17 @@ nwipe includes multiple pseudorandom number generators (PRNGs) for methods that 
 - **XORoshiro-256**  
   Very fast, high–quality non-cryptographic generator, suitable for high–volume random wiping where a CSPRNG is not strictly required.
 
+- **Additive Lagged Fibonacci Generator**
+  Implementation of the Additive Lagged Fibonacci Generator (ALFG).
+
+- **ISAAC-64 (CSPRNG)**  
+  Cryptographically secure, (Indirection, Shift, Accumulate, Add, and Count) generators (64 bit variant).
+  
+- **ISAAC (CSPRNG)**  
+  Cryptographically secure, (Indirection, Shift, Accumulate, Add, and Count) generators (32 bit variant).
+
 - **Mersenne Twister**  
   Well-known high–period PRNG.
-
-- **ISAAC / ISAAC-64**  
-  (Indirection, Shift, Accumulate, Add, and Count) generators.
-
-- **Additive Lagged Fibonacci Generator**
 
 These PRNGs can be selected at runtime (see the man page for the exact CLI options) and are used by any wipe method that requires random patterns (for example PRNG Stream, Schneier or BMB21 random passes).
 

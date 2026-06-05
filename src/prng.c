@@ -27,11 +27,11 @@
 #include "mt19937ar-cok/mt19937ar-cok.h"
 #include "isaac_rand/isaac_rand.h"
 #include "isaac_rand/isaac64.h"
-#include "alfg/add_lagg_fibonacci_prng.h"  //Lagged Fibonacci generator prototype
-#include "xor/xoroshiro256_prng.h"  //XORoshiro-256 prototype
-#include "splitmix64/splitmix64.h"  // SplitMix64 PRNG
-#include "aes/aes_ctr_prng.h"  // AES-NI prototype
-#include "chacha20/chacha20.h"  // ChaCha20 stream cipher CSPRNG
+#include "alfg/add_lagg_fibonacci_prng.h"  // Additive Lagged Fibonacci Generator PRNG prototype
+#include "xor/xoroshiro256_prng.h"  // XORoshiro-256 PRNG prototype
+#include "splitmix64/splitmix64.h"  // SplitMix64 PRNG prototype
+#include "aes/aes_ctr_prng.h"  // AES-256-CTR CSPRNG prototype
+#include "chacha20/chacha20.h"  // ChaCha20 stream cipher CSPRNG prototype
 
 nwipe_prng_t nwipe_twister = { "Mersenne Twister", nwipe_twister_init, nwipe_twister_read };
 
@@ -42,16 +42,16 @@ nwipe_prng_t nwipe_isaac64 = { "ISAAC-64 (CSPRNG)", nwipe_isaac64_init, nwipe_is
 nwipe_prng_t nwipe_add_lagg_fibonacci_prng = { "Lagged Fibonacci",
                                                nwipe_add_lagg_fibonacci_prng_init,
                                                nwipe_add_lagg_fibonacci_prng_read };
-/* XOROSHIRO-256 PRNG Structure */
+/* XORoshiro-256 PRNG Structure */
 nwipe_prng_t nwipe_xoroshiro256_prng = { "XORoshiro-256", nwipe_xoroshiro256_prng_init, nwipe_xoroshiro256_prng_read };
 
-/* SplitMix64 PRNG */
+/* SplitMix64 PRNG Structure */
 nwipe_prng_t nwipe_splitmix64_prng = { "SplitMix64", nwipe_splitmix64_prng_init, nwipe_splitmix64_prng_read };
 
-/* AES-CTR-NI PRNG Structure */
-nwipe_prng_t nwipe_aes_ctr_prng = { "AES-CTR (CSPRNG)", nwipe_aes_ctr_prng_init, nwipe_aes_ctr_prng_read };
+/* AES-256-CTR CSPRNG Structure */
+nwipe_prng_t nwipe_aes_ctr_prng = { "AES-256-CTR (CSPRNG)", nwipe_aes_ctr_prng_init, nwipe_aes_ctr_prng_read };
 
-/* ChaCha20 stream cipher CSPRNG */
+/* ChaCha20 stream cipher CSPRNG Structure */
 nwipe_prng_t nwipe_chacha20_prng = { "ChaCha20 (CSPRNG)", nwipe_chacha20_prng_init, nwipe_chacha20_prng_read };
 
 static const nwipe_prng_t* all_prngs[] = {
@@ -105,7 +105,7 @@ static inline u64 isaac64_nextval( rand64ctx* restrict ctx )
 
 int nwipe_twister_init( NWIPE_PRNG_INIT_SIGNATURE )
 {
-    nwipe_log( NWIPE_LOG_NOTICE, "Initialising Mersenne Twister PRNG" );
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising Mersenne Twister (PRNG)" );
 
     if( *state == NULL )
     {
@@ -144,7 +144,7 @@ int nwipe_isaac_init( NWIPE_PRNG_INIT_SIGNATURE )
     int count;
     randctx* isaac_state = *state;
 
-    nwipe_log( NWIPE_LOG_NOTICE, "Initialising Isaac (CSPRNG)" );
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising ISAAC (CSPRNG)" );
 
     if( *state == NULL )
     {
@@ -156,12 +156,12 @@ int nwipe_isaac_init( NWIPE_PRNG_INIT_SIGNATURE )
         if( isaac_state == 0 )
         {
             nwipe_perror( errno, __FUNCTION__, "malloc" );
-            nwipe_log( NWIPE_LOG_FATAL, "Unable to allocate memory for the isaac state." );
+            nwipe_log( NWIPE_LOG_FATAL, "Unable to allocate memory for the ISAAC state." );
             return -1;
         }
     }
 
-    /* Take the minimum of the isaac seed size and available entropy. */
+    /* Take the minimum of the ISAAC seed size and available entropy. */
     if( sizeof( isaac_state->randrsl ) < seed->length )
     {
         count = sizeof( isaac_state->randrsl );
@@ -174,7 +174,7 @@ int nwipe_isaac_init( NWIPE_PRNG_INIT_SIGNATURE )
 
     if( count == 0 )
     {
-        /* Start ISACC without a seed. */
+        /* Start ISAAC without a seed. */
         randinit( isaac_state, 0 );
     }
     else
@@ -193,9 +193,9 @@ int nwipe_isaac_read( NWIPE_PRNG_READ_SIGNATURE )
 {
     randctx* isaac_state = *state;
     u8* restrict bufpos = buffer;
-    size_t words = count / SIZE_OF_ISAAC;  // the values of isaac is strictly 4 bytes
+    size_t words = count / SIZE_OF_ISAAC;  // The values of ISAAC is strictly 4 bytes.
 
-    /* Isaac returns 4-bytes per call, so progress by 4 bytes. */
+    /* ISAAC returns 4-bytes per call, so progress by 4 bytes. */
     for( size_t ii = 0; ii < words; ++ii )
     {
         /* get the next 32bit random number */
@@ -204,7 +204,7 @@ int nwipe_isaac_read( NWIPE_PRNG_READ_SIGNATURE )
     }
 
     /* If there is some remainder copy only relevant number of bytes to not overflow the buffer. */
-    const size_t remain = count % SIZE_OF_ISAAC;  // SIZE_OF_ISAAC is strictly 4 bytes
+    const size_t remain = count % SIZE_OF_ISAAC;  // SIZE_OF_ISAAC is strictly 4 bytes.
     if( remain > 0 )
     {
         u32_to_buffer( bufpos, isaac_nextval( isaac_state ), remain );
@@ -230,12 +230,12 @@ int nwipe_isaac64_init( NWIPE_PRNG_INIT_SIGNATURE )
         if( isaac_state == 0 )
         {
             nwipe_perror( errno, __FUNCTION__, "malloc" );
-            nwipe_log( NWIPE_LOG_FATAL, "Unable to allocate memory for the isaac state." );
+            nwipe_log( NWIPE_LOG_FATAL, "Unable to allocate memory for the ISAAC state." );
             return -1;
         }
     }
 
-    /* Take the minimum of the isaac seed size and available entropy. */
+    /* Take the minimum of the ISAAC seed size and available entropy. */
     if( sizeof( isaac_state->randrsl ) < seed->length )
     {
         count = sizeof( isaac_state->randrsl );
@@ -248,7 +248,7 @@ int nwipe_isaac64_init( NWIPE_PRNG_INIT_SIGNATURE )
 
     if( count == 0 )
     {
-        /* Start ISACC without a seed. */
+        /* Start ISAAC without a seed. */
         rand64init( isaac_state, 0 );
     }
     else
@@ -267,7 +267,7 @@ int nwipe_isaac64_read( NWIPE_PRNG_READ_SIGNATURE )
 {
     rand64ctx* isaac_state = *state;
     u8* restrict bufpos = buffer;
-    size_t words = count / SIZE_OF_ISAAC64;  // the values of ISAAC-64 is strictly 8 bytes
+    size_t words = count / SIZE_OF_ISAAC64;  // The values of ISAAC-64 is strictly 8 bytes.
 
     for( size_t ii = 0; ii < words; ++ii )
     {
@@ -276,7 +276,7 @@ int nwipe_isaac64_read( NWIPE_PRNG_READ_SIGNATURE )
     }
 
     /* If there is some remainder copy only relevant number of bytes to not overflow the buffer. */
-    const size_t remain = count % SIZE_OF_ISAAC64;  // SIZE_OF_ISAAC64 is strictly 8 bytes
+    const size_t remain = count % SIZE_OF_ISAAC64;  // SIZE_OF_ISAAC64 is strictly 8 bytes.
     if( remain > 0 )
     {
         u64_to_buffer( bufpos, isaac64_nextval( isaac_state ), remain );
@@ -290,7 +290,7 @@ int nwipe_add_lagg_fibonacci_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
 {
     if( *state == NULL )
     {
-        nwipe_log( NWIPE_LOG_NOTICE, "Initialising Lagged Fibonacci Generator PRNG" );
+        nwipe_log( NWIPE_LOG_NOTICE, "Initialising Additive Lagged Fibonacci Generator (PRNG)" );
         *state = malloc( sizeof( add_lagg_fibonacci_state_t ) );
     }
     add_lagg_fibonacci_init(
@@ -302,7 +302,7 @@ int nwipe_add_lagg_fibonacci_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
 /* Implementation of XORoshiro-256 algorithm to provide high-quality, but a lot of random numbers */
 int nwipe_xoroshiro256_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
 {
-    nwipe_log( NWIPE_LOG_NOTICE, "Initialising XORoshiro-256 PRNG" );
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising XORoshiro-256 (PRNG)" );
 
     if( *state == NULL )
     {
@@ -345,7 +345,7 @@ int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE )
     u8* restrict bufpos = buffer;
     size_t words = count / SIZE_OF_XOROSHIRO256_PRNG;
 
-    /* Loop to fill the buffer with blocks directly from the XORoshiro256 algorithm */
+    /* Loop to fill the buffer with blocks directly from the XORoshiro-256 algorithm */
     for( size_t ii = 0; ii < words; ++ii )
     {
         xoroshiro256_genrand_uint256_to_buf( (xoroshiro256_state_t*) *state, bufpos );
@@ -368,14 +368,14 @@ int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE )
 
 int nwipe_splitmix64_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
 {
-    nwipe_log( NWIPE_LOG_NOTICE, "Initialising SplitMix64 PRNG" );
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising SplitMix64 (PRNG)" );
 
     if( *state == NULL )
     {
         *state = malloc( sizeof( splitmix64_state_t ) );
         if( *state == NULL )
         {
-            nwipe_log( NWIPE_LOG_FATAL, "Unable to allocate memory for SplitMix64 PRNG" );
+            nwipe_log( NWIPE_LOG_FATAL, "Unable to allocate memory for SplitMix64 (PRNG)" );
             return -1;
         }
     }
@@ -700,7 +700,7 @@ static int refill_stash_thread_local( void* state, size_t need )
  */
 int nwipe_aes_ctr_prng_init( NWIPE_PRNG_INIT_SIGNATURE )
 {
-    nwipe_log( NWIPE_LOG_NOTICE, "Initializing AES-CTR (CSPRNG)" );
+    nwipe_log( NWIPE_LOG_NOTICE, "Initialising AES-256-CTR (CSPRNG)" );
 
     if( *state == NULL )
     {
