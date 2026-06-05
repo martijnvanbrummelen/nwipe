@@ -2414,14 +2414,14 @@ void nwipe_gui_prng( void )
             mvwprintw( main_window, yy++, tab2, "Takuji Nishimura, is a generalized feedback shift" );
             mvwprintw( main_window, yy++, tab2, "register PRNG that is uniform and equidistributed" );
             mvwprintw( main_window, yy++, tab2, "in 623-dimensions with a proven period of        " );
-            mvwprintw( main_window, yy++, tab2, "2^19937-1." );
+            mvwprintw( main_window, yy++, tab2, "2^19937-1.                                       " );
             mvwprintw( main_window, yy++, tab2, "                                                 " );
             mvwprintw( main_window, yy++, tab2, "This implementation passes the Marsaglia Diehard " );
             mvwprintw( main_window, yy++, tab2, "test suite." );
         }
         else if( focused_prng == &nwipe_isaac )
         {
-            mvwprintw( main_window, yy++, tab2, "ISAAC, by Bob Jenkins, is a PRNG derived from RC4" );
+            mvwprintw( main_window, yy++, tab2, "ISAAC, by Bob Jenkins, is a CSPRNG derived from  " );
             mvwprintw( main_window, yy++, tab2, "RC4 with a minimum period of 2^40 and an expected" );
             mvwprintw( main_window, yy++, tab2, "period of 2^8295. It is difficult to recover the " );
             mvwprintw( main_window, yy++, tab2, "initial PRNG state by cryptanalysis of the ISAAC " );
@@ -2457,7 +2457,7 @@ void nwipe_gui_prng( void )
         }
         else if( focused_prng == &nwipe_xoroshiro256_prng )
         {
-            mvwprintw( main_window, yy++, tab2, "XORoshiro256 was designed by David Blackman      " );
+            mvwprintw( main_window, yy++, tab2, "XORoshiro-256 was designed by David Blackman     " );
             mvwprintw( main_window, yy++, tab2, "and Sebastiano Vigna for 128 bits. adapted to 256" );
             mvwprintw( main_window, yy++, tab2, "bits by Fabian Druschke, enhancing its capability" );
             mvwprintw( main_window, yy++, tab2, "for fast, high-quality pseudo-random numbers     " );
@@ -2467,7 +2467,7 @@ void nwipe_gui_prng( void )
             mvwprintw( main_window, yy++, tab2, "The simple arithmetic operations, shifts, XORs   " );
             mvwprintw( main_window, yy++, tab2, "and rotations ensure low computational complexity" );
             mvwprintw( main_window, yy++, tab2, "Combined with the 256 bit adaption, it provides  " );
-            mvwprintw( main_window, yy++, tab2, "efficient use especially for legacy systems " );
+            mvwprintw( main_window, yy++, tab2, "efficient use especially for legacy systems      " );
         }
         else if( focused_prng == &nwipe_splitmix64_prng )
         {
@@ -2485,8 +2485,8 @@ void nwipe_gui_prng( void )
                 mvwprintw( main_window, yy++, tab2, "by Fabian Druschke using the Linux kernel's  " );
                 mvwprintw( main_window, yy++, tab2, "AF_ALG cryptographic API for efficient pseudo" );
                 mvwprintw( main_window, yy++, tab2, "random data generation. Hardware acceleration" );
-                mvwprintw( main_window, yy++, tab2, "via AES-NI, makes AES-256 CTR ideal for      " );
-                mvwprintw( main_window, yy++, tab2, "secure and fast data wiping in nwipe.  " );
+                mvwprintw( main_window, yy++, tab2, "via AES-NI, makes AES-256-CTR ideal for      " );
+                mvwprintw( main_window, yy++, tab2, "secure and fast data wiping in nwipe.        " );
                 mvwprintw( main_window, yy++, tab2, "                                             " );
                 mvwprintw( main_window, yy++, tab2, "Compliant with NIST SP 800-38A, it is a      " );
                 mvwprintw( main_window, yy++, tab2, "global standard for encryption. Designed for " );
@@ -2501,7 +2501,7 @@ void nwipe_gui_prng( void )
                 mvwprintw( main_window, yy++, tab2, "CryptoAPI. It is not available because your  " );
                 mvwprintw( main_window, yy++, tab2, "CPU does not support the required AES-NI     " );
                 mvwprintw( main_window, yy++, tab2, "instruction set. You can still use all       " );
-                mvwprintw( main_window, yy++, tab2, "other PRNGs (e.g. xoroshiro-256, ISAAC, MT). " );
+                mvwprintw( main_window, yy++, tab2, "other PRNGs (e.g. XORoshiro-256, ISAAC, MT). " );
                 wattroff( main_window, A_DIM );
             }
         }
