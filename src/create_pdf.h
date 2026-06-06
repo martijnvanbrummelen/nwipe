@@ -163,4 +163,12 @@ void pdf_add_text_host_info_page( void*,
  */
 void pdf_add_blank_page( void*, size_t*, float, float, size_t, nwipe_context_t* c, nwipe_misc_thread_data_t* d );
 
+/**
+ * Insert page n of n on a given page
+ * @param pointer to a page
+ * @param size_t page number
+ * @param size_t total pages
+ */
+void pdf_add_footer_page_numbers( void*, size_t, size_t );
+
 #endif /* CREATE_PDF_H_ */

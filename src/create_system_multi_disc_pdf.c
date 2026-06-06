@@ -505,6 +505,9 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
     for( i = 0; i < page_number; i++ )
     {
         pdf_display_status_icon( PDF_TYPE_MULTI_DISC, pdf_page_array[i] );
+
+        /* Display the page n of n in the bottom right of footer */
+        pdf_add_footer_page_numbers( pdf_page_array[i], i + 1, page_number );
     }
 
     /*****************************
