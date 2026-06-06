@@ -290,12 +290,12 @@ void pdf_header_footer_text( nwipe_misc_thread_data_t* d,
     config_setting_t* setting;
     extern config_t nwipe_cfg;
 
+    pdf_set_font( pdf, "Helvetica-Bold" );
     pdf_add_text_wrap( pdf, NULL, pdf_footer, 12, 0, 30, 0, PDF_BLACK, page_width, PDF_ALIGN_CENTER, &height );
     pdf_add_line( pdf, NULL, 50, 50, 550, 50, 3, PDF_BLACK );  // Footer full width Line
     pdf_add_line( pdf, NULL, 50, 650, 550, 650, 3, PDF_BLACK );  // Header full width Line
     pdf_add_line( pdf, NULL, 175, 734, 425, 734, 3, PDF_BLACK );  // Header Page number, disk model divider line
     pdf_add_image_data( pdf, NULL, 45, 665, 100, 100, bin2c_shred_db_jpg, 27063 );
-    pdf_set_font( pdf, "Helvetica-Bold" );
 
     if( nwipe_options.PDFtag || nwipe_options.PDF_toggle_host_info )
     {
@@ -990,4 +990,12 @@ void pdf_add_blank_page( void* pdf,
     {
         pdf_display_status_icon( PDF_TYPE_SINGLE_DISC, NULL );
     }
+}
+
+void pdf_add_footer_page_numbers( void* pp, size_t page_number, size_t total_pages )
+{
+    char page_info[50] = ""; /* page n of n */
+    pdf_set_font( pdf, "Courier-Bold" );
+    snprintf( page_info, sizeof( page_info ), "Page %zu of %zu", page_number, total_pages );
+    pdf_add_text( pdf, pp, page_info, 8, 485, 35, PDF_BLACK );
 }
