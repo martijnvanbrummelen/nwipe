@@ -295,7 +295,16 @@ void pdf_header_footer_text( nwipe_misc_thread_data_t* d,
     pdf_add_line( pdf, NULL, 50, 50, 550, 50, 3, PDF_BLACK );  // Footer full width Line
     pdf_add_line( pdf, NULL, 50, 650, 550, 650, 3, PDF_BLACK );  // Header full width Line
     pdf_add_line( pdf, NULL, 175, 734, 425, 734, 3, PDF_BLACK );  // Header Page number, disk model divider line
-    pdf_add_image_data( pdf, NULL, 45, 665, 100, 100, bin2c_shred_db_jpg, 27063 );
+    if( d->logo_buffer != NULL )
+    {
+        // Custom logo found and loaded successfully
+        pdf_add_image_data( pdf, NULL, 45, 665, 100, 100, d->logo_buffer, d->logo_len );
+    }
+    else
+    {
+        // Fallback to standard nwipe logo
+        pdf_add_image_data( pdf, NULL, 45, 665, 100, 100, bin2c_shred_db_jpg, 27063 );
+    }
 
     if( nwipe_options.PDFtag || nwipe_options.PDF_toggle_host_info )
     {
@@ -998,4 +1007,66 @@ void pdf_add_footer_page_numbers( void* pp, size_t page_number, size_t total_pag
     pdf_set_font( pdf, "Courier-Bold" );
     snprintf( page_info, sizeof( page_info ), "Page %zu of %zu", page_number, total_pages );
     pdf_add_text( pdf, pp, page_info, 8, 485, 35, PDF_BLACK );
+}
+
+/**
+ * Checks for a custom nwipe logo in /etc/nwipe/ with various extensions.
+ * * @param out_len Pointer to a size_t where the file length will be stored.
+ * @return Pointer to the allocated image buffer on success, or NULL on failure.
+ * NOTE: The caller is responsible for calling free() on the returned pointer.
+ */
+unsigned char* check_and_load_logo( size_t* out_len )
+{
+    const char* extensions[] = { "jpg", "png", "ppm", "pgm", "bmp" };
+    const int ext_count = sizeof( extensions ) / sizeof( extensions[0] );
+
+    char filepath[256];
+    FILE* fp = NULL;
+    unsigned char* buffer = NULL;
+    long file_size = 0;
+
+    if( out_len == NULL )
+    {
+        return NULL;
+    }
+
+    for( int i = 0; i < ext_count; i++ )
+    {
+        snprintf( filepath, sizeof( filepath ), "/etc/nwipe/logo.%s", extensions[i] );
+
+        fp = fopen( filepath, "rb" );
+        if( fp != NULL )
+        {
+            if( fseek( fp, 0, SEEK_END ) == 0 )
+            {
+                file_size = ftell( fp );
+                if( file_size > 0 )
+                {
+                    rewind( fp );
+
+                    buffer = (unsigned char*) malloc( file_size );
+                    if( buffer != NULL )
+                    {
+                        size_t bytes_read = fread( buffer, 1, file_size, fp );
+
+                        // If read is successful, assign length and return the buffer immediately
+                        if( bytes_read == (size_t) file_size )
+                        {
+                            *out_len = (size_t) file_size;
+                            fclose( fp );
+                            return buffer;
+                        }
+
+                        // Clean up allocation if read failed
+                        free( buffer );
+                    }
+                }
+            }
+            fclose( fp );
+        }
+    }
+
+    // Explicitly set length to 0 if no file was found or read failed
+    *out_len = 0;
+    return NULL;
 }

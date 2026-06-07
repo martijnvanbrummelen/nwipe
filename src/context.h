@@ -276,6 +276,8 @@ typedef struct
     char dmidecode_processor_manufacturer[DMIDECODE_RESULT_LENGTH];  // host info
     char dmidecode_processor_version[DMIDECODE_RESULT_LENGTH];  // host info
     char dmidecode_processor_frequency[DMIDECODE_RESULT_LENGTH];  // host info
+    unsigned char* logo_buffer;  // Pointer to an external logo for the PDFs, NULL if not
+    size_t logo_len;  // length of logo buffer/logo image file
 } nwipe_misc_thread_data_t;
 
 /*

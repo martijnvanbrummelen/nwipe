@@ -171,4 +171,12 @@ void pdf_add_blank_page( void*, size_t*, float, float, size_t, nwipe_context_t* 
  */
 void pdf_add_footer_page_numbers( void*, size_t, size_t );
 
+/**
+ * Checks for a custom nwipe logo in /etc/nwipe/ with various extensions.
+ * @param out_len Pointer to a size_t where the file length will be stored.
+ * @return Pointer to the allocated image buffer on success, or NULL on failure.
+ * NOTE: The caller is responsible for calling free() on the returned pointer.
+ */
+unsigned char* check_and_load_logo( size_t* out_len );
+
 #endif /* CREATE_PDF_H_ */
