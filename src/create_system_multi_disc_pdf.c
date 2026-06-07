@@ -126,6 +126,10 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
     /* ------------------ */
     /* Initialise Various */
 
+    /* Is there an external /etc/nwipe/logo.jpg [png/ppm/pgm/bmp] file? */
+    d->logo_buffer = 0;
+    d->logo_buffer = check_and_load_logo( &( d->logo_len ) );
+
     /* Used to display correct icon on page 2 */
     status_icon = 0;  // zero don't display icon, see header STATUS_ICON_..
 
@@ -539,5 +543,6 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
 cleanup:
     pdf_destroy( pdf );
     free( pdf_page_array );
+    free( d->logo_buffer );
     return 0;
 }
