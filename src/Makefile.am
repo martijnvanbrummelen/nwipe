@@ -24,6 +24,8 @@ NWIPE_CORE = \
     pass_internal.c pass_internal.h \
     pass_static.c pass_random.c pass_scatter.c \
     device.c device.h \
+    se_ata.c se_ata.h se_ata_gui.c se_ata_gui.h \
+    se_nvme.c se_nvme.h se_nvme_gui.c se_nvme_gui.h \
     hpa_dco.c hpa_dco.h \
     miscellaneous.c miscellaneous.h \
     conf.c conf.h \
@@ -64,7 +66,7 @@ NWIPE_HDDTEMP = \
 
 # Combine all sources
 nwipe_SOURCES = $(NWIPE_CORE) $(NWIPE_PRNG) $(NWIPE_PDF) $(NWIPE_HDDTEMP)
-nwipe_LDADD = $(PARTED_LIBS) $(LIBCONFIG)
+nwipe_LDADD = $(PARTED_LIBS) $(LIBCONFIG) $(LIBNVME_LIBS)
 
 test_round_size_SOURCES = ../tests/unit/test_round_size.c round_size.c round_size.h
 test_round_size_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)

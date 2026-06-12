@@ -13,9 +13,20 @@ jobs:
       run: sudo apt-get update
     - name: installing system dependencies
       run: sudo apt-get install -y build-essential pkg-config automake libncurses5-dev autotools-dev libparted-dev libconfig-dev libconfig++-dev dmidecode
+    - name: installing meson build system
+      run: sudo apt-get install -y meson ninja-build libjson-c-dev
+    - name: building libnvme dependency
+      run: |
+        wget https://github.com/linux-nvme/libnvme/archive/refs/tags/v1.16.1.tar.gz
+        tar xvfz v1.16.1.tar.gz
+        cd libnvme-1.16.1
+        meson setup .build
+        meson compile -C .build
+        sudo meson install -C .build
+        sudo ldconfig
     - name: creating autoconf files
       run: ./autogen.sh
     - name: configuring
-      run: ./configure CFLAGS='-O0 -g -Wall -Wextra'
+      run: ./configure CFLAGS='-O0 -g -Wall -Wextra' --with-libnvme
     - name: compiling
       run: make
