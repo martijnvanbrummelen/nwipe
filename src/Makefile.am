@@ -2,8 +2,8 @@
 #CFLAGS = -lncurses -lparted
 AM_CFLAGS =
 AM_LDFLAGS =
-check_PROGRAMS = test_round_size
-TESTS = test_round_size
+check_PROGRAMS = test_round_size test_hotplug_policy
+TESTS = test_round_size test_hotplug_policy
 
 # this lists the binaries to produce, the (non-PHONY, binary) targets in
 # the previous manual Makefile
@@ -24,6 +24,8 @@ NWIPE_CORE = \
     pass_internal.c pass_internal.h \
     pass_static.c pass_random.c pass_scatter.c \
     device.c device.h \
+    hotplug.c hotplug.h \
+    hotplug_policy.c hotplug_policy.h \
     hpa_dco.c hpa_dco.h \
     miscellaneous.c miscellaneous.h \
     conf.c conf.h \
@@ -68,3 +70,6 @@ nwipe_LDADD = $(PARTED_LIBS) $(LIBCONFIG)
 
 test_round_size_SOURCES = ../tests/unit/test_round_size.c round_size.c round_size.h
 test_round_size_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)
+
+test_hotplug_policy_SOURCES = ../tests/unit/test_hotplug_policy.c hotplug_policy.c hotplug_policy.h
+test_hotplug_policy_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)
