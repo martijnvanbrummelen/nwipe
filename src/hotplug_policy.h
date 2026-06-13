@@ -7,8 +7,7 @@
 
 #include <sys/types.h>
 
-typedef enum
-{
+typedef enum {
     NWIPE_HOTPLUG_RECORD_BASELINE = 0,
     NWIPE_HOTPLUG_RECORD_PENDING,
     NWIPE_HOTPLUG_RECORD_ACTIVE,

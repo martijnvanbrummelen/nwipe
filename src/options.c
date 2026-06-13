@@ -1021,7 +1021,8 @@ void nwipe_options_log( void )
 
     nwipe_log(
         NWIPE_LOG_NOTICE, "  autonuke     = %i (%s)", nwipe_options.autonuke, nwipe_options.autonuke ? "on" : "off" );
-    nwipe_log( NWIPE_LOG_NOTICE, "  hotplug      = %i (%s)", nwipe_options.hotplug, nwipe_options.hotplug ? "on" : "off" );
+    nwipe_log(
+        NWIPE_LOG_NOTICE, "  hotplug      = %i (%s)", nwipe_options.hotplug, nwipe_options.hotplug ? "on" : "off" );
 
     nwipe_log( NWIPE_LOG_NOTICE,
                "  autopoweroff = %i (%s)",

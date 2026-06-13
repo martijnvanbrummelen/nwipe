@@ -53,7 +53,7 @@ typedef struct nwipe_hotplug_record_t_
     dev_t rdev;
     nwipe_hotplug_record_kind_t kind;
     char path[DEVICE_NAME_MAX_SIZE];
-    struct nwipe_hotplug_record_t_ *next;
+    struct nwipe_hotplug_record_t_* next;
 } nwipe_hotplug_record_t;
 
 typedef struct
@@ -111,10 +111,8 @@ static nwipe_hotplug_record_t* nwipe_hotplug_find_record( nwipe_hotplug_state_t*
     return NULL;
 }
 
-static void nwipe_hotplug_set_record( nwipe_hotplug_state_t* state,
-                                     dev_t rdev,
-                                     nwipe_hotplug_record_kind_t kind,
-                                     const char* path )
+static void
+nwipe_hotplug_set_record( nwipe_hotplug_state_t* state, dev_t rdev, nwipe_hotplug_record_kind_t kind, const char* path )
 {
     nwipe_hotplug_record_t* rec;
 
@@ -166,8 +164,8 @@ static void nwipe_hotplug_prune_records( nwipe_hotplug_state_t* state, const dev
     while( *link != NULL )
     {
         nwipe_hotplug_record_t* rec = *link;
-        int removable = ( rec->kind == NWIPE_HOTPLUG_RECORD_PENDING || rec->kind == NWIPE_HOTPLUG_RECORD_DONE ||
-                          rec->kind == NWIPE_HOTPLUG_RECORD_BLOCKED );
+        int removable = ( rec->kind == NWIPE_HOTPLUG_RECORD_PENDING || rec->kind == NWIPE_HOTPLUG_RECORD_DONE
+                          || rec->kind == NWIPE_HOTPLUG_RECORD_BLOCKED );
 
         if( removable && !nwipe_hotplug_present_contains( present, count, rec->rdev ) )
         {
@@ -194,9 +192,7 @@ static int nwipe_hotplug_prepare_context_for_wipe( nwipe_context_t* c )
 
     if( c->device_busy && !nwipe_options.force )
     {
-        nwipe_log( NWIPE_LOG_FATAL,
-                   "Device '%s' is IN USE but --force is not set, not wiping it.",
-                   c->device_name );
+        nwipe_log( NWIPE_LOG_FATAL, "Device '%s' is IN USE but --force is not set, not wiping it.", c->device_name );
         c->select = NWIPE_SELECT_DISABLED_BUSY;
         return -1;
     }
@@ -229,18 +225,16 @@ static int nwipe_hotplug_prepare_context_for_wipe( nwipe_context_t* c )
         if( nwipe_options.io_mode == NWIPE_IO_MODE_DIRECT )
         {
             nwipe_perror( errno, __FUNCTION__, "open" );
-            nwipe_log( NWIPE_LOG_FATAL,
-                       "O_DIRECT requested via --directio but not supported on '%s'.",
-                       c->device_name );
+            nwipe_log(
+                NWIPE_LOG_FATAL, "O_DIRECT requested via --directio but not supported on '%s'.", c->device_name );
             c->select = NWIPE_SELECT_DISABLED;
             return -1;
         }
 
         if( nwipe_options.io_mode == NWIPE_IO_MODE_AUTO )
         {
-            nwipe_log( NWIPE_LOG_WARNING,
-                       "O_DIRECT not supported on '%s', falling back to cached I/O.",
-                       c->device_name );
+            nwipe_log(
+                NWIPE_LOG_WARNING, "O_DIRECT not supported on '%s', falling back to cached I/O.", c->device_name );
             open_flags &= ~O_DIRECT;
             fd = open( c->device_name, open_flags );
         }
@@ -371,7 +365,7 @@ static void* nwipe_hotplug_job_thread( void* ptr )
 
     job = (nwipe_hotplug_job_t*) ptr;
     c = job->c;
-    method = (void* ( * )( void* )) nwipe_options.method;
+    method = (void* (*) (void*) ) nwipe_options.method;
     strncpy( device_name, c->device_name, sizeof( device_name ) - 1 );
     device_name[sizeof( device_name ) - 1] = '\0';
 
@@ -405,10 +399,8 @@ static void* nwipe_hotplug_job_thread( void* ptr )
     }
 
     nwipe_hotplug_release_context( c );
-    nwipe_hotplug_mark_job_done( job->state,
-                                 job->rdev,
-                                 success ? NWIPE_HOTPLUG_RECORD_DONE : NWIPE_HOTPLUG_RECORD_BLOCKED,
-                                 device_name );
+    nwipe_hotplug_mark_job_done(
+        job->state, job->rdev, success ? NWIPE_HOTPLUG_RECORD_DONE : NWIPE_HOTPLUG_RECORD_BLOCKED, device_name );
     free( job );
     return NULL;
 }
@@ -548,8 +540,7 @@ int nwipe_hotplug_run( void )
         }
     }
 
-    nwipe_log( NWIPE_LOG_NOTICE,
-               "hotplug: monitoring enabled; disks present at startup will be ignored" );
+    nwipe_log( NWIPE_LOG_NOTICE, "hotplug: monitoring enabled; disks present at startup will be ignored" );
     nwipe_options_log();
 
     present_count = nwipe_hotplug_snapshot_present( &present );
@@ -624,7 +615,8 @@ int nwipe_hotplug_run( void )
             else
             {
                 nwipe_hotplug_set_record( &state, rdev, NWIPE_HOTPLUG_RECORD_PENDING, dev->path );
-                nwipe_log( NWIPE_LOG_NOTICE, "hotplug: detected new disk %s; waiting one poll before admission", dev->path );
+                nwipe_log(
+                    NWIPE_LOG_NOTICE, "hotplug: detected new disk %s; waiting one poll before admission", dev->path );
                 pthread_mutex_unlock( &state.mutex );
                 continue;
             }

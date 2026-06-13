@@ -33,11 +33,7 @@ int nwipe_hotplug_path_is_partition_at_root( const char* sysfs_root, const char*
         return 0;
     }
 
-    r = snprintf( sysfs_path,
-                  sizeof( sysfs_path ),
-                  "%s/%s/partition",
-                  sysfs_root,
-                  nwipe_hotplug_basename( path ) );
+    r = snprintf( sysfs_path, sizeof( sysfs_path ), "%s/%s/partition", sysfs_root, nwipe_hotplug_basename( path ) );
     if( r < 0 || (size_t) r >= sizeof( sysfs_path ) )
     {
         return 0;
