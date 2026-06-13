@@ -2,8 +2,8 @@
 #CFLAGS = -lncurses -lparted
 AM_CFLAGS =
 AM_LDFLAGS =
-check_PROGRAMS = test_round_size
-TESTS = test_round_size
+check_PROGRAMS = test_round_size test_report
+TESTS = test_round_size test_report
 
 # this lists the binaries to produce, the (non-PHONY, binary) targets in
 # the previous manual Makefile
@@ -29,6 +29,7 @@ NWIPE_CORE = \
     conf.c conf.h \
     customers.c customers.h \
     cpu_features.c cpu_features.h \
+    report.c report.h \
     round_size.c round_size.h \
     ANSI-color-codes.h \
     display_help.c
@@ -68,3 +69,6 @@ nwipe_LDADD = $(PARTED_LIBS) $(LIBCONFIG)
 
 test_round_size_SOURCES = ../tests/unit/test_round_size.c round_size.c round_size.h
 test_round_size_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)
+
+test_report_SOURCES = ../tests/unit/test_report.c report.c report.h
+test_report_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)
