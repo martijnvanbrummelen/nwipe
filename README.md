@@ -44,8 +44,10 @@ The **v0.40** release introduces several major improvements:
   `--exclude` now works cleanly with paths like `/dev/disk/by-id/*`, making it easier to exclude specific drives by stable IDs.
 - **Stronger seeding with `getrandom()`**  
   nwipe now uses the Linux `getrandom()` syscall for PRNG seeding and no longer depends on `/dev/urandom`.
-- **New BMB21-2019 erase method**  
+- **New BMB21-2019 erase method**
   Implements the Chinese State Secrets Bureau BMB21-2019 technical requirement for data sanitisation.
+- **Hotplug wipe mode**
+  An opt-in Linux mode that watches for newly inserted block devices and wipes them automatically, while ignoring devices that were already present when nwipe started.
 
 ---
 
@@ -496,5 +498,3 @@ Please include:
 
 nwipe is licensed under the **GNU General Public License v2.0**.
 See the `LICENSE` file for details.
-
-

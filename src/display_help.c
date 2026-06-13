@@ -41,6 +41,11 @@ void display_help()
     "        all devices immediately. If devices have been specified, starts wiping\n" \
     "        only those specified devices immediately.\n\n" \
     BHCYN \
+    "      --hotplug\n" reset \
+    "        Watch for newly inserted block devices and wipe them automatically.\n" \
+    "        Disks present when nwipe starts are ignored. This mode implies\n" \
+    "        --autonuke, --nogui and --nowait.\n\n" \
+    BHCYN \
     "      --autopoweroff\n" reset \
     "        Power off system on completion of wipe delayed for one minute. During\n" \
     "        this one minute delay you can abort the shutdown by typing\n" \
