@@ -259,6 +259,9 @@ echo "guest-init: starting nwipe hotplug test"
 
 NWIPE_PID=$!
 
+/bin/busybox tail -n 0 -f /tmp/nwipe.stdout >/dev/console 2>/tmp/nwipe.tail.stderr &
+NWIPE_TAIL_PID=$!
+
 ready_timeout=120
 ready_tick=0
 while [ "${ready_tick}" -lt "${ready_timeout}" ]; do
@@ -276,6 +279,8 @@ if [ "${ready_tick}" -ge "${ready_timeout}" ]; then
     /bin/busybox cat /tmp/nwipe.stdout 2>/dev/null || true
     /bin/busybox echo "--- nwipe stderr ---"
     /bin/busybox cat /tmp/nwipe.stderr 2>/dev/null || true
+    /bin/busybox kill -TERM "${NWIPE_TAIL_PID}" 2>/dev/null || true
+    wait "${NWIPE_TAIL_PID}" 2>/dev/null || true
     /bin/busybox kill -TERM "${NWIPE_PID}" 2>/dev/null || true
     wait "${NWIPE_PID}" 2>/dev/null || true
     /bin/busybox poweroff -f
@@ -294,6 +299,8 @@ while [ "${finish_tick}" -lt "${finish_timeout}" ]; do
         /bin/busybox cat /tmp/nwipe.stdout 2>/dev/null || true
         /bin/busybox echo "--- nwipe stderr ---"
         /bin/busybox cat /tmp/nwipe.stderr 2>/dev/null || true
+        /bin/busybox kill -TERM "${NWIPE_TAIL_PID}" 2>/dev/null || true
+        wait "${NWIPE_TAIL_PID}" 2>/dev/null || true
         /bin/busybox poweroff -f
     fi
     finish_tick=$((finish_tick + 1))
@@ -306,6 +313,8 @@ if [ "${finish_tick}" -ge "${finish_timeout}" ]; then
     /bin/busybox cat /tmp/nwipe.stdout 2>/dev/null || true
     /bin/busybox echo "--- nwipe stderr ---"
     /bin/busybox cat /tmp/nwipe.stderr 2>/dev/null || true
+    /bin/busybox kill -TERM "${NWIPE_TAIL_PID}" 2>/dev/null || true
+    wait "${NWIPE_TAIL_PID}" 2>/dev/null || true
     /bin/busybox kill -TERM "${NWIPE_PID}" 2>/dev/null || true
     wait "${NWIPE_PID}" 2>/dev/null || true
     /bin/busybox poweroff -f
@@ -315,6 +324,8 @@ fi
 /bin/busybox cat /tmp/nwipe.stdout 2>/dev/null || true
 /bin/busybox echo "--- nwipe stderr ---"
 /bin/busybox cat /tmp/nwipe.stderr 2>/dev/null || true
+/bin/busybox kill -TERM "${NWIPE_TAIL_PID}" 2>/dev/null || true
+wait "${NWIPE_TAIL_PID}" 2>/dev/null || true
 /bin/busybox kill -TERM "${NWIPE_PID}" 2>/dev/null || true
 wait "${NWIPE_PID}" 2>/dev/null || true
 /bin/busybox sync
