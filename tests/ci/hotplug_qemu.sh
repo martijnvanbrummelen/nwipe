@@ -5,6 +5,7 @@ NWIPE_BIN="${1:-./src/nwipe}"
 ARTIFACT_DIR="${NWIPE_CI_ARTIFACT_DIR:-}"
 ARCH="$(uname -m)"
 
+# Resolve the newest matching kernel/initrd pair from the local machine.
 default_boot_image() {
     local pattern
     local match
@@ -38,6 +39,7 @@ case "${ARCH}" in
         ;;
 esac
 
+# Fail fast if the binary or boot assets are missing.
 if [[ ! -x "${NWIPE_BIN}" ]]; then
     echo "Error: nwipe binary not executable: ${NWIPE_BIN}"
     exit 2
@@ -61,10 +63,12 @@ require_cmd() {
     fi
 }
 
+# The harness depends on QEMU plus common archive and shell tools.
 for cmd in "${QEMU_BIN}" cpio gzip xz bzip2 grep mktemp tail tee awk sed python3 cp chmod mkdir rm sort file zstd busybox; do
     require_cmd "${cmd}"
 done
 
+# Create a private workspace for the custom initrd, QMP socket, and logs.
 WORKDIR="$(mktemp -d /tmp/nwipe-ci-qemu.XXXXXX)"
 INITRD_DIR="${WORKDIR}/initrd"
 SERIAL_LOG="${WORKDIR}/serial.log"
@@ -88,6 +92,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# Poll a log file until a marker appears or the timeout expires.
 wait_for_log() {
     local log_file="$1"
     local pattern="$2"
@@ -107,6 +112,7 @@ wait_for_log() {
     return 1
 }
 
+# Copy nwipe and its shared library dependencies into the initrd tree.
 copy_nwipe_deps() {
     local dep
     local copied=""
@@ -127,6 +133,7 @@ copy_nwipe_deps() {
     )
 }
 
+# Rebuild the stock initrd with nwipe, busybox, and a tiny guest init script.
 build_initrd() {
     mkdir -p "${INITRD_DIR}"
     case "$(file -b "${INITRD_IMAGE}")" in
@@ -205,6 +212,8 @@ EOF
     ln -sf /usr/bin/hdparm "${INITRD_DIR}/usr/sbin/hdparm"
     ln -sf /usr/bin/hdparm "${INITRD_DIR}/sbin/hdparm"
 
+    # Guest init mounts the minimal runtime, launches nwipe, and waits for
+    # the hotplug wipe to complete before powering off.
     cat > "${INITRD_DIR}/init" <<'EOF'
 #!/bin/busybox sh
 set -eu
@@ -313,6 +322,7 @@ EOF
     ( cd "${INITRD_DIR}" && find . -print0 | cpio --null -o -H newc --quiet | gzip -9 > "${CUSTOM_INITRD}" )
 }
 
+# Open a QMP socket, enable capabilities, and send one command payload.
 qmp_send() {
     local socket="$1"
     local json_payload="$2"
@@ -336,11 +346,14 @@ sock.close()
 PY
 }
 
+# Build the guest rootfs image before starting the VM.
 build_initrd
 
+# Create the writable backing disk that will be attached after nwipe arms.
 truncate -s 32M "${BACKING_FILE}"
 dd if=/dev/urandom of="${BACKING_FILE}" bs=1M count=32 status=none
 
+# Start QEMU with a serial log and a QMP socket so the test can inject disk hotplug.
 "${QEMU_BIN}" \
     -machine "${QEMU_MACHINE}" \
     -cpu "${QEMU_CPU}" \
@@ -357,8 +370,10 @@ dd if=/dev/urandom of="${BACKING_FILE}" bs=1M count=32 status=none
     >"${WORKDIR}/qemu.stdout" 2>"${WORKDIR}/qemu.stderr" &
 QEMU_PID=$!
 
+# Wait until the guest reports that hotplug monitoring is active.
 wait_for_log "${SERIAL_LOG}" "READY" 180
 
+# Add the raw backing file as a block node, then attach it as a virtual disk.
 blockdev_resp="$(qmp_send "${QMP_SOCK}" \
     "{\"execute\":\"blockdev-add\",\"arguments\":{\"node-name\":\"hotplugdisk\",\"driver\":\"raw\",\"file\":{\"driver\":\"file\",\"filename\":\"${BACKING_FILE}\"}}}")"
 printf '%s\n' "${blockdev_resp}" > "${WORKDIR}/qmp-blockdev-add.json"
@@ -382,6 +397,7 @@ if grep -Fq '"error"' "${WORKDIR}/qmp-device-add.json"; then
     exit 1
 fi
 
+# Wait for the guest to report a successful wipe and then confirm the file is zeroed.
 wait_for_log "${SERIAL_LOG}" "DONE" 240
 
 wait "${QEMU_PID}" || true
