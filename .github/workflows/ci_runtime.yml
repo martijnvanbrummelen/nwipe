@@ -140,6 +140,9 @@ jobs:
             qemu-system-x86 \
             cpio \
             gzip \
+            xz-utils \
+            bzip2 \
+            liblz4-tool \
             zstd \
             file \
             python3 \

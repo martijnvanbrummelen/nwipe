@@ -61,7 +61,7 @@ require_cmd() {
     fi
 }
 
-for cmd in "${QEMU_BIN}" cpio gzip grep mktemp tail tee awk sed python3 cp chmod mkdir rm sort file zstd busybox; do
+for cmd in "${QEMU_BIN}" cpio gzip xz bzip2 grep mktemp tail tee awk sed python3 cp chmod mkdir rm sort file zstd busybox; do
     require_cmd "${cmd}"
 done
 
@@ -130,14 +130,27 @@ copy_nwipe_deps() {
 build_initrd() {
     mkdir -p "${INITRD_DIR}"
     case "$(file -b "${INITRD_IMAGE}")" in
-        *Zstandard*)
+        *Zstandard*|*zstd*)
             ( cd "${INITRD_DIR}" && zstd -dc "${INITRD_IMAGE}" | cpio -id --quiet )
             ;;
         *gzip*)
             ( cd "${INITRD_DIR}" && gzip -dc "${INITRD_IMAGE}" | cpio -id --quiet )
             ;;
+        *XZ*|*xz*)
+            ( cd "${INITRD_DIR}" && xz -dc "${INITRD_IMAGE}" | cpio -id --quiet )
+            ;;
+        *LZ4*|*lz4*)
+            ( cd "${INITRD_DIR}" && lz4 -dc "${INITRD_IMAGE}" | cpio -id --quiet )
+            ;;
+        *bzip2*|*bzip*)
+            ( cd "${INITRD_DIR}" && bzip2 -dc "${INITRD_IMAGE}" | cpio -id --quiet )
+            ;;
+        *cpio*|*archive*)
+            ( cd "${INITRD_DIR}" && cpio -id --quiet < "${INITRD_IMAGE}" )
+            ;;
         *)
             echo "Error: unsupported initrd compression for ${INITRD_IMAGE}"
+            file -b "${INITRD_IMAGE}" || true
             exit 1
             ;;
     esac
