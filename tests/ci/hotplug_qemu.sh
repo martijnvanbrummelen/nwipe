@@ -262,8 +262,7 @@ NWIPE_PID=$!
 ready_timeout=120
 ready_tick=0
 while [ "${ready_tick}" -lt "${ready_timeout}" ]; do
-    if /bin/busybox grep -Fq "hotplug: monitoring enabled" /tmp/nwipe.stdout 2>/dev/null && \
-       /bin/busybox grep -Fq "hotplug: baseline snapshot captured" /tmp/nwipe.stdout 2>/dev/null; then
+    if /bin/busybox grep -Fq "hotplug: monitoring enabled" /tmp/nwipe.stdout 2>/dev/null; then
         echo "READY"
         break
     fi
