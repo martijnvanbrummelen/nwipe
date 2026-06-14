@@ -7,6 +7,8 @@ config.h
 config.h.in
 config.log
 config.status
+config.guess
+config.sub
 configure
 depcomp
 install-sh
@@ -15,9 +17,16 @@ man/Makefile.in
 missing
 src/**/.deps/
 src/**/.dirstamp
+tests/unit/.deps/
+tests/unit/.dirstamp
 *.o
+*.log
+*.trs
 src/Makefile
 src/Makefile.in
 src/nwipe
+src/test_*
 stamp-h1
 .DS_Store
+test-driver
+/ci-artifacts

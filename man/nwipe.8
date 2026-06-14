@@ -56,6 +56,11 @@ If no devices have been specified on the command line, starts wiping all
 devices immediately. If devices have been specified, starts wiping only
 those specified devices immediately.
 .TP
+\fB\-\-hotplug\fR
+Watch for newly inserted block devices and wipe them automatically. Devices
+present when nwipe starts are ignored. This mode implies \fB\-\-autonuke\fR,
+\fB\-\-nogui\fR, and \fB\-\-nowait\fR.
+.TP
 \fB\-\-autopoweroff\fR
 Power off system on completion of wipe delayed for one minute. During
 this one minute delay you can abort the shutdown by typing sudo shutdown -c

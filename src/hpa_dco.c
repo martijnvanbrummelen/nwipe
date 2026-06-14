@@ -92,7 +92,7 @@ int hpa_dco_status( nwipe_context_t* ptr )
      * get on some distros. -> debian SID
      */
 
-    if( system( "which hdparm > /dev/null 2>&1" ) )
+    if( getenv( "NWIPE_ALLOW_MISSING_HDPARM" ) == NULL && system( "which hdparm > /dev/null 2>&1" ) )
     {
         if( system( "which /sbin/hdparm > /dev/null 2>&1" ) )
         {

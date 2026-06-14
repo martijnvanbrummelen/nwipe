@@ -81,6 +81,9 @@ int nwipe_options_parse( int argc, char** argv )
         /* Set when the user wants to wipe without a confirmation prompt. */
         { "autonuke", no_argument, 0, 0 },
 
+        /* Watch for newly inserted disks and wipe them automatically. */
+        { "hotplug", no_argument, 0, 0 },
+
         /* Set when the user wants to have the system powerdown on completion of wipe. */
         { "autopoweroff", no_argument, 0, 0 },
 
@@ -165,6 +168,7 @@ int nwipe_options_parse( int argc, char** argv )
     /* Set default options. */
     nwipe_options.force = 0;
     nwipe_options.autonuke = 0;
+    nwipe_options.hotplug = 0;
     nwipe_options.autopoweroff = 0;
     nwipe_options.method = &nwipe_random;
     nwipe_options.prng_auto = 1; /* by default the PRNG is selected through the benchmark selection */
@@ -380,6 +384,28 @@ int nwipe_options_parse( int argc, char** argv )
                     {
                         fprintf( stderr,
                                  "Error: Strict command line options required, did you mean --autonuke?, you typed "
+                                 "%s.\nType `sudo nwipe --help` for options \n",
+                                 argv[optind - 1] );
+                        exit( EINVAL );
+                    }
+                }
+
+                if( strcmp( nwipe_options_long[i].name, "hotplug" ) == 0 )
+                {
+                    /* check for the full option name, as getopt_long() allows abreviations and can lead to unintended
+                     * consequences when the user makes a typo */
+                    if( strcmp( argv[optind - 1], "--hotplug" ) == 0 )
+                    {
+                        nwipe_options.hotplug = 1;
+                        nwipe_options.autonuke = 1;
+                        nwipe_options.nogui = 1;
+                        nwipe_options.nowait = 1;
+                        break;
+                    }
+                    else
+                    {
+                        fprintf( stderr,
+                                 "Error: Strict command line options required, did you mean --hotplug?, you typed "
                                  "%s.\nType `sudo nwipe --help` for options \n",
                                  argv[optind - 1] );
                         exit( EINVAL );
@@ -995,6 +1021,8 @@ void nwipe_options_log( void )
 
     nwipe_log(
         NWIPE_LOG_NOTICE, "  autonuke     = %i (%s)", nwipe_options.autonuke, nwipe_options.autonuke ? "on" : "off" );
+    nwipe_log(
+        NWIPE_LOG_NOTICE, "  hotplug      = %i (%s)", nwipe_options.hotplug, nwipe_options.hotplug ? "on" : "off" );
 
     nwipe_log( NWIPE_LOG_NOTICE,
                "  autopoweroff = %i (%s)",
