@@ -280,9 +280,7 @@ if [ "${ready_tick}" -ge "${ready_timeout}" ]; then
     /bin/busybox echo "--- nwipe stderr ---"
     /bin/busybox cat /tmp/nwipe.stderr 2>/dev/null || true
     /bin/busybox kill -TERM "${NWIPE_TAIL_PID}" 2>/dev/null || true
-    wait "${NWIPE_TAIL_PID}" 2>/dev/null || true
     /bin/busybox kill -TERM "${NWIPE_PID}" 2>/dev/null || true
-    wait "${NWIPE_PID}" 2>/dev/null || true
     /bin/busybox poweroff -f
 fi
 
@@ -301,7 +299,6 @@ while [ "${finish_tick}" -lt "${finish_timeout}" ]; do
         /bin/busybox echo "--- nwipe stderr ---"
         /bin/busybox cat /tmp/nwipe.stderr 2>/dev/null || true
         /bin/busybox kill -TERM "${NWIPE_TAIL_PID}" 2>/dev/null || true
-        wait "${NWIPE_TAIL_PID}" 2>/dev/null || true
         /bin/busybox poweroff -f
     fi
     finish_tick=$((finish_tick + 1))
@@ -315,9 +312,7 @@ if [ "${finish_tick}" -ge "${finish_timeout}" ]; then
     /bin/busybox echo "--- nwipe stderr ---"
     /bin/busybox cat /tmp/nwipe.stderr 2>/dev/null || true
     /bin/busybox kill -TERM "${NWIPE_TAIL_PID}" 2>/dev/null || true
-    wait "${NWIPE_TAIL_PID}" 2>/dev/null || true
     /bin/busybox kill -TERM "${NWIPE_PID}" 2>/dev/null || true
-    wait "${NWIPE_PID}" 2>/dev/null || true
     /bin/busybox poweroff -f
 fi
 
@@ -326,9 +321,7 @@ fi
 /bin/busybox echo "--- nwipe stderr ---"
 /bin/busybox cat /tmp/nwipe.stderr 2>/dev/null || true
 /bin/busybox kill -TERM "${NWIPE_TAIL_PID}" 2>/dev/null || true
-wait "${NWIPE_TAIL_PID}" 2>/dev/null || true
 /bin/busybox kill -TERM "${NWIPE_PID}" 2>/dev/null || true
-wait "${NWIPE_PID}" 2>/dev/null || true
 /bin/busybox sync
 /bin/busybox poweroff -f
 EOF
