@@ -156,6 +156,7 @@ build_initrd() {
     esac
 
     mkdir -p "${INITRD_DIR}/usr/local/bin"
+    mkdir -p "${INITRD_DIR}/usr/bin"
     mkdir -p "${INITRD_DIR}/usr/sbin"
     mkdir -p "${INITRD_DIR}/tmp"
     mkdir -p "${INITRD_DIR}/bin"
