@@ -85,7 +85,11 @@ cleanup() {
 
     if [[ -n "${ARTIFACT_DIR}" ]]; then
         mkdir -p "${ARTIFACT_DIR}"
-        cp -a "${WORKDIR}/." "${ARTIFACT_DIR}/" >/dev/null 2>&1 || true
+        for artifact in serial.log qemu.stdout qemu.stderr qmp-blockdev-add.json qmp-device-add.json; do
+            if [[ -e "${WORKDIR}/${artifact}" ]]; then
+                cp -a "${WORKDIR}/${artifact}" "${ARTIFACT_DIR}/" >/dev/null 2>&1 || true
+            fi
+        done
     fi
 
     rm -rf "${WORKDIR}"
@@ -256,6 +260,9 @@ echo "guest-init: starting nwipe hotplug test"
 
 NWIPE_PID=$!
 
+/bin/busybox tail -n 0 -f /tmp/nwipe.log >/dev/console 2>/tmp/nwipe.tail.stderr &
+TAIL_PID=$!
+
 ready_timeout=120
 ready_tick=0
 while [ "${ready_tick}" -lt "${ready_timeout}" ]; do
@@ -275,6 +282,7 @@ if [ "${ready_tick}" -ge "${ready_timeout}" ]; then
     /bin/busybox tail -n 120 /tmp/nwipe.stdout 2>/dev/null || true
     /bin/busybox echo "--- nwipe stderr ---"
     /bin/busybox tail -n 120 /tmp/nwipe.stderr 2>/dev/null || true
+    /bin/busybox kill -TERM "${TAIL_PID}" 2>/dev/null || true
     /bin/busybox kill -TERM "${NWIPE_PID}" 2>/dev/null || true
     wait "${NWIPE_PID}" 2>/dev/null || true
     /bin/busybox poweroff -f
@@ -294,6 +302,7 @@ while [ "${finish_tick}" -lt "${finish_timeout}" ]; do
         /bin/busybox tail -n 120 /tmp/nwipe.stdout 2>/dev/null || true
         /bin/busybox echo "--- nwipe stderr ---"
         /bin/busybox tail -n 120 /tmp/nwipe.stderr 2>/dev/null || true
+        /bin/busybox kill -TERM "${TAIL_PID}" 2>/dev/null || true
         /bin/busybox poweroff -f
     fi
     finish_tick=$((finish_tick + 1))
@@ -307,11 +316,13 @@ if [ "${finish_tick}" -ge "${finish_timeout}" ]; then
     /bin/busybox tail -n 120 /tmp/nwipe.stdout 2>/dev/null || true
     /bin/busybox echo "--- nwipe stderr ---"
     /bin/busybox tail -n 120 /tmp/nwipe.stderr 2>/dev/null || true
+    /bin/busybox kill -TERM "${TAIL_PID}" 2>/dev/null || true
     /bin/busybox kill -TERM "${NWIPE_PID}" 2>/dev/null || true
     wait "${NWIPE_PID}" 2>/dev/null || true
     /bin/busybox poweroff -f
 fi
 
+/bin/busybox kill -TERM "${TAIL_PID}" 2>/dev/null || true
 /bin/busybox kill -TERM "${NWIPE_PID}" 2>/dev/null || true
 wait "${NWIPE_PID}" 2>/dev/null || true
 /bin/busybox sync
