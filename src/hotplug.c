@@ -335,7 +335,6 @@ static void nwipe_hotplug_release_context( nwipe_context_t* c )
         c->device_fd = -1;
     }
 
-    free( c->prng_seed.s );
     free( c );
 }
 
