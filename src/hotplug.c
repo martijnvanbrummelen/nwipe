@@ -385,21 +385,27 @@ static void* nwipe_hotplug_job_thread( void* ptr )
                c->device_name,
                nwipe_method_label( nwipe_options.method ) );
 
+    nwipe_log( NWIPE_LOG_NOTICE, "hotplug: entering wipe method for %s", c->device_name );
     method( c );
+    nwipe_log( NWIPE_LOG_NOTICE, "hotplug: wipe method returned for %s with result %d", c->device_name, c->result );
+    nwipe_log( NWIPE_LOG_NOTICE, "hotplug: evaluating completion for %s", c->device_name );
     success = ( c->result == 0 );
 
     if( success )
     {
+        nwipe_log( NWIPE_LOG_NOTICE, "hotplug: completion branch indicates success for %s", c->device_name );
         nwipe_log( NWIPE_LOG_NOTICE, "hotplug: wipe completed successfully for %s", c->device_name );
     }
     else
     {
+        nwipe_log( NWIPE_LOG_NOTICE, "hotplug: completion branch indicates failure for %s", c->device_name );
         nwipe_log( NWIPE_LOG_ERROR, "hotplug: wipe failed for %s with result %d", device_name, c->result );
     }
 
     nwipe_hotplug_release_context( c );
     nwipe_hotplug_mark_job_done(
         job->state, job->rdev, success ? NWIPE_HOTPLUG_RECORD_DONE : NWIPE_HOTPLUG_RECORD_BLOCKED, device_name );
+    nwipe_log( NWIPE_LOG_NOTICE, "hotplug: releasing job wrapper for %s", device_name );
     free( job );
     return NULL;
 }

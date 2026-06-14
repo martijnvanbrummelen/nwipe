@@ -338,6 +338,8 @@ void nwipe_log( nwipe_log_t level, const char* format, ... )
         if( nwipe_options.nogui )
         {
             printf( "%s\n", log_lines[log_current_element] );
+            /* Flush immediately so buffered stdout lines are visible before the process exits. */
+            fflush( stdout );
             log_elements_displayed++;
         }
     }

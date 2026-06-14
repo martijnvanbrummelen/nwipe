@@ -244,6 +244,11 @@ export NWIPE_ALLOW_MISSING_HDPARM=1
 
 echo "guest-init: starting nwipe hotplug test"
 
+delayed_poweroff() {
+    /bin/busybox sleep 5
+    /bin/busybox poweroff -f
+}
+
 /usr/local/bin/nwipe \
     --hotplug \
     --autonuke \
@@ -281,14 +286,13 @@ if [ "${ready_tick}" -ge "${ready_timeout}" ]; then
     /bin/busybox cat /tmp/nwipe.stderr 2>/dev/null || true
     /bin/busybox kill -TERM "${NWIPE_TAIL_PID}" 2>/dev/null || true
     /bin/busybox kill -TERM "${NWIPE_PID}" 2>/dev/null || true
-    /bin/busybox poweroff -f
+    delayed_poweroff
 fi
 
 finish_timeout=240
 finish_tick=0
 while [ "${finish_tick}" -lt "${finish_timeout}" ]; do
-    if /bin/busybox grep -Fq "hotplug: wipe completed successfully" /tmp/nwipe.stdout 2>/dev/null || \
-       /bin/busybox grep -Fq "Finished final round 1 of 1" /tmp/nwipe.stdout 2>/dev/null; then
+    if /bin/busybox grep -Fq "hotplug: wipe completed successfully" /tmp/nwipe.stdout 2>/dev/null; then
         echo "DONE"
         break
     fi
@@ -299,7 +303,7 @@ while [ "${finish_tick}" -lt "${finish_timeout}" ]; do
         /bin/busybox echo "--- nwipe stderr ---"
         /bin/busybox cat /tmp/nwipe.stderr 2>/dev/null || true
         /bin/busybox kill -TERM "${NWIPE_TAIL_PID}" 2>/dev/null || true
-        /bin/busybox poweroff -f
+        delayed_poweroff
     fi
     finish_tick=$((finish_tick + 1))
     /bin/busybox sleep 1
@@ -313,7 +317,7 @@ if [ "${finish_tick}" -ge "${finish_timeout}" ]; then
     /bin/busybox cat /tmp/nwipe.stderr 2>/dev/null || true
     /bin/busybox kill -TERM "${NWIPE_TAIL_PID}" 2>/dev/null || true
     /bin/busybox kill -TERM "${NWIPE_PID}" 2>/dev/null || true
-    /bin/busybox poweroff -f
+    delayed_poweroff
 fi
 
 /bin/busybox echo "--- nwipe stdout ---"
@@ -323,7 +327,7 @@ fi
 /bin/busybox kill -TERM "${NWIPE_TAIL_PID}" 2>/dev/null || true
 /bin/busybox kill -TERM "${NWIPE_PID}" 2>/dev/null || true
 /bin/busybox sync
-/bin/busybox poweroff -f
+delayed_poweroff
 EOF
     chmod +x "${INITRD_DIR}/init"
 
