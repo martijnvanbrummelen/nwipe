@@ -289,7 +289,8 @@ fi
 finish_timeout=240
 finish_tick=0
 while [ "${finish_tick}" -lt "${finish_timeout}" ]; do
-    if /bin/busybox grep -Fq "hotplug: wipe completed successfully" /tmp/nwipe.stdout 2>/dev/null; then
+    if /bin/busybox grep -Fq "hotplug: wipe completed successfully" /tmp/nwipe.stdout 2>/dev/null || \
+       /bin/busybox grep -Fq "Finished final round 1 of 1" /tmp/nwipe.stdout 2>/dev/null; then
         echo "DONE"
         break
     fi
