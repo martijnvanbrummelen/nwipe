@@ -158,6 +158,7 @@ build_initrd() {
     mkdir -p "${INITRD_DIR}/usr/local/bin"
     mkdir -p "${INITRD_DIR}/usr/bin"
     mkdir -p "${INITRD_DIR}/usr/sbin"
+    mkdir -p "${INITRD_DIR}/sbin"
     mkdir -p "${INITRD_DIR}/tmp"
     mkdir -p "${INITRD_DIR}/bin"
 
