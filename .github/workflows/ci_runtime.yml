@@ -141,6 +141,7 @@ jobs:
             hdparm \
             util-linux \
             qemu-system-x86 \
+            linux-image-amd64 \
             cpio \
             gzip \
             xz-utils \
