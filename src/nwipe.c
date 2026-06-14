@@ -487,10 +487,9 @@ int main( int argc, char** argv )
     }
 
     /* Check that hdparm exists, we use hdparm for some HPA/DCO detection etc, if not
-     * exit nwipe. These checks are required if the PATH environment is not setup !
-     * Example: Debian sid 'su' as opposed to 'su -'
+     * exit nwipe. Allow CI to bypass this when the guest intentionally stubs hdparm.
      */
-    if( system( "which hdparm > /dev/null 2>&1" ) )
+    if( getenv( "NWIPE_ALLOW_MISSING_HDPARM" ) == NULL && system( "which hdparm > /dev/null 2>&1" ) )
     {
         if( system( "which /sbin/hdparm > /dev/null 2>&1" ) )
         {

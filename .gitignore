@@ -29,3 +29,4 @@ src/test_*
 stamp-h1
 .DS_Store
 test-driver
+/ci-artifacts

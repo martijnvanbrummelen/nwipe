@@ -23,6 +23,7 @@ This document started as the design proposal, and the first pass of the work now
 - [x] Reuse the existing logging path so hotplug activity lands in the normal log file / log stream.
 - [x] Add a pending state so newly detected disks must survive one more poll before admission.
 - [x] Add unit tests for hotplug basename, partition detection, and promotion policy helpers.
+- [x] Add a QEMU-based hotplug integration harness and confirm it passes in an amd64 Docker container.
 - [x] Document the mode in the help text, man page, README, and proposal.
 - [x] Verify the tree builds and `make check` passes in Docker.
 
@@ -36,6 +37,7 @@ This document started as the design proposal, and the first pass of the work now
 - [ ] Decide whether hotplug stays CLI-only or also updates the GUI live device list.
 - [ ] Add targeted tests for duplicate filtering, baseline filtering, and device rejection paths.
 - [ ] Add integration tests that exercise device insertion and removal with loop / dm-backed block devices.
+- [x] Wire the QEMU hotplug integration test into GitHub Actions.
 
 ## Problem Statement
 
