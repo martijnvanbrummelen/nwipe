@@ -7,11 +7,11 @@ nwipe \- securely erase disks
 .SH DESCRIPTION
 nwipe is a command that will securely erase disks using a variety of
 recognized methods.  It is a fork of the dwipe command used by Darik's Boot
-and Nuke (DBAN).  nwipe is included with partedmagic if you want a quick and
-easy bootable CD version.  nwipe was created out of a need to run the DBAN
-dwipe command outside of DBAN, in order to allow its use with any host
-distribution, thus giving better hardware support.  It is essentially the
-same as dwipe, with a few changes:
+and Nuke (DBAN).  nwipe is included with ShredOS if you want a quick and
+easy bootable USB/CD/DVD/PXE version.  nwipe was created out of a need to run
+the DBAN dwipe command outside of DBAN, in order to allow its use with any host
+distribution, thus giving better hardware support. The user interface is similiar
+to dwipe, however nwipe has many more features:
 .TP
 - pthreads is used instead of fork.
 .TP
@@ -26,6 +26,8 @@ same as dwipe, with a few changes:
 - Configurable I/O modes (cached, direct, auto) using large I/O buffers for higher throughput.
 .TP
 - Support for stable device paths such as \fI/dev/disk/by-id/\fR.
+.TP
+- Generates two types of PDF certificates, single disc per PDF and system focused PDF
 .PP
 All PRNG implementations are seeded using the Linux
 .BR getrandom (2)
@@ -47,18 +49,32 @@ nwipe will resolve these paths and operate on the underlying block device.
 .TP
 \fB\-V\fR, \fB\-\-version\fR
 Prints the version number.
+
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+Log more messages, useful for debugging.
+
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Prints a help summary.
+
+.TP
+\fB\-\-force\fR
+Also allow wiping of devices that are considered in use (mounted).
+Beware this option is considered dangerous and is disabled by default.
+This means that by default even --autonuke will exclude any such devices.
+
 .TP
 \fB\-\-autonuke\fR
 If no devices have been specified on the command line, starts wiping all
 devices immediately. If devices have been specified, starts wiping only
 those specified devices immediately.
+
 .TP
 \fB\-\-autopoweroff\fR
 Power off system on completion of wipe delayed for one minute. During
 this one minute delay you can abort the shutdown by typing sudo shutdown -c
+
 .TP
 \fB\-\-sync\fR=\fINUM\fR
 Specify how often nwipe performs an fdatasync() during cached I/O mode.  
@@ -85,55 +101,7 @@ immediately under direct I/O.
 .IP
 1000 \- Sync after the equivalent of 1000 hardware blocks.
        Useful for testing or more aggressive error detection.
-.TP
-\fB\-\-cachedio\fR
-Use buffered I/O with large write buffers (page cache enabled). This is the
-default on most systems and generally gives the best performance for
-rotational disks.
-.TP
-\fB\-\-directio\fR
-Use direct I/O with large write buffers. This opens devices with
-.BR O_DIRECT
-to bypass the page cache. It can be useful when running multiple wipes in
-parallel or when you do not want to pollute the system page cache. On some
-devices this may be slower than cached I/O.
-.TP
-\fB\-\-io\-mode\fR=\fIMODE\fR
-Select the I/O mode explicitly. \fIMODE\fR can be:
-.IP
-\fBauto\fR   \- (default) automatically choose the best supported mode for
-              the device and kernel.
-.IP
-\fBcached\fR \- force buffered I/O.
-.IP
-\fBdirect\fR \- force direct I/O (\fBO_DIRECT\fR).
-.IP
-Large I/O buffers are used in all modes to maximise throughput.
-.TP
-\fB\-\-noblank\fR
-Do not perform the final blanking pass after the wipe (default is to blank,
-except when the method is RCMP TSSIT OPS\-II).
-.TP
-\fB\-\-nowait\fR
-Do not wait for a key before exiting (default is to wait).
-.TP
-\fB\-\-nosignals\fR
-Do not allow signals to interrupt a wipe (default is to allow).
-.TP
-\fB\-\-nousb\fR
-Do not show or wipe any USB devices, whether in GUI, --nogui or autonuke
-mode. (default is to allow USB devices to be shown and wiped).
-.TP
-\fB\-\-nogui\fR
-Do not show the GUI interface. Can only be used with the autonuke option.
-Nowait option is automatically invoked with the nogui option.
-SIGUSR1 can be used to retrieve the current wiping statistics.
-.TP
-\fB\-\-pdftag\fR
-Enables a field on the PDF that holds a tag that identifies the host computer
-.TP
-\fB\-v\fR, \fB\-\-verbose\fR
-Log more messages, useful for debugging.
+
 .TP
 \fB\-\-verify\fR=\fITYPE\fR
 Whether to perform verification of erasure (default: last).
@@ -146,6 +114,34 @@ all   \- Verify every pass.
 .IP
 Please mind that HMG IS5 enhanced always verifies the last (PRNG) pass
 regardless of this option.
+
+.TP
+\fB\-\-directio\fR
+Use direct I/O with large write buffers. This opens devices with
+.BR O_DIRECT
+to bypass the page cache. It can be useful when running multiple wipes in
+parallel or when you do not want to pollute the system page cache. On some
+devices this may be slower than cached I/O.
+
+.TP
+\fB\-\-cachedio\fR
+Use buffered I/O with large write buffers (page cache enabled). This is the
+default on most systems and generally gives the best performance for
+rotational disks.
+
+.TP
+\fB\-\-io\-mode\fR=\fIMODE\fR
+Select the I/O mode explicitly. \fIMODE\fR can be:
+.IP
+\fBauto\fR   \- (default) automatically choose the best supported mode for
+              the device and kernel.
+.IP
+\fBcached\fR \- force buffered I/O.
+.IP
+\fBdirect\fR \- force direct I/O (\fBO_DIRECT\fR).
+.IP
+Large I/O buffers are used in all modes to maximise throughput.
+
 .TP
 \fB\-m\fR, \fB\-\-method\fR=\fIMETHOD\fR
 The wiping method (default: prng).
@@ -173,31 +169,113 @@ is5enh                 \- HMG IS5 enhanced
 bruce7                 \- Schneier Bruce 7-pass mixed pattern
 .IP
 bmb                    \- Chinese BMB21-2019 State Secrets Bureau standard.
+
 .TP
 \fB\-l\fR, \fB\-\-logfile\fR=\fIFILE\fR
 Filename to log to. Default is STDOUT.
+
 .TP
 \fB\-P\fR, \fB\-\-PDFreportpath\fR=\fIDIR\fR
 Directory to write the PDF nwipe reports/certificates to.
 Defaults to ".".
 If \fIDIR\fR is set to \fInoPDF\fR no report PDF files are written.
+
 .TP
 \fB\-p\fR, \fB\-\-prng\fR=\fIMETHOD\fR
-The PRNG option (default: aes_ctr_prng).
+The PRNG option (default: fastest for your hardware).
 (mersenne|twister|isaac|isaac64|add_lagg_fibonacci_prng|xoroshiro256_prng|splitmix64|aes_ctr_prng|chacha20)
 .IP
 \fBaes_ctr_prng\fR uses the Linux kernel AF_ALG interface to AES\-CTR as a
 cryptographically strong stream generator. It is seeded via
 .BR getrandom (2)
 and requires kernel crypto support for AES\-CTR.
+
+.TP
+\fB\-\-prng=auto|default\fR
+.IP
+\fBauto\fR - Automatically benchmark all available PRNGs at startup
+and select the fastest one for the current hardware. (default=auto)
+.IP
+\fBdefault\fR|\fBmanual\fR - Disable auto-selection and use the built-in
+default PRNG choice (CPU-based heuristic; no benchmarking).
+
+.TP
+\fB\-\-prng-benchmark\fR
+Run a RAM-only PRNG throughput benchmark and exit.
+Prints a sorted leaderboard (MB/s). No wipe is performed.
+
+.TP
+\fB\-\-prng-bench-seconds=N\fR
+Seconds per PRNG during benchmarking (default: 1.0).
+For --prng=auto this is automatically reduced unless set.
+
 .TP
 \fB\-q\fR, \fB\-\-quiet\fR
 Anonymize serial numbers, GUI & logs display:
  XXXXXXXX = S/N obtained & anonymized.
  ???????? = S/N not available.
+
 .TP
 \fB\-r\fR, \fB\-\-rounds\fR=\fINUM\fR
 Number of times to wipe the device using the selected method (default: 1).
+
+.TP
+\fB\-\-noblank\fR
+Do not perform the final blanking pass after the wipe (default is to blank,
+except when the method is RCMP TSSIT OPS\-II).
+
+.TP
+\fB\-\-nowait\fR
+Do not wait for a key before exiting (default is to wait).
+
+.TP
+\fB\-\-nosignals\fR
+Do not allow signals to interrupt a wipe (default is to allow).
+
+.TP
+\fB\-\-nogui\fR
+Do not show the GUI interface. Can only be used with the autonuke option.
+Nowait option is automatically invoked with the nogui option.
+SIGUSR1 can be used to retrieve the current wiping statistics.
+
+.TP
+\fB\-\-nousb\fR
+Do not show or wipe any USB devices, whether in GUI, --nogui or autonuke
+mode. (default is to allow USB devices to be shown and wiped).
+
+.TP
+\fB\-\-reverse\fR
+Reverse the I/O direction (from the end of the device towards the start)
+Helpful when bad blocks otherwise prevent wiping major areas of the device
+Beware throughput may be degraded as it writes against the spin direction
+
+.TP
+\fB\-\-scatter\fR
+Use scattered I/O direction (random segmented order across the device)
+More mechanical exercise; good for burning-in or stress-testing devices
+Beware the throughput may be degraded due to random access patterns used
+
+.TP
+\fB\-\-no-retry-on-io-errors\fR
+Do NOT retry single failed read/write operations; immediately error
+or skip the failing block. (default is retry 3 times with 5s sleep
+in-between)
+
+.TP
+\fB\-\-no-abort-on-block-errors\fR
+Do NOT abort passes on block write errors; skip the failing block and
+continue. (default is to abort the wipe for that device)
+Beware: Faulty devices can take a very long time to wipe
+without the --no-retry-on-io-errors option, due to the many retries.
+
+.TP
+\fB\-\-pdftag\fR
+Enables a field on the PDF that holds a tag that identifies the host computer
+
+.TP
+\fB\-\-pdfduplex\fR
+Enables insertion of intentionally blank pages between sections on PDFs
+
 .TP
 \fB\-e\fR, \fB\-\-exclude\fR=\fIDEVICES\fR
 Up to ten comma separated devices to be excluded, examples:
@@ -210,9 +288,13 @@ Please see the GitHub site for the latest list:
 (https://github.com/martijnvanbrummelen/nwipe/issues)
 
 .SH AUTHOR
-nwipe is developed by Martijn van Brummelen <github@brumit.nl>.
+nwipe is maintained by Martijn van Brummelen <github@brumit.nl>
+with @PartialVolume as a collaborator. Other major contributors
+are @knogle, @desertwitch.
+
 
 .SH "SEE ALSO"
+.BR ShredOS,
 .BR shred (1),
 .BR dwipe (1),
 .BR dd (1),

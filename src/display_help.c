@@ -9,8 +9,8 @@ void display_help()
 
     /* Limit the line length to a maximum of 80 printable characters so it looks good in 80x25 terminals
      * on a 4:3 ratio monitor. Note some lines include escape seqences for color coding of characters so
-     * they may appear below longer than they actually are when printed. Case in point, line 164 --nousb..
-     * that contains esc sequences to color code --nogui.
+     * they may appear below longer than they actually are when printed. Case in point, --nousb..
+     * that contains esc sequences to color code --nogui within the text.
      * "        Do NOT show or wipe any USB devices whether in GUI mode, " BHCYN "--nogui" reset " or\n" \
      */
 
@@ -101,11 +101,11 @@ void display_help()
     BHCYN \
     "        verify_one" reset "             - Verifies disk is 0xFF filled\n" \
     BHCYN \
-    "        is5enh" reset "                 -  HMG IS5 enhanced\n" \
+    "        is5enh" reset "                 - HMG IS5 enhanced\n" \
     BHCYN \
-    "        bruce7" reset "                 -  Schneier Bruce 7-pass mixed pattern\n" \
+    "        bruce7" reset "                 - Schneier Bruce 7-pass mixed pattern\n" \
     BHCYN \
-    "        bmb" reset "                    -  BMB21-2019 mixed pattern\n\n" \
+    "        bmb" reset "                    - BMB21-2019 mixed pattern\n\n" \
     BHCYN \
     "  -l, --logfile=FILE\n" reset \
     "        Filename to log to. Default is STDOUT\n\n" \
@@ -195,8 +195,11 @@ void display_help()
     "        without the --no-retry-on-io-errors option, due to the many retries.\n\n" \
     BHCYN \
     "      --pdftag\n" reset \
-    "        Enables a field on the PDF that holds a tag that identifies the host\n"
+    "        Enables a field on the PDF that holds a tag that identifies the host\n" \
     "        computer.\n\n" \
+    BHCYN \
+    "      --pdfduplex\n" reset \
+    "        Enables insertion of intentionally blank pages between sections on PDFs\n\n" \
     BHCYN \
     "  -e, --exclude=DEVICES\n" reset \
     "        Up to ten comma separated devices to be excluded.\n" \
