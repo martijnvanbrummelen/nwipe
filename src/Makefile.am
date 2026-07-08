@@ -50,6 +50,7 @@ NWIPE_PRNG = \
 NWIPE_PDF = \
     PDFGen/pdfgen.c PDFGen/pdfgen.h \
     create_pdf.c create_pdf.h \
+    create_pdf_graph.c \
     create_single_disc_pdf.c \
     create_system_multi_disc_pdf.c \
     embedded_images/shred_db.jpg.c embedded_images/shred_db.jpg.h \
