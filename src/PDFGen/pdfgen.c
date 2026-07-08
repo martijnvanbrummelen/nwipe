@@ -208,14 +208,250 @@ static const char png_chunk_palette[] = "PLTE";
 static const char png_chunk_data[] = "IDAT";
 static const char png_chunk_end[] = "IEND";
 
+// Read big-endian values from a byte array (used for TTF parsing)
+static uint16_t ttf_be16(const uint8_t *p)
+{
+    return ((uint16_t)p[0] << 8) | p[1];
+}
+
+static uint32_t ttf_be32(const uint8_t *p)
+{
+    return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) |
+           ((uint32_t)p[2] << 8) | p[3];
+}
+
+static int16_t ttf_bes16(const uint8_t *p)
+{
+    return (int16_t)ttf_be16(p);
+}
+
+// Find a table in a TrueType font file by its 4-byte tag.
+// Returns a pointer to the table data and optionally sets *table_len.
+static const uint8_t *ttf_find_table(const uint8_t *data, size_t data_len,
+                                     const char *tag, uint32_t *table_len)
+{
+    if (data_len < 12)
+        return NULL;
+    uint16_t numTables = ttf_be16(data + 4);
+    if (numTables > (data_len - 12) / 16)
+        numTables = (uint16_t)((data_len - 12) / 16);
+    for (uint16_t i = 0; i < numTables; i++) {
+        if ((size_t)(12 + ((size_t)i + 1) * 16) > data_len)
+            break;
+        const uint8_t *entry = data + 12 + (size_t)i * 16;
+        if (memcmp(entry, tag, 4) == 0) {
+            uint32_t offset = ttf_be32(entry + 8);
+            uint32_t length = ttf_be32(entry + 12);
+            if ((size_t)offset + length > data_len)
+                return NULL;
+            if (table_len)
+                *table_len = length;
+            return data + offset;
+        }
+    }
+    return NULL;
+}
+
+// Look up glyph ID in a format-4 cmap subtable.
+// The `subtable` pointer must point directly to the start of a format-4
+// subtable (i.e., ttf_be16(subtable) == 4).
+static uint16_t ttf_cmap_subtable_lookup(const uint8_t *subtable,
+                                         size_t subtable_len,
+                                         uint32_t unicode)
+{
+    if (!subtable || subtable_len < 14)
+        return 0;
+
+    uint16_t segCountX2 = ttf_be16(subtable + 6);
+    uint16_t segCount = segCountX2 / 2;
+    const uint8_t *endCounts = subtable + 14;
+    const uint8_t *startCounts = endCounts + segCountX2 + 2;
+    const uint8_t *idDeltas = startCounts + segCountX2;
+    const uint8_t *idRangeOffsets = idDeltas + segCountX2;
+
+    if (14 + (size_t)segCountX2 * 4 + 2 > subtable_len)
+        return 0;
+
+    for (uint16_t i = 0; i < segCount; i++) {
+        uint16_t endCount = ttf_be16(endCounts + (size_t)i * 2);
+        if (unicode > endCount)
+            continue;
+        uint16_t startCount = ttf_be16(startCounts + (size_t)i * 2);
+        if (unicode < startCount)
+            return 0; // No segment covers this codepoint
+        int16_t idDelta = ttf_bes16(idDeltas + (size_t)i * 2);
+        uint16_t idRangeOffset = ttf_be16(idRangeOffsets + (size_t)i * 2);
+
+        uint16_t glyphId;
+        if (idRangeOffset == 0) {
+            glyphId =
+                (uint16_t)((unicode + (uint32_t)(uint16_t)idDelta) & 0xFFFFu);
+        } else {
+            const uint8_t *ptr = idRangeOffsets + (size_t)i * 2 +
+                                 idRangeOffset +
+                                 (size_t)(unicode - startCount) * 2;
+            if (ptr < subtable || ptr + 2 > subtable + subtable_len)
+                return 0;
+            glyphId = ttf_be16(ptr);
+            if (glyphId == 0)
+                return 0;
+            glyphId =
+                (uint16_t)((glyphId + (uint32_t)(uint16_t)idDelta) & 0xFFFFu);
+        }
+        return glyphId;
+    }
+    return 0;
+}
+
+// Find the best format-4 cmap subtable in a full cmap table.
+// Returns a pointer to the subtable start (within `cmap`), and sets
+// `*out_subtable_len` to the length given in the subtable header.
+// Returns NULL if no suitable subtable is found.
+static const uint8_t *ttf_find_cmap_subtable(const uint8_t *cmap,
+                                             size_t cmap_len,
+                                             uint16_t *out_subtable_len)
+{
+    if (!cmap || cmap_len < 4)
+        return NULL;
+    uint16_t numTables = ttf_be16(cmap + 2);
+    if (numTables > (cmap_len - 4) / 8)
+        numTables = (uint16_t)((cmap_len - 4) / 8);
+    const uint8_t *best_subtable = NULL;
+    int best_priority = -1;
+
+    for (uint16_t i = 0; i < numTables; i++) {
+        size_t rec_off = 4 + (size_t)i * 8;
+        if (rec_off + 8 > cmap_len)
+            break;
+        const uint8_t *rec = cmap + rec_off;
+        uint16_t platformID = ttf_be16(rec);
+        uint16_t platEncID = ttf_be16(rec + 2);
+        uint32_t subtable_offset = ttf_be32(rec + 4);
+        if ((size_t)subtable_offset + 4 > cmap_len)
+            continue;
+        const uint8_t *sub = cmap + subtable_offset;
+        uint16_t fmt = ttf_be16(sub);
+        if (fmt != 4)
+            continue; // Only format 4 is supported
+
+        int priority;
+        if (platformID == 3 && platEncID == 1)
+            priority = 3; // Windows Unicode BMP - preferred
+        else if (platformID == 0 && (platEncID == 3 || platEncID == 4))
+            priority = 2; // Unicode BMP
+        else if (platformID == 0)
+            priority = 1; // Other Unicode
+        else if (platformID == 1 && platEncID == 0)
+            priority = 0; // Mac Roman fallback
+        else
+            continue;
+
+        if (priority > best_priority) {
+            best_priority = priority;
+            best_subtable = sub;
+        }
+    }
+    if (!best_subtable)
+        return NULL;
+    if (out_subtable_len)
+        *out_subtable_len = ttf_be16(best_subtable + 2);
+    return best_subtable;
+}
+
+// Get the advance width of a glyph from the hmtx table.
+static uint16_t ttf_hmtx_advance(const uint8_t *hmtx, size_t hmtx_len,
+                                 uint16_t glyph_id, uint16_t num_h_metrics)
+{
+    if (!hmtx || num_h_metrics == 0)
+        return 0;
+    if (glyph_id < num_h_metrics) {
+        size_t offset = (size_t)glyph_id * 4;
+        if (offset + 2 > hmtx_len)
+            return 0;
+        return ttf_be16(hmtx + offset);
+    }
+    // Glyphs past numberOfHMetrics share the last advance width
+    size_t offset = (size_t)(num_h_metrics - 1) * 4;
+    if (offset + 2 > hmtx_len)
+        return 0;
+    return ttf_be16(hmtx + offset);
+}
+
+// Extract the PostScript name (nameID 6) from the TTF 'name' table.
+static void ttf_extract_name(const uint8_t *name_table, size_t table_len,
+                             char *out, size_t out_len)
+{
+    if (!out || out_len == 0)
+        return;
+    out[0] = '\0';
+    if (!name_table || table_len < 6)
+        return;
+    uint16_t count = ttf_be16(name_table + 2);
+    if (count > (table_len - 6) / 12)
+        count = (uint16_t)((table_len - 6) / 12);
+    uint16_t stringOffset = ttf_be16(name_table + 4);
+
+    for (uint16_t i = 0; i < count; i++) {
+        size_t rec_off = 6 + (size_t)i * 12;
+        if (rec_off + 12 > table_len)
+            break;
+        const uint8_t *rec = name_table + rec_off;
+        uint16_t platformID = ttf_be16(rec);
+        uint16_t nameID = ttf_be16(rec + 6);
+        uint16_t length = ttf_be16(rec + 8);
+        uint16_t offset = ttf_be16(rec + 10);
+        if (nameID != 6) // Only the PostScript name (ID 6)
+            continue;
+        size_t str_off = stringOffset + offset;
+        if (str_off + length > table_len)
+            continue;
+        const uint8_t *str = name_table + str_off;
+        if (platformID == 3) {
+            // Windows UTF-16 BE: extract only ASCII characters
+            size_t ascii_len = 0;
+            size_t safe_length = length;
+            if (safe_length > table_len - str_off)
+                safe_length = table_len - str_off;
+            for (size_t j = 0; j + 1 < safe_length && ascii_len < out_len - 1;
+                 j += 2) {
+                uint16_t cp = ttf_be16(str + j);
+                if (cp < 128)
+                    out[ascii_len++] = (char)cp;
+            }
+            out[ascii_len] = '\0';
+            if (ascii_len > 0)
+                return;
+        } else if (platformID == 1) {
+            // Mac Roman: ASCII-compatible
+            size_t safe_length = length;
+            if (safe_length > table_len - str_off)
+                safe_length = table_len - str_off;
+            size_t copy_len =
+                safe_length < out_len - 1 ? safe_length : out_len - 1;
+            memcpy(out, str, copy_len);
+            out[copy_len] = '\0';
+            return;
+        }
+    }
+}
+
 // PDF standard fonts
 static const char *valid_fonts[] = {
-    "Times-Roman",       "Times-Bold",
-    "Times-Italic",      "Times-BoldItalic",
-    "Helvetica",         "Helvetica-Bold",
-    "Helvetica-Oblique", "Helvetica-BoldOblique",
-    "Courier",           "Courier-Bold",
-    "Courier-Oblique",   "Courier-BoldOblique"};
+    "Times-Roman",
+    "Times-Bold",
+    "Times-Italic",
+    "Times-BoldItalic",
+    "Helvetica",
+    "Helvetica-Bold",
+    "Helvetica-Oblique",
+    "Helvetica-BoldOblique",
+    "Courier",
+    "Courier-Bold",
+    "Courier-Oblique",
+    "Courier-BoldOblique",
+    "Symbol",
+    "ZapfDingbats",
+};
 
 typedef struct pdf_object pdf_object;
 
@@ -224,6 +460,8 @@ enum {
     OBJ_info,
     OBJ_stream,
     OBJ_font,
+    OBJ_font_descriptor,
+    OBJ_cid_font,
     OBJ_page,
     OBJ_bookmark,
     OBJ_outline,
@@ -279,10 +517,39 @@ struct pdf_object {
         struct {
             char name[64];
             int index;
+            bool is_ttf;
+            // TTF: raw table copies kept for glyph lookups at text-add time
+            uint8_t *cmap_data; // copy of best format-4 cmap subtable
+            uint32_t cmap_data_len;
+            uint8_t *hmtx_data; // copy of hmtx table
+            uint32_t hmtx_data_len;
+            uint16_t num_h_metrics; // from hhea
+            int units_per_em;       // from head
+            int descriptor_index;   // index of OBJ_font_descriptor
+            int cid_font_index;     // index of OBJ_cid_font descendant
         } font;
         struct {
-            struct pdf_object *page; /* Page containing link */
-            float llx;               /* Clickable rectangle */
+            char font_name[64];
+            int descriptor_index; // index of OBJ_font_descriptor
+            int default_width; // /DW: PDF width (thousandths/em) for unlisted
+                               // glyphs
+            uint16_t
+                *glyph_widths; // per-glyph PDF width; num_h_metrics entries
+            uint16_t num_h_metrics;
+        } cid_font;
+        struct {
+            char font_name[64];
+            int flags;
+            float bbox[4]; // [xmin, ymin, xmax, ymax] in 1000/em units
+            float italic_angle;
+            float ascent;
+            float descent;
+            float cap_height;
+            float stem_v;
+            int font_file_index; // index of stream object with embedded font
+        } font_descriptor;
+        struct {
+            float llx; /* Clickable rectangle */
             float lly;
             float urx;
             float ury;
@@ -403,11 +670,17 @@ static int flexarray_set(struct flexarray *flex, int index, void *data)
     int bin = flexarray_get_bin(flex, index);
     if (bin < 0)
         return -EINVAL;
-    if (bin >= flex->bin_count) {
-        void ***bins = (void ***)realloc(flex->bins, (flex->bin_count + 1) *
-                                                         sizeof(*flex->bins));
+    while (bin >= flex->bin_count) {
+        void ***bins =
+            (void ***)malloc((flex->bin_count + 1) * sizeof(*flex->bins));
         if (!bins)
             return -ENOMEM;
+        if (flex->bins) {
+            for (int i = 0; i < flex->bin_count; i++) {
+                bins[i] = flex->bins[i];
+            }
+            free(flex->bins);
+        }
         flex->bin_count++;
         flex->bins = bins;
         flex->bins[flex->bin_count - 1] =
@@ -446,10 +719,8 @@ static inline void *flexarray_get(const struct flexarray *flex, int index)
  */
 
 #define INIT_DSTR                                                            \
-    (struct dstr)                                                            \
-    {                                                                        \
-        .static_data = {0}, .data = NULL, .alloc_len = 0, .used_len = 0      \
-    }
+    (struct dstr){                                                           \
+        .static_data = {0}, .data = NULL, .alloc_len = 0, .used_len = 0}
 
 static char *dstr_data(struct dstr *str)
 {
@@ -467,7 +738,7 @@ static ssize_t dstr_ensure(struct dstr *str, size_t len)
         return 0;
     if (!str->data && len <= sizeof(str->static_data))
         str->alloc_len = len;
-    else if (str->alloc_len < len) {
+    else {
         size_t new_len;
 
         new_len = len + 4096;
@@ -494,7 +765,7 @@ static ssize_t dstr_ensure(struct dstr *str, size_t len)
 // This breaks the PDF output, so we force a 'safe' locale.
 static void force_locale(char *buf, int len)
 {
-    char *saved_locale = setlocale(LC_ALL, NULL);
+    const char *saved_locale = setlocale(LC_ALL, NULL);
 
     if (!saved_locale) {
         *buf = '\0';
@@ -506,7 +777,7 @@ static void force_locale(char *buf, int len)
     setlocale(LC_NUMERIC, "POSIX");
 }
 
-static void restore_locale(char *buf)
+static void restore_locale(const char *buf)
 {
     setlocale(LC_ALL, buf);
 }
@@ -615,7 +886,7 @@ void pdf_clear_err(struct pdf_doc *pdf)
     pdf->errval = 0;
 }
 
-static int pdf_get_errval(struct pdf_doc *pdf)
+static int pdf_get_errval(const struct pdf_doc *pdf)
 {
     if (!pdf)
         return 0;
@@ -649,10 +920,19 @@ static int pdf_append_object(struct pdf_doc *pdf, struct pdf_object *obj)
 
 static void pdf_object_destroy(struct pdf_object *object)
 {
+    if (!object)
+        return;
     switch (object->type) {
     case OBJ_stream:
     case OBJ_image:
         dstr_free(&object->stream.stream);
+        break;
+    case OBJ_font:
+        free(object->font.cmap_data);
+        free(object->font.hmtx_data);
+        break;
+    case OBJ_cid_font:
+        free(object->cid_font.glyph_widths);
         break;
     case OBJ_page:
         flexarray_clear(&object->page.children);
@@ -760,7 +1040,7 @@ struct pdf_doc *pdf_create(float width, float height,
         time_t now = time(NULL);
         struct tm tm;
 #ifdef _WIN32
-        struct tm *tmp;
+        const struct tm *tmp;
         tmp = localtime(&now);
         tm = *tmp;
 #else
@@ -876,6 +1156,355 @@ int pdf_set_font(struct pdf_doc *pdf, const char *font)
     return 0;
 }
 
+const char *pdf_set_font_ttf(struct pdf_doc *pdf, const char *path)
+{
+    FILE *fp = fopen(path, "rb");
+    if (!fp) {
+        pdf_set_err(pdf, -errno, "Unable to open font file '%s': %s", path,
+                    strerror(errno));
+        return NULL;
+    }
+    const char *res = pdf_set_font_ttf_file(pdf, fp, path);
+    fclose(fp);
+    return res;
+}
+
+const char *pdf_set_font_ttf_file(struct pdf_doc *pdf, FILE *fp,
+                                  const char *path)
+{
+    uint8_t *font_data;
+    size_t font_data_len;
+    struct pdf_object *font_obj, *descriptor_obj, *stream_obj, *cid_obj;
+    int last_font_index = 0;
+    uint32_t sfVersion;
+    uint32_t head_len = 0, hhea_len = 0, hmtx_len = 0;
+    uint32_t cmap_len = 0, os2_len = 0, post_len = 0, name_len = 0;
+    const uint8_t *head, *hhea, *hmtx, *cmap, *os2, *post, *name_table;
+    uint16_t units_per_em, numberOfHMetrics;
+    int16_t xMin, yMin, xMax, yMax;
+    uint16_t macStyle;
+    int16_t ascender, descender;
+    int16_t cap_height_val, ascender_os2, descender_os2;
+    uint16_t fs_selection;
+    float ascent, descent, cap_height, italic_angle, stem_v;
+    int flags;
+    char font_name[64];
+    struct stat st;
+
+    if (fstat(fileno(fp), &st) < 0) {
+        pdf_set_err(pdf, -errno, "Unable to stat font file '%s': %s", path,
+                    strerror(errno));
+        return NULL;
+    }
+    font_data_len = (size_t)st.st_size;
+    font_data = (uint8_t *)malloc(font_data_len);
+    if (!font_data) {
+        pdf_set_err(pdf, -ENOMEM,
+                    "Unable to allocate %zu bytes for font '%s'",
+                    font_data_len, path);
+        return NULL;
+    }
+    if (fread(font_data, 1, font_data_len, fp) != font_data_len) {
+        free(font_data);
+        pdf_set_err(pdf, -EIO, "Unable to read font file '%s'", path);
+        return NULL;
+    }
+
+    if (font_data_len < 12) {
+        free(font_data);
+        pdf_set_err(pdf, -EINVAL,
+                    "Font file '%s' is too small to be a TrueType font",
+                    path);
+        return NULL;
+    }
+    sfVersion = ttf_be32(font_data);
+    // TrueType fonts have sfVersion 0x00010000 or 'true' (0x74727565)
+    if (sfVersion != 0x00010000u && sfVersion != 0x74727565u) {
+        free(font_data);
+        pdf_set_err(pdf, -EINVAL,
+                    "File '%s' is not a TrueType font (version 0x%08x)", path,
+                    sfVersion);
+        return NULL;
+    }
+
+    head = ttf_find_table(font_data, font_data_len, "head", &head_len);
+    hhea = ttf_find_table(font_data, font_data_len, "hhea", &hhea_len);
+    hmtx = ttf_find_table(font_data, font_data_len, "hmtx", &hmtx_len);
+    cmap = ttf_find_table(font_data, font_data_len, "cmap", &cmap_len);
+    os2 = ttf_find_table(font_data, font_data_len, "OS/2", &os2_len);
+    post = ttf_find_table(font_data, font_data_len, "post", &post_len);
+    name_table = ttf_find_table(font_data, font_data_len, "name", &name_len);
+
+    if (!head || head_len < 54 || !hhea || hhea_len < 36 || !hmtx || !cmap) {
+        free(font_data);
+        pdf_set_err(pdf, -EINVAL,
+                    "Font '%s' is missing required TrueType tables", path);
+        return NULL;
+    }
+
+    // Parse head table
+    units_per_em = ttf_be16(head + 18);
+    xMin = ttf_bes16(head + 36);
+    yMin = ttf_bes16(head + 38);
+    xMax = ttf_bes16(head + 40);
+    yMax = ttf_bes16(head + 42);
+    macStyle = ttf_be16(head + 44);
+    if (units_per_em == 0) {
+        free(font_data);
+        pdf_set_err(pdf, -EINVAL, "Font '%s' has zero units_per_em", path);
+        return NULL;
+    }
+
+    // Parse hhea table
+    ascender = ttf_bes16(hhea + 4);
+    descender = ttf_bes16(hhea + 6);
+    numberOfHMetrics = ttf_be16(hhea + 34);
+
+    // Parse OS/2 table (optional, provides better metrics when available)
+    cap_height_val = 0;
+    ascender_os2 = 0;
+    descender_os2 = 0;
+    fs_selection = 0;
+    if (os2 && os2_len >= 78) {
+        uint16_t os2_version = ttf_be16(os2);
+        fs_selection = ttf_be16(os2 + 62);
+        ascender_os2 = ttf_bes16(os2 + 68);  // sTypoAscender
+        descender_os2 = ttf_bes16(os2 + 70); // sTypoDescender
+        if (os2_version >= 2 && os2_len >= 90)
+            cap_height_val = ttf_bes16(os2 + 88); // sCapHeight
+    }
+
+    // Compute ascent, descent, cap height in PDF units (1000/em)
+    ascent = (float)(ascender_os2 != 0 ? ascender_os2 : ascender) * 1000.0f /
+             (float)units_per_em;
+    descent = (float)(descender_os2 != 0 ? descender_os2 : descender) *
+              1000.0f / (float)units_per_em;
+    cap_height = cap_height_val != 0
+                     ? (float)cap_height_val * 1000.0f / (float)units_per_em
+                     : ascent * 0.7f;
+
+    // Parse post table for italic angle (16.16 fixed-point)
+    italic_angle = 0.0f;
+    if (post && post_len >= 12) {
+        int32_t ia_fixed = (int32_t)ttf_be32(post + 4);
+        italic_angle = (float)ia_fixed / 65536.0f;
+    }
+
+    // Compute font descriptor flags
+    // Bit 6 (value 32): Nonsymbolic -- standard latin font
+    // Bit 7 (value 64): Italic
+    // Bit 1 (value  1): FixedPitch
+    flags = 32; // Nonsymbolic
+    if ((macStyle & 2u) || (fs_selection & 1u) || italic_angle != 0.0f)
+        flags |= 64; // Italic
+    if (post && post_len >= 16 && ttf_be32(post + 12))
+        flags |= 1; // FixedPitch
+
+    // Approximate StemV (vertical stem width) from weight
+    stem_v = (macStyle & 1u) ? 120.0f : 80.0f;
+
+    // Extract PostScript name from the name table, fall back to filename
+    font_name[0] = '\0';
+    if (name_table && name_len > 0)
+        ttf_extract_name(name_table, (size_t)name_len, font_name,
+                         sizeof(font_name));
+    if (font_name[0] == '\0') {
+        const char *base = strrchr(path, '/');
+        const char *name_src = base ? base + 1 : path;
+        strncpy(font_name, name_src, sizeof(font_name) - 1);
+        font_name[sizeof(font_name) - 1] = '\0';
+        char *dot = strrchr(font_name, '.');
+        if (dot)
+            *dot = '\0';
+    }
+
+    // Check whether this TTF font has already been loaded (reuse if so)
+    for (struct pdf_object *obj = pdf_find_first_object(pdf, OBJ_font); obj;
+         obj = obj->next) {
+        if (obj->font.is_ttf && strcmp(obj->font.name, font_name) == 0) {
+            free(font_data);
+            pdf->current_font = obj;
+            return obj->font.name;
+        }
+        last_font_index = obj->font.index;
+    }
+
+    // Find the best cmap format-4 subtable and make a copy for runtime
+    // lookups
+    uint16_t cmap_subtable_len = 0;
+    const uint8_t *cmap_subtable =
+        ttf_find_cmap_subtable(cmap, (size_t)cmap_len, &cmap_subtable_len);
+    if (!cmap_subtable || cmap_subtable_len == 0 ||
+        cmap_subtable_len > font_data_len) {
+        free(font_data);
+        pdf_set_err(pdf, -EINVAL, "Font '%s' has no usable cmap subtable",
+                    path);
+        return NULL;
+    }
+    uint8_t *cmap_copy = (uint8_t *)malloc(cmap_subtable_len);
+    if (!cmap_copy) {
+        free(font_data);
+        pdf_set_err(pdf, -ENOMEM,
+                    "Unable to allocate cmap subtable for font '%s'", path);
+        return NULL;
+    }
+    // ensure subtable fits in cmap bounds safely before blind copy
+    if (cmap_subtable_len > (cmap + cmap_len) - cmap_subtable) {
+        free(cmap_copy);
+        free(font_data);
+        pdf_set_err(pdf, -EINVAL, "Font '%s' cmap subtable length invalid",
+                    path);
+        return NULL;
+    }
+    memcpy(cmap_copy, cmap_subtable, cmap_subtable_len);
+
+    if (hmtx_len == 0 || hmtx_len > font_data_len) {
+        free(cmap_copy);
+        free(font_data);
+        pdf_set_err(pdf, -EINVAL, "Font '%s' has invalid hmtx_len", path);
+        return NULL;
+    }
+
+    // Make a copy of the hmtx table for runtime advance-width lookups
+    uint8_t *hmtx_copy = (uint8_t *)malloc(hmtx_len);
+    if (!hmtx_copy) {
+        free(cmap_copy);
+        free(font_data);
+        pdf_set_err(pdf, -ENOMEM,
+                    "Unable to allocate hmtx table for font '%s'", path);
+        return NULL;
+    }
+    memcpy(hmtx_copy, hmtx, hmtx_len);
+
+    // Build the glyph-width array for the CIDFont /W entry.
+    // Widths are in PDF thousandths-of-em units.  We store one entry per
+    // glyph ID in 0..numberOfHMetrics-1; glyphs beyond that share the last
+    // advance width (/DW).
+    if (numberOfHMetrics == 0 || numberOfHMetrics > font_data_len / 2) {
+        free(hmtx_copy);
+        free(cmap_copy);
+        free(font_data);
+        pdf_set_err(pdf, -EINVAL, "Font '%s' has invalid numberOfHMetrics",
+                    path);
+        return NULL;
+    }
+    uint16_t *glyph_widths =
+        (uint16_t *)calloc(numberOfHMetrics, sizeof(uint16_t));
+    if (!glyph_widths) {
+        free(hmtx_copy);
+        free(cmap_copy);
+        free(font_data);
+        pdf_set_err(pdf, -ENOMEM,
+                    "Unable to allocate glyph widths for font '%s'", path);
+        return NULL;
+    }
+    for (uint16_t g = 0; g < numberOfHMetrics; g++) {
+        uint16_t advance =
+            ttf_hmtx_advance(hmtx, hmtx_len, g, numberOfHMetrics);
+        glyph_widths[g] =
+            (uint16_t)((unsigned)advance * 1000u / (unsigned)units_per_em);
+    }
+    // Default width = advance of the last hmtx entry (applies to all glyphs
+    // beyond numberOfHMetrics)
+    int default_width = (int)glyph_widths[numberOfHMetrics - 1];
+
+    // Create the embedded font file stream
+    stream_obj = pdf_add_object(pdf, OBJ_stream);
+    if (!stream_obj) {
+        free(glyph_widths);
+        free(hmtx_copy);
+        free(cmap_copy);
+        free(font_data);
+        return NULL;
+    }
+    dstr_printf(&stream_obj->stream.stream,
+                "<<\r\n"
+                "  /Length %zu\r\n"
+                "  /Length1 %zu\r\n"
+                ">>stream\r\n",
+                font_data_len, font_data_len);
+    if (dstr_append_data(&stream_obj->stream.stream, font_data,
+                         font_data_len) < 0) {
+        free(glyph_widths);
+        free(hmtx_copy);
+        free(cmap_copy);
+        free(font_data);
+        pdf_set_err(pdf, -ENOMEM, "Unable to allocate font stream data");
+        return NULL;
+    }
+    dstr_append(&stream_obj->stream.stream, "\r\nendstream\r\n");
+    free(font_data);
+
+    // Create the font descriptor object
+    descriptor_obj = pdf_add_object(pdf, OBJ_font_descriptor);
+    if (!descriptor_obj) {
+        free(glyph_widths);
+        free(hmtx_copy);
+        free(cmap_copy);
+        return NULL;
+    }
+    strncpy(descriptor_obj->font_descriptor.font_name, font_name,
+            sizeof(descriptor_obj->font_descriptor.font_name) - 1);
+    descriptor_obj->font_descriptor
+        .font_name[sizeof(descriptor_obj->font_descriptor.font_name) - 1] =
+        '\0';
+    descriptor_obj->font_descriptor.flags = flags;
+    descriptor_obj->font_descriptor.bbox[0] =
+        (float)xMin * 1000.0f / (float)units_per_em;
+    descriptor_obj->font_descriptor.bbox[1] =
+        (float)yMin * 1000.0f / (float)units_per_em;
+    descriptor_obj->font_descriptor.bbox[2] =
+        (float)xMax * 1000.0f / (float)units_per_em;
+    descriptor_obj->font_descriptor.bbox[3] =
+        (float)yMax * 1000.0f / (float)units_per_em;
+    descriptor_obj->font_descriptor.italic_angle = italic_angle;
+    descriptor_obj->font_descriptor.ascent = ascent;
+    descriptor_obj->font_descriptor.descent = descent;
+    descriptor_obj->font_descriptor.cap_height = cap_height;
+    descriptor_obj->font_descriptor.stem_v = stem_v;
+    descriptor_obj->font_descriptor.font_file_index = stream_obj->index;
+
+    // Create the CIDFont (Type2) descendant object
+    cid_obj = pdf_add_object(pdf, OBJ_cid_font);
+    if (!cid_obj) {
+        free(glyph_widths);
+        free(hmtx_copy);
+        free(cmap_copy);
+        return NULL;
+    }
+    strncpy(cid_obj->cid_font.font_name, font_name,
+            sizeof(cid_obj->cid_font.font_name) - 1);
+    cid_obj->cid_font.font_name[sizeof(cid_obj->cid_font.font_name) - 1] =
+        '\0';
+    cid_obj->cid_font.descriptor_index = descriptor_obj->index;
+    cid_obj->cid_font.default_width = default_width;
+    cid_obj->cid_font.glyph_widths = glyph_widths;
+    cid_obj->cid_font.num_h_metrics = numberOfHMetrics;
+
+    // Create the Type0 (composite) font dictionary object
+    font_obj = pdf_add_object(pdf, OBJ_font);
+    if (!font_obj) {
+        free(hmtx_copy);
+        free(cmap_copy);
+        return NULL;
+    }
+    strncpy(font_obj->font.name, font_name, sizeof(font_obj->font.name) - 1);
+    font_obj->font.name[sizeof(font_obj->font.name) - 1] = '\0';
+    font_obj->font.index = last_font_index + 1;
+    font_obj->font.is_ttf = true;
+    font_obj->font.cmap_data = cmap_copy;
+    font_obj->font.cmap_data_len = cmap_subtable_len;
+    font_obj->font.hmtx_data = hmtx_copy;
+    font_obj->font.hmtx_data_len = hmtx_len;
+    font_obj->font.num_h_metrics = numberOfHMetrics;
+    font_obj->font.units_per_em = units_per_em;
+    font_obj->font.descriptor_index = descriptor_obj->index;
+    font_obj->font.cid_font_index = cid_obj->index;
+
+    pdf->current_font = font_obj;
+    return font_obj->font.name;
+}
+
 struct pdf_object *pdf_append_page(struct pdf_doc *pdf)
 {
     struct pdf_object *page;
@@ -938,7 +1567,61 @@ static int pdf_get_bookmark_count(const struct pdf_object *obj)
     return count;
 }
 
-static int pdf_save_object(struct pdf_doc *pdf, FILE *fp, int index)
+/* Forward declarations for encryption helpers used by
+ * pdf_save_object_internal
+ */
+#define PDF_CRYPT_KEY_LEN 5 /* 40-bit key = 5 bytes */
+struct pdf_crypt {
+    uint8_t file_key[PDF_CRYPT_KEY_LEN];
+};
+static bool pdf_crypt_write_string(const struct pdf_crypt *crypt,
+                                   int obj_index, const char *str, FILE *fp);
+static bool pdf_crypt_write_stream(const struct pdf_crypt *crypt,
+                                   int obj_index, const struct dstr *stream,
+                                   FILE *fp);
+static void pdf_crypt_data(const struct pdf_crypt *crypt, int obj_index,
+                           uint8_t *data, size_t len);
+
+static void pdf_print_escaped_string(FILE *fp, const char *str)
+{
+    while (*str) {
+        if (*str == '(' || *str == ')' || *str == '\\')
+            fputc('\\', fp);
+        fputc(*str, fp);
+        str++;
+    }
+}
+
+/*
+ * Write a PDF string value to fp.
+ * If crypt is non-NULL, the string is RC4-encrypted and written as
+ * <hexbytes>. Otherwise it is written as a literal (escaped) string (...).
+ * Returns 0 on success, < 0 on error (pdf error is set).
+ */
+static int pdf_write_string_val(struct pdf_doc *pdf, FILE *fp, int obj_index,
+                                const char *str,
+                                const struct pdf_crypt *crypt)
+{
+    if (crypt) {
+        if (!pdf_crypt_write_string(crypt, obj_index, str, fp))
+            return pdf_set_err(pdf, -ENOMEM,
+                               "Out of memory encrypting string");
+    } else {
+        fputc('(', fp);
+        pdf_print_escaped_string(fp, str);
+        fputc(')', fp);
+    }
+    return 0;
+}
+
+/*
+ * Internal object-save routine shared by encrypted and unencrypted paths.
+ * When crypt is NULL the object is written in plain text (PDF literal strings
+ * and raw stream bytes).  When crypt is non-NULL, string values are encrypted
+ * and written as hex strings, and stream payload bytes are RC4-encrypted.
+ */
+static int pdf_save_object_internal(struct pdf_doc *pdf, FILE *fp, int index,
+                                    const struct pdf_crypt *crypt)
 {
     struct pdf_object *object = pdf_get_object(pdf, index);
     if (!object)
@@ -954,32 +1637,88 @@ static int pdf_save_object(struct pdf_doc *pdf, FILE *fp, int index)
     switch (object->type) {
     case OBJ_stream:
     case OBJ_image: {
-        fwrite(dstr_data(&object->stream.stream),
-               dstr_len(&object->stream.stream), 1, fp);
+        if (crypt) {
+            if (!pdf_crypt_write_stream(crypt, index, &object->stream.stream,
+                                        fp))
+                return pdf_set_err(pdf, -ENOMEM,
+                                   "Out of memory encrypting stream %d",
+                                   index);
+        } else {
+            fwrite(dstr_data(&object->stream.stream),
+                   dstr_len(&object->stream.stream), 1, fp);
+        }
         break;
     }
     case OBJ_info: {
-        struct pdf_info *info = object->info;
+        const struct pdf_info *info = object->info;
+        int e;
 
         fprintf(fp, "<<\r\n");
-        if (info->creator[0])
-            fprintf(fp, "  /Creator (%s)\r\n", info->creator);
-        if (info->producer[0])
-            fprintf(fp, "  /Producer (%s)\r\n", info->producer);
-        if (info->title[0])
-            fprintf(fp, "  /Title (%s)\r\n", info->title);
-        if (info->author[0])
-            fprintf(fp, "  /Author (%s)\r\n", info->author);
-        if (info->subject[0])
-            fprintf(fp, "  /Subject (%s)\r\n", info->subject);
-        if (info->date[0])
-            fprintf(fp, "  /CreationDate (D:%s)\r\n", info->date);
+        if (info->creator[0]) {
+            fprintf(fp, "  /Creator ");
+            if ((e = pdf_write_string_val(pdf, fp, index, info->creator,
+                                          crypt)) < 0)
+                return e;
+            fprintf(fp, "\r\n");
+        }
+        if (info->producer[0]) {
+            fprintf(fp, "  /Producer ");
+            if ((e = pdf_write_string_val(pdf, fp, index, info->producer,
+                                          crypt)) < 0)
+                return e;
+            fprintf(fp, "\r\n");
+        }
+        if (info->title[0]) {
+            fprintf(fp, "  /Title ");
+            if ((e = pdf_write_string_val(pdf, fp, index, info->title,
+                                          crypt)) < 0)
+                return e;
+            fprintf(fp, "\r\n");
+        }
+        if (info->author[0]) {
+            fprintf(fp, "  /Author ");
+            if ((e = pdf_write_string_val(pdf, fp, index, info->author,
+                                          crypt)) < 0)
+                return e;
+            fprintf(fp, "\r\n");
+        }
+        if (info->subject[0]) {
+            fprintf(fp, "  /Subject ");
+            if ((e = pdf_write_string_val(pdf, fp, index, info->subject,
+                                          crypt)) < 0)
+                return e;
+            fprintf(fp, "\r\n");
+        }
+        if (info->date[0]) {
+            if (crypt) {
+                /* Encrypt the date string with its "D:" prefix */
+                size_t dlen = strlen(info->date);
+                uint8_t *dbuf = (uint8_t *)malloc(dlen + 2);
+                if (!dbuf)
+                    return pdf_set_err(
+                        pdf, -ENOMEM, "Out of memory encrypting date string");
+                dbuf[0] = 'D';
+                dbuf[1] = ':';
+                memcpy(dbuf + 2, info->date, dlen);
+                pdf_crypt_data(crypt, index, dbuf, dlen + 2);
+                fprintf(fp, "  /CreationDate <");
+                for (size_t i = 0; i < dlen + 2; i++)
+                    fprintf(fp, "%02x", dbuf[i]);
+                fprintf(fp, ">\r\n");
+                free(dbuf);
+            } else {
+                fprintf(fp, "  /CreationDate (D:");
+                pdf_print_escaped_string(fp, info->date);
+                fprintf(fp, ")\r\n");
+            }
+        }
         fprintf(fp, ">>\r\n");
         break;
     }
 
     case OBJ_page: {
-        struct pdf_object *pages = pdf_find_first_object(pdf, OBJ_pages);
+        const struct pdf_object *pages =
+            pdf_find_first_object(pdf, OBJ_pages);
         bool printed_xobjects = false;
 
         fprintf(fp,
@@ -1021,8 +1760,9 @@ static int pdf_save_object(struct pdf_doc *pdf, FILE *fp, int index)
 
         fprintf(fp, "  /Contents [\r\n");
         for (int i = 0; i < flexarray_size(&object->page.children); i++) {
-            struct pdf_object *child =
-                (struct pdf_object *)flexarray_get(&object->page.children, i);
+            const struct pdf_object *child =
+                (const struct pdf_object *)flexarray_get(
+                    &object->page.children, i);
             fprintf(fp, "%d 0 R\r\n", child->index);
         }
         fprintf(fp, "]\r\n");
@@ -1031,8 +1771,9 @@ static int pdf_save_object(struct pdf_doc *pdf, FILE *fp, int index)
             fprintf(fp, "  /Annots [\r\n");
             for (int i = 0; i < flexarray_size(&object->page.annotations);
                  i++) {
-                struct pdf_object *child = (struct pdf_object *)flexarray_get(
-                    &object->page.annotations, i);
+                const struct pdf_object *child =
+                    (const struct pdf_object *)flexarray_get(
+                        &object->page.annotations, i);
                 fprintf(fp, "%d 0 R\r\n", child->index);
             }
             fprintf(fp, "]\r\n");
@@ -1043,7 +1784,8 @@ static int pdf_save_object(struct pdf_doc *pdf, FILE *fp, int index)
     }
 
     case OBJ_bookmark: {
-        struct pdf_object *parent, *other;
+        const struct pdf_object *parent, *other;
+        int e;
 
         parent = object->bookmark.parent;
         if (!parent)
@@ -1054,19 +1796,24 @@ static int pdf_save_object(struct pdf_doc *pdf, FILE *fp, int index)
                 "<<\r\n"
                 "  /Dest [%d 0 R /XYZ 0 %f null]\r\n"
                 "  /Parent %d 0 R\r\n"
-                "  /Title (%s)\r\n",
-                object->bookmark.page->index, pdf->height, parent->index,
-                object->bookmark.name);
+                "  /Title ",
+                object->bookmark.page->index, pdf->height, parent->index);
+        if ((e = pdf_write_string_val(pdf, fp, index, object->bookmark.name,
+                                      crypt)) < 0)
+            return e;
+        fprintf(fp, "\r\n");
         int nchildren = flexarray_size(&object->bookmark.children);
         if (nchildren > 0) {
-            struct pdf_object *f, *l;
-            f = (struct pdf_object *)flexarray_get(&object->bookmark.children,
-                                                   0);
-            l = (struct pdf_object *)flexarray_get(&object->bookmark.children,
-                                                   nchildren - 1);
+            const struct pdf_object *f, *l;
+            f = (const struct pdf_object *)flexarray_get(
+                &object->bookmark.children, 0);
+            l = (const struct pdf_object *)flexarray_get(
+                &object->bookmark.children, nchildren - 1);
             fprintf(fp, "  /First %d 0 R\r\n", f->index);
             fprintf(fp, "  /Last %d 0 R\r\n", l->index);
-            fprintf(fp, "  /Count %d\r\n", pdf_get_bookmark_count(object));
+            fprintf(
+                fp, "  /Count %d\r\n",
+                pdf_get_bookmark_count((const struct pdf_object *)object));
         }
         // Find the previous bookmark with the same parent
         for (other = object->prev;
@@ -1087,7 +1834,7 @@ static int pdf_save_object(struct pdf_doc *pdf, FILE *fp, int index)
     }
 
     case OBJ_outline: {
-        struct pdf_object *first, *last, *cur;
+        const struct pdf_object *first, *last, *cur;
         first = pdf_find_first_object(pdf, OBJ_bookmark);
         last = pdf_find_last_object(pdf, OBJ_bookmark);
 
@@ -1114,14 +1861,81 @@ static int pdf_save_object(struct pdf_doc *pdf, FILE *fp, int index)
     }
 
     case OBJ_font:
+        if (object->font.is_ttf) {
+            // Type0 (composite) font using Identity-H encoding so that
+            // arbitrary Unicode text can be represented as 2-byte glyph IDs.
+            fprintf(fp,
+                    "<<\r\n"
+                    "  /Type /Font\r\n"
+                    "  /Subtype /Type0\r\n"
+                    "  /BaseFont /%s\r\n"
+                    "  /Encoding /Identity-H\r\n"
+                    "  /DescendantFonts [%d 0 R]\r\n"
+                    ">>\r\n",
+                    object->font.name, object->font.cid_font_index);
+        } else {
+            fprintf(fp,
+                    "<<\r\n"
+                    "  /Type /Font\r\n"
+                    "  /Subtype /Type1\r\n"
+                    "  /BaseFont /%s\r\n"
+                    "  /Encoding /WinAnsiEncoding\r\n"
+                    ">>\r\n",
+                    object->font.name);
+        }
+        break;
+
+    case OBJ_cid_font: {
+        // CIDFontType2 descendant for the Type0 font.
+        // /W specifies per-glyph advance widths in thousandths-of-em for
+        // glyph IDs 0 .. num_h_metrics-1; remaining glyphs use /DW.
         fprintf(fp,
                 "<<\r\n"
                 "  /Type /Font\r\n"
-                "  /Subtype /Type1\r\n"
+                "  /Subtype /CIDFontType2\r\n"
                 "  /BaseFont /%s\r\n"
-                "  /Encoding /WinAnsiEncoding\r\n"
+                "  /CIDSystemInfo <<\r\n"
+                "    /Registry (Adobe)\r\n"
+                "    /Ordering (Identity)\r\n"
+                "    /Supplement 0\r\n"
+                "  >>\r\n"
+                "  /DW %d\r\n"
+                "  /W [0 [",
+                object->cid_font.font_name, object->cid_font.default_width);
+        for (uint16_t g = 0; g < object->cid_font.num_h_metrics; g++)
+            fprintf(fp, " %d", (int)object->cid_font.glyph_widths[g]);
+        fprintf(fp,
+                " ]]\r\n"
+                "  /FontDescriptor %d 0 R\r\n"
+                "  /CIDToGIDMap /Identity\r\n"
                 ">>\r\n",
-                object->font.name);
+                object->cid_font.descriptor_index);
+        break;
+    }
+
+    case OBJ_font_descriptor:
+        fprintf(
+            fp,
+            "<<\r\n"
+            "  /Type /FontDescriptor\r\n"
+            "  /FontName /%s\r\n"
+            "  /Flags %d\r\n"
+            "  /FontBBox [%g %g %g %g]\r\n"
+            "  /ItalicAngle %g\r\n"
+            "  /Ascent %g\r\n"
+            "  /Descent %g\r\n"
+            "  /CapHeight %g\r\n"
+            "  /StemV %g\r\n"
+            "  /FontFile2 %d 0 R\r\n"
+            ">>\r\n",
+            object->font_descriptor.font_name, object->font_descriptor.flags,
+            object->font_descriptor.bbox[0], object->font_descriptor.bbox[1],
+            object->font_descriptor.bbox[2], object->font_descriptor.bbox[3],
+            object->font_descriptor.italic_angle,
+            object->font_descriptor.ascent, object->font_descriptor.descent,
+            object->font_descriptor.cap_height,
+            object->font_descriptor.stem_v,
+            object->font_descriptor.font_file_index);
         break;
 
     case OBJ_pages: {
@@ -1130,7 +1944,8 @@ static int pdf_save_object(struct pdf_doc *pdf, FILE *fp, int index)
         fprintf(fp, "<<\r\n"
                     "  /Type /Pages\r\n"
                     "  /Kids [ ");
-        for (struct pdf_object *page = pdf_find_first_object(pdf, OBJ_page);
+        for (const struct pdf_object *page =
+                 pdf_find_first_object(pdf, OBJ_page);
              page; page = page->next) {
             npages++;
             fprintf(fp, "%d 0 R ", page->index);
@@ -1142,8 +1957,10 @@ static int pdf_save_object(struct pdf_doc *pdf, FILE *fp, int index)
     }
 
     case OBJ_catalog: {
-        struct pdf_object *outline = pdf_find_first_object(pdf, OBJ_outline);
-        struct pdf_object *pages = pdf_find_first_object(pdf, OBJ_pages);
+        const struct pdf_object *outline =
+            pdf_find_first_object(pdf, OBJ_outline);
+        const struct pdf_object *pages =
+            pdf_find_first_object(pdf, OBJ_pages);
 
         fprintf(fp, "<<\r\n"
                     "  /Type /Catalog\r\n");
@@ -1196,59 +2013,439 @@ static uint64_t hash(uint64_t hash, const void *data, size_t len)
     return hash;
 }
 
-int pdf_save_file(struct pdf_doc *pdf, FILE *fp)
+/* ========== PDF Standard Security Handler (Rev 2, 40-bit RC4) ========== */
+
+/* Standard padding string defined in the PDF specification */
+static const uint8_t pdf_crypt_padding[32] = {
+    0x28, 0xBF, 0x4E, 0x5E, 0x4E, 0x75, 0x8A, 0x41, 0x64, 0x00, 0x4E,
+    0x56, 0xFF, 0xFA, 0x01, 0x08, 0x2E, 0x2E, 0x00, 0xB6, 0xD0, 0x68,
+    0x3E, 0x80, 0x2F, 0x0C, 0xA9, 0xFE, 0x64, 0x53, 0x69, 0x7A};
+
+/* ----- MD5 ----------------------------------------------------------------
+ */
+
+#define PDF_MD5_ROTL(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+
+static void pdf_md5(const uint8_t *data, size_t len, uint8_t digest[16])
 {
-    struct pdf_object *obj;
+    static const uint32_t T[64] = {
+        0xd76aa478u, 0xe8c7b756u, 0x242070dbu, 0xc1bdceeeu, 0xf57c0fafu,
+        0x4787c62au, 0xa8304613u, 0xfd469501u, 0x698098d8u, 0x8b44f7afu,
+        0xffff5bb1u, 0x895cd7beu, 0x6b901122u, 0xfd987193u, 0xa679438eu,
+        0x49b40821u, 0xf61e2562u, 0xc040b340u, 0x265e5a51u, 0xe9b6c7aau,
+        0xd62f105du, 0x02441453u, 0xd8a1e681u, 0xe7d3fbc8u, 0x21e1cde6u,
+        0xc33707d6u, 0xf4d50d87u, 0x455a14edu, 0xa9e3e905u, 0xfcefa3f8u,
+        0x676f02d9u, 0x8d2a4c8au, 0xfffa3942u, 0x8771f681u, 0x6d9d6122u,
+        0xfde5380cu, 0xa4beea44u, 0x4bdecfa9u, 0xf6bb4b60u, 0xbebfbc70u,
+        0x289b7ec6u, 0xeaa127fau, 0xd4ef3085u, 0x04881d05u, 0xd9d4d039u,
+        0xe6db99e5u, 0x1fa27cf8u, 0xc4ac5665u, 0xf4292244u, 0x432aff97u,
+        0xab9423a7u, 0xfc93a039u, 0x655b59c3u, 0x8f0ccc92u, 0xffeff47du,
+        0x85845dd1u, 0x6fa87e4fu, 0xfe2ce6e0u, 0xa3014314u, 0x4e0811a1u,
+        0xf7537e82u, 0xbd3af235u, 0x2ad7d2bbu, 0xeb86d391u};
+    static const uint8_t s[64] = {
+        7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
+        5, 9,  14, 20, 5, 9,  14, 20, 5, 9,  14, 20, 5, 9,  14, 20,
+        4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
+        6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21};
+
+    uint32_t a0 = 0x67452301u, b0 = 0xefcdab89u, c0 = 0x98badcfeu,
+             d0 = 0x10325476u;
+
+    /* Process data in 512-bit (64-byte) blocks, with padding */
+    size_t padded = ((len + 8) / 64 + 1) * 64;
+    uint8_t *buf = (uint8_t *)calloc(padded, 1);
+    if (!buf) {
+        memset(digest, 0, 16);
+        return;
+    }
+    memcpy(buf, data, len);
+    buf[len] = 0x80;
+    uint64_t bits = (uint64_t)len * 8;
+    for (int i = 0; i < 8; i++)
+        buf[padded - 8 + i] = (uint8_t)(bits >> (8 * i));
+
+    for (size_t offset = 0; offset < padded; offset += 64) {
+        uint32_t M[16];
+        for (int i = 0; i < 16; i++) {
+            M[i] = (uint32_t)buf[offset + i * 4] |
+                   ((uint32_t)buf[offset + i * 4 + 1] << 8) |
+                   ((uint32_t)buf[offset + i * 4 + 2] << 16) |
+                   ((uint32_t)buf[offset + i * 4 + 3] << 24);
+        }
+        uint32_t A = a0, B = b0, C = c0, D = d0;
+        for (int i = 0; i < 64; i++) {
+            uint32_t F, g;
+            if (i < 16) {
+                F = (B & C) | (~B & D);
+                g = (uint32_t)i;
+            } else if (i < 32) {
+                F = (D & B) | (~D & C);
+                g = (uint32_t)(5 * i + 1) % 16;
+            } else if (i < 48) {
+                F = B ^ C ^ D;
+                g = (uint32_t)(3 * i + 5) % 16;
+            } else {
+                F = C ^ (B | ~D);
+                g = (uint32_t)(7 * i) % 16;
+            }
+            F = F + A + T[i] + M[g];
+            A = D;
+            D = C;
+            C = B;
+            B = B + PDF_MD5_ROTL(F, s[i]);
+        }
+        a0 += A;
+        b0 += B;
+        c0 += C;
+        d0 += D;
+    }
+    free(buf);
+
+    for (int i = 0; i < 4; i++) {
+        digest[i] = (uint8_t)(a0 >> (8 * i));
+        digest[4 + i] = (uint8_t)(b0 >> (8 * i));
+        digest[8 + i] = (uint8_t)(c0 >> (8 * i));
+        digest[12 + i] = (uint8_t)(d0 >> (8 * i));
+    }
+}
+
+/* ----- RC4 ----------------------------------------------------------------
+ */
+
+static void pdf_rc4(const uint8_t *key, size_t keylen, uint8_t *data,
+                    size_t datalen)
+{
+    uint8_t S[256];
+    uint8_t j = 0;
+    for (int i = 0; i < 256; i++)
+        S[i] = (uint8_t)i;
+    for (int i = 0; i < 256; i++) {
+        j = (uint8_t)((j + S[i] + key[i % keylen]) & 0xff);
+        uint8_t tmp = S[i];
+        S[i] = S[j];
+        S[j] = tmp;
+    }
+    uint8_t ii = 0;
+    j = 0;
+    for (size_t k = 0; k < datalen; k++) {
+        ii = (uint8_t)((ii + 1) & 0xff);
+        j = (uint8_t)((j + S[ii]) & 0xff);
+        uint8_t tmp = S[ii];
+        S[ii] = S[j];
+        S[j] = tmp;
+        data[k] ^= S[(S[ii] + S[j]) & 0xff];
+    }
+}
+
+/* ----- PDF 40-bit encryption key derivation ------------------------------
+ */
+
+/* Pad or truncate password to 32 bytes using the PDF padding string */
+static void pdf_crypt_pad_password(const char *pwd, uint8_t out[32])
+{
+    size_t plen = pwd ? strlen(pwd) : 0;
+    if (plen > 32)
+        plen = 32;
+    if (pwd && plen > 0)
+        memcpy(out, pwd, plen);
+    if (plen < 32)
+        memcpy(out + plen, pdf_crypt_padding, 32 - plen);
+}
+
+/*
+ * Compute the encryption keys for PDF Standard Security Handler Rev. 2.
+ * user_password : the "open" password (may be NULL/"" for no user password)
+ * file_id       : first element of /ID array (exactly 8 bytes)
+ * crypt         : output - encryption context (file key)
+ * out_owner_key : output - 32-byte /O value for the encryption dictionary
+ * out_user_key  : output - 32-byte /U value for the encryption dictionary
+ * permissions   : /P value (signed 32-bit, stored little-endian)
+ */
+static void
+pdf_crypt_compute_keys(const char *user_password, const uint8_t file_id[8],
+                       int32_t permissions, struct pdf_crypt *crypt,
+                       uint8_t out_owner_key[32], uint8_t out_user_key[32])
+{
+    uint8_t padded_user[32];
+    pdf_crypt_pad_password(user_password, padded_user);
+
+    /* Step 1: compute /O (owner key) */
+    /* MD5 of padded user password, take first 5 bytes as RC4 key */
+    uint8_t md5_out[16];
+    pdf_md5(padded_user, 32, md5_out);
+    /* RC4-encrypt the padded user password with the 5-byte key */
+    memcpy(out_owner_key, padded_user, 32);
+    pdf_rc4(md5_out, PDF_CRYPT_KEY_LEN, out_owner_key, 32);
+
+    /* Step 2: compute file encryption key */
+    /* MD5 of: padded_user + owner_key + P (LE 4 bytes) + file_id (8 bytes) */
+    uint8_t key_input[32 + 32 + 4 + 8];
+    memcpy(key_input, padded_user, 32);
+    memcpy(key_input + 32, out_owner_key, 32);
+    key_input[64] = (uint8_t)(permissions & 0xff);
+    key_input[65] = (uint8_t)((permissions & 0xff00) >> 8);
+    key_input[66] = (uint8_t)((permissions & 0xff0000) >> 16);
+    key_input[67] = (uint8_t)((permissions & 0xff000000) >> 24);
+    memcpy(key_input + 68, file_id, 8);
+    pdf_md5(key_input, 32 + 32 + 4 + 8, md5_out);
+    memcpy(crypt->file_key, md5_out, PDF_CRYPT_KEY_LEN);
+
+    /* Step 3: compute /U (user key) */
+    /* RC4-encrypt the padding string with the file encryption key */
+    memcpy(out_user_key, pdf_crypt_padding, 32);
+    pdf_rc4(crypt->file_key, PDF_CRYPT_KEY_LEN, out_user_key, 32);
+}
+
+/*
+ * Derive the per-object RC4 key for object at obj_index (generation 0).
+ * out_key must point to a buffer of at least PDF_CRYPT_KEY_LEN + 5 bytes.
+ * Returns the key length (10 bytes for 40-bit base key).
+ */
+static size_t pdf_crypt_object_key(const struct pdf_crypt *crypt,
+                                   int obj_index, uint8_t out_key[16])
+{
+    uint8_t key_in[PDF_CRYPT_KEY_LEN + 5];
+    memcpy(key_in, crypt->file_key, PDF_CRYPT_KEY_LEN);
+    key_in[PDF_CRYPT_KEY_LEN + 0] = (uint8_t)(obj_index & 0xff);
+    key_in[PDF_CRYPT_KEY_LEN + 1] = (uint8_t)((obj_index >> 8) & 0xff);
+    key_in[PDF_CRYPT_KEY_LEN + 2] = (uint8_t)((obj_index >> 16) & 0xff);
+    key_in[PDF_CRYPT_KEY_LEN + 3] = 0; /* generation number low byte */
+    key_in[PDF_CRYPT_KEY_LEN + 4] = 0; /* generation number high byte */
+    uint8_t md5_out[16];
+    pdf_md5(key_in, sizeof(key_in), md5_out);
+    size_t keylen = PDF_CRYPT_KEY_LEN + 5; /* min(n+5, 16) = 10 for 40-bit */
+    memcpy(out_key, md5_out, keylen);
+    return keylen;
+}
+
+/*
+ * Encrypt (or decrypt - RC4 is symmetric) data in-place for a given object.
+ */
+static void pdf_crypt_data(const struct pdf_crypt *crypt, int obj_index,
+                           uint8_t *data, size_t len)
+{
+    uint8_t key[16];
+    size_t keylen = pdf_crypt_object_key(crypt, obj_index, key);
+    pdf_rc4(key, keylen, data, len);
+}
+
+/*
+ * Encrypt a string and write it to fp as a PDF hex string <hexbytes>.
+ * Returns false on allocation failure (caller should treat the PDF as
+ * invalid).
+ */
+static bool pdf_crypt_write_string(const struct pdf_crypt *crypt,
+                                   int obj_index, const char *str, FILE *fp)
+{
+    size_t slen = strlen(str);
+    uint8_t *buf = (uint8_t *)malloc(slen + 1);
+    if (!buf)
+        return false;
+    memcpy(buf, str, slen);
+    pdf_crypt_data(crypt, obj_index, buf, slen);
+    fputc('<', fp);
+    for (size_t i = 0; i < slen; i++)
+        fprintf(fp, "%02x", buf[i]);
+    fputc('>', fp);
+    free(buf);
+    return true;
+}
+
+/*
+ * Write a stream object (OBJ_stream or OBJ_image) to fp with the stream
+ * content RC4-encrypted.  The dictionary header and endstream trailer are
+ * written verbatim; only the payload bytes are encrypted.
+ * Returns false on allocation failure (content is skipped, not written in
+ * plain text).
+ */
+static bool pdf_crypt_write_stream(const struct pdf_crypt *crypt,
+                                   int obj_index, const struct dstr *stream,
+                                   FILE *fp)
+{
+    const char *raw = stream->data ? stream->data : stream->static_data;
+    size_t total = dstr_len(stream);
+    const char *stream_marker = "stream\r\n";
+    size_t marker_len = strlen(stream_marker);
+    const char *footer = "\r\nendstream\r\n";
+    size_t footer_len = strlen(footer);
+
+    /* Find the first "stream\r\n" — marks the end of the dictionary header */
+    const char *hdr_end = strstr(raw, stream_marker);
+    if (!hdr_end || total < footer_len) {
+        /* Unexpected format: write empty stream to avoid leaking data */
+        fwrite(raw, 1, (size_t)(hdr_end ? hdr_end - raw + marker_len : 0),
+               fp);
+        fwrite(footer, 1, footer_len, fp);
+        return false;
+    }
+
+    size_t hdr_len = (size_t)(hdr_end - raw) + marker_len;
+    size_t content_len = total - hdr_len - footer_len;
+
+    /* Write the dictionary header unchanged */
+    fwrite(raw, 1, hdr_len, fp);
+
+    /* Encrypt the payload and write it */
+    uint8_t *buf = (uint8_t *)malloc(content_len + 1);
+    if (!buf) {
+        /* Encryption failed due to OOM - skip remaining content to avoid
+         * writing unencrypted stream data */
+        fwrite(footer, 1, footer_len, fp);
+        return false;
+    }
+    memcpy(buf, raw + hdr_len, content_len);
+    pdf_crypt_data(crypt, obj_index, buf, content_len);
+    fwrite(buf, 1, content_len, fp);
+    free(buf);
+
+    /* Write the endstream trailer unchanged */
+    fwrite(footer, 1, footer_len, fp);
+    return true;
+}
+
+/*
+ * Internal implementation used by both pdf_save_file and
+ * pdf_save_file_encrypted.  When crypt is NULL the file is written as a
+ * plain PDF (PDF 1.3).  When crypt is non-NULL the stream and string content
+ * is RC4-encrypted, an encryption dictionary object is appended, and the
+ * trailer references it (PDF 1.4).
+ *
+ * file_id is only used when crypt is non-NULL: it must be the same 8 bytes
+ * that were passed to pdf_crypt_compute_keys, so the trailer /ID element
+ * matches the bytes used for key derivation.
+ */
+static int pdf_save_file_internal(struct pdf_doc *pdf, FILE *fp,
+                                  const struct pdf_crypt *crypt,
+                                  const uint8_t *owner_key,
+                                  const uint8_t *user_key,
+                                  int32_t permissions, const uint8_t *file_id)
+{
     int xref_offset;
     int xref_count = 0;
-    uint64_t id1, id2;
+    uint64_t id2;
     time_t now = time(NULL);
     char saved_locale[32];
 
     force_locale(saved_locale, sizeof(saved_locale));
 
-    fprintf(fp, "%%PDF-1.3\r\n");
+    fprintf(fp, crypt ? "%%PDF-1.4\r\n" : "%%PDF-1.3\r\n");
     /* Hibit bytes */
     fprintf(fp, "%c%c%c%c%c\r\n", 0x25, 0xc7, 0xec, 0x8f, 0xa2);
 
-    /* Dump all the objects & get their file offsets */
+    /* Write all objects (encrypted or plain) */
     for (int i = 0; i < flexarray_size(&pdf->objects); i++)
-        if (pdf_save_object(pdf, fp, i) >= 0)
+        if (pdf_save_object_internal(pdf, fp, i, crypt) >= 0)
             xref_count++;
 
-    /* xref */
+    /* For encrypted output: append the encryption dictionary object */
+    int encrypt_obj_index = flexarray_size(&pdf->objects);
+    int encrypt_obj_offset = 0;
+    if (crypt) {
+        encrypt_obj_offset = ftell(fp);
+        fprintf(fp, "%d 0 obj\r\n", encrypt_obj_index);
+        fprintf(fp, "<<\r\n"
+                    "  /Filter /Standard\r\n"
+                    "  /V 1\r\n"
+                    "  /R 2\r\n"
+                    "  /O <");
+        for (int i = 0; i < 32; i++)
+            fprintf(fp, "%02x", owner_key[i]);
+        fprintf(fp, ">\r\n  /U <");
+        for (int i = 0; i < 32; i++)
+            fprintf(fp, "%02x", user_key[i]);
+        fprintf(fp, ">\r\n  /P %d\r\n", permissions);
+        fprintf(fp, ">>\r\nendobj\r\n");
+        xref_count++;
+    }
+
+    /* Cross-reference table */
     xref_offset = ftell(fp);
     fprintf(fp, "xref\r\n");
     fprintf(fp, "0 %d\r\n", xref_count + 1);
     fprintf(fp, "0000000000 65535 f\r\n");
     for (int i = 0; i < flexarray_size(&pdf->objects); i++) {
-        obj = pdf_get_object(pdf, i);
-        if (obj->type != OBJ_none)
+        const struct pdf_object *obj = pdf_get_object(pdf, i);
+        if (obj && obj->type != OBJ_none)
             fprintf(fp, "%10.10d 00000 n\r\n", obj->offset);
     }
+    if (crypt)
+        fprintf(fp, "%10.10d 00000 n\r\n", encrypt_obj_offset);
 
+    /* Trailer */
+    const struct pdf_object *info_obj = pdf_find_first_object(pdf, OBJ_info);
+    const struct pdf_object *catalog =
+        pdf_find_first_object(pdf, OBJ_catalog);
+    id2 = hash(5381, &now, sizeof(now));
     fprintf(fp,
             "trailer\r\n"
             "<<\r\n"
             "/Size %d\r\n",
             xref_count + 1);
-    obj = pdf_find_first_object(pdf, OBJ_catalog);
-    fprintf(fp, "/Root %d 0 R\r\n", obj->index);
-    obj = pdf_find_first_object(pdf, OBJ_info);
-    fprintf(fp, "/Info %d 0 R\r\n", obj->index);
-    /* Generate document unique IDs */
-    id1 = hash(5381, obj->info, sizeof(struct pdf_info));
-    id1 = hash(id1, &xref_count, sizeof(xref_count));
-    id2 = hash(5381, &now, sizeof(now));
-    fprintf(fp, "/ID [<%16.16" PRIx64 "> <%16.16" PRIx64 ">]\r\n", id1, id2);
-    fprintf(fp, ">>\r\n"
-                "startxref\r\n");
+    fprintf(fp, "/Root %d 0 R\r\n", catalog->index);
+    fprintf(fp, "/Info %d 0 R\r\n", info_obj->index);
+    if (crypt) {
+        fprintf(fp, "/Encrypt %d 0 R\r\n", encrypt_obj_index);
+        /* Write the /ID using the exact file_id bytes used for key derivation
+         * (8 bytes each element). Use same bytes for both elements. */
+        fprintf(fp, "/ID [<");
+        for (int i = 0; i < 8; i++)
+            fprintf(fp, "%02x", file_id[i]);
+        fprintf(fp, "> <");
+        for (int i = 0; i < 8; i++)
+            fprintf(fp, "%02x", file_id[i]);
+        fprintf(fp, ">]\r\n");
+    } else {
+        uint64_t id1;
+        id1 = hash(5381, info_obj->info, sizeof(struct pdf_info));
+        id1 = hash(id1, &xref_count, sizeof(xref_count));
+        fprintf(fp, "/ID [<%016" PRIx64 "> <%016" PRIx64 ">]\r\n", id1, id2);
+    }
+    fprintf(fp, ">>\r\nstartxref\r\n");
     fprintf(fp, "%d\r\n", xref_offset);
     fprintf(fp, "%%%%EOF\r\n");
 
     restore_locale(saved_locale);
-
     return 0;
+}
+
+int pdf_save_file(struct pdf_doc *pdf, FILE *fp)
+{
+    return pdf_save_file_internal(pdf, fp, NULL, NULL, NULL, 0, NULL);
+}
+
+static int pdf_save_file_encrypted(struct pdf_doc *pdf, FILE *fp,
+                                   const char *user_password)
+{
+    /* Pre-count objects (including the encrypt dict) to build the file ID
+     * that is used for key derivation. */
+    int xref_count = 0;
+    for (int i = 0; i < flexarray_size(&pdf->objects); i++) {
+        const struct pdf_object *o = pdf_get_object(pdf, i);
+        if (o && o->type != OBJ_none)
+            xref_count++;
+    }
+    xref_count++; /* for the encryption dictionary object */
+
+    const struct pdf_object *info_obj = pdf_find_first_object(pdf, OBJ_info);
+    uint64_t id1 = hash(5381, info_obj->info, sizeof(struct pdf_info));
+    id1 = hash(id1, &xref_count, sizeof(xref_count));
+
+    /* Convert id1 to 8 bytes big-endian — these are the exact bytes written
+     * to the PDF's /ID first element and used for key derivation. */
+    uint8_t file_id[8];
+    for (int i = 0; i < 8; i++)
+        file_id[i] = (uint8_t)((id1 >> (56 - 8 * i)) & 0xff);
+
+    /* Derive encryption keys */
+    struct pdf_crypt crypt;
+    uint8_t owner_key[32], user_key[32];
+    /* P = -4 (0xFFFFFFFC): all operations permitted once opened */
+    int32_t permissions = -4;
+    pdf_crypt_compute_keys(user_password, file_id, permissions, &crypt,
+                           owner_key, user_key);
+
+    return pdf_save_file_internal(pdf, fp, &crypt, owner_key, user_key,
+                                  permissions, file_id);
 }
 
 int pdf_save(struct pdf_doc *pdf, const char *filename)
@@ -1264,10 +2461,11 @@ int pdf_save(struct pdf_doc *pdf, const char *filename)
 
     e = pdf_save_file(pdf, fp);
 
-    if (fp != stdout)
-        if (fclose(fp) != 0 && e >= 0)
+    if (fp != stdout) {
+        if (fclose(fp) != 0)
             return pdf_set_err(pdf, -errno, "Unable to close '%s': %s",
                                filename, strerror(errno));
+    }
 
     return e;
 }
@@ -1380,7 +2578,7 @@ static int utf8_to_utf32(const char *utf8, int len, uint32_t *utf32)
     uint8_t mask;
 
     if (len <= 0 || !utf8 || !utf32)
-        return -EINVAL;
+        return -ENOSPC;
 
     ch = *(uint8_t *)utf8;
     if ((ch & 0x80) == 0) {
@@ -1551,35 +2749,65 @@ static int pdf_add_text_spacing(struct pdf_doc *pdf, struct pdf_object *page,
     dstr_printf(&str, "%f %f %f rg ", PDF_RGB_R(colour), PDF_RGB_G(colour),
                 PDF_RGB_B(colour));
     dstr_printf(&str, "%f Tc ", spacing);
-    dstr_append(&str, "(");
 
-    /* Escape magic characters properly */
-    for (size_t i = 0; i < len;) {
-        int code_len;
-        uint8_t pdf_char;
-        code_len = utf8_to_pdfencoding(pdf, &text[i], len - i, &pdf_char);
-        if (code_len < 0) {
-            dstr_free(&str);
-            return code_len;
+    if (pdf->current_font->font.is_ttf) {
+        /* Type0/Identity-H: encode text as a hex string of 2-byte glyph IDs.
+         * Each UTF-8 codepoint is mapped to its glyph ID via the stored cmap
+         * subtable.  Control characters (< U+0020) are skipped. */
+        dstr_append(&str, "<");
+        for (size_t i = 0; i < len;) {
+            uint32_t codepoint;
+            int code_len =
+                utf8_to_utf32(&text[i], (int)(len - i), &codepoint);
+            if (code_len < 0) {
+                dstr_free(&str);
+                return pdf_set_err(pdf, -EINVAL,
+                                   "Invalid UTF-8 encoding in text at "
+                                   "position %zu",
+                                   i);
+            }
+            i += code_len;
+            if (codepoint < 0x20u)
+                continue; // skip control characters
+            uint16_t glyph_id = ttf_cmap_subtable_lookup(
+                pdf->current_font->font.cmap_data,
+                pdf->current_font->font.cmap_data_len, codepoint);
+            char hex[5];
+            snprintf(hex, sizeof(hex), "%04X", (unsigned)glyph_id);
+            dstr_append(&str, hex);
         }
+        dstr_append(&str, "> Tj ");
+    } else {
+        dstr_append(&str, "(");
+        /* Escape magic characters properly */
+        for (size_t i = 0; i < len;) {
+            int code_len;
+            uint8_t pdf_char;
+            code_len = utf8_to_pdfencoding(pdf, &text[i], len - i, &pdf_char);
+            if (code_len < 0) {
+                dstr_free(&str);
+                return code_len;
+            }
 
-        if (strchr("()\\", pdf_char)) {
-            char buf[3];
-            /* Escape some characters */
-            buf[0] = '\\';
-            buf[1] = pdf_char;
-            buf[2] = '\0';
-            dstr_append(&str, buf);
-        } else if (strrchr("\n\r\t\b\f", pdf_char)) {
-            /* Skip over these characters */
-            ;
-        } else {
-            dstr_append_data(&str, &pdf_char, 1);
+            if (strchr("()\\", pdf_char)) {
+                char buf[3];
+                /* Escape some characters */
+                buf[0] = '\\';
+                buf[1] = pdf_char;
+                buf[2] = '\0';
+                dstr_append(&str, buf);
+            } else if (strrchr("\n\r\t\b\f", pdf_char)) {
+                /* Skip over these characters */
+                ;
+            } else {
+                dstr_append_data(&str, &pdf_char, 1);
+            }
+
+            i += code_len;
         }
-
-        i += code_len;
+        dstr_append(&str, ") Tj ");
     }
-    dstr_append(&str, ") Tj ");
+
     dstr_append(&str, "ET");
 
     ret = pdf_add_stream(pdf, page, dstr_data(&str));
@@ -1878,6 +3106,54 @@ static int pdf_text_point_width(struct pdf_doc *pdf, const char *text,
     return 0;
 }
 
+// Compute text point width for a TTF font using direct Unicode → glyph
+// width lookup (bypasses the WinAnsi encoding used by standard fonts).
+static int pdf_ttf_text_point_width(struct pdf_doc *pdf,
+                                    const struct pdf_object *font_obj,
+                                    const char *text, ptrdiff_t text_len,
+                                    float size, float *point_width)
+{
+    float total = 0.0f;
+    if (text_len < 0)
+        text_len = (ptrdiff_t)strlen(text);
+    *point_width = 0.0f;
+
+    for (int byte_pos = 0; byte_pos < (int)text_len;) {
+        uint32_t codepoint;
+        int code_len = utf8_to_utf32(&text[byte_pos],
+                                     (int)(text_len - byte_pos), &codepoint);
+        if (code_len < 0)
+            return pdf_set_err(
+                pdf, -EINVAL, "Invalid UTF-8 encoding in text at position %d",
+                byte_pos);
+        byte_pos += code_len;
+        if (codepoint < 0x20u)
+            continue; // skip control characters
+        uint16_t glyph_id =
+            ttf_cmap_subtable_lookup(font_obj->font.cmap_data,
+                                     font_obj->font.cmap_data_len, codepoint);
+        uint16_t advance = ttf_hmtx_advance(
+            font_obj->font.hmtx_data, font_obj->font.hmtx_data_len, glyph_id,
+            font_obj->font.num_h_metrics);
+        total += (float)advance;
+    }
+    *point_width = total * size / (float)font_obj->font.units_per_em;
+    return 0;
+}
+
+// Dispatch text width calculation based on whether the current font is a TTF.
+// For standard fonts, `widths` must be a pointer to a 256-entry advance-width
+// table; for TTF fonts it is ignored (glyph widths are looked up via cmap).
+static int pdf_text_width_for_font(struct pdf_doc *pdf, bool is_ttf,
+                                   const uint16_t *widths, const char *text,
+                                   ptrdiff_t len, float size, float *out)
+{
+    if (is_ttf)
+        return pdf_ttf_text_point_width(pdf, pdf->current_font, text, len,
+                                        size, out);
+    return pdf_text_point_width(pdf, text, len, size, widths, out);
+}
+
 static const uint16_t *find_font_widths(const char *font_name)
 {
     if (strcasecmp(font_name, "Helvetica") == 0)
@@ -1914,8 +3190,17 @@ int pdf_get_font_text_width(struct pdf_doc *pdf, const char *font_name,
 {
     if (!font_name)
         font_name = pdf->current_font->font.name;
-    const uint16_t *widths = find_font_widths(font_name);
 
+    // Check for a loaded TTF font with this name
+    for (const struct pdf_object *obj = pdf_find_first_object(pdf, OBJ_font);
+         obj; obj = obj->next) {
+        if (obj->font.is_ttf && strcmp(obj->font.name, font_name) == 0) {
+            return pdf_ttf_text_point_width(pdf, obj, text, -1, size,
+                                            text_width);
+        }
+    }
+
+    const uint16_t *widths = find_font_widths(font_name);
     if (!widths)
         return pdf_set_err(pdf, -EINVAL,
                            "Unable to determine width for font '%s'",
@@ -1927,9 +3212,18 @@ static const char *find_word_break(const char *string)
 {
     if (!string)
         return NULL;
+
     /* Skip over the actual word */
-    while (*string && !isspace((unsigned char)*string))
-        string++;
+    while (*string) {
+        uint32_t codepoint;
+        int code_len = utf8_to_utf32(string, strlen(string), &codepoint);
+        if (code_len <= 0) {
+            code_len = 1;
+        } else if (codepoint < 256 && isspace((unsigned char)codepoint)) {
+            break;
+        }
+        string += code_len;
+    }
 
     return string;
 }
@@ -1946,26 +3240,28 @@ int pdf_add_text_wrap(struct pdf_doc *pdf, struct pdf_object *page,
     const char *last_best = text;
     const char *end = text;
     char line[512];
-    const uint16_t *widths;
+    const uint16_t *widths = NULL;
+    bool ttf_font = pdf->current_font->font.is_ttf;
     float orig_yoff = yoff;
 
-    widths = find_font_widths(pdf->current_font->font.name);
-    if (!widths)
-        return pdf_set_err(pdf, -EINVAL,
-                           "Unable to determine width for font '%s'",
-                           pdf->current_font->font.name);
+    if (!ttf_font) {
+        widths = find_font_widths(pdf->current_font->font.name);
+        if (!widths)
+            return pdf_set_err(pdf, -EINVAL,
+                               "Unable to determine width for font '%s'",
+                               pdf->current_font->font.name);
+    }
 
     while (start && *start) {
         const char *new_end = find_word_break(end + 1);
         float line_width;
         int output = 0;
-        float xoff_align = xoff;
         int e;
 
         end = new_end;
 
-        e = pdf_text_point_width(pdf, start, end - start, size, widths,
-                                 &line_width);
+        e = pdf_text_width_for_font(pdf, ttf_font, widths, start, end - start,
+                                    size, &line_width);
         if (e < 0)
             return e;
 
@@ -1982,8 +3278,8 @@ int pdf_add_text_wrap(struct pdf_doc *pdf, struct pdf_object *page,
                         ((start[i - 1] & 0xc0) == 0x80 &&
                          (start[i] & 0xc0) == 0x80))
                         continue;
-                    e = pdf_text_point_width(pdf, start, i, size, widths,
-                                             &this_width);
+                    e = pdf_text_width_for_font(pdf, ttf_font, widths, start,
+                                                i, size, &this_width);
                     if (e < 0)
                         return e;
                     if (this_width < wrap_width)
@@ -2007,13 +3303,15 @@ int pdf_add_text_wrap(struct pdf_doc *pdf, struct pdf_object *page,
         if (output) {
             int len = end - start;
             float char_spacing = 0;
+            float xoff_align = xoff;
+
             if (len >= (int)sizeof(line))
                 len = (int)sizeof(line) - 1;
             strncpy(line, start, len);
             line[len] = '\0';
 
-            e = pdf_text_point_width(pdf, start, len, size, widths,
-                                     &line_width);
+            e = pdf_text_width_for_font(pdf, ttf_font, widths, start, len,
+                                        size, &line_width);
             if (e < 0)
                 return e;
 
@@ -2054,23 +3352,55 @@ int pdf_add_text_wrap(struct pdf_doc *pdf, struct pdf_object *page,
     return 0;
 }
 
-int pdf_add_line(struct pdf_doc *pdf, struct pdf_object *page, float x1,
-                 float y1, float x2, float y2, float width, uint32_t colour)
+int pdf_add_line_pattern(struct pdf_doc *pdf, struct pdf_object *page,
+                         float x1, float y1, float x2, float y2, float width,
+                         uint32_t colour, const float pattern[],
+                         int pattern_len, float phase)
 {
     int ret;
     struct dstr str = INIT_DSTR;
+    int nonzero = 0;
 
+    if (pattern_len < 0 || (pattern_len > 0 && !pattern))
+        return pdf_set_err(pdf, -EINVAL, "Invalid line pattern");
+    for (int i = 0; i < pattern_len; i++) {
+        if (pattern[i] < 0.0f)
+            return pdf_set_err(pdf, -EINVAL,
+                               "Line pattern lengths must be >= 0");
+        if (pattern[i] > 0.0f)
+            nonzero = 1;
+    }
+    if (pattern_len > 0 && !nonzero)
+        return pdf_set_err(pdf, -EINVAL,
+                           "Line pattern must have a non-zero length");
+
+    if (pattern_len > 0) {
+        dstr_append(&str, "[");
+        for (int i = 0; i < pattern_len; i++)
+            dstr_printf(&str, "%s%f", i ? " " : "", pattern[i]);
+        dstr_printf(&str, "] %f d\r\n", phase);
+    }
     dstr_printf(&str, "%f w\r\n", width);
     dstr_printf(&str, "%f %f m\r\n", x1, y1);
     dstr_printf(&str, "/DeviceRGB CS\r\n");
     dstr_printf(&str, "%f %f %f RG\r\n", PDF_RGB_R(colour), PDF_RGB_G(colour),
                 PDF_RGB_B(colour));
     dstr_printf(&str, "%f %f l S\r\n", x2, y2);
+    /* Restore the solid pattern */
+    if (pattern_len > 0)
+        dstr_append(&str, "[] 0 d\r\n");
 
     ret = pdf_add_stream(pdf, page, dstr_data(&str));
     dstr_free(&str);
 
     return ret;
+}
+
+int pdf_add_line(struct pdf_doc *pdf, struct pdf_object *page, float x1,
+                 float y1, float x2, float y2, float width, uint32_t colour)
+{
+    return pdf_add_line_pattern(pdf, page, x1, y1, x2, y2, width, colour,
+                                NULL, 0, 0.0f);
 }
 
 int pdf_add_cubic_bezier(struct pdf_doc *pdf, struct pdf_object *page,
@@ -2925,7 +4255,7 @@ static int pdf_add_barcode_upca(struct pdf_doc *pdf, struct pdf_object *page,
         return e;
     }
 
-    text[0] = *--string;
+    text[0] = *(string - 1);
 
     x += eanupc_dimensions[1].quiet_right * x_width -
          604.0f * font * 4.0f / 7.0f / (14.0f * 72.0f);
@@ -3445,8 +4775,11 @@ static size_t dgets(const uint8_t *data, size_t *pos, size_t len, char *line,
     if (*pos >= len)
         return 0;
 
+    if (line_len == 0)
+        return 0;
+
     while ((*pos) < len) {
-        if (line_pos < line_len) {
+        if (line_pos < line_len - 1) {
             // Reject non-ascii data
             if (data[*pos] & 0x80) {
                 return 0;
@@ -3461,9 +4794,7 @@ static size_t dgets(const uint8_t *data, size_t *pos, size_t len, char *line,
         (*pos)++;
     }
 
-    if (line_pos < line_len) {
-        line[line_pos] = '\0';
-    }
+    line[line_pos] = '\0';
 
     return *pos;
 }
@@ -3601,7 +4932,8 @@ static int parse_jpeg_header(struct pdf_img_info *info, const uint8_t *data,
 
 static int pdf_add_jpeg_data(struct pdf_doc *pdf, struct pdf_object *page,
                              float x, float y, float display_width,
-                             float display_height, struct pdf_img_info *info,
+                             float display_height,
+                             const struct pdf_img_info *info,
                              const uint8_t *jpeg_data, size_t len)
 {
     struct pdf_object *obj;
@@ -3993,7 +5325,6 @@ static int pdf_add_bmp_data(struct pdf_doc *pdf, struct pdf_object *page,
 {
     const struct bmp_header *header = &info->bmp;
     uint8_t *bmp_data = NULL;
-    uint8_t row_padding;
     uint32_t bpp;
     size_t data_len;
     int retval;
@@ -4022,14 +5353,13 @@ static int pdf_add_bmp_data(struct pdf_doc *pdf, struct pdf_object *page,
                            header->biBitCount);
     bpp = header->biBitCount / 8;
     /* BMP rows are 4-bytes padded! */
-    row_padding = (width * bpp) & 3;
+    uint32_t stride = (width * bpp + 3) & ~3;
     data_len = (size_t)width * (size_t)height * 3;
 
     if (header->bfOffBits >= len)
         return pdf_set_err(pdf, -EINVAL, "Invalid BMP image offset");
 
-    if (len - header->bfOffBits <
-        (size_t)height * (width + row_padding) * bpp)
+    if (len - header->bfOffBits < (size_t)height * stride)
         return pdf_set_err(pdf, -EINVAL, "Wrong BMP image size");
 
     if (bpp == 3) {
@@ -4039,8 +5369,8 @@ static int pdf_add_bmp_data(struct pdf_doc *pdf, struct pdf_object *page,
             return pdf_set_err(pdf, -ENOMEM,
                                "Insufficient memory for bitmap");
         for (uint32_t pos = 0; pos < width * height; pos++) {
-            uint32_t src_pos =
-                header->bfOffBits + 3 * (pos + (pos / width) * row_padding);
+            uint32_t src_pos = header->bfOffBits + (pos / width) * stride +
+                               (pos % width) * 3;
 
             bmp_data[pos * 3] = data[src_pos + 2];
             bmp_data[pos * 3 + 1] = data[src_pos + 1];
@@ -4189,4 +5519,27 @@ int pdf_add_image_file(struct pdf_doc *pdf, struct pdf_object *page, float x,
                              data, len);
     free(data);
     return ret;
+}
+
+int pdf_save_encrypted(struct pdf_doc *pdf, const char *filename,
+                       const char *password)
+{
+    FILE *fp;
+    int e;
+
+    if (filename == NULL)
+        fp = stdout;
+    else if ((fp = fopen(filename, "wb")) == NULL)
+        return pdf_set_err(pdf, -errno, "Unable to open '%s': %s", filename,
+                           strerror(errno));
+
+    e = pdf_save_file_encrypted(pdf, fp, password);
+
+    if (fp != stdout) {
+        if (fclose(fp) != 0)
+            return pdf_set_err(pdf, -errno, "Unable to close '%s': %s",
+                               filename, strerror(errno));
+    }
+
+    return e;
 }

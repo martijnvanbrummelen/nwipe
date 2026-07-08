@@ -205,13 +205,13 @@ struct pdf_path_operation {
  * Convert a value in inches into a number of points.
  * @param inch inches value to convert to points
  */
-#define PDF_INCH_TO_POINT(inch) ((float)((inch)*72.0f))
+#define PDF_INCH_TO_POINT(inch) ((float)((inch) * 72.0f))
 
 /**
  * Convert a value in milli-meters into a number of points.
  * @param mm millimeter value to convert to points
  */
-#define PDF_MM_TO_POINT(mm) ((float)((mm)*72.0f / 25.4f))
+#define PDF_MM_TO_POINT(mm) ((float)((mm) * 72.0f / 25.4f))
 
 /*! Point width of a standard US-Letter page */
 #define PDF_LETTER_WIDTH PDF_INCH_TO_POINT(8.5f)
@@ -237,7 +237,7 @@ struct pdf_path_operation {
  * in PDFGen
  */
 #define PDF_RGB(r, g, b)                                                     \
-    (uint32_t)((((r)&0xff) << 16) | (((g)&0xff) << 8) | (((b)&0xff)))
+    (uint32_t)((((r) & 0xff) << 16) | (((g) & 0xff) << 8) | (((b) & 0xff)))
 
 /**
  * Convert four 8-bit ARGB values into a single packed 32-bit
@@ -246,8 +246,8 @@ struct pdf_path_operation {
  * (transparent)
  */
 #define PDF_ARGB(a, r, g, b)                                                 \
-    (uint32_t)(((uint32_t)((a)&0xff) << 24) | (((r)&0xff) << 16) |           \
-               (((g)&0xff) << 8) | (((b)&0xff)))
+    (uint32_t)(((uint32_t)((a) & 0xff) << 24) | (((r) & 0xff) << 16) |       \
+               (((g) & 0xff) << 8) | (((b) & 0xff)))
 
 /*! Utility macro to provide bright red */
 #define PDF_RED PDF_RGB(0xff, 0, 0)
@@ -330,6 +330,30 @@ void pdf_clear_err(struct pdf_doc *pdf);
  * @return < 0 on failure, 0 on success
  */
 int pdf_set_font(struct pdf_doc *pdf, const char *font);
+
+/**
+ * Sets the font to use for text objects by loading a TrueType font file.
+ * The font is embedded in the PDF document.
+ * Note: The font selection should be done before text is output,
+ * and will remain until pdf_set_font or pdf_set_font_ttf is called again.
+ * @param pdf PDF document to update font on
+ * @param path Filesystem path to a TrueType (.ttf) font file
+ * @return NULL on failure, name of the font to use on success (this is used
+ * for pdf_get_font_text_width)
+ */
+const char *pdf_set_font_ttf(struct pdf_doc *pdf, const char *path);
+
+/**
+ * Sets the font to use for text objects by loading a TrueType font file from
+ * a FILE pointer.
+ *
+ * @param pdf PDF document to update font on
+ * @param fp TTF font file pointer (must be readable and seekable)
+ * @param path Name of font for error messages and for internal PDF reference
+ * @return NULL on failure, name of the font to use on success
+ */
+const char *pdf_set_font_ttf_file(struct pdf_doc *pdf, FILE *fp,
+                                  const char *path);
 
 /**
  * Calculate the width of a given string in the current font
@@ -486,6 +510,28 @@ int pdf_add_text_wrap(struct pdf_doc *pdf, struct pdf_object *page,
  */
 int pdf_add_line(struct pdf_doc *pdf, struct pdf_object *page, float x1,
                  float y1, float x2, float y2, float width, uint32_t colour);
+
+/**
+ * Add a line with a dash pattern (dashed/dotted etc...)
+ * @param pdf PDF document to add to
+ * @param page Page to add object to (NULL => most recently added page)
+ * @param x1 X offset of start of line
+ * @param y1 Y offset of start of line
+ * @param x2 X offset of end of line
+ * @param y2 Y offset of end of line
+ * @param width Width of the line
+ * @param colour Colour to draw the line
+ * @param pattern Array of alternating dash & gap lengths describing the
+ *        pattern, e.g. {6, 3} => dashed, {1, 2} => dotted. At least one
+ *        length must be non-zero
+ * @param pattern_len Number of entries in pattern (0 => solid line)
+ * @param phase Distance into the pattern at which to start the line
+ * @return 0 on success, < 0 on failure
+ */
+int pdf_add_line_pattern(struct pdf_doc *pdf, struct pdf_object *page,
+                         float x1, float y1, float x2, float y2, float width,
+                         uint32_t colour, const float pattern[],
+                         int pattern_len, float phase);
 
 /**
  * Add a cubic bezier curve to the document
@@ -792,6 +838,20 @@ int pdf_add_image_file(struct pdf_doc *pdf, struct pdf_object *page, float x,
 int pdf_parse_image_header(struct pdf_img_info *info, const uint8_t *data,
                            size_t length, char *err_msg,
                            size_t err_msg_length);
+
+/**
+ * Save the given pdf document to the supplied filename with password
+ * protection. The document content is encrypted using RC4 40-bit encryption
+ * (PDF Standard Security Handler revision 2) so that a password is required
+ * to open the document in a PDF viewer.
+ * @param pdf PDF document to save
+ * @param filename Name of the file to store the PDF into (NULL for stdout)
+ * @param password Password required to open the document (may be empty or
+ *                 NULL for no password)
+ * @return < 0 on failure, >= 0 on success
+ */
+int pdf_save_encrypted(struct pdf_doc *pdf, const char *filename,
+                       const char *password);
 
 #ifdef __cplusplus
 }
