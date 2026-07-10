@@ -793,6 +793,10 @@ int main( int argc, char** argv )
 
         /* Initialise the variable that tracks how much of the drive has been erased */
         c1[i]->bytes_erased = 0;
+
+        /* Zero buckets that will contain the max and min disk speeds */
+        memset( c1[i]->min_throughput, 0, sizeof( c1[i]->min_throughput ) );
+        memset( c1[i]->max_throughput, 0, sizeof( c1[i]->max_throughput ) );
     }
 
     /* Pass the number selected to the struct for other threads */

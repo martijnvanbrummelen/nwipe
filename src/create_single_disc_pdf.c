@@ -514,6 +514,11 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr 
      */
     nwipe_get_smart_data( d, PDF_TYPE_SINGLE_DISC, &page_number, c );
 
+    /***************************************
+     * Add speed profile graph
+     */
+    create_pdf_speed_profile_page( d, PDF_TYPE_SINGLE_DISC, &page_number, c );
+
     /*****************************
      * Create the reports filename
      *

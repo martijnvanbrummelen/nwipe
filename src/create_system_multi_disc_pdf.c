@@ -496,6 +496,26 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
             nwipe_log( NWIPE_LOG_ERROR, "Function nwipe_get_smart_data() returned an error %u", result );
             goto cleanup;
         }
+
+        /* If the command line option --pdfduplex is active, insert a blank odd (recto) page before an even (verso)
+         * page. */
+        if( nwipe_options.PDF_duplex == 1 )
+        {
+            if( !( ( page_number + 1 ) % 2 ) )
+            {
+                pdf_add_blank_page(
+                    pdf, &page_number, INTENTIONALLY_BLANK_X, INTENTIONALLY_BLANK_Y, PDF_TYPE_MULTI_DISC, NULL, d );
+            }
+        }
+
+        /* Write the page containing the speed profile graph for a given drive */
+        result = create_pdf_speed_profile_page( d, PDF_TYPE_MULTI_DISC, &page_number, c[i] );
+        if( result != 0 )
+        {
+            // fatal error, don't bother trying to save the file'
+            nwipe_log( NWIPE_LOG_ERROR, "Function create_pdf_speed_profile_page() returned an error %u", result );
+            goto cleanup;
+        }
     }
 
     /************************************************************************************

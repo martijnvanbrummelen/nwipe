@@ -69,6 +69,15 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t*, nwipe_context_t* ptr );
 
 int nwipe_get_smart_data( nwipe_misc_thread_data_t*, size_t, size_t*, nwipe_context_t* );
 
+/**
+ * Create the disk speed profile page for both single disc and multi disk system PDF certificates
+ * @param pointer nwipe_misc_thread_data_t
+ * @param size_t PDF type PDF_TYPE_SINGLE_DISC PDF_TYPE_MULTI_DISC
+ * @param size_t* pointer to page number
+ * @param pointer drive context
+ */
+size_t create_pdf_speed_profile_page( nwipe_misc_thread_data_t*, size_t, size_t*, nwipe_context_t* c );
+
 void pdf_header_footer_text( nwipe_misc_thread_data_t*, nwipe_context_t*, char*, size_t, size_t );
 
 /**
@@ -178,5 +187,27 @@ void pdf_add_footer_page_numbers( void*, size_t, size_t );
  * NOTE: The caller is responsible for calling free() on the returned pointer.
  */
 unsigned char* check_and_load_logo( size_t* out_len );
+
+/**
+ * Generates a stylized dual-line graph on an existing PDF document page with peak annotations,
+ * an overall duration average line, and an expanded left margin padding for clean axis label layout.
+ * @param pointer to the PDF document
+ * @param pointer to the PDF page
+ * @param float array of minimum speed values
+ * @param float array of maximum speed values
+ * @param int the number of elements in each array (400 for portrait)
+ * @param char* title text label
+ * @param char* x_label text label
+ * @param char* y_axis text label
+ * @param float x_scale_max
+ */
+int generate_graph_pdf( float plot_y_start,
+                        const float* min_values,
+                        const float* max_values,
+                        int data_count,
+                        const char* title,
+                        const char* x_label,
+                        const char* y_label,
+                        float x_scale_max );
 
 #endif /* CREATE_PDF_H_ */

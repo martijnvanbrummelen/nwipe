@@ -75,8 +75,8 @@ typedef enum {
     NWIPE_IO_DIRECTION_SCATTER /* Random Order */
 } nwipe_io_direction_t;
 
-#define NWIPE_KNOB_SPEEDRING_SIZE 30
-#define NWIPE_KNOB_SPEEDRING_GRANULARITY 10
+#define NWIPE_KNOB_SPEEDRING_SIZE 300
+#define NWIPE_KNOB_SPEEDRING_GRANULARITY 1
 
 typedef struct nwipe_speedring_t_
 {
@@ -200,11 +200,19 @@ typedef struct nwipe_context_t_
     int wipe_status;  // Wipe finished = 0, wipe in progress = 1, wipe yet to start = -1.
     char wipe_status_txt[10];  // ERASED, FAILED, ABORTED, INSANITY
     int spinner_idx;  // Index into the spinner character array
-    char spinner_character[1];  // The current spinner character
-    double duration;  // Duration of the wipe in seconds
-    char duration_str[20];  // The duration string in hh:mm:ss
+    char spinner_character[1];  // The current spinner character// Keep for legacy date/time stamps
+    //
+    // Keep for legacy date/time stamps
     time_t start_time;  // Start time of wipe
     time_t end_time;  // End time of wipe
+    double duration;  // Duration of the wipe in seconds
+    char duration_str[20];  // The duration string in hh:mm:ss
+    //
+    // NEW: High-resolution timing fields for very fast small devices such as loop devices, for speed profiling
+    struct timespec start_clock;
+    struct timespec end_clock;
+    //
+    double exact_duration;  // Duration in seconds with decimal precision (e.g., 0.000250)
     u64 fsyncdata_errors;  // The number of fsyncdata errors across all passes.
     u64 io_retries;  // The number of I/O retries across all passes.
     char PDF_filename[FILENAME_MAX];  // The filename of the PDF certificate/report.
@@ -236,6 +244,8 @@ typedef struct nwipe_context_t_
      * c[i]->serial_no) and not c[i]->identity.serial_no);
      */
     struct hd_driveid identity;
+    float min_throughput[400];  // buckets for storing minimum speed of drive
+    float max_throughput[400];  // buckets for storing maximum speed of drive
 } nwipe_context_t;
 
 /*
