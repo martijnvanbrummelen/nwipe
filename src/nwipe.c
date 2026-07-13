@@ -839,9 +839,15 @@ int main( int argc, char** argv )
             /* Initialise the spinner character index */
             c2[i]->spinner_idx = 0;
 
-            /* Initialise the start and end time of the wipe */
+            /* Initialise the start and end time of the wipe (second resolution) */
             c2[i]->start_time = 0;
             c2[i]->end_time = 0;
+
+            /* Initialise the start and end time of the wipe (high resolution millisecond/nanosecond resolution) */
+            c2[i]->start_clock.tv_sec = 0;
+            c2[i]->start_clock.tv_nsec = 0;
+            c2[i]->end_clock.tv_sec = 0;
+            c2[i]->end_clock.tv_nsec = 0;
 
             /* Initialise the wipe_status flag, -1 = wipe not yet started */
             c2[i]->wipe_status = -1;
