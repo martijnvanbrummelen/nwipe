@@ -8270,60 +8270,6 @@ int compute_stats( void* ptr )
                 }
             }
             /* ====================================================================== */
-#if 0
-            /* ======================================================================
-             * GRAPH MIN/MAX TRACKING ENGINE (10-Second Sub-Window Slice)
-             * Fills the 400 bucket min/max arrays, used to construct speed profile
-             * graph.
-             * ====================================================================== */
-            u64 bytes_10 = 0;
-            u64 times_10 = 0;
-            int idx = c[i]->speedring.position;
-            int sub_window_seconds = 10;  // Tracks localized shifts tightly
-
-            for( int j = 0; j < sub_window_seconds; j++ )
-            {
-                /* Safely step backward through the 300-slot ring buffer */
-                idx = ( idx - 1 + 300 ) % 300;
-
-                if( c[i]->speedring.times[idx] == 0 )
-                {
-                    break;  // Stop early if the drive thread hasn't run for 10 seconds yet
-                }
-
-                bytes_10 += c[i]->speedring.bytes[idx];
-                times_10 += c[i]->speedring.times[idx];
-            }
-
-            /* Only log data once we have gathered a valid time-slice */
-            if( times_10 >= (u64) sub_window_seconds && c[i]->round_size > 0 )
-            {
-                double throughput_10 = (double) bytes_10 / (double) times_10;
-
-                /* Map current byte progress cleanly to one of the 400 array buckets */
-                int bucket = (int) ( (double) c[i]->round_done / (double) c[i]->round_size * 400.0 );
-
-                /* Guard against an out-of-bounds array index at exactly 100% completion */
-                if( bucket >= 400 )
-                {
-                    bucket = 399;
-                }
-
-                /* Record maximum throughput for this chunk */
-                if( throughput_10 > c[i]->max_throughput[bucket] )
-                {
-                    c[i]->max_throughput[bucket] = throughput_10;
-                }
-
-                /* Record minimum throughput for this chunk
-                 * (Checks if uninitialized '0' or if a new definitive minimum is found) */
-                if( c[i]->min_throughput[bucket] == 0 || throughput_10 < c[i]->min_throughput[bucket] )
-                {
-                    c[i]->min_throughput[bucket] = throughput_10;
-                }
-            }
-#endif
-            /* ====================================================================== */
 
             /* Calculate the average throughput */
             c[i]->throughput = (double) c[i]->round_done / (double) difftime( nwipe_time_now, c[i]->start_time );
@@ -8377,6 +8323,8 @@ void nwipe_update_speedring( nwipe_speedring_t* speedring, u64 speedring_bytes, 
     {
         /* Ignore the first sample and initialize. */
         speedring->timeslast = speedring_now;
+        speedring->byteslast = speedring_bytes;
+
         return;
     }
 
