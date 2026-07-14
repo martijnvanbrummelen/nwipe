@@ -222,9 +222,11 @@ create_pdf_speed_profile_page( nwipe_misc_thread_data_t* d, size_t pdf_type, siz
     const char* disc_body2 = "many discs being simultaneously erased due to a non-optimal setup, the disk profile may";
     const char* disc_body3 = "not represent the true speed profile. If in doubt, test using ShredOS with only the";
     const char* disc_body4 = "single disk you suspect is behaving oddly in regards to its speed profile.";
+    const char* disc_body5 = "See https://github.com/martijnvanbrummelen/nwipe/discussions/775 for examples of speed";
+    const char* disc_body6 = "profiles for both good and failing discs.";
 
     // Render Interpretation Text Vector Elements (Y positions spaced down progressively)
-    size_t PLOT_Y = 240;
+    size_t PLOT_Y = 260;
     size_t PLOT_Y_DIFF = 11;
     pdf_set_font( pdf, "Courier" );
     pdf_add_text( pdf, NULL, help_title, 10.0f, PLOT_X, PLOT_Y, PDF_BLACK );
@@ -243,6 +245,9 @@ create_pdf_speed_profile_page( nwipe_misc_thread_data_t* d, size_t pdf_type, siz
     pdf_add_text( pdf, NULL, disc_body2, 8.0f, PLOT_X, PLOT_Y -= PLOT_Y_DIFF, PDF_BLACK );
     pdf_add_text( pdf, NULL, disc_body3, 8.0f, PLOT_X, PLOT_Y -= PLOT_Y_DIFF, PDF_BLACK );
     pdf_add_text( pdf, NULL, disc_body4, 8.0f, PLOT_X, PLOT_Y -= PLOT_Y_DIFF, PDF_BLACK );
+    PLOT_Y -= PLOT_Y_DIFF;
+    pdf_add_text( pdf, NULL, disc_body5, 8.0f, PLOT_X, PLOT_Y -= PLOT_Y_DIFF, PDF_BLACK );
+    pdf_add_text( pdf, NULL, disc_body6, 8.0f, PLOT_X, PLOT_Y -= PLOT_Y_DIFF, PDF_BLACK );
 
     return 0;
 }
