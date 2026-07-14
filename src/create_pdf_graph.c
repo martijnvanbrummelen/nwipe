@@ -45,38 +45,7 @@ create_pdf_speed_profile_page( nwipe_misc_thread_data_t* d, size_t pdf_type, siz
     const float PAGE_HEIGHT = 841.89f;  // A4 height in point
     char speed_profile_page_title[100];
     char buffer[512];
-    int x, y;
-#if 0
-    float min_disk_speed[DATA_POINTS];
-    float max_disk_speed[DATA_POINTS];
-
-    // TEST CASE #1: Next-Gen NVMe Drive (GB/s range)
-    //    float start_speed_bytes = 2100000000.0f; // 2.1 GB/s
-    //    float end_speed_bytes   = 1700000000.0f; // 1.7 GB/s
-    //    float anomaly_drop      = 800000000.0f;  // 800 MB/s (0.8 GB/s)
-
-    // TEST CASE #2: Standard High-Speed Drive (MB/s range)
-    float start_speed_bytes = 68000000.0f;  // 68 MB/s
-    float end_speed_bytes = 55000000.0f;  // 55 MB/s
-    float anomaly_drop = 25000000.0f;  // 25 MB/s
-
-    // Populate data loops
-    for( int i = 0; i < DATA_POINTS; i++ )
-    {
-        int cycle_index = i % 100;
-        float linear_drop_ratio = (float) cycle_index / 99.0f;
-
-        float current_speed_bytes = start_speed_bytes - ( linear_drop_ratio * ( start_speed_bytes - end_speed_bytes ) );
-
-        min_disk_speed[i] = current_speed_bytes;
-        max_disk_speed[i] = current_speed_bytes;
-
-        if( i == 140 || i == 340 )
-        {
-            min_disk_speed[i] = anomaly_drop;
-        }
-    }
-#endif
+    int y;
 
     // Add a new page for the graph
     page = pdf_append_page_and_update_index( pdf, ++( *page_number ) );
@@ -97,8 +66,6 @@ create_pdf_speed_profile_page( nwipe_misc_thread_data_t* d, size_t pdf_type, siz
     {
         pdf_display_status_icon( PDF_TYPE_SINGLE_DISC, NULL );
     }
-
-    x = LEFT_MARGIN_SMART_DATA;  // left side of page
 
     /* For multidisc the smart data starts slighlty lower to accomodate
      * the erasure status ellipse & text
@@ -135,60 +102,37 @@ create_pdf_speed_profile_page( nwipe_misc_thread_data_t* d, size_t pdf_type, siz
     float graph_y_start = 340.0f;
 
     /* ======================================================================
-     * GRAPH DATA POLISHING: Forward-Fill & High-Res Fallback
+     * GRAPH DATA POLISHING: High-Res Fallback for under 10 second wipes
+     * If the wipe completed without errors and was under 10 seconds in
+     * duration, this will produce a flat line graph specifically for
+     * loop devices. We still see the speed but without the plot
+     * details.
      * ====================================================================== */
-    if( c->pass_errors == 0 || c->verify_errors == 0 || c->fsyncdata_errors == 0 || c->wipe_status == 0 )
+    if( c->pass_errors == 0 && c->verify_errors == 0 && c->fsyncdata_errors == 0 && c->wipe_status == 0
+        && c->exact_duration < 10.0 && c->exact_duration > 0.0 && c->round_done > 0 )
     {
-        // Dynamically locate the exact bucket where the wipe stopped making progress
         int max_allowed_bucket = 399;
-        if( c->round_size > 0 )
-        {
-            max_allowed_bucket = (int) ( (double) c->round_done / (double) c->round_size * 400.0 );
-            if( max_allowed_bucket > 399 )
-            {
-                max_allowed_bucket = 399;
-            }
-        }
-
-        double last_valid_max = 0.0;
-        double last_valid_min = 0.0;
-
-        // ONLY forward-fill up to the bucket where the wipe actually reached
-        for( int b = 0; b <= max_allowed_bucket; b++ )
-        {
-            if( c->max_throughput[b] > 0.0 )
-                last_valid_max = c->max_throughput[b];
-            else if( last_valid_max > 0.0 )
-                c->max_throughput[b] = last_valid_max;
-
-            if( c->min_throughput[b] > 0.0 )
-                last_valid_min = c->min_throughput[b];
-            else if( last_valid_min > 0.0 )
-                c->min_throughput[b] = last_valid_min;
-        }
 
         // Fallback for sub 10 second wipes, to avoid using buckets
-        if( c->exact_duration < 10.0 && c->round_done > 0 )
+
+        // Calculate actual burst speed straight from our protected high-res duration
+        double final_speed = 0.0;
+
+        if( c->exact_duration > 0.0 )
         {
-            // Calculate actual burst speed straight from our protected high-res duration
-            double final_speed = 0.0;
+            final_speed = (double) c->round_done / c->exact_duration;
+        }
+        else
+        {
+            // Absolute microsecond safety floor to prevent division-by-zero
+            final_speed = 0.0;
+        }
 
-            if( c->exact_duration > 0.0 )
-            {
-                final_speed = (double) c->round_done / c->exact_duration;
-            }
-            else
-            {
-                // Absolute microsecond safety floor to prevent division-by-zero
-                final_speed = (double) c->round_done / 0.000001;
-            }
-
-            // ONLY broadcast the high-res speed up to our progress boundary
-            for( int b = 0; b <= max_allowed_bucket; b++ )
-            {
-                c->max_throughput[b] = final_speed;
-                c->min_throughput[b] = final_speed;
-            }
+        // Plot a flat line across the graph
+        for( int b = 0; b <= max_allowed_bucket; b++ )
+        {
+            c->max_throughput[b] = final_speed;
+            c->min_throughput[b] = final_speed;
         }
     }
     /* ====================================================================== */
@@ -285,6 +229,39 @@ int generate_graph_pdf( float plot_y_start,
     const float PLOT_X = 115.0f;  // Opened up extra space on the left margin
     const float PLOT_H = 200.0f;
     const float PLOT_Y = plot_y_start;
+
+    // Scan intergrity of dataset, data must be >= 0 and less than 150GB (150000000000.0)
+
+    const double MAX_LIMIT = 150000000000.0;
+    const double MIN_LIMIT = 0.0;
+    bool is_valid = true;
+
+    for( int i = 0; i < 400; i++ )
+    {
+        // Check max_throughput bounds
+        if( max_values[i] < MIN_LIMIT || max_values[i] > MAX_LIMIT )
+        {
+            nwipe_log( NWIPE_LOG_DEBUG,
+                       "Error: Speed Profile data set max_values[%d] value (%f) out of bounds.",
+                       max_values[i] );
+            is_valid = false;
+        }
+
+        // Check min_throughput bounds
+        if( min_values[i] < MIN_LIMIT || min_values[i] > MAX_LIMIT )
+        {
+            nwipe_log( NWIPE_LOG_DEBUG,
+                       "Error: Speed Profile data set min_values[%d] value (%f) out of bounds.",
+                       min_values[i] );
+            is_valid = false;
+        }
+
+        if( is_valid == false )
+        {
+            nwipe_log( NWIPE_LOG_ERROR, "Graph min/max dataset is out of bounds. < 0.0 or > 150000000000.0 (150GB)" );
+            return -1;
+        }
+    }
 
     // 1. Scan dataset to find absolute min, max, and active average sum
     float abs_min = min_values[0];
