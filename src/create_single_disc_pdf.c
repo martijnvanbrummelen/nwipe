@@ -329,11 +329,14 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr 
     /********
      * Method
      */
+    char* p_nwipe_method_label_with_direction = 0;
+    p_nwipe_method_label_with_direction = nwipe_method_label_with_direction();
     pdf_add_text( pdf, NULL, "Method:", 12, 60, 270, PDF_GRAY );
     pdf_set_font( pdf, "Helvetica-Bold" );
-    pdf_add_text( pdf, NULL, nwipe_method_label( nwipe_options.method ), text_size_data, 110, 270, PDF_BLACK );
+    pdf_add_text( pdf, NULL, p_nwipe_method_label_with_direction, text_size_data, 110, 270, PDF_BLACK );
     pdf_set_font( pdf, "Helvetica" );
-
+    free( p_nwipe_method_label_with_direction );  // free string
+    p_nwipe_method_label_with_direction = NULL;  // get rid of dangling pointer
     /***********
      * prng type
      */
@@ -400,7 +403,7 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr 
     pdf_add_text( pdf, NULL, "Throughput:", 12, 300, 190, PDF_GRAY );
     snprintf( throughput_txt, sizeof( throughput_txt ), "%s/sec", c->throughput_txt );
     pdf_set_font( pdf, "Helvetica-Bold" );
-    pdf_add_text( pdf, NULL, throughput_txt, text_size_data, 370, 190, PDF_BLACK );
+    pdf_add_text( pdf, NULL, throughput_txt, text_size_data, 385, 190, PDF_BLACK );
     pdf_set_font( pdf, "Helvetica" );
 
     /********
