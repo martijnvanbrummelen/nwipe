@@ -210,4 +210,10 @@ int generate_graph_pdf( float plot_y_start,
                         const char* y_label,
                         float x_scale_max );
 
+/**
+ * Returns the method label with the direction appended.
+ * Note: The caller is responsible for freeing the returned string.
+ */
+char* nwipe_method_label_with_direction( void );
+
 #endif /* CREATE_PDF_H_ */

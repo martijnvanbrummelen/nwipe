@@ -424,7 +424,7 @@ void pdf_add_text_size_real( float xoff, float yoff, nwipe_context_t* c )
     if( c->device_type == NWIPE_DEVICE_NVME || c->device_type == NWIPE_DEVICE_VIRT
         || c->HPA_status == HPA_NOT_APPLICABLE )
     {
-        snprintf( device_size, sizeof( device_size ), "%s,%llib", c->device_size_text, c->device_size );
+        snprintf( device_size, sizeof( device_size ), "%s,%lliB", c->device_size_text, c->device_size );
         pdf_add_text( pdf, NULL, device_size, text_size_data, xoff, yoff, PDF_DARK_GREEN );
     }
     else
@@ -1069,4 +1069,48 @@ unsigned char* check_and_load_logo( size_t* out_len )
     // Explicitly set length to 0 if no file was found or read failed
     *out_len = 0;
     return NULL;
+}
+
+// #include <stdio.h>
+// #include <stdlib.h>
+// #include <string.h>
+
+/* Forward declarations of nwipe structures/functions for context */
+// extern const char* nwipe_method_label(int method);
+// extern struct nwipe_options_t nwipe_options;
+
+/**
+ * Returns the method label with the direction appended.
+ * Note: The caller is responsible for freeing the returned string.
+ */
+char* nwipe_method_label_with_direction( void )
+{
+    const char* base_label = nwipe_method_label( nwipe_options.method );
+    const char* suffix = "";
+
+    switch( nwipe_options.io_direction )
+    {
+        case NWIPE_IO_DIRECTION_REVERSE:
+            suffix = " (R)";
+            break;
+        case NWIPE_IO_DIRECTION_SCATTER:
+            suffix = " (S)";
+            break;
+        case NWIPE_IO_DIRECTION_FORWARD:
+        default:
+            suffix = "";
+            break;
+    }
+
+    // Calculate total length (base + suffix + null terminator)
+    size_t total_len = strlen( base_label ) + strlen( suffix ) + 1;
+    char* result = malloc( total_len );
+
+    if( result == NULL )
+    {
+        return NULL;  // Memory allocation failed
+    }
+
+    snprintf( result, total_len, "%s%s", base_label, suffix );
+    return result;
 }

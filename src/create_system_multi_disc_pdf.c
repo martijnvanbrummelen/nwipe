@@ -305,7 +305,7 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
          */
         yoffset = yoffset - line_spacing;  // next line
         pdf_add_text( pdf, NULL, "Size(Apparent): ", TEXT_SIZE_DATA, LEFT_MARGIN_TEXT, yoffset, PDF_GRAY );
-        snprintf( device_size, sizeof( device_size ), "%s,%llib", c[i]->device_size_text, c[i]->device_size );
+        snprintf( device_size, sizeof( device_size ), "%s,%lliB", c[i]->device_size_text, c[i]->device_size );
         text_color_size_apparent =
             determine_color_for_size_apparent( c[i] );  // RED hidden sectors detected, GREEN actual size
         pdf_add_text( pdf, NULL, device_size, TEXT_SIZE_DATA, 150, yoffset, text_color_size_apparent );
@@ -388,14 +388,18 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
          */
         pdf_add_text( pdf, NULL, "Throughput:", TEXT_SIZE_DATA, 300, yoffset, PDF_GRAY );
         snprintf( throughput_txt, sizeof( throughput_txt ), "%s/sec", c[i]->throughput_txt );
-        pdf_add_text( pdf, NULL, throughput_txt, TEXT_SIZE_DATA, 360, yoffset, PDF_BLACK );
+        pdf_add_text( pdf, NULL, throughput_txt, TEXT_SIZE_DATA, 375, yoffset, PDF_BLACK );
 
         /********
          * Method
          */
+        char* p_nwipe_method_label_with_direction = 0;
+        p_nwipe_method_label_with_direction = nwipe_method_label_with_direction();
         yoffset = yoffset - line_spacing;  // next line
         pdf_add_text( pdf, NULL, "Method:", TEXT_SIZE_DATA, LEFT_MARGIN_TEXT, yoffset, PDF_GRAY );
-        pdf_add_text( pdf, NULL, nwipe_method_label( nwipe_options.method ), TEXT_SIZE_DATA, 150, yoffset, PDF_BLACK );
+        pdf_add_text( pdf, NULL, p_nwipe_method_label_with_direction, TEXT_SIZE_DATA, 150, yoffset, PDF_BLACK );
+        free( p_nwipe_method_label_with_direction );  // free string
+        p_nwipe_method_label_with_direction = NULL;  // get rid of dangling pointer
 
         /***********
          * prng type
