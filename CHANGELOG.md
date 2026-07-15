@@ -1,5 +1,113 @@
 RELEASE NOTES
 =============
+v0.42
+-----------------------
+## Notable New Features
+### Added user created logo.jpg to PDFs
+Allow the user to use their own logo in place of the nwipe embedded logo on the system and disc PDF certificates.
+
+Thanks to @PartialVolume #767 
+
+---
+
+### Added optional blank pages between sections for duplex printing
+Add intentionally blank pages as necessary ( --pdfduplex) to end a specific section within the system and disc PDF certificates, so that the new section always starts on a fresh sheet.
+
+Thanks to @PartialVolume #761 
+
+----
+
+### Page numbering page n of n on system focused PDF
+Add page n of n to the right hand footer section of the system focused PDF due to it's larger number of pages when wiping multiple discs simultaneously.
+
+Thanks to @PartialVolume #766 
+
+----
+
+### Show disc I/O retries on single disk & system focused PDF certificates
+
+Thanks to @PartialVolume #762 
+
+----
+
+### Show warning icon on single disc and system PDFs when a disc records retries indicating I/O errors**
+Although the disc may have been successfully erased, a warning is now indicated on the PDF certificates to indicate the disc may not be in the best condition. If a warning icon is shown on the PDF,  checks the report for retries and consult the smart data to see what may be failing on the drive.
+
+Thanks @PartialVolume #763 
+
+----
+
+### Updated the pdf generation library (PDFGen)
+Updated nwipe's build in PDF generation library, specifically to include a new function pdf_add_line_pattern(). This function is required for the new speed profile graph in this release.
+
+Thanks @PartialVolume #772 
+
+----
+
+### Added a speed profile page to both the single disk and system focused PDF certificates.
+The speed profile page shows a graph of minimum, maximum and average speeds over the duration of the disk erasure. It is a good visual diagnostic tool to identify anomalies in disc performance. See https://github.com/martijnvanbrummelen/nwipe/discussions/775 for examples of speed profiles for both good and bad drives.
+
+The example below shows a drive with read performance issues but despite the degradation of read performance the drive doesn't issue any I/O errors, no retries occur and the smart data provides a status of 'PASSED'. So the speed profile may show performance deviations that are not obvious when looking at the smart data or relying on I/O errors to identify a faulty drive.
+
+Thanks @PartialVolume #773,#774,#776,#777
+<img width="886" height="512" alt="image" src="https://github.com/user-attachments/assets/e337a58a-9149-4b31-a140-16c62a05a00e" />
+
+----
+
+### Added (R) Reverse, (S) Scatter suffixes to method as shown on PDF
+When performing a reverse or scatter wipe, the PDF's will now show this by placing a (R) or (S) after the method type.
+
+Thanks @PartialVolume #778
+
+---
+
+# Fixes
+### Fixed mount-check to include and check for slave/parent devices in regards to [In-Use] feature.
+
+Thanks to @Knogle #759 #757
+
+---
+
+### Fixed a segfault that occurs under a rare set of circumstances
+Fixed a rare segfault that occurs when -v (verbose) logging is enabled and a system includes a /dev/mapper or LUKS device. Nwipe would incorrectly attempt to retrieve DCO information from the /dev/mapper or LUKS device. -v mode would normally only be used for developer use and debugging.
+
+Thanks to @PartialVolume #760 
+
+----
+
+### Various typographical corrections
+Thanks to @Extloga #765
+
+----
+
+### Updates to nwipe help (--help) and man page
+
+Thanks to @PartialVolume #771 
+
+----
+
+### Fixed overlapping disk throughput on PDFs when four numeric characters are dislayed e.g. 3100 MB/S
+
+Thanks @PartialVolume #778 
+
+# What's Changed (automated summary)
+* Fixed a segfault due to a buffer overrun by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/760
+* Add duplex printing option to PDFs --pdfduplex by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/761
+* Fixed mount-check to include and check for slave/parent devices by @Knogle in https://github.com/martijnvanbrummelen/nwipe/pull/759
+* feat: Show disc retries on single and system PDFs by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/762
+* Fix: Enable warning icon on retries on pdfs by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/763
+* Fix: Various typographical corrections. by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/765
+* Feat: Add page n of n on system report by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/766
+* feat: Allow external logo.jpg for PDFs by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/767
+* Update version to 0.41.1 in version.c by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/769
+* Update both nwipe help & man page by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/771
+* Updated the pdf generation library by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/772
+* Initial creation of PDF graph function by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/773
+* Add speed profile page creation by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/774
+* Further work on speed profile by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/776
+* Add speed profile 4 by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/777
+* Miscellaneous, tidy up, direction on PDF by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/778
+
 v0.41
 -----------------------
 ## Notable New Features
