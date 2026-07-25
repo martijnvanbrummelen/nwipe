@@ -150,7 +150,6 @@ create_pdf_speed_profile_page( nwipe_misc_thread_data_t* d, size_t pdf_type, siz
     // --- Interpretation Help & Disclaimer Text Block ---
     const float PLOT_X = LEFT_MARGIN_TEXT + 20;
 
-    // 1. Interpretation Content Lines
     const char* help_title = "Interpretation Guide:";
     const char* help_body1 = "Monitor the speed vectors closely for unusual anomalies or performance bottlenecks.";
     const char* help_body2 = "Look for sharp, sudden downward spikes where operational speed differs substantially";
@@ -160,12 +159,11 @@ create_pdf_speed_profile_page( nwipe_misc_thread_data_t* d, size_t pdf_type, siz
     const char* help_body6 = "The SMART health status may even report the drive as 'Good' when,in fact, this graph ";
     const char* help_body7 = "highlights a localized failure on the platter surface.";
 
-    // 2. Disclaimer Content Lines
-    const char* disc_title = "Disclaimer:";
-    const char* disc_body1 = "If your system is suffering from controller bottlenecks or CPU constraints due to too";
-    const char* disc_body2 = "many discs being simultaneously erased due to a non-optimal setup, the disk profile may";
-    const char* disc_body3 = "not represent the true speed profile. If in doubt, test using ShredOS with only the";
-    const char* disc_body4 = "single disk you suspect is behaving oddly in regards to its speed profile.";
+    const char* disc_title = "Important Note:";
+    const char* disc_body1 = "If your system experiences CPU or controller bottlenecks when erasing multiple drives";
+    const char* disc_body2 = "simultaneously, the recorded disk profile may not accurately reflect the drive's true";
+    const char* disc_body3 = "performance. To isolate performance issues or verify an unexpected speed profile, run";
+    const char* disc_body4 = "ShredOS/nwipe with only the target drive connected under optimal hardware conditions.";
     const char* disc_body5 = "See https://github.com/martijnvanbrummelen/nwipe/discussions/775 for examples of speed";
     const char* disc_body6 = "profiles for both good and failing discs.";
 
