@@ -73,10 +73,10 @@ int nwipe_get_smart_data( nwipe_misc_thread_data_t* d, size_t pdf_type, size_t* 
     char* pdata;
     char page_title[50];
 
-    char smartctl_command[] = "smartctl -a %s";
-    char smartctl_command2[] = "/sbin/smartctl -a %s";
-    char smartctl_command3[] = "/usr/bin/smartctl -a %s";
-    char smartctl_command4[] = "/usr/sbin/smartctl -a %s";
+    char smartctl_command[] = "smartctl -x %s";
+    char smartctl_command2[] = "/sbin/smartctl -x %s";
+    char smartctl_command3[] = "/usr/bin/smartctl -x %s";
+    char smartctl_command4[] = "/usr/sbin/smartctl -x %s";
     char final_cmd_smartctl[sizeof( smartctl_command3 ) + 256];
     char result[512];
     char buffer[512];
