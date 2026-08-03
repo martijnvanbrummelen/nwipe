@@ -285,9 +285,7 @@ static int fill_prng( nwipe_context_t* c, char* buffer, size_t length, off64_t d
     (void) opaque; /* not needed */
 
     /* Read PRNG into buffer */
-    c->prng->read( &c->prng_state, buffer, length );
-
-    return 0;
+    return c->prng->read( &c->prng_state, buffer, length );
 } /* fill_prng */
 
 /* This is the filling callback we use for static patterns */
@@ -798,7 +796,12 @@ int nwipe_random_scatter_pass( NWIPE_METHOD_SIGNATURE )
     log_plan( c, &plan );
 
     /* Seed the wipe PRNG */
-    c->prng->init( &c->prng_state, &c->prng_seed );
+    if( c->prng->init( &c->prng_state, &c->prng_seed ) != 0 )
+    {
+        nwipe_log( NWIPE_LOG_FATAL, "%s: PRNG initialization failed; the pass was not started.", __FUNCTION__ );
+        plan_free( &plan );
+        return -1;
+    }
 
     /* Write using the PRNG filling callback. */
     r = scatter_write( c, &plan, io_block_size, fill_prng, NULL );
@@ -837,7 +840,12 @@ int nwipe_random_scatter_verify( NWIPE_METHOD_SIGNATURE )
     log_plan( c, &plan );
 
     /* Re-seed the PRNG to starting state (same one as write pass) */
-    c->prng->init( &c->prng_state, &c->prng_seed );
+    if( c->prng->init( &c->prng_state, &c->prng_seed ) != 0 )
+    {
+        nwipe_log( NWIPE_LOG_FATAL, "%s: PRNG initialization failed; verification was not started.", __FUNCTION__ );
+        plan_free( &plan );
+        return -1;
+    }
 
     /* Read and compare using the PRNG filling callback. */
     r = scatter_verify( c, &plan, io_block_size, fill_prng, NULL );

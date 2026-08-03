@@ -2,8 +2,8 @@
 #CFLAGS = -lncurses -lparted
 AM_CFLAGS = $(OPENCL_CFLAGS)
 AM_LDFLAGS =
-check_PROGRAMS = test_round_size
-TESTS = test_round_size
+check_PROGRAMS = test_round_size test_opencl_philox
+TESTS = test_round_size test_opencl_philox
 
 # this lists the binaries to produce, the (non-PHONY, binary) targets in
 # the previous manual Makefile
@@ -69,3 +69,9 @@ nwipe_LDADD = $(PARTED_LIBS) $(LIBCONFIG) $(OPENCL_LIBS)
 
 test_round_size_SOURCES = ../tests/unit/test_round_size.c round_size.c round_size.h
 test_round_size_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)
+
+test_opencl_philox_SOURCES = \
+    ../tests/unit/test_opencl_philox.c \
+    opencl/opencl_philox_prng.c opencl/opencl_philox_prng.h
+test_opencl_philox_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir) $(OPENCL_CFLAGS)
+test_opencl_philox_LDADD = $(OPENCL_LIBS) -lpthread

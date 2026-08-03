@@ -129,7 +129,11 @@ void display_help()
     BHCYN \
     "      --prng=opencl_philox_prng\n" reset \
     "        Experimental GPU-backed Philox4x32 PRNG via OpenCL.\n" \
-    "        Requires an OpenCL build and a GPU/accelerator runtime.\n\n" \
+    "        Requires an OpenCL build and a GPU/accelerator runtime.\n" \
+    BHCYN \
+    "      --opencl-device=SELECTOR\n" reset \
+    "        Select an OpenCL device by zero-based index, or by a\n" \
+    "        case-insensitive device, platform, or vendor substring.\n\n" \
     BHCYN \
     "      --prng=auto|default\n" \
     "        auto" reset " - Automatically benchmark all available PRNGs at startup\n" \

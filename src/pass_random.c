@@ -85,7 +85,12 @@ int nwipe_random_forward_pass( NWIPE_METHOD_SIGNATURE )
         return -1;
 
     /* Seed the PRNG for this pass. */
-    c->prng->init( &c->prng_state, &c->prng_seed );
+    if( c->prng->init( &c->prng_state, &c->prng_seed ) != 0 )
+    {
+        nwipe_log( NWIPE_LOG_FATAL, "%s: PRNG initialization failed; the pass was not started.", __FUNCTION__ );
+        free( b );
+        return -1;
+    }
 
     /* Rewind device. */
     offset = lseek( c->device_fd, 0, SEEK_SET );
@@ -124,7 +129,12 @@ int nwipe_random_forward_pass( NWIPE_METHOD_SIGNATURE )
         }
 
         /* Ask the PRNG to fill "blocksize" bytes into the output buffer. */
-        c->prng->read( &c->prng_state, b, blocksize );
+        if( c->prng->read( &c->prng_state, b, blocksize ) != 0 )
+        {
+            nwipe_log( NWIPE_LOG_FATAL, "%s: PRNG generation failed; aborting the pass.", __FUNCTION__ );
+            free( b );
+            return -1;
+        }
 
         /*
          * For the first block only, verify that the PRNG actually wrote
@@ -230,7 +240,13 @@ int nwipe_random_forward_pass( NWIPE_METHOD_SIGNATURE )
 
             while( rev_offset > current_offset )
             {
-                c->prng->read( &c->prng_state, b, rev_blocksize );
+                if( c->prng->read( &c->prng_state, b, rev_blocksize ) != 0 )
+                {
+                    nwipe_log( NWIPE_LOG_FATAL, "%s: PRNG generation failed during reverse recovery.", __FUNCTION__ );
+                    c->io_direction = nwipe_options.io_direction;
+                    free( b );
+                    return -1;
+                }
 
                 r = (int) nwipe_pwrite_with_retry( c, c->device_fd, b, rev_blocksize, rev_offset );
 
@@ -447,7 +463,12 @@ int nwipe_random_reverse_pass( NWIPE_METHOD_SIGNATURE )
         return -1;
 
     /* Seed the PRNG for this pass. */
-    c->prng->init( &c->prng_state, &c->prng_seed );
+    if( c->prng->init( &c->prng_state, &c->prng_seed ) != 0 )
+    {
+        nwipe_log( NWIPE_LOG_FATAL, "%s: PRNG initialization failed; the pass was not started.", __FUNCTION__ );
+        free( b );
+        return -1;
+    }
 
     /* Reset pass byte counter */
     c->pass_done = 0;
@@ -470,7 +491,12 @@ int nwipe_random_reverse_pass( NWIPE_METHOD_SIGNATURE )
         }
 
         /* Ask the PRNG to fill "blocksize" bytes into the output buffer. */
-        c->prng->read( &c->prng_state, b, blocksize );
+        if( c->prng->read( &c->prng_state, b, blocksize ) != 0 )
+        {
+            nwipe_log( NWIPE_LOG_FATAL, "%s: PRNG generation failed; aborting the pass.", __FUNCTION__ );
+            free( b );
+            return -1;
+        }
 
         /*
          * For the first block only, verify that the PRNG actually wrote
@@ -555,7 +581,13 @@ int nwipe_random_reverse_pass( NWIPE_METHOD_SIGNATURE )
                 if( ( fwd_offset + (off64_t) fwd_blocksize ) > current_offset )
                     fwd_blocksize = (size_t) ( current_offset - fwd_offset );
 
-                c->prng->read( &c->prng_state, b, fwd_blocksize );
+                if( c->prng->read( &c->prng_state, b, fwd_blocksize ) != 0 )
+                {
+                    nwipe_log( NWIPE_LOG_FATAL, "%s: PRNG generation failed during forward recovery.", __FUNCTION__ );
+                    c->io_direction = nwipe_options.io_direction;
+                    free( b );
+                    return -1;
+                }
 
                 r = (int) nwipe_pwrite_with_retry( c, c->device_fd, b, fwd_blocksize, fwd_offset );
 
@@ -771,7 +803,13 @@ int nwipe_random_forward_verify( NWIPE_METHOD_SIGNATURE )
     nwipe_fdatasync( c, __FUNCTION__ );
 
     /* Reseed the PRNG so it produces the same stream as during the pass. */
-    c->prng->init( &c->prng_state, &c->prng_seed );
+    if( c->prng->init( &c->prng_state, &c->prng_seed ) != 0 )
+    {
+        nwipe_log( NWIPE_LOG_FATAL, "%s: PRNG initialization failed; verification was not started.", __FUNCTION__ );
+        free( b );
+        free( d );
+        return -1;
+    }
 
     while( z > 0 )
     {
@@ -786,7 +824,13 @@ int nwipe_random_forward_verify( NWIPE_METHOD_SIGNATURE )
         }
 
         /* Generate expected random data into pattern buffer. */
-        c->prng->read( &c->prng_state, d, blocksize );
+        if( c->prng->read( &c->prng_state, d, blocksize ) != 0 )
+        {
+            nwipe_log( NWIPE_LOG_FATAL, "%s: PRNG generation failed; aborting verification.", __FUNCTION__ );
+            free( b );
+            free( d );
+            return -1;
+        }
 
         /*
          * For the first block only, verify that the PRNG actually wrote
@@ -993,7 +1037,13 @@ int nwipe_random_reverse_verify( NWIPE_METHOD_SIGNATURE )
     nwipe_fdatasync( c, __FUNCTION__ );
 
     /* Reseed the PRNG so it produces the same stream as during the pass. */
-    c->prng->init( &c->prng_state, &c->prng_seed );
+    if( c->prng->init( &c->prng_state, &c->prng_seed ) != 0 )
+    {
+        nwipe_log( NWIPE_LOG_FATAL, "%s: PRNG initialization failed; verification was not started.", __FUNCTION__ );
+        free( b );
+        free( d );
+        return -1;
+    }
 
     while( z > 0 )
     {
@@ -1008,7 +1058,13 @@ int nwipe_random_reverse_verify( NWIPE_METHOD_SIGNATURE )
         }
 
         /* Generate expected random data into pattern buffer. */
-        c->prng->read( &c->prng_state, d, blocksize );
+        if( c->prng->read( &c->prng_state, d, blocksize ) != 0 )
+        {
+            nwipe_log( NWIPE_LOG_FATAL, "%s: PRNG generation failed; aborting verification.", __FUNCTION__ );
+            free( b );
+            free( d );
+            return -1;
+        }
 
         /*
          * For the first block only, verify that the PRNG actually wrote

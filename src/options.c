@@ -104,6 +104,7 @@ int nwipe_options_parse( int argc, char** argv )
         { "prng", required_argument, 0, 'p' },
         { "prng-benchmark", no_argument, 0, 0 },
         { "prng-bench-seconds", required_argument, 0, 0 },
+        { "opencl-device", required_argument, 0, 0 },
 
         /* The number of times to run the method. */
         { "rounds", required_argument, 0, 'r' },
@@ -171,6 +172,7 @@ int nwipe_options_parse( int argc, char** argv )
     nwipe_options.prng_auto = 1; /* by default the PRNG is selected through the benchmark selection */
     nwipe_options.prng_benchmark_only = 0;
     nwipe_options.prng_bench_seconds = 1.0; /* default for interactive / manual */
+    nwipe_options.opencl_device[0] = '\0';
 
     /*
      * Determines and sets the default PRNG based on AES-NI support and system architecture.
@@ -684,6 +686,18 @@ int nwipe_options_parse( int argc, char** argv )
                         nwipe_options.prng_bench_seconds = 10.0;
                     break;
                 }
+                if( strcmp( nwipe_options_long[i].name, "opencl-device" ) == 0 )
+                {
+                    if( !optarg || optarg[0] == '\0' || strlen( optarg ) >= sizeof( nwipe_options.opencl_device ) )
+                    {
+                        fprintf( stderr,
+                                 "Error: --opencl-device requires a selector shorter than %zu bytes.\n",
+                                 sizeof( nwipe_options.opencl_device ) );
+                        exit( EINVAL );
+                    }
+                    snprintf( nwipe_options.opencl_device, sizeof( nwipe_options.opencl_device ), "%s", optarg );
+                    break;
+                }
 
                 /* getopt_long should raise on invalid option, so we should never get here. */
                 exit( EINVAL );
@@ -924,17 +938,9 @@ int nwipe_options_parse( int argc, char** argv )
 
                 if( strcmp( optarg, "opencl_philox_prng" ) == 0 )
                 {
-                    if( nwipe_opencl_philox_prng_available() )
-                    {
-                        nwipe_options.prng = &nwipe_opencl_philox_prng;
-                    }
-                    else
-                    {
-                        fprintf( stderr,
-                                 "Error: opencl_philox_prng requires an OpenCL-enabled build and a usable GPU "
-                                 "device.\n" );
-                        exit( EINVAL );
-                    }
+                    /* Runtime validation is deferred until all options have been
+                     * parsed, so --opencl-device works independently of order. */
+                    nwipe_options.prng = &nwipe_opencl_philox_prng;
                     break;
                 }
 
@@ -980,6 +986,19 @@ int nwipe_options_parse( int argc, char** argv )
         } /* method */
 
     } /* command line options */
+
+    if( nwipe_options.opencl_device[0] && nwipe_opencl_philox_set_device_selector( nwipe_options.opencl_device ) != 0 )
+    {
+        fprintf( stderr, "Error: unable to apply OpenCL device selector '%s'.\n", nwipe_options.opencl_device );
+        exit( EINVAL );
+    }
+
+    if( !nwipe_options.prng_auto && nwipe_options.prng == &nwipe_opencl_philox_prng
+        && !nwipe_opencl_philox_prng_available() )
+    {
+        fprintf( stderr, "Error: OpenCL Philox is unavailable: %s\n", nwipe_opencl_philox_prng_status() );
+        exit( EINVAL );
+    }
 
     /* Disable blanking for ops2 and verify methods */
     if( nwipe_options.method == &nwipe_ops2 || nwipe_options.method == &nwipe_verify_zero
@@ -1054,6 +1073,9 @@ void nwipe_options_log( void )
         nwipe_log( NWIPE_LOG_NOTICE, "  prng         = ChaCha20 (CSPRNG)" );
     else
         nwipe_log( NWIPE_LOG_NOTICE, "  prng         = Unknown" );
+
+    if( nwipe_options.opencl_device[0] )
+        nwipe_log( NWIPE_LOG_NOTICE, "  opencl dev   = %s", nwipe_options.opencl_device );
 
     nwipe_log( NWIPE_LOG_NOTICE, "  method       = %s", nwipe_method_label( nwipe_options.method ) );
 

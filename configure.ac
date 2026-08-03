@@ -54,6 +54,7 @@ fi
 
 AC_SUBST([OPENCL_CFLAGS])
 AC_SUBST([OPENCL_LIBS])
+AC_MSG_NOTICE([OpenCL GPU PRNG support: $have_opencl])
 AC_CHECK_HEADERS([CL/cl.h OpenCL/opencl.h])
 
 PKG_CHECK_MODULES(

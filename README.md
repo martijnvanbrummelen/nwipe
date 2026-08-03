@@ -119,7 +119,7 @@ nwipe includes multiple pseudorandom number generators (PRNGs) for methods that 
 
 - **Additive Lagged Fibonacci Generator**
 - **OpenCL Philox4x32** *(experimental)*  
-  Counter-based GPU PRNG intended for very high throughput; available only when nwipe is built with OpenCL support and a GPU/accelerator runtime is present. CPU-only OpenCL runtimes are not used for this backend; native CPU PRNGs are benchmarked separately.
+  Counter-based GPU PRNG intended for very high throughput; available only when nwipe is built with OpenCL support and a GPU/accelerator runtime is present. CPU-only OpenCL runtimes are not used for this backend; native CPU PRNGs are benchmarked separately. nwipe validates every candidate by compiling and executing the kernel and checking a known Philox result before it selects the fastest working device. Use `--opencl-device=0` or a name/platform/vendor substring to override automatic selection.
 
 These PRNGs can be selected at runtime (see the man page for the exact CLI options) and are used by any wipe method that requires random patterns (for example PRNG Stream, Schneier or BMB21 random passes).
 
@@ -215,6 +215,18 @@ For a **bootable image** with the latest nwipe master that you can write to a US
 * `pthreads`
 * `parted`
 * `libconfig`
+
+OpenCL support is optional. Building it requires OpenCL headers and an ICD
+loader development package (for example `ocl-icd-opencl-dev` on Debian/Ubuntu,
+`OpenCL-ICD-Loader-devel` plus `opencl-headers` on Fedora, or `ocl-icd` on
+Arch). Running it additionally requires the GPU vendor's working OpenCL runtime;
+installing only the generic ICD loader is not sufficient. Use
+`./configure --enable-opencl` if a missing build dependency should be treated as
+an error, or `--disable-opencl` for a deliberately CPU-only build.
+
+At runtime, `--opencl-device=SELECTOR` accepts a zero-based GPU/accelerator
+index or a case-insensitive device, platform, or vendor substring. The
+`NWIPE_OPENCL_DEVICE` environment variable is a fallback for the same selector.
 
 `nwipe` also requires the following program and will abort with a warning if not found:
 
