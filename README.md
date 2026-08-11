@@ -176,7 +176,7 @@ See the `nwipe(8)` man page for detailed `--sync` semantics and examples.
 
 ## SSD/NVMe considerations
 
-The (upcoming) **v0.41** release introduces several major improvements for:
+The (upcoming) **v0.43** release introduces several major improvements for:
 
 * SAS / SATA / NVMe
 * Form factors such as 2.5", 3.5", M.2, PCIe, etc.
