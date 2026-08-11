@@ -9,11 +9,14 @@ const char* program_name = "nwipe";
 const char* author_name = "Martijn van Brummelen";
 const char* email_address = "git@brumit.nl";
 const char* years = "2026";
-const char* copyright = "Copyright Darik Horn <dajhorn-dban@vanadac.com>\n\
-Andy Beverley <andy@andybev.com> Martijn van Brummelen <martijn@brumit.nl>\n\
-Nick Law <shredos.eraser@gmail.com> (@PartialVolume), @desertswitch,\n\
-@knogle and others\n\
-This is free software; see the source for copying conditions.\n\
-There is NO warranty; not even for MERCHANTABILITY or FITNESS\n\
-FOR A PARTICULAR PURPOSE.\n";
+const char* copyright = "Copyright\n"
+                        "  Darik Horn <dajhorn-dban@vanadac.com>\n"
+                        "  Andy Beverley <andy@andybev.com>\n"
+                        "  Martijn van Brummelen <martijn@brumit.nl>\n"
+                        "  Nick Law <shredos.eraser@gmail.com> (@PartialVolume)\n"
+                        "  @desertwitch, @Knogle, and many others (refer to GitHub)\n"
+                        "\n"
+                        "This is free software; see the source for copying conditions.\n"
+                        "There is NO warranty; not even for MERCHANTABILITY or\n"
+                        "FITNESS FOR A PARTICULAR PURPOSE.\n";
 const char* banner = "nwipe 0.42";
