@@ -153,10 +153,11 @@ const char* options_title = " Options ";
 const char* stats_title = " Statistics ";
 
 /* Footer labels. */
-const char* main_window_footer_1 = "S=Start  m=Method  p=PRNG  v=Verify  r=Rounds  b=Blanking";
-const char* main_window_footer_2 = "d=Direction  t=Path  Space=Select  c=Config  CTRL+C=Quit";
-const char* shredos_main_window_footer_1 = "S=Start  m=Method  p=PRNG  v=Verify  r=Rounds  b=Blanking";
-const char* shredos_main_window_footer_2 = "d=Direction  t=Path  Space=Select  f=Font Size  c=Config  CTRL+C=Quit";
+const char* main_window_footer_1 = "S=Start  m=Method  p=PRNG  v=Verify  r=Rounds  b=Blanking  d=Direction";
+const char* main_window_footer_2 = "e=Secure Erase  t=Topology  Space=Select  c=Config  CTRL+C=Quit";
+const char* shredos_main_window_footer_1 = "S=Start  m=Method  p=PRNG  v=Verify  r=Rounds  b=Blanking  d=Direction";
+const char* shredos_main_window_footer_2 =
+    "e=Secure Erase  t=Topology  Space=Select  f=Font Size  c=Config  CTRL+C=Quit";
 char** p_main_window_footer_1;
 char** p_main_window_footer_2;
 
@@ -1787,6 +1788,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                     /* TODO: Explain to the user why they can't change this. */
                     break;
 
+                case 'e':
                 case KEY_RIGHT:
 
                     validkeyhit = 1;
