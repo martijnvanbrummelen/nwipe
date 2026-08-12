@@ -6,6 +6,29 @@
 `nwipe` is a fork of the `dwipe` command originally used by Darik's Boot and Nuke (DBAN).  
 It was created to run the DBAN erase engine on any Linux distribution, with better and more modern hardware support.
 
+  - [What's new?](#whats-new)
+  - [Erasure methods](#erasure-methods)
+  - [PRNG engines](#prng-engines)
+  - [I/O subsystem and Direct I/O](#io-subsystem-and-direct-io)
+    - [Large, aligned I/O buffers](#large-aligned-io-buffers)
+    - [I/O mode selection](#io-mode-selection)
+    - [Sync behaviour](#sync-behaviour)
+  - [SSD/NVMe considerations](#ssdnvme-considerations)
+  - [Compiling \& installing](#compiling--installing)
+    - [Dependencies](#dependencies)
+    - [Debian \& Ubuntu prerequisites](#debian--ubuntu-prerequisites)
+    - [Fedora / RHEL / CentOS Stream prerequisites](#fedora--rhel--centos-stream-prerequisites)
+    - [Arch Linux / Manjaro prerequisites](#arch-linux--manjaro-prerequisites)
+    - [openSUSE (Leap / Tumbleweed) prerequisites](#opensuse-leap--tumbleweed-prerequisites)
+    - [NVme Secure Erase prerequisites (optional)](#nvme-secure-erase-prerequisites-optional)
+    - [Compilation](#compilation)
+  - [Hacking](#hacking)
+  - [Automating download and compilation (Debian-based distros)](#automating-download-and-compilation-debian-based-distros)
+  - [Quick \& easy, USB bootable version of nwipe master for x86\_64 systems](#quick--easy-usb-bootable-version-of-nwipe-master-for-x86_64-systems)
+  - [Which Linux distro uses the latest nwipe?](#which-linux-distro-uses-the-latest-nwipe)
+  - [Bugs](#bugs)
+  - [License](#license)
+
 `nwipe` securely erases the entire contents of block devices. It can wipe a single drive or multiple disks in parallel, either:
 
 - as a **command-line tool** without a GUI, or  
@@ -26,26 +49,9 @@ It was created to run the DBAN erase engine on any Linux distribution, with bett
 
 ---
 
-## New in v0.40
+## What's new?
 
-The **v0.40** release introduces several major improvements:
-
-- **AES-256-CTR PRNG**  
-  High–performance, cryptographically secure stream generator (AES-NI accelerated where available).
-- **Large, aligned I/O buffers**  
-  Significantly fewer syscalls and better throughput, especially on fast SSDs and NVMe.
-- **Configurable I/O modes**  
-  - `--io-mode=auto` (default): try O_DIRECT, fall back to cached I/O if not supported  
-  - `--directio` / `--io-mode=direct`: force direct I/O (O_DIRECT), no fallback  
-  - `--cachedio` / `--io-mode=cached`: force kernel cached I/O, never attempt O_DIRECT
-- **Improved sync behaviour for cached I/O**  
-  Sync intervals are again based on a predictable number of bytes written, ensuring timely detection of disk / USB errors without excessive overhead.
-- **Enhanced device exclusion**  
-  `--exclude` now works cleanly with paths like `/dev/disk/by-id/*`, making it easier to exclude specific drives by stable IDs.
-- **Stronger seeding with `getrandom()`**  
-  nwipe now uses the Linux `getrandom()` syscall for PRNG seeding and no longer depends on `/dev/urandom`.
-- **New BMB21-2019 erase method**  
-  Implements the Chinese State Secrets Bureau BMB21-2019 technical requirement for data sanitisation.
+Refer to our [CHANGELOG](./CHANGELOG.md) document to see exactly what's changed.
 
 ---
 
@@ -146,7 +152,7 @@ You can now explicitly control how nwipe accesses the device:
 
 --directio          # force O_DIRECT (no fallback)
 --cachedio          # force kernel cached I/O only
-````
+```
 
 * **auto**
   Try to open the device with `O_DIRECT`. If the kernel or filesystem does not support it (EINVAL/EOPNOTSUPP), nwipe falls back to cached I/O and logs a warning.
@@ -176,7 +182,7 @@ See the `nwipe(8)` man page for detailed `--sync` semantics and examples.
 
 ## SSD/NVMe considerations
 
-The (upcoming) **v0.41** release introduces several major improvements for:
+The (upcoming) **v0.43** release introduces several major improvements for:
 
 * SAS / SATA / NVMe
 * Form factors such as 2.5", 3.5", M.2, PCIe, etc.
@@ -344,6 +350,8 @@ meson compile -C .build
 sudo meson install -C .build
 sudo ldconfig
 ```
+
+> This section is applicable only for Nwipe versions **v0.43** and higher.
 
 ### Compilation
 
