@@ -1118,14 +1118,13 @@ static void nwipe_gui_se_unsupported( nwipe_context_t* ctx )
         {
 #ifdef HAVE_LIBNVME
             mvwprintw( main_window, yy++, tab1, "It was attempted to probe this device for sanitize support." );
-            mvwprintw( main_window, yy++, tab1, "An error occurred or the device did not understand the request." );
-            mvwprintw( main_window, yy++, tab1, "Most commonly this means the device just does not support sanitize." );
+            mvwprintw( main_window, yy++, tab1, "It did not understand the request or a transport error occurred." );
             yy++;
             mvwprintw( main_window, yy++, tab1, "Ideally devices should be directly connected to the motherboard." );
             mvwprintw(
                 main_window, yy++, tab1, "This is especially true for devices behind generic RAID controllers." );
             mvwprintw(
-                main_window, yy++, tab1, "Beware cheap USB/SATA controllers may return failure despite support." );
+                main_window, yy++, tab1, "These and cheap USB/SATA controllers may cause such transport errors." );
 #else
             if( ctx->device_type == NWIPE_DEVICE_NVME )
             {
@@ -1135,16 +1134,15 @@ static void nwipe_gui_se_unsupported( nwipe_context_t* ctx )
             else
             {
                 mvwprintw( main_window, yy++, tab1, "It was attempted to probe this device for sanitize support." );
-                mvwprintw( main_window, yy++, tab1, "An error occurred or the device did not understand the request." );
                 mvwprintw(
-                    main_window, yy++, tab1, "Most commonly this means the device just does not support sanitize." );
+                    main_window, yy++, tab1, "It did not understand the request or a transport error occurred." );
                 yy++;
                 mvwprintw(
                     main_window, yy++, tab1, "Ideally devices should be directly connected to the motherboard." );
                 mvwprintw(
                     main_window, yy++, tab1, "This is especially true for devices behind generic RAID controllers." );
                 mvwprintw(
-                    main_window, yy++, tab1, "Beware cheap USB/SATA controllers may return failure despite support." );
+                    main_window, yy++, tab1, "These and cheap USB/SATA controllers may cause such transport errors." );
             }
 #endif
         }
@@ -1152,7 +1150,9 @@ static void nwipe_gui_se_unsupported( nwipe_context_t* ctx )
         {
             mvwprintw( main_window, yy++, tab1, "The device was probed for its sanitize support." );
             mvwprintw( main_window, yy++, tab1, "It responded that no sanitize methods are supported." );
+            yy++;
             mvwprintw( main_window, yy++, tab1, "Not all devices support such firmware sanitize methods." );
+            mvwprintw( main_window, yy++, tab1, "Manufacturer may provide further guidance on secure erasing." );
         }
         else
         {
@@ -1163,7 +1163,7 @@ static void nwipe_gui_se_unsupported( nwipe_context_t* ctx )
 
         yy++;
         mvwprintw( main_window, yy++, tab1, "Refer to the log for more detailed information." );
-        mvwprintw( main_window, yy++, tab1, "You can still perform a regular wipe of this device." );
+        mvwprintw( main_window, yy++, tab1, "You may still perform a regular wipe of this device." );
 
         yy++;
         mvwprintw( main_window, yy++, tab1, "Press Enter to leave this screen..." );
