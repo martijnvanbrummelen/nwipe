@@ -1080,7 +1080,9 @@ static void nwipe_gui_se_unsupported( nwipe_context_t* ctx )
             yy++;
             mvwprintw( main_window, yy++, tab1, "Ideally devices should be directly connected to the motherboard." );
             mvwprintw(
-                main_window, yy++, tab1, "Cheaper USB/SAS/SATA controllers may return failure despite support." );
+                main_window, yy++, tab1, "This is especially true for devices behind generic RAID controllers." );
+            mvwprintw(
+                main_window, yy++, tab1, "Beware cheap USB/SATA controllers may return failure despite support." );
 #else
             if( ctx->device_type == NWIPE_DEVICE_NVME )
             {
@@ -1097,7 +1099,9 @@ static void nwipe_gui_se_unsupported( nwipe_context_t* ctx )
                 mvwprintw(
                     main_window, yy++, tab1, "Ideally devices should be directly connected to the motherboard." );
                 mvwprintw(
-                    main_window, yy++, tab1, "Cheaper USB/SAS/SATA controllers may return failure despite support." );
+                    main_window, yy++, tab1, "This is especially true for devices behind generic RAID controllers." );
+                mvwprintw(
+                    main_window, yy++, tab1, "Beware cheap USB/SATA controllers may return failure despite support." );
             }
 #endif
         }
