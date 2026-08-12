@@ -1053,6 +1053,94 @@ void nwipe_gui_create_all_windows_on_terminal_resize( int force_creation, const 
     }
 }
 
+static void nwipe_gui_se_unsupported( nwipe_context_t* ctx )
+{
+    extern int terminate_signal;
+    const char* ftr = "Enter=Return";
+
+    werase( footer_window );
+    nwipe_gui_title( footer_window, ftr );
+    wrefresh( footer_window );
+
+    do
+    {
+        int yy = 2;
+        int tab1 = 2;
+        int keystroke;
+
+        werase( main_window );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr );
+
+        if( ctx->secure_erase_supported == -1 )
+        {
+#ifdef HAVE_LIBNVME
+            mvwprintw( main_window, yy++, tab1, "It was attempted to probe this device for sanitize support." );
+            mvwprintw( main_window, yy++, tab1, "An error occurred or the device did not understand the request." );
+            mvwprintw( main_window, yy++, tab1, "Most commonly this means the device just does not support sanitize." );
+            yy++;
+            mvwprintw( main_window, yy++, tab1, "Ideally devices should be directly connected to the motherboard." );
+            mvwprintw(
+                main_window, yy++, tab1, "Cheaper USB/SAS/SATA controllers may return failure despite support." );
+#else
+            if( ctx->device_type == NWIPE_DEVICE_NVME )
+            {
+                mvwprintw( main_window, yy++, tab1, "Nwipe was not built --with-libnvme." );
+                mvwprintw( main_window, yy++, tab1, "The sanitize support could therefore not be probed." );
+            }
+            else
+            {
+                mvwprintw( main_window, yy++, tab1, "It was attempted to probe this device for sanitize support." );
+                mvwprintw( main_window, yy++, tab1, "An error occurred or the device did not understand the request." );
+                mvwprintw(
+                    main_window, yy++, tab1, "Most commonly this means the device just does not support sanitize." );
+                yy++;
+                mvwprintw(
+                    main_window, yy++, tab1, "Ideally devices should be directly connected to the motherboard." );
+                mvwprintw(
+                    main_window, yy++, tab1, "Cheaper USB/SAS/SATA controllers may return failure despite support." );
+            }
+#endif
+        }
+        else if( ctx->secure_erase_supported == 0 )
+        {
+            mvwprintw( main_window, yy++, tab1, "The device was probed for its sanitize support." );
+            mvwprintw( main_window, yy++, tab1, "It responded that no sanitize methods are supported." );
+            mvwprintw( main_window, yy++, tab1, "Not all devices support such firmware sanitize methods." );
+        }
+        else
+        {
+            mvwprintw( main_window, yy++, tab1, "The device reports sanitize support." );
+            mvwprintw( main_window, yy++, tab1, "This screen should not have been called." );
+            mvwprintw( main_window, yy++, tab1, "Report this message to the developers on GitHub." );
+        }
+
+        yy++;
+        mvwprintw( main_window, yy++, tab1, "Refer to the log for more detailed information." );
+        mvwprintw( main_window, yy++, tab1, "You can still perform a regular wipe of this device." );
+
+        yy++;
+        mvwprintw( main_window, yy++, tab1, "Press Enter to leave this screen..." );
+
+        box( main_window, 0, 0 );
+        nwipe_gui_title( main_window, " Secure Erase " );
+        wrefresh( main_window );
+
+        timeout( 250 );
+        keystroke = getch();
+        timeout( -1 );
+
+        switch( keystroke )
+        {
+            case KEY_ENTER:
+            case 10:
+            case KEY_BACKSPACE:
+            case KEY_BREAK:
+            case 27: /* ESC */
+                return;
+        }
+    } while( terminate_signal != 1 );
+} /* nwipe_gui_se_unsupported */
+
 void nwipe_gui_select( int count, nwipe_context_t** c )
 {
     extern int terminate_signal;
@@ -1356,7 +1444,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
             /* Secure Erase */
             if( c[i + offset]->select != NWIPE_SELECT_DISABLED && c[i + offset]->select != NWIPE_SELECT_DISABLED_BUSY )
             {
-                if( c[i + offset]->secure_erase_supported && c[i + offset]->secure_erase_context )
+                if( c[i + offset]->secure_erase_supported == 1 )
                 {
                     nwipe_gui_draw_acs_prefix( main_window, yy, 4 );
                     switch( c[i + offset]->secure_erase_status )
@@ -1660,8 +1748,12 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                     if( c[focus]->select == NWIPE_SELECT_DISABLED || c[focus]->select == NWIPE_SELECT_DISABLED_BUSY )
                         break;
 
-                    if( !c[focus]->secure_erase_supported || !c[focus]->secure_erase_context )
+                    if( c[focus]->secure_erase_supported != 1 || !c[focus]->secure_erase_context )
+                    {
+                        /* For debug purposes or interested users, we show why it's not supported. */
+                        nwipe_gui_se_unsupported( c[focus] );
                         break;
+                    }
 
                     switch( c[focus]->secure_erase_type )
                     {
@@ -1675,6 +1767,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                             break;
 
                         default:
+                            nwipe_gui_se_unsupported( c[focus] );
                             break;
                     }
 

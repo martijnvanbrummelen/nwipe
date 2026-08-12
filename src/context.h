@@ -250,7 +250,10 @@ typedef struct nwipe_context_t_
     int test_use1;
     int test_use2;
 
-    int secure_erase_supported; /* Secure Erase: 0 = Unsupported, 1 = Supported */
+    int secure_erase_supported;  // Secure Erase:
+                                 // -1: Unknown (error or not yet probed)
+                                 //  0: Confirmed not supported by device
+                                 //  1: Confirmed to be supported by device
     nwipe_secure_erase_type_t secure_erase_type; /* Secure Erase: ATA or NVMe */
     nwipe_secure_erase_status_t secure_erase_status; /* Secure Erase: Status */
     void* secure_erase_context; /* Secure Erase: Pointer to context */
