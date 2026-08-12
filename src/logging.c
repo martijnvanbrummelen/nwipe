@@ -18,6 +18,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h> /* HAVE_LIBNVME */
+#endif
 
 #ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE
@@ -26,6 +29,12 @@
 #ifndef _POSIX_SOURCE
 #define _POSIX_SOURCE
 #endif
+
+#ifdef HAVE_LIBNVME
+#include <libnvme.h>
+#endif
+#include <parted/parted.h>
+#include <libconfig.h>
 
 #include "stdio.h"
 #include "stdlib.h"
@@ -427,6 +436,31 @@ void nwipe_perror( int nwipe_errno, const char* f, const char* s )
 
 } /* nwipe_perror */
 
+void nwipe_log_buildinfo()
+{
+    nwipe_log( NWIPE_LOG_INFO, "Program was built as follows..." );
+#ifdef GIT_HASH
+    nwipe_log( NWIPE_LOG_INFO, "  Git commit:          %s", GIT_HASH );
+#endif
+    nwipe_log( NWIPE_LOG_INFO, "  Compiler:            %s", __VERSION__ );
+    nwipe_log( NWIPE_LOG_INFO, "  Compiled on:         %s %s", __DATE__, __TIME__ );
+    nwipe_log( NWIPE_LOG_INFO, "  C Standard:          %ld", __STDC_VERSION__ );
+    nwipe_log( NWIPE_LOG_INFO, "  ncurses version:     %s", curses_version() );
+    nwipe_log( NWIPE_LOG_INFO, "  libparted version:   %s", ped_get_version() );
+#if defined( LIBCONFIG_VER_MAJOR ) && defined( LIBCONFIG_VER_MINOR ) && defined( LIBCONFIG_VER_REVISION )
+    nwipe_log( NWIPE_LOG_INFO,
+               "  libconfig version:   %d.%d.%d",
+               LIBCONFIG_VER_MAJOR,
+               LIBCONFIG_VER_MINOR,
+               LIBCONFIG_VER_REVISION );
+#endif
+#ifdef HAVE_LIBNVME
+    nwipe_log( NWIPE_LOG_INFO, "  libnvme version:     %s", nvme_get_version( NVME_VERSION_PROJECT ) );
+#else
+    nwipe_log( NWIPE_LOG_INFO, "  libnvme version:     n/a (not built --with-libnvme)" );
+#endif
+} /* nwipe_log_buildinfo */
+
 void nwipe_log_OSinfo()
 {
     /* Read /proc/version, format and write to the log */
@@ -438,6 +472,7 @@ void nwipe_log_OSinfo()
     int idx2;
     int idx3;
     int idx4;
+    int prepend_spaces = 2;
 
     /* initialise OS_info & OS_info_temp strings */
     idx = 0;
@@ -489,14 +524,14 @@ void nwipe_log_OSinfo()
             idx4 = 0;
 
             /* left indent with spaces */
-            while( idx4 < OS_info_Line_offset && idx2 < MAX_SIZE_OS_STRING )
+            while( idx4 < OS_info_Line_offset + prepend_spaces && idx2 < MAX_SIZE_OS_STRING )
             {
                 OS_info[idx2++] = ' ';
                 idx4++;
             }
 
             /* calculate idx3 ready for next line */
-            idx3 += OS_info_Line_offset + OS_info_Line_Length;
+            idx3 += OS_info_Line_offset + prepend_spaces + OS_info_Line_Length;
         }
         else
         {
@@ -504,7 +539,8 @@ void nwipe_log_OSinfo()
         }
     }
 
-    nwipe_log( NWIPE_LOG_INFO, "%s", OS_info );
+    nwipe_log( NWIPE_LOG_INFO, "Program was built on following machine..." );
+    nwipe_log( NWIPE_LOG_INFO, "%*s%s", prepend_spaces, "", OS_info );
     fclose( fp );
     return;
 }

@@ -1,6 +1,8 @@
 # what flags you want to pass to the C compiler & linker
 #CFLAGS = -lncurses -lparted
+GIT_HASH := $(shell git rev-parse --short HEAD 2>/dev/null || echo n/a)
 AM_CFLAGS =
+AM_CPPFLAGS = -DGIT_HASH='"$(GIT_HASH)"'
 AM_LDFLAGS =
 check_PROGRAMS = test_round_size
 TESTS = test_round_size
@@ -70,4 +72,4 @@ nwipe_SOURCES = $(NWIPE_CORE) $(NWIPE_PRNG) $(NWIPE_PDF) $(NWIPE_HDDTEMP)
 nwipe_LDADD = $(PARTED_LIBS) $(LIBCONFIG) $(LIBNVME_LIBS)
 
 test_round_size_SOURCES = ../tests/unit/test_round_size.c round_size.c round_size.h
-test_round_size_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)
+test_round_size_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir) -DGIT_HASH='"$(GIT_HASH)"'
