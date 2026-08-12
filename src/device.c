@@ -991,11 +991,11 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     if( get_device_uuid( next_device->device_name, uuid ) == 0 )
     {
         strncpy( next_device->device_UUID, uuid, UUID_SIZE );
-        nwipe_log( NWIPE_LOG_INFO, "UUID for %s is: %s\n", next_device->device_name, next_device->device_UUID );
+        nwipe_log( NWIPE_LOG_INFO, "UUID for %s is: %s", next_device->device_name, next_device->device_UUID );
     }
     else
     {
-        nwipe_log( NWIPE_LOG_INFO, "No UUID available for %s\n", next_device->device_name );
+        nwipe_log( NWIPE_LOG_INFO, "No UUID available for %s", next_device->device_name );
     }
 
     /***********************************************
