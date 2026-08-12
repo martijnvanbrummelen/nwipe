@@ -81,9 +81,9 @@
 
 /* Footer window: width, height, x coordinate, y coordinate. */
 #define NWIPE_GUI_FOOTER_W COLS
-#define NWIPE_GUI_FOOTER_H 1
+#define NWIPE_GUI_FOOTER_H 2
 #define NWIPE_GUI_FOOTER_X 0
-#define NWIPE_GUI_FOOTER_Y ( LINES - 1 )
+#define NWIPE_GUI_FOOTER_Y ( LINES - 2 )
 
 /* Options window: width, height, x coorindate, y coordinate. */
 #define NWIPE_GUI_OPTIONS_W 44
@@ -125,7 +125,7 @@
 
 /* Select window: width, height, x coordinate, y coordinate. */
 #define NWIPE_GUI_MAIN_W COLS
-#define NWIPE_GUI_MAIN_H ( LINES - NWIPE_GUI_MAIN_Y - 1 )
+#define NWIPE_GUI_MAIN_H ( LINES - NWIPE_GUI_MAIN_Y - 2 )
 #define NWIPE_GUI_MAIN_Y 8
 #define NWIPE_GUI_MAIN_X 0
 
@@ -153,11 +153,13 @@ const char* options_title = " Options ";
 const char* stats_title = " Statistics ";
 
 /* Footer labels. */
-const char* main_window_footer =
-    "S=Start m=Method p=PRNG v=Verify r=Rounds b=Blanking d=Direction t=Path Space=Select c=Config CTRL+C=Quit";
-const char* shredos_main_window_footer = "S=Start m=Method p=PRNG v=Verify r=Rounds b=Blanking d=Direction t=Path"
-                                         "Space=Select f=Font size c=Config CTRL+C=Quit";
-char** p_main_window_footer;
+const char* main_window_footer_1 = "S=Start  m=Method  p=PRNG  v=Verify  r=Rounds  b=Blanking";
+const char* main_window_footer_2 = "d=Direction  t=Path  Space=Select  c=Config  CTRL+C=Quit";
+const char* shredos_main_window_footer_1 = "S=Start  m=Method  p=PRNG  v=Verify  r=Rounds  b=Blanking";
+const char* shredos_main_window_footer_2 = "d=Direction  t=Path  Space=Select  f=Font Size  c=Config  CTRL+C=Quit";
+char** p_main_window_footer_1;
+char** p_main_window_footer_2;
+
 const char* main_window_footer_warning_lower_case_s = "  WARNING: To start the wipe press SHIFT+S (uppercase S)  ";
 
 const char* main_window_footer_warning_no_blanking_with_ops2 =
@@ -574,12 +576,14 @@ void nwipe_gui_init( void )
     if( access( "/usr/bin/shredos_toggle_font_size.sh", F_OK ) == 0 )
     {
         p_end_wipe_footer = (char**) &shredos_end_wipe_footer;
-        p_main_window_footer = (char**) &shredos_main_window_footer;
+        p_main_window_footer_1 = (char**) &shredos_main_window_footer_1;
+        p_main_window_footer_2 = (char**) &shredos_main_window_footer_2;
     }
     else
     {
         p_end_wipe_footer = (char**) &end_wipe_footer;
-        p_main_window_footer = (char**) &main_window_footer;
+        p_main_window_footer_1 = (char**) &main_window_footer_1;
+        p_main_window_footer_2 = (char**) &main_window_footer_2;
     }
     /* Create the text/background color pairs */
     nwipe_init_pairs();
@@ -591,7 +595,7 @@ void nwipe_gui_init( void )
     nwipe_gui_create_header_window();
 
     /* Create the footer window and panel */
-    nwipe_gui_create_footer_window( *p_main_window_footer );
+    nwipe_gui_create_footer_window( *p_main_window_footer_1, *p_main_window_footer_2 );
 
     /* Create the options window and panel */
     nwipe_gui_create_options_window();
@@ -739,7 +743,7 @@ void nwipe_gui_create_header_window()
 
 } /* nwipe_gui_create_header_window */
 
-void nwipe_gui_create_footer_window( const char* footer_text )
+void nwipe_gui_create_footer_window( const char* footer_line1, const char* footer_line2 )
 {
     /* Create the footer window. */
     footer_window = newwin( NWIPE_GUI_FOOTER_H, NWIPE_GUI_FOOTER_W, NWIPE_GUI_FOOTER_Y, NWIPE_GUI_FOOTER_X );
@@ -754,21 +758,57 @@ void nwipe_gui_create_footer_window( const char* footer_text )
     /* Erase the footer window. */
     werase( footer_window );
 
-    /* Add help text to the footer */
-    nwipe_gui_title( footer_window, footer_text );
+    /* tft_saver = grey text on black mode */
+    if( tft_saver )
+    {
+        wattron( footer_window, A_BOLD );
+    }
+
+    /* Center line 1 on row 0 */
+    int wx = NWIPE_GUI_FOOTER_W;
+    int margin1 = ( wx - (int) strlen( footer_line1 ) );
+    if( margin1 < 0 )
+        margin1 = 0;
+    mvwprintw( footer_window, 0, margin1 / 2, "%s", footer_line1 );
+
+    /* Center line 2 on row 1 (if provided) */
+    if( footer_line2 && footer_line2[0] != '\0' )
+    {
+        int margin2 = ( wx - (int) strlen( footer_line2 ) );
+        if( margin2 < 0 )
+            margin2 = 0;
+        mvwprintw( footer_window, 1, margin2 / 2, "%s", footer_line2 );
+    }
 
     /* Refresh the footer window */
     wnoutrefresh( footer_window );
 
 } /* nwipe_gui_create_footer_window */
 
-void nwipe_gui_amend_footer_window( const char* footer_text )
+void nwipe_gui_amend_footer_window( const char* footer_line1, const char* footer_line2 )
 {
     /* Clear the footer window. */
     werase( footer_window );
 
-    /* Add help text to the footer */
-    nwipe_gui_title( footer_window, footer_text );
+    /* tft_saver = grey text on black mode */
+    if( tft_saver )
+    {
+        wattron( footer_window, A_BOLD );
+    }
+
+    int wx = NWIPE_GUI_FOOTER_W;
+    int margin1 = ( wx - (int) strlen( footer_line1 ) );
+    if( margin1 < 0 )
+        margin1 = 0;
+    mvwprintw( footer_window, 0, margin1 / 2, "%s", footer_line1 );
+
+    if( footer_line2 && footer_line2[0] != '\0' )
+    {
+        int margin2 = ( wx - (int) strlen( footer_line2 ) );
+        if( margin2 < 0 )
+            margin2 = 0;
+        mvwprintw( footer_window, 1, margin2 / 2, "%s", footer_line2 );
+    }
 
     /* Refresh the footer window */
     wnoutrefresh( footer_window );
@@ -834,7 +874,7 @@ void nwipe_gui_benchmark_prng( void )
 
     /* Footer */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer_benchmark );
+    nwipe_gui_amend_footer_window( selection_footer_benchmark, "" );
     wrefresh( footer_window );
 
     int keystroke = 0;
@@ -842,7 +882,7 @@ void nwipe_gui_benchmark_prng( void )
 
     do
     {
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_benchmark );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_benchmark, "" );
 
         int wlines, wcols;
         getmaxyx( main_window, wlines, wcols );
@@ -1015,7 +1055,9 @@ void nwipe_gui_create_stats_window()
 
 } /* nwipe_gui_create_stats_window */
 
-void nwipe_gui_create_all_windows_on_terminal_resize( int force_creation, const char* footer_text )
+void nwipe_gui_create_all_windows_on_terminal_resize( int force_creation,
+                                                      const char* footer_line1,
+                                                      const char* footer_line2 )
 {
     /* Get the terminal size */
     getmaxyx( stdscr, stdscr_lines, stdscr_cols );
@@ -1037,7 +1079,7 @@ void nwipe_gui_create_all_windows_on_terminal_resize( int force_creation, const 
         nwipe_gui_create_main_window();
 
         /* Create a new footer window and panel due to terminal size having changed */
-        nwipe_gui_create_footer_window( footer_text );
+        nwipe_gui_create_footer_window( footer_line1, footer_line2 );
 
         /* Create a new options window and panel due to terminal size having changed */
         nwipe_gui_create_options_window();
@@ -1059,7 +1101,7 @@ static void nwipe_gui_se_unsupported( nwipe_context_t* ctx )
     const char* ftr = "Enter=Return";
 
     werase( footer_window );
-    nwipe_gui_title( footer_window, ftr );
+    nwipe_gui_amend_footer_window( ftr, "" );
     wrefresh( footer_window );
 
     do
@@ -1069,7 +1111,7 @@ static void nwipe_gui_se_unsupported( nwipe_context_t* ctx )
         int keystroke;
 
         werase( main_window );
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr, "" );
 
         if( ctx->secure_erase_supported == -1 )
         {
@@ -1211,7 +1253,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
     do
     {
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, *p_main_window_footer );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, *p_main_window_footer_1, *p_main_window_footer_2 );
 
         /* There is one slot per line. */
         getmaxyx( main_window, wlines, wcols );
@@ -1259,7 +1301,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
 
         /* If the user selected an option the footer text would have changed.
          * Here we set it back to the main key help text */
-        nwipe_gui_create_footer_window( *p_main_window_footer );
+        nwipe_gui_create_footer_window( *p_main_window_footer_1, *p_main_window_footer_2 );
 
         /* Refresh the stats window */
         wnoutrefresh( stats_window );
@@ -1839,13 +1881,13 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                     {
                         /* Warn the user about that zero blanking with the ops2 method is not allowed */
                         wattron( footer_window, COLOR_PAIR( 10 ) );
-                        nwipe_gui_amend_footer_window( main_window_footer_warning_no_blanking_with_ops2 );
+                        nwipe_gui_amend_footer_window( main_window_footer_warning_no_blanking_with_ops2, "" );
                         doupdate();
                         sleep( 3 );
                         wattroff( footer_window, COLOR_PAIR( 10 ) );
 
                         /* After the delay return footer text back to key help */
-                        nwipe_gui_amend_footer_window( *p_main_window_footer );
+                        nwipe_gui_amend_footer_window( *p_main_window_footer_1, *p_main_window_footer_2 );
                         doupdate();
 
                         break;
@@ -1855,13 +1897,13 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                     {
                         /* Warn the user about that zero blanking with the ops2 method is not allowed */
                         wattron( footer_window, COLOR_PAIR( 10 ) );
-                        nwipe_gui_amend_footer_window( main_window_footer_warning_no_blanking_with_verify_only );
+                        nwipe_gui_amend_footer_window( main_window_footer_warning_no_blanking_with_verify_only, "" );
                         doupdate();
                         sleep( 3 );
                         wattroff( footer_window, COLOR_PAIR( 10 ) );
 
                         /* After the delay return footer text back to key help */
-                        nwipe_gui_amend_footer_window( *p_main_window_footer );
+                        nwipe_gui_amend_footer_window( *p_main_window_footer_1, *p_main_window_footer_2 );
                         doupdate();
 
                         break;
@@ -1899,13 +1941,13 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                     if( number_of_selected_contexts == 0 )
                     {
                         wattron( footer_window, COLOR_PAIR( 10 ) );
-                        nwipe_gui_amend_footer_window( main_window_footer_warning_no_drive_selected );
+                        nwipe_gui_amend_footer_window( main_window_footer_warning_no_drive_selected, "" );
                         doupdate();
                         sleep( 3 );
                         wattroff( footer_window, COLOR_PAIR( 10 ) );
 
                         /* After the delay return footer text back to key help */
-                        nwipe_gui_amend_footer_window( *p_main_window_footer );
+                        nwipe_gui_amend_footer_window( *p_main_window_footer_1, *p_main_window_footer_2 );
                         doupdate();
 
                         /* Remove any repeated S key strokes, without this the gui would hang
@@ -1935,13 +1977,13 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
 
                     /* Warn the user about their mistake */
                     wattron( footer_window, COLOR_PAIR( 10 ) );
-                    nwipe_gui_amend_footer_window( main_window_footer_warning_lower_case_s );
+                    nwipe_gui_amend_footer_window( main_window_footer_warning_lower_case_s, "" );
                     doupdate();
                     sleep( 3 );
                     wattroff( footer_window, COLOR_PAIR( 10 ) );
 
                     /* After the delay return footer text back to key help */
-                    nwipe_gui_amend_footer_window( *p_main_window_footer );
+                    nwipe_gui_amend_footer_window( *p_main_window_footer_1, *p_main_window_footer_2 );
                     doupdate();
 
                     /* Remove any repeated s key strokes, without this the gui would hang
@@ -2029,7 +2071,7 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
     {
         /* If user has pressed S to start wipe change status line */
         werase( footer_window );
-        nwipe_gui_title( footer_window, *p_end_wipe_footer );
+        nwipe_gui_amend_footer_window( *p_end_wipe_footer, "" );
         wnoutrefresh( footer_window );
     }
 
@@ -2139,7 +2181,7 @@ void nwipe_gui_rounds( void )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, rounds_footer );
+    nwipe_gui_amend_footer_window( rounds_footer, "" );
     wrefresh( footer_window );
 
     do
@@ -2147,7 +2189,7 @@ void nwipe_gui_rounds( void )
         /* Erase the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer, "" );
 
         /* Add a border. */
         box( main_window, 0, 0 );
@@ -2259,14 +2301,14 @@ void nwipe_gui_io_direction( void )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer );
+    nwipe_gui_amend_footer_window( selection_footer, "" );
     wrefresh( footer_window );
 
     do
     {
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer, "" );
 
         yy = 2;
 
@@ -2380,14 +2422,14 @@ void nwipe_gui_prng_category( void )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer );
+    nwipe_gui_amend_footer_window( selection_footer, "" );
     wrefresh( footer_window );
 
     do
     {
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer, "" );
 
         yy = 2;
 
@@ -2510,7 +2552,7 @@ void nwipe_gui_prng( void )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer_prng );
+    nwipe_gui_amend_footer_window( selection_footer_prng, "" );
     wrefresh( footer_window );
 
     if( prng_filter == 0 ) /* General purpose */
@@ -2543,7 +2585,7 @@ void nwipe_gui_prng( void )
         /* Clear the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_prng );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_prng, "" );
 
         /* Initialize the working row. */
         yy = 2;
@@ -2792,12 +2834,12 @@ void nwipe_gui_verify( void )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer );
+    nwipe_gui_amend_footer_window( selection_footer, "" );
     wrefresh( footer_window );
 
     do
     {
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer, "" );
 
         /* Clear the main window. */
         werase( main_window );
@@ -3084,14 +3126,14 @@ void nwipe_gui_view_device( int count, nwipe_context_t** c, int focus )
 
     /* Footer */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer_device_view );
+    nwipe_gui_amend_footer_window( selection_footer_device_view, "" );
     wrefresh( footer_window );
 
     int keystroke = 0;
 
     do
     {
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_device_view );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_device_view, "" );
 
         int wlines, wcols;
         getmaxyx( main_window, wlines, wcols );
@@ -3168,12 +3210,12 @@ void nwipe_gui_noblank( void )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer );
+    nwipe_gui_amend_footer_window( selection_footer, "" );
     wrefresh( footer_window );
 
     do
     {
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer, "" );
 
         /* Clear the main window. */
         werase( main_window );
@@ -3329,7 +3371,7 @@ void nwipe_gui_method( void )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer );
+    nwipe_gui_amend_footer_window( selection_footer, "" );
     wrefresh( footer_window );
 
     if( nwipe_options.method == &nwipe_zero )
@@ -3386,7 +3428,7 @@ void nwipe_gui_method( void )
         /* Clear the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer, "" );
 
         /* Initialize the working row. */
         yy = 2;
@@ -3704,10 +3746,10 @@ void nwipe_gui_config( void )
 
         /* Update the footer window. */
         werase( footer_window );
-        nwipe_gui_title( footer_window, selection_footer_config );
+        nwipe_gui_amend_footer_window( selection_footer_config, "" );
         wrefresh( footer_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_config );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_config, "" );
 
         /* Initialize the working row. */
         yy = 2;
@@ -4065,10 +4107,10 @@ void nwipe_gui_user_defined_tag( void )
 
             /* Update the footer window. */
             werase( footer_window );
-            nwipe_gui_title( footer_window, selection_footer_config );
+            nwipe_gui_amend_footer_window( selection_footer_config, "" );
             wrefresh( footer_window );
 
-            nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_config );
+            nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_config, "" );
 
             /* Initialize the working row. */
             yy = 2;
@@ -4194,7 +4236,7 @@ void nwipe_gui_pdf_certificate_edit_user_defined_tag( const char* user_defined_t
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer_text_entry );
+    nwipe_gui_amend_footer_window( selection_footer_text_entry, "" );
     wrefresh( footer_window );
 
     /* Copy the current business name to the buffer */
@@ -4208,7 +4250,7 @@ void nwipe_gui_pdf_certificate_edit_user_defined_tag( const char* user_defined_t
         /* Erase the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry, "" );
 
         /* Add a border. */
         box( main_window, 0, 0 );
@@ -4340,10 +4382,10 @@ void nwipe_gui_edit_organisation( void )
 
             /* Update the footer window. */
             werase( footer_window );
-            nwipe_gui_title( footer_window, selection_footer_config );
+            nwipe_gui_amend_footer_window( selection_footer_config, "" );
             wrefresh( footer_window );
 
-            nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_config );
+            nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_config, "" );
 
             /* Initialize the working row. */
             yy = 2;
@@ -4534,7 +4576,7 @@ void nwipe_gui_organisation_business_name( const char* business_name )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer_text_entry );
+    nwipe_gui_amend_footer_window( selection_footer_text_entry, "" );
     wrefresh( footer_window );
 
     /* Copy the current business name to the buffer */
@@ -4548,7 +4590,7 @@ void nwipe_gui_organisation_business_name( const char* business_name )
         /* Erase the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry, "" );
 
         /* Add a border. */
         box( main_window, 0, 0 );
@@ -4674,7 +4716,7 @@ void nwipe_gui_organisation_business_address( const char* business_address )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer_text_entry );
+    nwipe_gui_amend_footer_window( selection_footer_text_entry, "" );
     wrefresh( footer_window );
 
     /* Copy the current business address to the buffer */
@@ -4688,7 +4730,7 @@ void nwipe_gui_organisation_business_address( const char* business_address )
         /* Erase the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry, "" );
 
         /* Add a border. */
         box( main_window, 0, 0 );
@@ -4815,7 +4857,7 @@ void nwipe_gui_organisation_contact_name( const char* contact_name )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer_text_entry );
+    nwipe_gui_amend_footer_window( selection_footer_text_entry, "" );
     wrefresh( footer_window );
 
     /* Copy the current business address to the buffer */
@@ -4829,7 +4871,7 @@ void nwipe_gui_organisation_contact_name( const char* contact_name )
         /* Erase the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry, "" );
 
         /* Add a border. */
         box( main_window, 0, 0 );
@@ -4955,7 +4997,7 @@ void nwipe_gui_organisation_contact_phone( const char* contact_phone )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer_text_entry );
+    nwipe_gui_amend_footer_window( selection_footer_text_entry, "" );
     wrefresh( footer_window );
 
     /* Copy the current business address to the buffer */
@@ -4969,7 +5011,7 @@ void nwipe_gui_organisation_contact_phone( const char* contact_phone )
         /* Erase the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry, "" );
 
         /* Add a border. */
         box( main_window, 0, 0 );
@@ -5095,7 +5137,7 @@ void nwipe_gui_organisation_op_tech_name( const char* op_tech_name )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer_text_entry );
+    nwipe_gui_amend_footer_window( selection_footer_text_entry, "" );
     wrefresh( footer_window );
 
     /* Copy the current op_tech_name to the buffer */
@@ -5109,7 +5151,7 @@ void nwipe_gui_organisation_op_tech_name( const char* op_tech_name )
         /* Erase the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry, "" );
 
         /* Add a border. */
         box( main_window, 0, 0 );
@@ -5265,7 +5307,7 @@ void nwipe_gui_list( int count, char* window_title, char** list, int* selected_e
     do
     {
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, *p_main_window_footer );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, *p_main_window_footer_1, *p_main_window_footer_2 );
 
         /* There is one slot per line. */
         getmaxyx( main_window, wlines, wcols );
@@ -5314,7 +5356,7 @@ void nwipe_gui_list( int count, char* window_title, char** list, int* selected_e
         /* Set footer help text */
         /* Update the footer window. */
         werase( footer_window );
-        nwipe_gui_title( footer_window, selection_footer );
+        nwipe_gui_amend_footer_window( selection_footer, "" );
         wrefresh( footer_window );
 
         /* Refresh the stats window */
@@ -5615,7 +5657,7 @@ void nwipe_gui_add_customer( void )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer_config );
+    nwipe_gui_amend_footer_window( selection_footer_config, "" );
     wrefresh( footer_window );
 
     do
@@ -5630,19 +5672,19 @@ void nwipe_gui_add_customer( void )
             {
                 /* Update the footer window. */
                 werase( footer_window );
-                nwipe_gui_title( footer_window, selection_footer_add_customer_yes_no );
+                nwipe_gui_amend_footer_window( selection_footer_add_customer_yes_no, "" );
                 wrefresh( footer_window );
 
-                nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_add_customer_yes_no );
+                nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_add_customer_yes_no, "" );
             }
             else
             {
                 /* Update the footer window. */
                 werase( footer_window );
-                nwipe_gui_title( footer_window, selection_footer_config );
+                nwipe_gui_amend_footer_window( selection_footer_config, "" );
                 wrefresh( footer_window );
 
-                nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_config );
+                nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_config, "" );
             }
             /* Initialize the working row. */
             yy = 2;
@@ -5812,7 +5854,7 @@ void nwipe_gui_add_customer_name( char* customer_name )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer_text_entry );
+    nwipe_gui_amend_footer_window( selection_footer_text_entry, "" );
     wrefresh( footer_window );
 
     /* Set the buffer index to point to the end of the string, i.e the NULL */
@@ -5823,7 +5865,7 @@ void nwipe_gui_add_customer_name( char* customer_name )
         /* Erase the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry, "" );
 
         /* Add a border. */
         box( main_window, 0, 0 );
@@ -5919,7 +5961,7 @@ void nwipe_gui_add_customer_address( char* customer_address )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer_text_entry );
+    nwipe_gui_amend_footer_window( selection_footer_text_entry, "" );
     wrefresh( footer_window );
 
     /* Set the buffer index to point to the end of the string, i.e the NULL */
@@ -5930,7 +5972,7 @@ void nwipe_gui_add_customer_address( char* customer_address )
         /* Erase the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry, "" );
 
         /* Add a border. */
         box( main_window, 0, 0 );
@@ -6026,7 +6068,7 @@ void nwipe_gui_add_customer_contact_name( char* customer_contact_name )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer_text_entry );
+    nwipe_gui_amend_footer_window( selection_footer_text_entry, "" );
     wrefresh( footer_window );
 
     /* Set the buffer index to point to the end of the string, i.e the NULL */
@@ -6037,7 +6079,7 @@ void nwipe_gui_add_customer_contact_name( char* customer_contact_name )
         /* Erase the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry, "" );
 
         /* Add a border. */
         box( main_window, 0, 0 );
@@ -6133,7 +6175,7 @@ void nwipe_gui_add_customer_contact_phone( char* customer_contact_phone )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer_text_entry );
+    nwipe_gui_amend_footer_window( selection_footer_text_entry, "" );
     wrefresh( footer_window );
 
     /* Set the buffer index to point to the end of the string, i.e the NULL */
@@ -6144,7 +6186,7 @@ void nwipe_gui_add_customer_contact_phone( char* customer_contact_phone )
         /* Erase the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry, "" );
 
         /* Add a border. */
         box( main_window, 0, 0 );
@@ -6262,13 +6304,14 @@ void nwipe_gui_preview_org_customer( int mode )
             werase( footer_window );
             if( mode == SHOWING_IN_CONFIG_MENUS )
             {
-                nwipe_gui_title( footer_window, selection_footer );
-                nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer );
+                nwipe_gui_amend_footer_window( selection_footer, "" );
+                nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer, "" );
             }
             else
             {
-                nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_preview_prior_to_drive_selection );
-                nwipe_gui_title( footer_window, selection_footer_preview_prior_to_drive_selection );
+                nwipe_gui_create_all_windows_on_terminal_resize(
+                    0, selection_footer_preview_prior_to_drive_selection, "" );
+                nwipe_gui_amend_footer_window( selection_footer_preview_prior_to_drive_selection, "" );
             }
             wrefresh( footer_window );
 
@@ -6610,7 +6653,7 @@ void nwipe_gui_set_date_time( void )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer_config );
+    nwipe_gui_amend_footer_window( selection_footer_config, "" );
     wrefresh( footer_window );
 
     do
@@ -6620,7 +6663,7 @@ void nwipe_gui_set_date_time( void )
             /* Clear the main window. */
             werase( main_window );
 
-            nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_config );
+            nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_config, "" );
 
             /* Determine size of window */
             getmaxyx( main_window, wlines, wcols );
@@ -6814,7 +6857,7 @@ void nwipe_gui_set_system_year( void )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer_text_entry );
+    nwipe_gui_amend_footer_window( selection_footer_text_entry, "" );
     wrefresh( footer_window );
 
     fp = popen( "date +%Y", "r" );
@@ -6843,7 +6886,7 @@ void nwipe_gui_set_system_year( void )
         /* Erase the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry, "" );
 
         /* Add a border. */
         box( main_window, 0, 0 );
@@ -6965,7 +7008,7 @@ void nwipe_gui_set_system_month( void )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer_text_entry );
+    nwipe_gui_amend_footer_window( selection_footer_text_entry, "" );
     wrefresh( footer_window );
 
     fp = popen( "date +%m", "r" );
@@ -6994,7 +7037,7 @@ void nwipe_gui_set_system_month( void )
         /* Erase the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry, "" );
 
         /* Add a border. */
         box( main_window, 0, 0 );
@@ -7117,7 +7160,7 @@ void nwipe_gui_set_system_day( void )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer_text_entry );
+    nwipe_gui_amend_footer_window( selection_footer_text_entry, "" );
     wrefresh( footer_window );
 
     fp = popen( "date +%d", "r" );
@@ -7146,7 +7189,7 @@ void nwipe_gui_set_system_day( void )
         /* Erase the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry, "" );
 
         /* Add a border. */
         box( main_window, 0, 0 );
@@ -7271,7 +7314,7 @@ void nwipe_gui_set_system_hour( void )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer_text_entry );
+    nwipe_gui_amend_footer_window( selection_footer_text_entry, "" );
     wrefresh( footer_window );
 
     fp = popen( "date +%H", "r" );
@@ -7300,7 +7343,7 @@ void nwipe_gui_set_system_hour( void )
         /* Erase the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry, "" );
 
         /* Add a border. */
         box( main_window, 0, 0 );
@@ -7423,7 +7466,7 @@ void nwipe_gui_set_system_minute( void )
 
     /* Update the footer window. */
     werase( footer_window );
-    nwipe_gui_title( footer_window, selection_footer_text_entry );
+    nwipe_gui_amend_footer_window( selection_footer_text_entry, "" );
     wrefresh( footer_window );
 
     fp = popen( "date +%M", "r" );
@@ -7452,7 +7495,7 @@ void nwipe_gui_set_system_minute( void )
         /* Erase the main window. */
         werase( main_window );
 
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_text_entry, "" );
 
         /* Add a border. */
         box( main_window, 0, 0 );
@@ -7747,7 +7790,7 @@ void* nwipe_gui_status( void* ptr )
         nwipe_time_start = time( NULL ) - 1;
     }
 
-    nwipe_gui_title( footer_window, *p_end_wipe_footer );
+    nwipe_gui_amend_footer_window( *p_end_wipe_footer, "" );
 
     loop_control = 1;
 
@@ -7820,12 +7863,12 @@ void* nwipe_gui_status( void* ptr )
             if( nwipe_active != 0 )
             {
                 /* if resizing the terminal during a wipe a specific footer is required */
-                nwipe_gui_create_all_windows_on_terminal_resize( 0, *p_end_wipe_footer );
+                nwipe_gui_create_all_windows_on_terminal_resize( 0, *p_end_wipe_footer, "" );
             }
             else
             {
                 /* and if the wipes have finished a different footer is required */
-                nwipe_gui_create_all_windows_on_terminal_resize( 0, finish_message );
+                nwipe_gui_create_all_windows_on_terminal_resize( 0, finish_message, "" );
             }
         }
 
@@ -7843,7 +7886,7 @@ void* nwipe_gui_status( void* ptr )
 
         if( nwipe_active == 0 || terminate_signal == 1 )
         {
-            nwipe_gui_title( footer_window, finish_message );
+            nwipe_gui_amend_footer_window( finish_message, "" );
 
             // Refresh the footer_window ;
             wnoutrefresh( footer_window );
@@ -7858,7 +7901,7 @@ void* nwipe_gui_status( void* ptr )
         {
             tft_saver = 0;
             nwipe_init_pairs();
-            nwipe_gui_create_all_windows_on_terminal_resize( 1, *p_end_wipe_footer );
+            nwipe_gui_create_all_windows_on_terminal_resize( 1, *p_end_wipe_footer, "" );
 
             /* Show screen */
             nwipe_gui_blank = 0;
@@ -7875,7 +7918,7 @@ void* nwipe_gui_status( void* ptr )
             show_panel( main_panel );
 
             /* Reprint the footer */
-            nwipe_gui_title( footer_window, *p_end_wipe_footer );
+            nwipe_gui_amend_footer_window( *p_end_wipe_footer, "" );
 
             // Refresh the footer_window ;
             wnoutrefresh( footer_window );
@@ -7898,7 +7941,7 @@ void* nwipe_gui_status( void* ptr )
                         /* grey text on black background */
                         tft_saver = 1;
                         nwipe_init_pairs();
-                        nwipe_gui_create_all_windows_on_terminal_resize( 1, *p_end_wipe_footer );
+                        nwipe_gui_create_all_windows_on_terminal_resize( 1, *p_end_wipe_footer, "" );
                     }
                     else
                     {
@@ -8292,7 +8335,7 @@ void* nwipe_gui_status( void* ptr )
 
     } /* End of while loop */
 
-    nwipe_gui_title( footer_window, finish_message );
+    nwipe_gui_amend_footer_window( finish_message, "" );
     terminate_signal = 1;
 
     return NULL;

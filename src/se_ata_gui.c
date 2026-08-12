@@ -23,11 +23,6 @@
 extern int terminate_signal;
 extern WINDOW* main_window;
 extern WINDOW* footer_window;
-extern PANEL* footer_panel;
-
-extern void nwipe_gui_title( WINDOW* w, const char* s );
-extern void nwipe_gui_amend_footer_window( const char* footer_text );
-extern void nwipe_gui_create_all_windows_on_terminal_resize( int force, const char* footer );
 
 #define NWIPE_GUI_SE_ATA_ACTION_COUNT 4
 #define NWIPE_GUI_SE_ATA_ACTION_DESC_LINES 4
@@ -168,7 +163,7 @@ nwipe_gui_se_ata_show_error( nwipe_context_t* ctx, nwipe_se_ata_ctx* san, const 
     const char* ftr = "Enter=Return";
 
     werase( footer_window );
-    nwipe_gui_title( footer_window, ftr );
+    nwipe_gui_amend_footer_window( ftr, "" );
     wrefresh( footer_window );
 
     do
@@ -178,7 +173,7 @@ nwipe_gui_se_ata_show_error( nwipe_context_t* ctx, nwipe_se_ata_ctx* san, const 
         int keystroke;
 
         werase( main_window );
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr, "" );
 
         nwipe_gui_se_ata_print_device( ctx, san, main_window, &yy, tab1, NULL );
         yy++;
@@ -221,7 +216,7 @@ static int nwipe_gui_se_ata_select_action( nwipe_context_t* ctx, nwipe_se_ata_ct
     int focus = 0;
 
     werase( footer_window );
-    nwipe_gui_title( footer_window, ftr );
+    nwipe_gui_amend_footer_window( ftr, "" );
     wrefresh( footer_window );
 
     do
@@ -233,7 +228,7 @@ static int nwipe_gui_se_ata_select_action( nwipe_context_t* ctx, nwipe_se_ata_ct
         const int tab2 = 30;
 
         werase( main_window );
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr, "" );
 
         nwipe_gui_se_ata_print_device( ctx, san, main_window, &ly, tab1, NULL );
         ly++;
@@ -325,7 +320,7 @@ static int nwipe_gui_se_ata_overwrite_opts( nwipe_context_t* ctx, nwipe_se_ata_c
     san->ovrpat = 0xDEADBEEF;
 
     werase( footer_window );
-    nwipe_gui_title( footer_window, ftr );
+    nwipe_gui_amend_footer_window( ftr, "" );
     wrefresh( footer_window );
 
     do
@@ -336,7 +331,7 @@ static int nwipe_gui_se_ata_overwrite_opts( nwipe_context_t* ctx, nwipe_se_ata_c
         const int tab2 = 42;
 
         werase( main_window );
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr, "" );
 
         nwipe_gui_se_ata_print_device( ctx, san, main_window, &yy, tab1, &san->planned_sanact );
         yy++;
@@ -426,7 +421,7 @@ static void nwipe_gui_se_ata_monitor( nwipe_context_t* ctx, nwipe_se_ata_ctx* sa
     int user_aborted = 0;
 
     werase( footer_window );
-    nwipe_gui_title( footer_window, ftr_progress );
+    nwipe_gui_amend_footer_window( ftr_progress, "" );
     wrefresh( footer_window );
 
     do
@@ -437,7 +432,7 @@ static void nwipe_gui_se_ata_monitor( nwipe_context_t* ctx, nwipe_se_ata_ctx* sa
         const int tab1 = 2;
 
         werase( main_window );
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr_progress );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr_progress, "" );
 
         poll_err = nwipe_se_ata_poll( san );
 
@@ -512,7 +507,7 @@ static void nwipe_gui_se_ata_monitor( nwipe_context_t* ctx, nwipe_se_ata_ctx* sa
     int logged = 0;
 
     werase( footer_window );
-    nwipe_gui_title( footer_window, ftr_results );
+    nwipe_gui_amend_footer_window( ftr_results, "" );
     wrefresh( footer_window );
 
     do
@@ -522,7 +517,7 @@ static void nwipe_gui_se_ata_monitor( nwipe_context_t* ctx, nwipe_se_ata_ctx* sa
         const int tab1 = 2;
 
         werase( main_window );
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr_results );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr_results, "" );
 
         nwipe_gui_se_ata_print_device( ctx, san, main_window, &yy, tab1, &san->sanact );
         yy++;
@@ -630,7 +625,7 @@ static int nwipe_gui_se_ata_prompt_in_progress( nwipe_context_t* ctx, nwipe_se_a
     const char* ftr = "M=Monitor ESC=Cancel";
 
     werase( footer_window );
-    nwipe_gui_title( footer_window, ftr );
+    nwipe_gui_amend_footer_window( ftr, "" );
     wrefresh( footer_window );
 
     do
@@ -640,7 +635,7 @@ static int nwipe_gui_se_ata_prompt_in_progress( nwipe_context_t* ctx, nwipe_se_a
         const int tab1 = 2;
 
         werase( main_window );
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr, "" );
 
         nwipe_gui_se_ata_print_device( ctx, san, main_window, &yy, tab1, &san->sanact );
         yy++;
@@ -685,7 +680,7 @@ static void nwipe_gui_se_ata_show_frozen_state( nwipe_context_t* ctx, nwipe_se_a
     const char* ftr = "Enter=Return";
 
     werase( footer_window );
-    nwipe_gui_title( footer_window, ftr );
+    nwipe_gui_amend_footer_window( ftr, "" );
     wrefresh( footer_window );
 
     do
@@ -695,7 +690,7 @@ static void nwipe_gui_se_ata_show_frozen_state( nwipe_context_t* ctx, nwipe_se_a
         const int tab1 = 2;
 
         werase( main_window );
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr, "" );
 
         nwipe_gui_se_ata_print_device( ctx, san, main_window, &yy, tab1, NULL );
         yy++;
@@ -736,7 +731,7 @@ static void nwipe_gui_se_ata_show_failed_state( nwipe_context_t* ctx, nwipe_se_a
     const char* ftr = "Enter=Continue";
 
     werase( footer_window );
-    nwipe_gui_title( footer_window, ftr );
+    nwipe_gui_amend_footer_window( ftr, "" );
     wrefresh( footer_window );
 
     do
@@ -746,7 +741,7 @@ static void nwipe_gui_se_ata_show_failed_state( nwipe_context_t* ctx, nwipe_se_a
         const int tab1 = 2;
 
         werase( main_window );
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr, "" );
 
         nwipe_gui_se_ata_print_device( ctx, san, main_window, &yy, tab1, &san->sanact );
         yy++;
@@ -787,7 +782,7 @@ static int nwipe_gui_se_ata_confirm( nwipe_context_t* ctx, nwipe_se_ata_ctx* san
     const char* ftr = "E=Execute ESC=Cancel";
 
     werase( footer_window );
-    nwipe_gui_title( footer_window, ftr );
+    nwipe_gui_amend_footer_window( ftr, "" );
     wrefresh( footer_window );
 
     do
@@ -797,7 +792,7 @@ static int nwipe_gui_se_ata_confirm( nwipe_context_t* ctx, nwipe_se_ata_ctx* san
         const int tab1 = 2;
 
         werase( main_window );
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr, "" );
 
         nwipe_gui_se_ata_print_device( ctx, san, main_window, &yy, tab1, &san->planned_sanact );
         yy++;
