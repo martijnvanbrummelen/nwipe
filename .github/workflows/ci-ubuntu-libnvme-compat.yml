@@ -1,0 +1,129 @@
+name: ci-ubuntu-libnvme-compat
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-ubuntu-libnvme-compat-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: libnvme v${{ matrix.libnvme }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        libnvme:
+          - "1.0"
+          - "1.1"
+          - "1.2"
+          - "1.3"
+          - "1.4"
+          - "1.5"
+          - "1.6"
+          - "1.7"
+          - "1.7.1"
+          - "1.9"
+          - "1.10"
+          - "1.11"
+          - "1.11.1"
+          - "1.12"
+          - "1.13"
+          - "1.14"
+          - "1.15"
+          - "1.16"
+          - "1.16.1"
+          - "1.16.2"
+
+    env:
+      LIBNVME_VERSION: ${{ matrix.libnvme }}
+      BASE_CFLAGS: "-O2 -g -Werror -Wimplicit -Wimplicit-function-declaration -Wmissing-field-initializers"
+      BASE_CPPFLAGS: "-I/usr/include/uuid -Wno-error=cpp"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Update system packages
+        run: |
+          sudo apt-get update
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get install -y --no-install-recommends \
+            bash \
+            automake \
+            make \
+            curl \
+            libncurses-dev \
+            libevent-dev \
+            libparted-dev \
+            libconfig-dev \
+            hdparm \
+            dmidecode \
+            smartmontools \
+            autoconf \
+            gcc \
+            g++ \
+            linux-libc-dev \
+            meson \
+            ninja-build \
+            libjson-c-dev \
+            pkg-config \
+            wget \
+            ca-certificates \
+            libssl-dev \
+            git \
+            libdbus-1-dev \
+            libsystemd-dev \
+            uuid-dev
+
+      - name: Build libnvme v${{ matrix.libnvme }}
+        run: |
+          cd /tmp
+
+          wget "https://github.com/linux-nvme/libnvme/archive/refs/tags/v${LIBNVME_VERSION}.tar.gz"
+
+          tar xvfz "v${LIBNVME_VERSION}.tar.gz"
+
+          cd "libnvme-${LIBNVME_VERSION}"
+
+          meson setup .build
+          meson compile -C .build
+
+          sudo meson install -C .build
+          sudo ldconfig
+
+      - name: Configure library paths
+        run: |
+          echo "PKG_CONFIG_PATH=/usr/local/lib/x86_64-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH}" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=/usr/local/lib/x86_64-linux-gnu:/usr/local/lib:${LD_LIBRARY_PATH}" >> "$GITHUB_ENV"
+
+      - name: Verify libnvme v${{ matrix.libnvme }}
+        run: |
+          pkg-config --modversion libnvme
+          pkg-config --cflags --libs libnvme
+
+      - name: Generate autogen files
+        run: |
+          ./autogen.sh
+
+      - name: Configure nwipe
+        run: |
+          ./configure \
+            --with-libnvme \
+            CFLAGS="$BASE_CFLAGS" \
+            CPPFLAGS="$BASE_CPPFLAGS"
+
+      - name: Compile nwipe
+        run: |
+          make \
+            CFLAGS="$BASE_CFLAGS" \
+            CPPFLAGS="$BASE_CPPFLAGS"
+
+      - name: Verify nwipe
+        run: |
+          sudo ./src/nwipe -V
