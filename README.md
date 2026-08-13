@@ -326,19 +326,23 @@ Note: `dmidecode`, `readlink` (from `coreutils`) and `smartmontools` are technic
 
 ### NVMe Secure Erase prerequisites (optional)
 
+> [!WARNING]
+> Nwipe was specifically tested against libnvme versions 1.16.1+.  
+> Outdated libnvme versions may have bugs and produce unexpected behavior.
+
 When `libnvme` (version >=1.0) is present on the system, NVMe secure
 erase features will automatically be built and enabled. If the library is not
 present on the system, the build will warn about it missing and disable the
 NVMe secure erase features, unless `--with-libnvme` was specifically requested
-as a configure option (in which case the build fails).
+(in which case the build fails).
 
 The functionality was specifically developed around version 1.16.1, which can be
-obtained through your package manager or from below link for builing from source:
+obtained through your package manager or from below link for building from source:
 
   https://github.com/linux-nvme/libnvme
 
 The NVMe standard is actively evolving, and many distributions ship outdated versions
-of the library, so we recommend building the lightweight library from source instead:
+of the library, so we strongly recommend building the lightweight library from source instead:
 
 ```bash
 wget https://github.com/linux-nvme/libnvme/archive/refs/tags/v1.16.1.tar.gz
