@@ -30,7 +30,12 @@ extern int terminate_signal;
 extern WINDOW* main_window;
 extern WINDOW* footer_window;
 
+#ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
 #define NWIPE_GUI_SE_NVME_ACTION_COUNT 5
+#else
+#define NWIPE_GUI_SE_NVME_ACTION_COUNT 4
+#endif
+
 #define NWIPE_GUI_SE_NVME_ACTION_DESC_LINES 4
 
 typedef struct
@@ -72,6 +77,7 @@ static const nwipe_gui_se_nvme_action_t nwipe_gui_se_nvme_actions[NWIPE_GUI_SE_N
         "started; exiting frozen sanitize failure states.",
         NULL },
       3 },
+#ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
     { NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF,
       "Exit Media Verification",
       { "Leaves the verification state that is entered",
@@ -79,6 +85,7 @@ static const nwipe_gui_se_nvme_action_t nwipe_gui_se_nvme_actions[NWIPE_GUI_SE_N
         NULL,
         NULL },
       2 },
+#endif
 }; /* nwipe_gui_se_nvme_actions */
 
 static int nwipe_gui_se_nvme_action_supported( nwipe_se_nvme_ctx* san, enum nvme_sanitize_sanact act )
@@ -92,7 +99,9 @@ static int nwipe_gui_se_nvme_action_supported( nwipe_se_nvme_ctx* san, enum nvme
         case NVME_SANITIZE_SANACT_START_OVERWRITE:
             return san->cap_overwrite;
         case NVME_SANITIZE_SANACT_EXIT_FAILURE:
+#ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
         case NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF:
+#endif
             return 1; /* Always allowed */
         default:
             return 0;
@@ -886,11 +895,16 @@ void nwipe_gui_se_nvme_sanitize( nwipe_context_t* ctx, nwipe_se_nvme_ctx* san )
 
         san->nodas = false; /* This is dangerous, keep it disabled */
         san->ause = true; /* This is dangerous, keep it enabled */
+#ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
         san->emvs = false; /* This is dangerous, keep it disabled */
+#endif
     }
     /* Otherwise there are no options to configure for the user */
     else if( san->planned_sanact == NVME_SANITIZE_SANACT_EXIT_FAILURE
-             || san->planned_sanact == NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF )
+#ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
+             || san->planned_sanact == NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
+#endif
+    )
     {
         /* These are all unused and must be kept in their zero state here */
         san->owpass = 0;
@@ -899,7 +913,9 @@ void nwipe_gui_se_nvme_sanitize( nwipe_context_t* ctx, nwipe_se_nvme_ctx* san )
 
         san->nodas = false; /* No effect, must be in zero state also */
         san->ause = false; /* No effect, must be in zero state also */
+#ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
         san->emvs = false; /* No effect, must be in zero state also */
+#endif
     }
     else
     {
@@ -909,7 +925,9 @@ void nwipe_gui_se_nvme_sanitize( nwipe_context_t* ctx, nwipe_se_nvme_ctx* san )
 
         san->nodas = false; /* This is dangerous, keep it disabled */
         san->ause = true; /* This is dangerous, keep it enabled */
+#ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
         san->emvs = false; /* This is dangerous, keep it disabled */
+#endif
     }
 
     /* Final confirmation screen before sanitize operation */

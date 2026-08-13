@@ -72,7 +72,7 @@ AC_ARG_WITH([libnvme],
   [], [with_libnvme=check])
 have_libnvme=no
 AS_IF([test "x$with_libnvme" != xno],
-  [PKG_CHECK_MODULES([LIBNVME], [libnvme >= 1.16 libnvme < 1.17],
+  [PKG_CHECK_MODULES([LIBNVME], [libnvme >= 1.0],
     [
       AC_DEFINE([HAVE_LIBNVME], [1], [Define if libnvme is available])
       CFLAGS="${CFLAGS} ${LIBNVME_CFLAGS}"
@@ -80,9 +80,23 @@ AS_IF([test "x$with_libnvme" != xno],
       have_libnvme=yes
     ],
     [AS_IF([test "x$with_libnvme" = xyes],
-      [AC_MSG_ERROR([libnvme >= 1.16 and < 1.17 required but not found])],
+      [AC_MSG_ERROR([libnvme >= 1.0 required but not found])],
       [AC_MSG_WARN([libnvme not found, NVMe secure erase support disabled])])])])
 AM_CONDITIONAL([HAVE_LIBNVME], [test "x$have_libnvme" = xyes])
+
+AS_IF([test "x$have_libnvme" = xyes],
+  [AC_CHECK_DECL([NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF],
+     [AC_DEFINE([HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF], [1],
+        [Define if libnvme has NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF])],
+     [],
+     [[#include <libnvme.h>]])
+   AC_CHECK_DECL([NVME_VERSION_PROJECT],
+     [AC_DEFINE([HAVE_NVME_VERSION_PROJECT], [1],
+        [Define if libnvme has NVME_VERSION_PROJECT])],
+     [libnvme_version=$($PKG_CONFIG --modversion libnvme)
+      AC_DEFINE_UNQUOTED([NWIPE_LIBNVME_VERSION], ["$libnvme_version"],
+        [libnvme version from pkg-config, used when NVME_VERSION_PROJECT is missing])],
+     [[#include <libnvme.h>]])])
 
 # Libraries needed for static linking with parted
 if echo "$LDFLAGS" | grep -q "static"; then

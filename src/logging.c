@@ -438,6 +438,16 @@ void nwipe_perror( int nwipe_errno, const char* f, const char* s )
 
 void nwipe_log_buildinfo()
 {
+#ifdef HAVE_LIBNVME
+#ifdef HAVE_NVME_VERSION_PROJECT
+    const char* ver = nvme_get_version( NVME_VERSION_PROJECT );
+#elif defined( NWIPE_LIBNVME_VERSION )
+    const char* ver = NWIPE_LIBNVME_VERSION;
+#else
+    const char* ver = "unknown";
+#endif
+#endif
+
     nwipe_log( NWIPE_LOG_INFO, "Program was built as follows..." );
 #ifdef GIT_HASH
     nwipe_log( NWIPE_LOG_INFO, "  Git commit:          %s", GIT_HASH );
@@ -455,7 +465,7 @@ void nwipe_log_buildinfo()
                LIBCONFIG_VER_REVISION );
 #endif
 #ifdef HAVE_LIBNVME
-    nwipe_log( NWIPE_LOG_INFO, "  libnvme version:     %s", nvme_get_version( NVME_VERSION_PROJECT ) );
+    nwipe_log( NWIPE_LOG_INFO, "  libnvme version:     %s", ver );
 #else
     nwipe_log( NWIPE_LOG_INFO, "  libnvme version:     n/a (not built --with-libnvme)" );
 #endif
