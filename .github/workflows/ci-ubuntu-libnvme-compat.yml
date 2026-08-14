@@ -10,13 +10,14 @@ concurrency:
 
 jobs:
   build:
-    name: libnvme v${{ matrix.libnvme }}
+    name: ${{ matrix.libnvme == 'none' && 'no libnvme' || format('libnvme v{0}', matrix.libnvme) }}
     runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
       matrix:
         libnvme:
+          - "none"
           - "1.0"
           - "1.1"
           - "1.2"
@@ -41,6 +42,7 @@ jobs:
 
     env:
       LIBNVME_VERSION: ${{ matrix.libnvme }}
+      LIBNVME_CONFIGURE_FLAG: ${{ matrix.libnvme == 'none' && '--without-libnvme' || '--with-libnvme' }}
       BASE_CFLAGS: "-O2 -g -Werror -Wimplicit -Wimplicit-function-declaration -Wmissing-field-initializers"
       BASE_CPPFLAGS: "-I/usr/include/uuid -Wno-error=cpp"
 
@@ -51,6 +53,7 @@ jobs:
       - name: Patch -V to log build/OS info
         run: |
           sed -i '/printf( "%s version %s/a\            nwipe_options.nogui = 1;\n            nwipe_log_buildinfo();\n            nwipe_log_OSinfo();' src/options.c
+          grep -q 'nwipe_log_OSinfo' src/options.c || { echo "sed patch did not apply"; exit 1; }
           grep -A4 'printf( "%s version %s' src/options.c
 
       - name: Update system packages
@@ -88,6 +91,7 @@ jobs:
             uuid-dev
 
       - name: Build libnvme v${{ matrix.libnvme }}
+        if: matrix.libnvme != 'none'
         run: |
           cd /tmp
 
@@ -104,11 +108,13 @@ jobs:
           sudo ldconfig
 
       - name: Configure library paths
+        if: matrix.libnvme != 'none'
         run: |
           echo "PKG_CONFIG_PATH=/usr/local/lib/x86_64-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH}" >> "$GITHUB_ENV"
           echo "LD_LIBRARY_PATH=/usr/local/lib/x86_64-linux-gnu:/usr/local/lib:${LD_LIBRARY_PATH}" >> "$GITHUB_ENV"
 
       - name: Verify libnvme v${{ matrix.libnvme }}
+        if: matrix.libnvme != 'none'
         run: |
           pkg-config --modversion libnvme
           pkg-config --cflags --libs libnvme
@@ -120,7 +126,7 @@ jobs:
       - name: Configure nwipe
         run: |
           ./configure \
-            --with-libnvme \
+            "$LIBNVME_CONFIGURE_FLAG" \
             CFLAGS="$BASE_CFLAGS" \
             CPPFLAGS="$BASE_CPPFLAGS"
 
@@ -132,4 +138,5 @@ jobs:
 
       - name: Verify nwipe
         run: |
+          ldd ./src/nwipe || true
           sudo ./src/nwipe -V
