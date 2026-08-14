@@ -19,7 +19,7 @@ PKG_CHECK_MODULES([PANEL],     [panel])
 PKG_CHECK_MODULES([LIBCONFIG], [libconfig])
 PKG_CHECK_MODULES([PARTED],    [libparted])
 
-AC_SEARCH_LIBS([pthread_create], [pthread], ,[AC_MSG_ERROR([pthread development library not found])])
+AC_SEARCH_LIBS([pthread_create], [pthread], [], [AC_MSG_ERROR([pthread development library not found])])
 
 # Optional NVMe secure erase support.
 AC_ARG_WITH([libnvme],
@@ -37,19 +37,24 @@ AS_IF([test "x$with_libnvme" != xno],
       [AC_MSG_WARN([libnvme not found, NVMe secure erase support disabled])])])])
 AM_CONDITIONAL([HAVE_LIBNVME], [test "x$have_libnvme" = xyes])
 
+have_sanact_verif=no
+have_nvme_version_project=no
+libnvme_version=
 AS_IF([test "x$have_libnvme" = xyes], [
   save_CPPFLAGS=$CPPFLAGS
   CPPFLAGS="$CPPFLAGS $LIBNVME_CFLAGS"
+  libnvme_version=$($PKG_CONFIG --modversion libnvme)
   AC_CHECK_DECL([NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF],
     [AC_DEFINE([HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF], [1],
-       [Define if libnvme has NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF])],
+       [Define if libnvme has NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF])
+     have_sanact_verif=yes],
     [],
     [[#include <libnvme.h>]])
   AC_CHECK_DECL([NVME_VERSION_PROJECT],
     [AC_DEFINE([HAVE_NVME_VERSION_PROJECT], [1],
-       [Define if libnvme has NVME_VERSION_PROJECT])],
-    [libnvme_version=$($PKG_CONFIG --modversion libnvme)
-     AC_DEFINE_UNQUOTED([NWIPE_LIBNVME_VERSION], ["$libnvme_version"],
+       [Define if libnvme has NVME_VERSION_PROJECT])
+     have_nvme_version_project=yes],
+    [AC_DEFINE_UNQUOTED([NWIPE_LIBNVME_VERSION], ["$libnvme_version"],
        [libnvme version from pkg-config, used when NVME_VERSION_PROJECT is missing])],
     [[#include <libnvme.h>]])
   CPPFLAGS=$save_CPPFLAGS
@@ -80,3 +85,24 @@ AC_CHECK_MEMBERS([struct stat.st_blksize])
 AC_CHECK_FUNCS([malloc fdatasync memset regcomp strdup strerror])
 
 AC_OUTPUT
+
+# Configuration summary.
+AS_ECHO([""])
+AS_ECHO(["  ---------------------------------------------"])
+AS_ECHO(["   nwipe $VERSION"])
+AS_ECHO(["  ---------------------------------------------"])
+AS_ECHO(["    prefix ........................ $prefix"])
+AS_ECHO(["    CC ............................ $CC"])
+AS_ECHO(["    CXX ........................... $CXX"])
+AS_ECHO(["    CFLAGS ........................ $CFLAGS"])
+AS_ECHO(["    CPPFLAGS ...................... $CPPFLAGS"])
+AS_ECHO(["    LDFLAGS ....................... $LDFLAGS"])
+AS_ECHO([""])
+AS_ECHO(["    NVMe secure erase ............. $have_libnvme"])
+AS_IF([test "x$have_libnvme" = xyes], [
+  AS_ECHO(["      libnvme version ............. $libnvme_version"])
+  AS_ECHO(["      NVME_VERSION_PROJECT ........ $have_nvme_version_project"])
+  AS_ECHO(["      SANACT_EXIT_MEDIA_VERIF ..... $have_sanact_verif"])
+])
+AS_ECHO(["  ---------------------------------------------"])
+AS_ECHO([""])

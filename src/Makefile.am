@@ -1,5 +1,6 @@
-GIT_HASH = $(shell git rev-parse --short HEAD 2>/dev/null || echo n/a)
+GIT_HASH = $(shell cd $(srcdir) && git rev-parse --short HEAD 2>/dev/null || echo n/a)
 AM_CFLAGS =
+AM_CXXFLAGS =
 AM_CPPFLAGS = -DGIT_HASH='"$(GIT_HASH)"'
 AM_LDFLAGS =
 
