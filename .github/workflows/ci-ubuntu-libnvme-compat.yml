@@ -48,6 +48,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Patch -V to log build/OS info
+        run: |
+          sed -i '/printf( "%s version %s/a\            nwipe_options.nogui = 1;\n            nwipe_log_buildinfo();\n            nwipe_log_OSinfo();' src/options.c
+          grep -A4 'printf( "%s version %s' src/options.c
+
       - name: Update system packages
         run: |
           sudo apt-get update
