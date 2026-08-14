@@ -1,14 +1,8 @@
-# what flags you want to pass to the C compiler & linker
-#CFLAGS = -lncurses -lparted
-GIT_HASH := $(shell git rev-parse --short HEAD 2>/dev/null || echo n/a)
+GIT_HASH = $(shell git rev-parse --short HEAD 2>/dev/null || echo n/a)
 AM_CFLAGS =
 AM_CPPFLAGS = -DGIT_HASH='"$(GIT_HASH)"'
 AM_LDFLAGS =
-check_PROGRAMS = test_round_size
-TESTS = test_round_size
 
-# this lists the binaries to produce, the (non-PHONY, binary) targets in
-# the previous manual Makefile
 bin_PROGRAMS = nwipe
 
 # Core sources
@@ -69,7 +63,13 @@ NWIPE_HDDTEMP = \
 
 # Combine all sources
 nwipe_SOURCES = $(NWIPE_CORE) $(NWIPE_PRNG) $(NWIPE_PDF) $(NWIPE_HDDTEMP)
-nwipe_LDADD = $(PARTED_LIBS) $(LIBCONFIG) $(LIBNVME_LIBS)
+nwipe_CPPFLAGS = $(AM_CPPFLAGS) $(NCURSES_CFLAGS) $(PANEL_CFLAGS) \
+                 $(LIBCONFIG_CFLAGS) $(PARTED_CFLAGS) $(LIBNVME_CFLAGS)
+nwipe_LDADD    = $(PANEL_LIBS) $(NCURSES_LIBS) $(LIBCONFIG_LIBS) \
+                 $(PARTED_LIBS) $(PARTED_STATIC_LIBS) $(LIBNVME_LIBS)
 
+# Combine the test suite
+check_PROGRAMS = test_round_size
+TESTS = test_round_size
 test_round_size_SOURCES = ../tests/unit/test_round_size.c round_size.c round_size.h
-test_round_size_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir) -DGIT_HASH='"$(GIT_HASH)"'
+test_round_size_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src -I$(top_builddir)
