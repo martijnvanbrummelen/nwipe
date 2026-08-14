@@ -244,6 +244,7 @@ The following tools are optional but **strongly recommended**:
 * `dmidecode`
 * `coreutils` (for `readlink`)
 * `smartmontools`
+* `libnvme` (or _-dev_, _-devel_ variants)
 
 These tools enable features such as:
 
@@ -269,7 +270,8 @@ sudo apt install \
   dmidecode \
   coreutils \
   smartmontools \
-  hdparm
+  hdparm \
+  libnvme-dev
 ```
 
 ### Fedora / RHEL / CentOS Stream prerequisites
@@ -286,7 +288,8 @@ sudo dnf install -y \
   dmidecode \
   coreutils \
   smartmontools \
-  hdparm
+  hdparm \
+  libnvme-devel
 ```
 
 ### Arch Linux / Manjaro prerequisites
@@ -300,7 +303,8 @@ sudo pacman -Syu --needed \
   dmidecode \
   coreutils \
   smartmontools \
-  hdparm
+  hdparm \
+  libnvme
 ```
 ### openSUSE (Leap / Tumbleweed) prerequisites
 
@@ -319,10 +323,11 @@ sudo zypper install -y \
   dmidecode \
   coreutils \
   smartmontools \
-  hdparm
+  hdparm \
+  libnvme-devel
 ```
 
-Note: `dmidecode`, `readlink` (from `coreutils`) and `smartmontools` are technically optional, but recommended for full feature support.
+Note: `dmidecode`, `readlink` (from `coreutils`), `libnvme` (or _-dev_, _-devel_ variants) and `smartmontools` are technically optional, but recommended for full feature support.
 
 ### NVMe Secure Erase prerequisites (optional)
 
@@ -342,7 +347,7 @@ obtained through your package manager or from below link for building from sourc
   https://github.com/linux-nvme/libnvme
 
 The NVMe standard is actively evolving, and many distributions ship outdated versions
-of the library, so we strongly recommend building the lightweight library from source instead:
+of the library, so you can build our recommended, modern version from source instead:
 
 ```bash
 wget https://github.com/linux-nvme/libnvme/archive/refs/tags/v1.16.1.tar.gz
