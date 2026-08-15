@@ -1124,7 +1124,7 @@ static void nwipe_gui_se_unsupported( nwipe_context_t* ctx )
             mvwprintw(
                 main_window, yy++, tab1, "This is especially true for devices behind generic RAID controllers." );
             mvwprintw(
-                main_window, yy++, tab1, "These and cheap USB/SATA controllers may cause such transport errors." );
+                main_window, yy++, tab1, "These and cheap USB/SATA controllers may hinder secure erase detection." );
 #else
             if( ctx->device_type == NWIPE_DEVICE_NVME )
             {
@@ -1141,8 +1141,10 @@ static void nwipe_gui_se_unsupported( nwipe_context_t* ctx )
                     main_window, yy++, tab1, "Ideally devices should be directly connected to the motherboard." );
                 mvwprintw(
                     main_window, yy++, tab1, "This is especially true for devices behind generic RAID controllers." );
-                mvwprintw(
-                    main_window, yy++, tab1, "These and cheap USB/SATA controllers may cause such transport errors." );
+                mvwprintw( main_window,
+                           yy++,
+                           tab1,
+                           "These and cheap USB/SATA controllers may hinder secure erase detection." );
             }
 #endif
         }
@@ -1151,7 +1153,7 @@ static void nwipe_gui_se_unsupported( nwipe_context_t* ctx )
             mvwprintw( main_window, yy++, tab1, "The device was probed for its sanitize support." );
             mvwprintw( main_window, yy++, tab1, "It responded that no sanitize methods are supported." );
             yy++;
-            mvwprintw( main_window, yy++, tab1, "Not all devices support such firmware sanitize methods." );
+            mvwprintw( main_window, yy++, tab1, "Not all devices support such hardware sanitize methods." );
             mvwprintw( main_window, yy++, tab1, "Manufacturer may provide further guidance on secure erasing." );
         }
         else
