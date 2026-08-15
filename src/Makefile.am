@@ -12,7 +12,7 @@ CLEANFILES = git_hash.h
 git_hash.h: FORCE
 	@h="$${NWIPE_GIT_HASH-}"; \
 	test -n "$$h" || h=`cd $(top_srcdir) && git describe --always 2>/dev/null || echo unknown`; \
-	printf '#define GIT_HASH "%s"\n' "$$h" > $@
+	printf '#define NWIPE_GIT_HASH "%s"\n' "$$h" > $@
 
 FORCE:
 
