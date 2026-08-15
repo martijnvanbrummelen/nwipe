@@ -1,10 +1,20 @@
-GIT_HASH = $(shell cd $(srcdir) && git rev-parse --short HEAD 2>/dev/null || echo n/a)
 AM_CFLAGS =
 AM_CXXFLAGS =
-AM_CPPFLAGS = -DGIT_HASH='"$(GIT_HASH)"'
+AM_CPPFLAGS =
 AM_LDFLAGS =
 
 bin_PROGRAMS = nwipe
+
+# Versioning; we use FORCE to always re-build this header.
+BUILT_SOURCES = git_hash.h
+CLEANFILES = git_hash.h
+
+git_hash.h: FORCE
+	@h="$${NWIPE_GIT_HASH-}"; \
+	test -n "$$h" || h=`cd $(top_srcdir) && git describe --always 2>/dev/null || echo unknown`; \
+	printf '#define GIT_HASH "%s"\n' "$$h" > $@
+
+FORCE:
 
 # Core sources
 NWIPE_CORE = \
@@ -72,5 +82,5 @@ nwipe_LDADD    = $(PANEL_LIBS) $(NCURSES_LIBS) $(LIBCONFIG_LIBS) \
 # Combine the test suite
 check_PROGRAMS = test_round_size
 TESTS = test_round_size
-test_round_size_SOURCES = ../tests/unit/test_round_size.c round_size.c round_size.h
+test_round_size_SOURCES = $(top_srcdir)/tests/unit/test_round_size.c round_size.c round_size.h
 test_round_size_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src -I$(top_builddir)

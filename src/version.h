@@ -8,4 +8,6 @@ extern char* email_address;
 extern char* copyright;
 extern char* banner;
 
+extern const char* git_hash_string;
+
 #endif /*__VERSION_H*/

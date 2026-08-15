@@ -49,6 +49,7 @@
 #include "create_pdf.h"
 #include "miscellaneous.h"
 #include "hpa_dco.h"
+#include "version.h"
 
 /* Global array to hold log values to print when logging to STDOUT */
 char** log_lines;
@@ -449,9 +450,7 @@ void nwipe_log_buildinfo()
 #endif
 
     nwipe_log( NWIPE_LOG_INFO, "Program was built as follows..." );
-#ifdef GIT_HASH
-    nwipe_log( NWIPE_LOG_INFO, "  Git commit:          %s", GIT_HASH );
-#endif
+    nwipe_log( NWIPE_LOG_INFO, "  Git commit:          %s", git_hash_string );
     nwipe_log( NWIPE_LOG_INFO, "  Compiler:            %s", __VERSION__ );
     nwipe_log( NWIPE_LOG_INFO, "  Compiled on:         %s %s", __DATE__, __TIME__ );
     nwipe_log( NWIPE_LOG_INFO, "  C Standard:          %ld", __STDC_VERSION__ );

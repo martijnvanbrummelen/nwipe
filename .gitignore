@@ -15,6 +15,7 @@ man/Makefile.in
 missing
 src/**/.deps/
 src/**/.dirstamp
+src/git_hash.h
 *.o
 src/Makefile
 src/Makefile.in
