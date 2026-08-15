@@ -20,6 +20,7 @@ PKG_CHECK_MODULES([LIBCONFIG], [libconfig])
 PKG_CHECK_MODULES([PARTED],    [libparted])
 
 AC_SEARCH_LIBS([pthread_create], [pthread], [], [AC_MSG_ERROR([pthread development library not found])])
+AC_SEARCH_LIBS([clock_gettime], [rt])
 
 # Optional NVMe secure erase support.
 AC_ARG_WITH([libnvme],
