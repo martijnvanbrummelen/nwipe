@@ -35,6 +35,7 @@
 #endif
 #include <parted/parted.h>
 #include <libconfig.h>
+#include <ncurses.h>
 
 #include "stdio.h"
 #include "stdlib.h"
@@ -451,9 +452,12 @@ void nwipe_log_buildinfo()
 
     nwipe_log( NWIPE_LOG_INFO, "Program was built as follows..." );
     nwipe_log( NWIPE_LOG_INFO, "  Git commit:          %s", git_hash_string );
+#ifdef __VERSION__
     nwipe_log( NWIPE_LOG_INFO, "  Compiler:            %s", __VERSION__ );
-    nwipe_log( NWIPE_LOG_INFO, "  Compiled on:         %s %s", __DATE__, __TIME__ );
+#endif
+#ifdef __STDC_VERSION__
     nwipe_log( NWIPE_LOG_INFO, "  C Standard:          %ld", __STDC_VERSION__ );
+#endif
     nwipe_log( NWIPE_LOG_INFO, "  ncurses version:     %s", curses_version() );
     nwipe_log( NWIPE_LOG_INFO, "  libparted version:   %s", ped_get_version() );
 #if defined( LIBCONFIG_VER_MAJOR ) && defined( LIBCONFIG_VER_MINOR ) && defined( LIBCONFIG_VER_REVISION )

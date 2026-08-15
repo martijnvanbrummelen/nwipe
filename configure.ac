@@ -24,7 +24,8 @@ AC_SEARCH_LIBS([clock_gettime], [rt])
 
 # Optional NVMe secure erase support.
 AC_ARG_WITH([libnvme],
-  [AS_HELP_STRING([--without-libnvme], [Build without NVMe secure erase support])],
+  [AS_HELP_STRING([--with-libnvme], [Hard-require NVMe secure erase support])
+AS_HELP_STRING([--without-libnvme], [Build without NVMe secure erase support])],
   [], [with_libnvme=check])
 have_libnvme=no
 AS_IF([test "x$with_libnvme" != xno],
