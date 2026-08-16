@@ -11,7 +11,7 @@ CLEANFILES = git_hash.h
 
 git_hash.h: FORCE
 	@h="$${NWIPE_GIT_HASH-}"; \
-	test -n "$$h" || h=`cd $(top_srcdir) && git describe --always --dirty 2>/dev/null || echo unknown`; \
+	test -n "$$h" || h=`test -d $(top_srcdir)/.git && cd $(top_srcdir) && git describe --always --dirty 2>/dev/null || echo unknown`; \
 	printf '#define NWIPE_GIT_HASH "%s"\n' "$$h" > $@
 
 FORCE:
