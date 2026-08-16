@@ -23,6 +23,8 @@
 #ifndef GUI_H_
 #define GUI_H_
 
+#include <ncurses.h> /* WINDOW */
+
 void nwipe_gui_free( void );  // Stop the GUI.
 void nwipe_gui_init( void );  // Start the GUI.
 void nwipe_gui_title( WINDOW* w, const char* s );
