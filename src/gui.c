@@ -1114,7 +1114,12 @@ static void nwipe_gui_se_unsupported( nwipe_context_t* ctx )
         werase( main_window );
         nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr, "" );
 
-        if( ctx->secure_erase_supported == -1 )
+        if( ctx->secure_erase_supported == -2 )
+        {
+            mvwprintw( main_window, yy++, tab1, "This type of device is not supported for secure erase." );
+            mvwprintw( main_window, yy++, tab1, "Secure erase is available for compatible ATA/NVMe devices." );
+        }
+        else if( ctx->secure_erase_supported == -1 )
         {
 #ifdef HAVE_LIBNVME
             mvwprintw( main_window, yy++, tab1, "It was attempted to probe this device for sanitize support." );
@@ -1158,7 +1163,7 @@ static void nwipe_gui_se_unsupported( nwipe_context_t* ctx )
         }
         else
         {
-            mvwprintw( main_window, yy++, tab1, "The device reports sanitize support." );
+            mvwprintw( main_window, yy++, tab1, "The device reported sanitize support." );
             mvwprintw( main_window, yy++, tab1, "This screen should not have been called." );
             mvwprintw( main_window, yy++, tab1, "Report this message to the developers on GitHub." );
         }

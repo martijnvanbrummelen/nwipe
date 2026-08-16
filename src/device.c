@@ -1015,6 +1015,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
             nwipe_device_nvme_se_setup( next_device );
             break;
         default:
+            next_device->secure_erase_supported = -2;
             break;
     }
 
