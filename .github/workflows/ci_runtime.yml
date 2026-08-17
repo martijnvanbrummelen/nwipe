@@ -27,6 +27,19 @@ jobs:
             hdparm \
             util-linux
 
+      - name: Install meson build system
+        run: sudo apt-get install -y meson ninja-build libjson-c-dev
+
+      - name: Build libnvme dependency
+        run: |
+          wget https://github.com/linux-nvme/libnvme/archive/refs/tags/v1.16.1.tar.gz
+          tar xvfz v1.16.1.tar.gz
+          cd libnvme-1.16.1
+          meson setup .build
+          meson compile -C .build
+          sudo meson install -C .build
+          sudo ldconfig
+
       - name: Create Autoconf files
         run: ./autogen.sh
 
@@ -79,6 +92,19 @@ jobs:
             smartmontools \
             hdparm \
             util-linux
+
+      - name: Install meson build system
+        run: sudo apt-get install -y meson ninja-build libjson-c-dev
+
+      - name: Build libnvme dependency
+        run: |
+          wget https://github.com/linux-nvme/libnvme/archive/refs/tags/v1.16.1.tar.gz
+          tar xvfz v1.16.1.tar.gz
+          cd libnvme-1.16.1
+          meson setup .build
+          meson compile -C .build
+          sudo meson install -C .build
+          sudo ldconfig
 
       - name: Create Autoconf files
         run: ./autogen.sh
@@ -139,6 +165,19 @@ jobs:
             util-linux \
             dmsetup
 
+      - name: Install meson build system
+        run: sudo apt-get install -y meson ninja-build libjson-c-dev
+
+      - name: Build libnvme dependency
+        run: |
+          wget https://github.com/linux-nvme/libnvme/archive/refs/tags/v1.16.1.tar.gz
+          tar xvfz v1.16.1.tar.gz
+          cd libnvme-1.16.1
+          meson setup .build
+          meson compile -C .build
+          sudo meson install -C .build
+          sudo ldconfig
+
       - name: Create Autoconf files
         run: ./autogen.sh
 
@@ -186,6 +225,19 @@ jobs:
             smartmontools \
             hdparm \
             util-linux
+
+      - name: Install meson build system
+        run: sudo apt-get install -y meson ninja-build libjson-c-dev
+
+      - name: Build libnvme dependency
+        run: |
+          wget https://github.com/linux-nvme/libnvme/archive/refs/tags/v1.16.1.tar.gz
+          tar xvfz v1.16.1.tar.gz
+          cd libnvme-1.16.1
+          meson setup .build
+          meson compile -C .build
+          sudo meson install -C .build
+          sudo ldconfig
 
       - name: Create Autoconf files
         run: ./autogen.sh
