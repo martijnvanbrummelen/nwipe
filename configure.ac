@@ -22,11 +22,10 @@ PKG_CHECK_MODULES([PARTED],    [libparted])
 AC_SEARCH_LIBS([pthread_create], [pthread], [], [AC_MSG_ERROR([pthread development library not found])])
 AC_SEARCH_LIBS([clock_gettime], [rt])
 
-# Optional NVMe secure erase support.
+# NVMe secure erase support.
 AC_ARG_WITH([libnvme],
-  [AS_HELP_STRING([--with-libnvme], [Hard-require NVMe secure erase support])
-AS_HELP_STRING([--without-libnvme], [Build without NVMe secure erase support])],
-  [], [with_libnvme=check])
+  [AS_HELP_STRING([--without-libnvme], [Build without NVMe secure erase support])],
+  [], [with_libnvme=yes])
 have_libnvme=no
 AS_IF([test "x$with_libnvme" != xno],
   [PKG_CHECK_MODULES([LIBNVME], [libnvme >= 1.0],
@@ -34,9 +33,10 @@ AS_IF([test "x$with_libnvme" != xno],
       AC_DEFINE([HAVE_LIBNVME], [1], [Define if libnvme is available])
       have_libnvme=yes
     ],
-    [AS_IF([test "x$with_libnvme" = xyes],
-      [AC_MSG_ERROR([libnvme >= 1.0 required but not found])],
-      [AC_MSG_WARN([libnvme not found, NVMe secure erase support disabled])])])])
+    [AC_MSG_ERROR([libnvme >= 1.0 not found; libnvme defaults to required \
+as most modern drives are NVMe. Install libnvme-devel (or libnvme-dev) to \
+enable NVMe secure erase support, or pass --without-libnvme to build without it])])],
+  [AC_MSG_WARN([building --without-libnvme; NVMe secure erase support disabled])])
 AM_CONDITIONAL([HAVE_LIBNVME], [test "x$have_libnvme" = xyes])
 
 have_sanact_verif=no
