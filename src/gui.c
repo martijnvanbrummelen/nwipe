@@ -154,10 +154,10 @@ const char* stats_title = " Statistics ";
 
 /* Footer labels. */
 const char* main_window_footer_1 = "S=Start  m=Method  p=PRNG  v=Verify  r=Rounds  b=Blanking  d=Direction";
-const char* main_window_footer_2 = "e=Secure Erase  t=Topology  Space=Select  c=Config  CTRL+C=Quit";
+const char* main_window_footer_2 = "e=Secure Erase  t=Topology  Space=Select  Ctrl+A=All  c=Config  CTRL+C=Quit";
 const char* shredos_main_window_footer_1 = "S=Start  m=Method  p=PRNG  v=Verify  r=Rounds  b=Blanking  d=Direction";
 const char* shredos_main_window_footer_2 =
-    "e=Secure Erase  t=Topology  Space=Select  f=Font Size  c=Config  CTRL+C=Quit";
+    "e=Secure Erase  t=Topology  Space=Select  Ctrl+A=All  f=Font Size  c=Config  CTRL+C=Quit";
 char** p_main_window_footer_1;
 char** p_main_window_footer_2;
 
