@@ -1195,6 +1195,39 @@ static void nwipe_gui_se_unsupported( nwipe_context_t* ctx )
     } while( terminate_signal != 1 );
 } /* nwipe_gui_se_unsupported */
 
+/* Number of horizontal lines needed for a given device. */
+static int nwipe_gui_device_entry_height( nwipe_context_t* ctx )
+{
+    if( ctx->select != NWIPE_SELECT_DISABLED && ctx->select != NWIPE_SELECT_DISABLED_BUSY
+        && ctx->secure_erase_supported == 1 )
+    {
+        return 2;
+    }
+    return 1;
+} /* nwipe_gui_device_entry_height */
+
+/* Number of device entries starting at 'first' that fit within 'available' lines. */
+static int nwipe_gui_device_count_slots( nwipe_context_t** c, int count, int first, int available )
+{
+    int j;
+    int n = 0;
+
+    for( j = first; j < count; j++ )
+    {
+        int needed = nwipe_gui_device_entry_height( c[j] );
+
+        if( available < needed )
+        {
+            break;
+        }
+
+        available -= needed;
+        n++;
+    }
+
+    return n;
+} /* nwipe_gui_device_count_slots */
+
 void nwipe_gui_select( int count, nwipe_context_t** c )
 {
     extern int terminate_signal;
@@ -1266,40 +1299,43 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
         /* There is one slot per line. */
         getmaxyx( main_window, wlines, wcols );
 
-        /* Less two lines for the box and two lines for padding. */
-        slots = ( wlines - 4 ) / 2; /* ( / 2 for worst-case with Secure Erase ) */
-        if( slots < 0 )
+        /* Clamp the focus, required when the device list changes. */
+        if( focus >= count )
         {
-            slots = 0;
+            focus = count - 1;
+        }
+        if( focus < 0 )
+        {
+            focus = 0;
         }
 
-        /* The code here adjusts the offset value, required when the terminal is resized vertically */
-        if( slots > count )
+        /*
+         * Compute the offset so that the focused entry is visible.
+         * This is required when the terminal is resized vertically.
+         */
+        if( count > 0 )
         {
-            offset = 0;
+            int available = wlines - 4;
+            int temp_offset = focus;
+
+            /* Pay for the focused entry, then extend upward while entries still fit. */
+            available -= nwipe_gui_device_entry_height( c[focus] );
+
+            while( temp_offset > 0 && available >= nwipe_gui_device_entry_height( c[temp_offset - 1] ) )
+            {
+                temp_offset--;
+                available -= nwipe_gui_device_entry_height( c[temp_offset] );
+            }
+
+            offset = temp_offset;
         }
         else
         {
-            if( focus >= count )
-            {
-                /* The focus is already at the last element. */
-                focus = count - 1;
-            }
-            if( focus < 0 )
-            {
-                /* The focus is already at the last element. */
-                focus = 0;
-            }
+            offset = 0;
         }
 
-        if( count >= slots && slots > 0 )
-        {
-            offset = focus + 1 - slots;
-            if( offset < 0 )
-            {
-                offset = 0;
-            }
-        }
+        /* Exact number of drawable entries from the offset. */
+        slots = nwipe_gui_device_count_slots( c, count, offset, wlines - 4 );
 
         /* Clear the main window, necessary when switching selections such as method etc */
         werase( main_window );
@@ -1633,14 +1669,6 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                     {
                         /* The focus is already at the last element. */
                         focus = count - 1;
-                        break;
-                    }
-
-                    if( focus - offset >= slots )
-                    {
-                        /* The next element is offscreen. Scroll down. */
-                        offset += 1;
-                        break;
                     }
 
                     break;
@@ -1658,14 +1686,6 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                     {
                         /* The focus is already at the last element. */
                         focus = 0;
-                        break;
-                    }
-
-                    if( focus < offset )
-                    {
-                        /* The next element is offscreen. Scroll up. */
-                        offset -= 1;
-                        break;
                     }
 
                     break;
