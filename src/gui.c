@@ -1133,7 +1133,7 @@ static void nwipe_gui_se_unsupported( nwipe_context_t* ctx )
 #else
             if( ctx->device_type == NWIPE_DEVICE_NVME )
             {
-                mvwprintw( main_window, yy++, tab1, "Nwipe was not built --with-libnvme." );
+                mvwprintw( main_window, yy++, tab1, "Nwipe was built --without-libnvme." );
                 mvwprintw( main_window, yy++, tab1, "The sanitize support could therefore not be probed." );
             }
             else

@@ -470,7 +470,7 @@ void nwipe_log_buildinfo()
 #ifdef HAVE_LIBNVME
     nwipe_log( NWIPE_LOG_INFO, "  libnvme version:     %s", ver );
 #else
-    nwipe_log( NWIPE_LOG_INFO, "  libnvme version:     n/a (not built --with-libnvme)" );
+    nwipe_log( NWIPE_LOG_INFO, "  libnvme version:     n/a (built --without-libnvme)" );
 #endif
 } /* nwipe_log_buildinfo */
 
