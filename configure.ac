@@ -33,7 +33,7 @@ AS_IF([test "x$with_libnvme" != xno],
       AC_DEFINE([HAVE_LIBNVME], [1], [Define if libnvme is available])
       have_libnvme=yes
     ],
-    [AC_MSG_ERROR([libnvme >= 1.0 not found; libnvme defaults to required \
+    [AC_MSG_ERROR([libnvme >= 1.0 not found; libnvme is required by default \
 as most modern drives are NVMe. Install libnvme-devel (or libnvme-dev) to \
 enable NVMe secure erase support, or pass --without-libnvme to build without it])])],
   [AC_MSG_WARN([building --without-libnvme; NVMe secure erase support disabled])])
