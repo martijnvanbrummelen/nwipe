@@ -20,7 +20,7 @@ It was created to run the DBAN erase engine on any Linux distribution, with bett
     - [Fedora / RHEL / CentOS Stream prerequisites](#fedora--rhel--centos-stream-prerequisites)
     - [Arch Linux / Manjaro prerequisites](#arch-linux--manjaro-prerequisites)
     - [openSUSE (Leap / Tumbleweed) prerequisites](#opensuse-leap--tumbleweed-prerequisites)
-    - [NVMe Secure Erase prerequisites (optional)](#nvme-secure-erase-prerequisites-optional)
+    - [NVMe Secure Erase prerequisites](#nvme-secure-erase-prerequisites)
     - [Compilation](#compilation)
   - [Hacking](#hacking)
   - [Automating download and compilation (Debian-based distros)](#automating-download-and-compilation-debian-based-distros)
@@ -244,7 +244,6 @@ The following tools are optional but **strongly recommended**:
 * `dmidecode`
 * `coreutils` (for `readlink`)
 * `smartmontools`
-* `libnvme` (or _-dev_, _-devel_ variants)
 
 These tools enable features such as:
 
@@ -327,19 +326,13 @@ sudo zypper install -y \
   libnvme-devel
 ```
 
-Note: `dmidecode`, `readlink` (from `coreutils`), `libnvme` (or _-dev_, _-devel_ variants) and `smartmontools` are technically optional, but recommended for full feature support.
+Note: `dmidecode`, `readlink` (from `coreutils`), and `smartmontools` are technically optional, but recommended for full feature support.
 
-### NVMe Secure Erase prerequisites (optional)
+### NVMe Secure Erase prerequisites
 
 > [!WARNING]
 > Nwipe was specifically tested against libnvme versions 1.16.1+.  
 > Outdated libnvme versions may have bugs and produce unexpected behavior.
-
-When `libnvme` (version >=1.0) is present on the system, NVMe secure
-erase features will automatically be built and enabled. If the library is not
-present on the system, the build will warn about it missing and disable the
-NVMe secure erase features, unless `--with-libnvme` was specifically requested
-(in which case the build fails).
 
 The functionality was specifically developed around version 1.16.1, which can be
 obtained through your package manager or from below link for building from source:
@@ -347,7 +340,7 @@ obtained through your package manager or from below link for building from sourc
   https://github.com/linux-nvme/libnvme
 
 The NVMe standard is actively evolving, and many distributions ship outdated versions
-of the library, so you can build our recommended, modern version from source instead:
+of the library, so you can build the recommended, modern version from source instead:
 
 ```bash
 wget https://github.com/linux-nvme/libnvme/archive/refs/tags/v1.16.1.tar.gz
