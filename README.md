@@ -34,9 +34,9 @@ It was created to run the DBAN erase engine on any Linux distribution, with bett
 - as a **command-line tool** without a GUI, or  
 - with an **ncurses-based GUI**, as shown below:
 
-> **Warning**  
-> For some of nwipe’s features such as SMART data in the PDF certificate, HPA/DCO detection and other functions, nwipe uses external tools: **smartmontools** and **hdparm**.  
-> Both `hdparm` and `smartmontools` are **mandatory** if you want all nwipe features to be fully available.  
+> [!WARNING]
+> For some of nwipe’s features such as SMART data in the PDF certificate, HPA/DCO detection and other functions, nwipe uses external tools: **smartmontools** and **hdparm**.
+> Both `hdparm` and `smartmontools` are **mandatory** if you want all nwipe features to be fully available.
 > If they are not installed, nwipe will log a warning and continue, but many important features will not work as intended.
 
 ![Example wipe](https://github.com/martijnvanbrummelen/nwipe/raw/master/images/example_wipe.gif)
@@ -182,29 +182,28 @@ See the `nwipe(8)` man page for detailed `--sync` semantics and examples.
 
 ## SSD/NVMe considerations
 
-The (upcoming) **v0.43** release introduces several major improvements for:
+The (upcoming) **v0.43** release introduces several major improvements.
 
-* SAS / SATA / NVMe
-* Form factors such as 2.5", 3.5", M.2, PCIe, etc.
-
-Nwipe is now **able to sanitize ATA and NVMe devices** using native firmware capabilities.
+Nwipe is now **able to sanitize ATA and NVMe devices** using native hardware capabilities.
 
 A regular wipe was often not enough for flash storage devices:
 
-* SSDs use wear-levelling and frequently maintain additional, non-host-accessible memory (overprovisioning).
+* SSDs use wear-levelling and additional, non-host-accessible memory (overprovisioning).
 * Failed blocks may be remapped to reserved areas that are not directly addressable by the OS.
 * Many vendors restrict low-level access to these areas to the drive’s own controller and firmware.
 
-For secure flash storage sanitization, the firmware can implement native erasing methods.
+For secure flash storage sanitization, the firmware can implement native secure erase methods.
 
-Nwipe is now able to detect these and will offer to utilize such methods from within its GUI:
+These hardware methods ensure that even such non-accessible parts of a device are safely erased.
+
+Nwipe is now able to detect them and will offer to utilize secure erase methods from within the GUI:
 
 ![Example NVMe](images/example_nvme.gif)
 
-**It is strongly recommended to sanitize devices using the available hardware methods, and
-then always follow up with at least one full regular PRNG wipe (both are possible in the GUI).**
+**It is strongly recommended to sanitize devices using the available secure erase methods, and
+then always follow up with at least one full regular PRNG wipe afterwards (both are possible in the GUI).**
 
-If no new methods are offered for your device, try connecting it directly to the motherboard.
+If no secure erase methods are offered for your device, try connecting it directly to the motherboard.
 This is especially true for ATA devices (watch out for _bad sense data_ errors in the logs), which
 benefit greatly from not having to talk to Nwipe through cheap or generic USB/SATA/RAID controllers.
 
@@ -234,6 +233,7 @@ For a **bootable image** with the latest nwipe master that you can write to a US
 * `pthreads`
 * `parted`
 * `libconfig`
+* `libnvme`
 
 `nwipe` also requires the following program and will abort with a warning if not found:
 
@@ -254,7 +254,7 @@ These tools enable features such as:
 
 ### Debian & Ubuntu prerequisites
 
-If you are compiling `nwipe` from source on Debian/Ubuntu:
+If you are compiling `nwipe` from source on Debian & Ubuntu:
 
 ```bash
 sudo apt install \
@@ -275,6 +275,8 @@ sudo apt install \
 
 ### Fedora / RHEL / CentOS Stream prerequisites
 
+If you are compiling `nwipe` from source on Fedora / RHEL / CentOS:
+
 ```bash
 sudo bash
 sudo dnf update -y
@@ -293,6 +295,8 @@ sudo dnf install -y \
 
 ### Arch Linux / Manjaro prerequisites
 
+If you are compiling `nwipe` from source on Arch Linux / Manjaro:
+
 ```bash
 sudo pacman -Syu --needed \
   base-devel \
@@ -306,6 +310,8 @@ sudo pacman -Syu --needed \
   libnvme
 ```
 ### openSUSE (Leap / Tumbleweed) prerequisites
+
+If you are compiling `nwipe` from source on openSUSE:
 
 ```bash
 sudo zypper refresh
@@ -326,20 +332,21 @@ sudo zypper install -y \
   libnvme-devel
 ```
 
-Note: `dmidecode`, `readlink` (from `coreutils`), and `smartmontools` are technically optional, but recommended for full feature support.
-
 ### NVMe Secure Erase prerequisites
 
 > [!WARNING]
 > Nwipe was specifically tested against libnvme versions 1.16.1+.  
 > Outdated libnvme versions may have bugs and produce unexpected behavior.
 
-We use the `libnvme` library to handle secure erase for NVMe devices:
+We use the `libnvme` (>= 1.0) library to handle secure erase for NVMe devices:
 
   https://github.com/linux-nvme/libnvme
 
-The NVMe standard is actively evolving, and many distributions ship outdated versions
-of the library, so you can build the recommended, modern version from source instead:
+It can be installed through your distribution's package manager (see further
+above). However, the NVMe standard is actively evolving, and many package
+managers ship relatively outdated versions of the library.
+
+You can build the recommended version from source instead:
 
 ```bash
 wget https://github.com/linux-nvme/libnvme/archive/refs/tags/v1.16.1.tar.gz
@@ -456,7 +463,8 @@ sudo apt install -y \
   coreutils \
   smartmontools \
   hdparm \
-  git
+  git \
+  libnvme-dev
 
 rm -rf nwipe
 git clone https://github.com/martijnvanbrummelen/nwipe.git
