@@ -334,8 +334,7 @@ Note: `dmidecode`, `readlink` (from `coreutils`), and `smartmontools` are techni
 > Nwipe was specifically tested against libnvme versions 1.16.1+.  
 > Outdated libnvme versions may have bugs and produce unexpected behavior.
 
-The functionality was specifically developed around version 1.16.1, which can be
-obtained through your package manager or from below link for building from source:
+We use the `libnvme` library to handle secure erase for NVMe devices:
 
   https://github.com/linux-nvme/libnvme
 
@@ -351,8 +350,6 @@ meson compile -C .build
 sudo meson install -C .build
 sudo ldconfig
 ```
-
-> This section is applicable only for Nwipe versions **v0.43** and higher.
 
 ### Compilation
 
