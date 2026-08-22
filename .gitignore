@@ -1,3 +1,4 @@
+# Autotools generated
 Makefile
 Makefile.in
 aclocal.m4
@@ -5,19 +6,31 @@ autom4te.cache/
 compile
 config.h
 config.h.in
-config.log
 config.status
 configure
 depcomp
 install-sh
-man/Makefile
-man/Makefile.in
 missing
-src/**/.deps/
-src/**/.dirstamp
-*.o
-src/Makefile
-src/Makefile.in
-src/nwipe
 stamp-h1
+test-driver
+
+# Build artifacts
+.deps/
+.dirstamp
+*.o
+src/git_hash.h
+src/nwipe
+tests/unit/test_round_size
+
+# Distribution
+*.tar.gz
+nwipe-*/
+
+# Logs / Test suite
+*.log
+*.trs
+
+# Editors / OS
 .DS_Store
+.vscode/
+*.swp

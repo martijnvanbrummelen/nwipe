@@ -355,6 +355,9 @@ int main( int argc, char** argv )
     /* Log nwipes version */
     nwipe_log( NWIPE_LOG_INFO, "%s", banner );
 
+    /* Log build information */
+    nwipe_log_buildinfo();
+
     /* Log OS info */
     nwipe_log_OSinfo();
 

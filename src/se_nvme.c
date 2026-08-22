@@ -428,7 +428,10 @@ int nwipe_se_nvme_sanitize( nwipe_se_nvme_ctx* san )
     }
 
     if( san->planned_sanact == NVME_SANITIZE_SANACT_EXIT_FAILURE
-        || san->planned_sanact == NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF )
+#ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
+        || san->planned_sanact == NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
+#endif
+    )
     {
         if( san->ause )
         {
@@ -505,7 +508,9 @@ int nwipe_se_nvme_sanitize( nwipe_se_nvme_ctx* san )
     args.owpass = san->owpass;
     args.oipbp = san->oipbp;
     args.nodas = san->nodas;
+#ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
     args.emvs = san->emvs;
+#endif
     args.result = NULL;
 
     int err = nvme_sanitize_nvm( &args );
