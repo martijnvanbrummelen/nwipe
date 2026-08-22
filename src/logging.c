@@ -552,7 +552,7 @@ void nwipe_log_OSinfo()
         }
     }
 
-    nwipe_log( NWIPE_LOG_INFO, "Program was built on following machine..." );
+    nwipe_log( NWIPE_LOG_INFO, "Program is running on following machine..." );
     nwipe_log( NWIPE_LOG_INFO, "%*s%s", prepend_spaces, "", OS_info );
     fclose( fp );
     return;
