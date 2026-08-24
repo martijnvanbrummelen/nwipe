@@ -405,7 +405,7 @@ sg16( int fd, int rw, int dma, struct ata_tf* tf, void* data, unsigned int data_
 
     if( sb[0] != 0x72 || sb[7] < 14 || desc[0] != 0x09 || desc[1] < 0x0c )
     {
-        nwipe_log( NWIPE_LOG_ERROR, "%s: bad or missing sense data (behind RAID/SAS controller?)", __FUNCTION__ );
+        nwipe_log( NWIPE_LOG_ERROR, "%s: bad or missing sense data (behind RAID controller?)", __FUNCTION__ );
         errno = EBADE;
         return -1;
     }

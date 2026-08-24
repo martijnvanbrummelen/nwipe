@@ -29,13 +29,13 @@
 extern int terminate_signal;
 extern WINDOW* main_window;
 extern WINDOW* footer_window;
-extern PANEL* footer_panel;
 
-extern void nwipe_gui_title( WINDOW* w, const char* s );
-extern void nwipe_gui_amend_footer_window( const char* footer_text );
-extern void nwipe_gui_create_all_windows_on_terminal_resize( int force, const char* footer );
-
+#ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
 #define NWIPE_GUI_SE_NVME_ACTION_COUNT 5
+#else
+#define NWIPE_GUI_SE_NVME_ACTION_COUNT 4
+#endif
+
 #define NWIPE_GUI_SE_NVME_ACTION_DESC_LINES 4
 
 typedef struct
@@ -52,38 +52,40 @@ static const nwipe_gui_se_nvme_action_t nwipe_gui_se_nvme_actions[NWIPE_GUI_SE_N
     { NVME_SANITIZE_SANACT_START_BLOCK_ERASE,
       "Block Erase",
       { "Erases all data using the device's native erase",
-        "capabilities. Completes quickly and is supported",
-        "by most modern NVMe devices.",
+        "capabilities. Completes quickly and includes areas",
+        "otherwise not reachable with regular erase methods.",
         NULL },
       3 },
     { NVME_SANITIZE_SANACT_START_CRYPTO_ERASE,
       "Crypto Erase",
       { "Erases all data by destroying the key that",
         "protects the encrypted contents. The fastest",
-        "method, ideal for those devices with built-in",
-        "encryption, while offering maximum security." },
+        "method, ideal for modern devices with hardware",
+        "encryption; provides highest level of security." },
       4 },
     { NVME_SANITIZE_SANACT_START_OVERWRITE,
       "Overwrite",
       { "Erases all data by writing a pattern over every",
-        "area of the device. The slowest method and",
-        "increases wear; prefer Block Erase or Crypto",
-        "Erase methods if the device supports them." },
+        "area of the device. Can be extremely slow while",
+        "increasing wear; do prefer Block Erase or Crypto",
+        "Erase methods if the target device supports them." },
       4 },
     { NVME_SANITIZE_SANACT_EXIT_FAILURE,
       "Exit Failure Mode",
       { "Clears a previously failed sanitize status and",
         "restores the device so that new actions can be",
-        "started.",
+        "started; exiting frozen sanitize failure states.",
         NULL },
       3 },
+#ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
     { NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF,
       "Exit Media Verification",
-      { "Leaves the verification state that was entered",
-        "after a sanitize which requested a check on",
-        "completion.",
+      { "Leaves the verification state that is entered",
+        "by some devices upon completing sanitize methods.",
+        NULL,
         NULL },
-      3 },
+      2 },
+#endif
 }; /* nwipe_gui_se_nvme_actions */
 
 static int nwipe_gui_se_nvme_action_supported( nwipe_se_nvme_ctx* san, enum nvme_sanitize_sanact act )
@@ -97,7 +99,9 @@ static int nwipe_gui_se_nvme_action_supported( nwipe_se_nvme_ctx* san, enum nvme
         case NVME_SANITIZE_SANACT_START_OVERWRITE:
             return san->cap_overwrite;
         case NVME_SANITIZE_SANACT_EXIT_FAILURE:
+#ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
         case NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF:
+#endif
             return 1; /* Always allowed */
         default:
             return 0;
@@ -182,7 +186,7 @@ nwipe_gui_se_nvme_show_error( nwipe_context_t* ctx, nwipe_se_nvme_ctx* san, cons
     const char* ftr = "Enter=Return";
 
     werase( footer_window );
-    nwipe_gui_title( footer_window, ftr );
+    nwipe_gui_amend_footer_window( ftr, "" );
     wrefresh( footer_window );
 
     do
@@ -192,7 +196,7 @@ nwipe_gui_se_nvme_show_error( nwipe_context_t* ctx, nwipe_se_nvme_ctx* san, cons
         int keystroke;
 
         werase( main_window );
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr, "" );
 
         nwipe_gui_se_nvme_print_device( ctx, san, main_window, &yy, tab1, NULL );
         yy++;
@@ -235,7 +239,7 @@ static int nwipe_gui_se_nvme_select_action( nwipe_context_t* ctx, nwipe_se_nvme_
     int focus = 0;
 
     werase( footer_window );
-    nwipe_gui_title( footer_window, ftr );
+    nwipe_gui_amend_footer_window( ftr, "" );
     wrefresh( footer_window );
 
     do
@@ -247,7 +251,7 @@ static int nwipe_gui_se_nvme_select_action( nwipe_context_t* ctx, nwipe_se_nvme_
         const int tab2 = 30;
 
         werase( main_window );
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr, "" );
 
         nwipe_gui_se_nvme_print_device( ctx, san, main_window, &ly, tab1, NULL );
         ly++;
@@ -340,7 +344,7 @@ static int nwipe_gui_se_nvme_overwrite_opts( nwipe_context_t* ctx, nwipe_se_nvme
     san->ovrpat = 0xDEADBEEF;
 
     werase( footer_window );
-    nwipe_gui_title( footer_window, ftr );
+    nwipe_gui_amend_footer_window( ftr, "" );
     wrefresh( footer_window );
 
     do
@@ -351,7 +355,7 @@ static int nwipe_gui_se_nvme_overwrite_opts( nwipe_context_t* ctx, nwipe_se_nvme
         const int tab2 = 42;
 
         werase( main_window );
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr, "" );
 
         nwipe_gui_se_nvme_print_device( ctx, san, main_window, &yy, tab1, &san->planned_sanact );
         yy++;
@@ -450,7 +454,7 @@ static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* 
     int user_aborted = 0;
 
     werase( footer_window );
-    nwipe_gui_title( footer_window, ftr_progress );
+    nwipe_gui_amend_footer_window( ftr_progress, "" );
     wrefresh( footer_window );
 
     do
@@ -461,7 +465,7 @@ static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* 
         const int tab1 = 2;
 
         werase( main_window );
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr_progress );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr_progress, "" );
 
         poll_err = nwipe_se_nvme_poll( san );
 
@@ -544,7 +548,7 @@ static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* 
     int logged = 0;
 
     werase( footer_window );
-    nwipe_gui_title( footer_window, ftr_results );
+    nwipe_gui_amend_footer_window( ftr_results, "" );
     wrefresh( footer_window );
 
     do
@@ -554,7 +558,7 @@ static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* 
         const int tab1 = 2;
 
         werase( main_window );
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr_results );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr_results, "" );
 
         nwipe_gui_se_nvme_print_device( ctx, san, main_window, &yy, tab1, &san->sanact );
         yy++;
@@ -662,7 +666,7 @@ static int nwipe_gui_se_nvme_prompt_in_progress( nwipe_context_t* ctx, nwipe_se_
     const char* ftr = "M=Monitor ESC=Cancel";
 
     werase( footer_window );
-    nwipe_gui_title( footer_window, ftr );
+    nwipe_gui_amend_footer_window( ftr, "" );
     wrefresh( footer_window );
 
     do
@@ -672,7 +676,7 @@ static int nwipe_gui_se_nvme_prompt_in_progress( nwipe_context_t* ctx, nwipe_se_
         const int tab1 = 2;
 
         werase( main_window );
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr, "" );
 
         nwipe_gui_se_nvme_print_device( ctx, san, main_window, &yy, tab1, &san->sanact );
         yy++;
@@ -717,7 +721,7 @@ static void nwipe_gui_se_nvme_show_failed_state( nwipe_context_t* ctx, nwipe_se_
     const char* ftr = "Enter=Continue";
 
     werase( footer_window );
-    nwipe_gui_title( footer_window, ftr );
+    nwipe_gui_amend_footer_window( ftr, "" );
     wrefresh( footer_window );
 
     do
@@ -727,7 +731,7 @@ static void nwipe_gui_se_nvme_show_failed_state( nwipe_context_t* ctx, nwipe_se_
         const int tab1 = 2;
 
         werase( main_window );
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr, "" );
 
         nwipe_gui_se_nvme_print_device( ctx, san, main_window, &yy, tab1, &san->sanact );
         yy++;
@@ -768,7 +772,7 @@ static int nwipe_gui_se_nvme_confirm( nwipe_context_t* ctx, nwipe_se_nvme_ctx* s
     const char* ftr = "E=Execute ESC=Cancel";
 
     werase( footer_window );
-    nwipe_gui_title( footer_window, ftr );
+    nwipe_gui_amend_footer_window( ftr, "" );
     wrefresh( footer_window );
 
     do
@@ -778,7 +782,7 @@ static int nwipe_gui_se_nvme_confirm( nwipe_context_t* ctx, nwipe_se_nvme_ctx* s
         const int tab1 = 2;
 
         werase( main_window );
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr, "" );
 
         nwipe_gui_se_nvme_print_device( ctx, san, main_window, &yy, tab1, &san->planned_sanact );
         yy++;
@@ -891,11 +895,16 @@ void nwipe_gui_se_nvme_sanitize( nwipe_context_t* ctx, nwipe_se_nvme_ctx* san )
 
         san->nodas = false; /* This is dangerous, keep it disabled */
         san->ause = true; /* This is dangerous, keep it enabled */
+#ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
         san->emvs = false; /* This is dangerous, keep it disabled */
+#endif
     }
     /* Otherwise there are no options to configure for the user */
     else if( san->planned_sanact == NVME_SANITIZE_SANACT_EXIT_FAILURE
-             || san->planned_sanact == NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF )
+#ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
+             || san->planned_sanact == NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
+#endif
+    )
     {
         /* These are all unused and must be kept in their zero state here */
         san->owpass = 0;
@@ -904,7 +913,9 @@ void nwipe_gui_se_nvme_sanitize( nwipe_context_t* ctx, nwipe_se_nvme_ctx* san )
 
         san->nodas = false; /* No effect, must be in zero state also */
         san->ause = false; /* No effect, must be in zero state also */
+#ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
         san->emvs = false; /* No effect, must be in zero state also */
+#endif
     }
     else
     {
@@ -914,7 +925,9 @@ void nwipe_gui_se_nvme_sanitize( nwipe_context_t* ctx, nwipe_se_nvme_ctx* san )
 
         san->nodas = false; /* This is dangerous, keep it disabled */
         san->ause = true; /* This is dangerous, keep it enabled */
+#ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
         san->emvs = false; /* This is dangerous, keep it disabled */
+#endif
     }
 
     /* Final confirmation screen before sanitize operation */

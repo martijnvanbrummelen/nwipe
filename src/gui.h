@@ -23,16 +23,22 @@
 #ifndef GUI_H_
 #define GUI_H_
 
+#include <ncurses.h> /* WINDOW */
+
 void nwipe_gui_free( void );  // Stop the GUI.
 void nwipe_gui_init( void );  // Start the GUI.
+void nwipe_gui_title( WINDOW* w, const char* s );
 void nwipe_gui_create_main_window( void );  // Create the main window
 void nwipe_gui_create_header_window( void );  // Create the header window
-void nwipe_gui_create_footer_window( const char* );  // Create the footer window and write text
+void nwipe_gui_create_footer_window( const char* footer_line1,
+                                     const char* footer_line2 );  // Create the footer window and write text
 void nwipe_gui_create_options_window( void );  // Create the options window
 void nwipe_gui_create_stats_window( void );  // Create the stats window
 void nwipe_gui_create_all_windows_on_terminal_resize(
     int force_creation,
-    const char* footer_text );  // If terminal is resized recreate all windows
+    const char* footer_line1,
+    const char* footer_line2 );  // If terminal is resized recreate all windows
+void nwipe_gui_amend_footer_window( const char* footer_line1, const char* footer_line2 );
 
 /**
  * The primary user interface.  Allows the user to
