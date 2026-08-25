@@ -612,15 +612,21 @@ int write_system_datetime( char* year, char* month, char* day, char* hours, char
      */
 
     fp = popen( cmd, "w" );
-    r = pclose( fp );
-
-    if( fp == NULL || r != 0 )
+    if( fp == NULL )
     {
         nwipe_log( NWIPE_LOG_ERROR, "Failed to write system date/time using command = %s", cmd );
     }
     else
     {
-        nwipe_log( NWIPE_LOG_INFO, "Date/time succesfully writen to system using command = %s", cmd );
+        r = pclose( fp );
+        if( r != 0 )
+        {
+            nwipe_log( NWIPE_LOG_ERROR, "Failed to write system date/time using command = %s", cmd );
+        }
+        else
+        {
+            nwipe_log( NWIPE_LOG_INFO, "Date/time succesfully writen to system using command = %s", cmd );
+        }
     }
 
     return 0;
