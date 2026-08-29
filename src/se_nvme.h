@@ -3,13 +3,14 @@
  * Author: Copyright (c) 2026 desertwitch (dezertwitsh@gmail.com)
  * Based on: nvme-cli 2.16 - (c) 2015 NVMe-CLI Authors (GPL v2.0)
  */
+#ifndef SE_NVME_H_
+#define SE_NVME_H_
+
+#ifdef HAVE_LIBNVME
+
 #ifdef HAVE_CONFIG_H
 #include <config.h> /* HAVE_LIBNVME */
 #endif
-
-#ifndef SE_NVME_H_
-#define SE_NVME_H_
-#ifdef HAVE_LIBNVME
 
 #include <linux/types.h> /* __u8, __u16, __u32 */
 #include <stdbool.h>
