@@ -19,10 +19,12 @@
 #include "gui.h"
 #include "logging.h"
 #include "se_ata.h"
+#include "create_pdf.h"
 
 extern int terminate_signal;
 extern WINDOW* main_window;
 extern WINDOW* footer_window;
+extern nwipe_thread_data_ptr_t* global_nwipe_thread_data_ptr;
 
 #define NWIPE_GUI_SE_ATA_ACTION_COUNT 4
 #define NWIPE_GUI_SE_ATA_ACTION_DESC_LINES 4
@@ -615,6 +617,7 @@ static void nwipe_gui_se_ata_monitor( nwipe_context_t* ctx, nwipe_se_ata_ctx* sa
             case KEY_BACKSPACE:
             case KEY_BREAK:
             case 27: /* ESC */
+                create_single_disc_pdf( global_nwipe_thread_data_ptr, ctx );
                 return;
         }
     } while( terminate_signal != 1 );
