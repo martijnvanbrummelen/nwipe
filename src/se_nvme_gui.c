@@ -25,6 +25,7 @@
 #include "gui.h"
 #include "logging.h"
 #include "se_nvme.h"
+#include "se_nvme_gui.h"
 
 extern int terminate_signal;
 extern WINDOW* main_window;
