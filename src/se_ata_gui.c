@@ -19,6 +19,7 @@
 #include "gui.h"
 #include "logging.h"
 #include "se_ata.h"
+#include "se_ata_gui.h"
 
 extern int terminate_signal;
 extern WINDOW* main_window;
