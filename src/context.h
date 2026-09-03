@@ -272,7 +272,6 @@ typedef struct nwipe_context_t_
                                  //  1: Confirmed to be supported by device
     nwipe_secure_erase_type_t secure_erase_type; /* Secure Erase: ATA or NVMe */
     nwipe_secure_erase_status_t secure_erase_status; /* Secure Erase: Status */
-    void* secure_erase_context;  // Secure Erase: Pointer to context
     int secure_erase_orchestration;  // Flag, used by the PDF report logic to determine
                                      // whether to show secure erase only on report (STANDALONE)
                                      // or whether the report includes traditional
