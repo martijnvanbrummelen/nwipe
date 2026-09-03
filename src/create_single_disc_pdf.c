@@ -534,12 +534,12 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr 
     else
     {
         pdf_add_text( pdf,
-                    NULL,
-                    "* bytes erased: The amount of drive that's been erased at least once",
-                    text_size_data,
-                    60,
-                    137,
-                    PDF_BLACK );
+                      NULL,
+                      "* bytes erased: The amount of drive that's been erased at least once",
+                      text_size_data,
+                      60,
+                      137,
+                      PDF_BLACK );
 
         /* meaning of abreviation DDNSHPA */
         if( c->HPA_status == HPA_NOT_SUPPORTED_BY_DRIVE )
