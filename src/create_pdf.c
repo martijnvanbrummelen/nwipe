@@ -786,15 +786,29 @@ void pdf_add_text_rounds( float text_size, float xoff, float yoff, nwipe_context
 
     char rounds[50] = ""; /* rounds ASCII numeric */
 
-    if( !strcmp( c->wipe_status_txt, "ERASED" ) )
+    if( c->secure_erase_orchestration == NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE )
     {
-        snprintf( rounds, sizeof( rounds ), "%i/%i", c->round_working, nwipe_options.rounds );
-        pdf_add_text( pdf, NULL, rounds, text_size, xoff, yoff, PDF_DARK_GREEN );
+        if( c->secure_erase_status == NWIPE_SECURE_ERASE_SUCCESS )
+        {
+            pdf_add_text( pdf, NULL, "1/1", text_size, xoff, yoff, PDF_DARK_GREEN );
+        }
+        else
+        {
+            pdf_add_text( pdf, NULL, "0/1", text_size, xoff, yoff, PDF_DARK_GREEN );
+        }
     }
     else
     {
-        snprintf( rounds, sizeof( rounds ), "%i/%i", c->round_working - 1, nwipe_options.rounds );
-        pdf_add_text( pdf, NULL, rounds, text_size, xoff, yoff, PDF_RED );
+        if( !strcmp( c->wipe_status_txt, "ERASED" ) )
+        {
+            snprintf( rounds, sizeof( rounds ), "%i/%i", c->round_working, nwipe_options.rounds );
+            pdf_add_text( pdf, NULL, rounds, text_size, xoff, yoff, PDF_DARK_GREEN );
+        }
+        else
+        {
+            snprintf( rounds, sizeof( rounds ), "%i/%i", c->round_working - 1, nwipe_options.rounds );
+            pdf_add_text( pdf, NULL, rounds, text_size, xoff, yoff, PDF_RED );
+        }
     }
 }
 

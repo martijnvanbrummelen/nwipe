@@ -436,7 +436,14 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr 
     pdf_add_text( pdf, NULL, "Throughput:", 12, 300, 190, PDF_GRAY );
     snprintf( throughput_txt, sizeof( throughput_txt ), "%s/sec", c->throughput_txt );
     pdf_set_font( pdf, "Helvetica-Bold" );
-    pdf_add_text( pdf, NULL, throughput_txt, text_size_data, 385, 190, PDF_BLACK );
+    if( c->secure_erase_orchestration == NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE )
+    {
+        pdf_add_text( pdf, NULL, "N/A for Secure erase", text_size_data, 385, 190, PDF_BLACK );
+    }
+    else
+    {
+        pdf_add_text( pdf, NULL, throughput_txt, text_size_data, 385, 190, PDF_BLACK );
+    }
     pdf_set_font( pdf, "Helvetica" );
 
     /********
@@ -498,19 +505,48 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr 
     }
 
     /* info descripting what bytes erased actually means */
-    pdf_add_text( pdf,
-                  NULL,
-                  "* bytes erased: The amount of drive that's been erased at least once",
-                  text_size_data,
-                  60,
-                  137,
-                  PDF_BLACK );
-
-    /* meaning of abreviation DDNSHPA */
-    if( c->HPA_status == HPA_NOT_SUPPORTED_BY_DRIVE )
+    if( c->secure_erase_orchestration == NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE )
     {
-        pdf_add_text(
-            pdf, NULL, "** DDNSHPA = Drive does not support HPA/DCO", text_size_data, 60, 125, PDF_DARK_GREEN );
+        pdf_add_text( pdf,
+                      NULL,
+                      "* bytes erased: Reported user-accessible bytes wiped (unverified)",
+                      text_size_data,
+                      60,
+                      147,
+                      PDF_BLACK );
+
+        pdf_add_text( pdf,
+                      NULL,
+                      "Assuming secure erase zeroed the drive, a verification pass is also recommended",
+                      text_size_data,
+                      60,
+                      137,
+                      PDF_BLACK );
+
+        pdf_add_text( pdf,
+                      NULL,
+                      "To verify the reliability of the drive a PRNG and verification is recommended",
+                      text_size_data,
+                      60,
+                      127,
+                      PDF_BLACK );
+    }
+    else
+    {
+        pdf_add_text( pdf,
+                      NULL,
+                      "* bytes erased: The amount of drive that's been erased at least once",
+                      text_size_data,
+                      60,
+                      137,
+                      PDF_BLACK );
+
+        /* meaning of abreviation DDNSHPA */
+        if( c->HPA_status == HPA_NOT_SUPPORTED_BY_DRIVE )
+        {
+            pdf_add_text(
+                pdf, NULL, "** DDNSHPA = Drive does not support HPA/DCO", text_size_data, 60, 125, PDF_DARK_GREEN );
+        }
     }
     pdf_set_font( pdf, "Helvetica" );
 
