@@ -88,6 +88,14 @@ typedef enum {
     NWIPE_SECURE_ERASE_ORCHESTRATION_POST_CHAINED /* follows a traditional wipe, i.e part of a method */
 } nwipe_secure_erase_orchestration_t;
 
+/* Keep this list applicable for both ATA and NVMe */
+typedef enum {
+    NWIPE_SECURE_ERASE_METHOD_UNKNOWN = 0,
+    NWIPE_SECURE_ERASE_METHOD_BLOCK, /* Block Erase */
+    NWIPE_SECURE_ERASE_METHOD_CRYPTO, /* Crypto Erase */
+    NWIPE_SECURE_ERASE_METHOD_OVERWRITE /* Pattern Overwrite */
+} nwipe_secure_erase_method_t;
+
 /* I/O direction for data path. */
 typedef enum {
     NWIPE_IO_DIRECTION_FORWARD = 0, /* Start -> End */
@@ -273,6 +281,8 @@ typedef struct nwipe_context_t_
                                      // 1: secure erase, operating in manual STANDALONE
                                      // 2: secure erase, part of a method starting before everything else.(PRE_CHAINED)
                                      // 3: secure erase, part of a method starting after everthing else. (POST_CHAINED)
+    nwipe_secure_erase_method_t secure_erase_method; /* Secure Erase: Method */
+    void* secure_erase_context; /* Secure Erase: Pointer to context */
 
     /*
      * Identity contains the raw serial number of the drive

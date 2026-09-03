@@ -26,6 +26,7 @@
 #include "logging.h"
 #include "se_nvme.h"
 #include "create_pdf.h"
+#include "se_nvme_gui.h"
 
 extern int terminate_signal;
 extern WINDOW* main_window;
@@ -137,6 +138,34 @@ static const char* nwipe_gui_se_nvme_action_str( enum nvme_sanitize_sanact act )
     }
     return "Unknown";
 } /* nwipe_gui_se_nvme_action_str */
+
+/*
+ * Sets the device context erase method from a NVMe sanitize action.
+ * Returns 1 when a known secure erase method was set.
+ * Returns 0 when NWIPE_SECURE_ERASE_METHOD_UNKNOWN was set.
+ */
+static int nwipe_gui_se_nvme_set_context_method( nwipe_context_t* ctx, enum nvme_sanitize_sanact act )
+{
+    switch( act )
+    {
+        case NVME_SANITIZE_SANACT_START_BLOCK_ERASE:
+            ctx->secure_erase_method = NWIPE_SECURE_ERASE_METHOD_BLOCK;
+            return 1;
+
+        case NVME_SANITIZE_SANACT_START_CRYPTO_ERASE:
+            ctx->secure_erase_method = NWIPE_SECURE_ERASE_METHOD_CRYPTO;
+            return 1;
+
+        case NVME_SANITIZE_SANACT_START_OVERWRITE:
+            ctx->secure_erase_method = NWIPE_SECURE_ERASE_METHOD_OVERWRITE;
+            return 1;
+
+        default:
+            /* Keep this to prevent a stale method from a previous run */
+            ctx->secure_erase_method = NWIPE_SECURE_ERASE_METHOD_UNKNOWN;
+            return 0;
+    }
+} /* nwipe_gui_se_nvme_set_context_method */
 
 static void nwipe_gui_se_nvme_print_device( nwipe_context_t* ctx,
                                             nwipe_se_nvme_ctx* san,
@@ -452,8 +481,9 @@ static int nwipe_gui_se_nvme_overwrite_opts( nwipe_context_t* ctx, nwipe_se_nvme
 
 static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* san )
 {
-    const char* ftr_progress = "ESC=Stop Monitoring";
+    const char* ftr_progress = "No keyboard actions are available";
     int user_aborted = 0;
+    int method_set = 0;
 
     werase( footer_window );
     nwipe_gui_amend_footer_window( ftr_progress, "" );
@@ -470,6 +500,12 @@ static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* 
         nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr_progress, "" );
 
         poll_err = nwipe_se_nvme_poll( san );
+
+        /* In case monitoring was resumed, set again the device context's method */
+        if( !method_set && !poll_err && san->sanact > 0 )
+        {
+            method_set = nwipe_gui_se_nvme_set_context_method( ctx, san->sanact );
+        }
 
         nwipe_gui_se_nvme_print_device( ctx, san, main_window, &yy, tab1, &san->sanact );
         yy++;
@@ -521,13 +557,14 @@ static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* 
         if( !poll_err && san->state != NWIPE_SE_NVME_STATE_IN_PROGRESS )
             break;
 
-        /* Wait ~5s, check for ESC */
+        /* Wait ~5s, monitoring is intentionally not interruptible */
         for( int tick = 0; tick < 20 && terminate_signal != 1; tick++ )
         {
             timeout( 250 );
             keystroke = getch();
             timeout( -1 );
 
+#if 0 /* TODO: re-enable if monitoring should be interruptible */
             switch( keystroke )
             {
                 case KEY_BACKSPACE:
@@ -536,6 +573,7 @@ static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* 
                     user_aborted = 1;
                     break;
             }
+#endif
             if( user_aborted )
                 break;
         }
@@ -941,6 +979,9 @@ void nwipe_gui_se_nvme_sanitize( nwipe_context_t* ctx, nwipe_se_nvme_ctx* san )
         nwipe_se_nvme_close( san );
         return;
     }
+
+    /* Inform the device context of the chosen method */
+    nwipe_gui_se_nvme_set_context_method( ctx, san->planned_sanact );
 
     /* Sanitize the device now */
     if( nwipe_se_nvme_sanitize( san ) != 0 )
