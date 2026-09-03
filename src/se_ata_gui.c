@@ -114,6 +114,34 @@ static const char* nwipe_gui_se_ata_action_str( nwipe_se_ata_sanact_e act )
     return "Unknown";
 } /* nwipe_gui_se_ata_action_str */
 
+/*
+ * Sets the device context erase method from a ATA sanitize action.
+ * Returns 1 when a known secure erase method was set.
+ * Returns 0 when NWIPE_SECURE_ERASE_METHOD_UNKNOWN was set.
+ */
+static int nwipe_gui_se_ata_set_context_method( nwipe_context_t* ctx, nwipe_se_ata_sanact_e act )
+{
+    switch( act )
+    {
+        case NWIPE_SE_ATA_SANACT_BLOCK_ERASE:
+            ctx->secure_erase_method = NWIPE_SECURE_ERASE_METHOD_BLOCK;
+            return 1;
+
+        case NWIPE_SE_ATA_SANACT_CRYPTO_SCRAMBLE:
+            ctx->secure_erase_method = NWIPE_SECURE_ERASE_METHOD_CRYPTO;
+            return 1;
+
+        case NWIPE_SE_ATA_SANACT_OVERWRITE:
+            ctx->secure_erase_method = NWIPE_SECURE_ERASE_METHOD_OVERWRITE;
+            return 1;
+
+        default:
+            /* Keep this to prevent a stale method from a previous run */
+            ctx->secure_erase_method = NWIPE_SECURE_ERASE_METHOD_UNKNOWN;
+            return 0;
+    }
+} /* nwipe_gui_se_ata_set_context_method */
+
 static void nwipe_gui_se_ata_print_device( nwipe_context_t* ctx,
                                            nwipe_se_ata_ctx* san,
                                            WINDOW* win,
@@ -418,7 +446,7 @@ static int nwipe_gui_se_ata_overwrite_opts( nwipe_context_t* ctx, nwipe_se_ata_c
 
 static void nwipe_gui_se_ata_monitor( nwipe_context_t* ctx, nwipe_se_ata_ctx* san )
 {
-    const char* ftr_progress = "ESC=Stop Monitoring";
+    const char* ftr_progress = "No keyboard actions are available";
     int user_aborted = 0;
 
     werase( footer_window );
@@ -479,13 +507,14 @@ static void nwipe_gui_se_ata_monitor( nwipe_context_t* ctx, nwipe_se_ata_ctx* sa
         if( !poll_err && san->state != NWIPE_SE_ATA_STATE_IN_PROGRESS )
             break;
 
-        /* Wait ~5s, check for ESC */
+        /* Wait ~5s, monitoring is intentionally not interruptible */
         for( int tick = 0; tick < 20 && terminate_signal != 1; tick++ )
         {
             timeout( 250 );
             keystroke = getch();
             timeout( -1 );
 
+#if 0 /* TODO: re-enable if monitoring should be interruptible */
             switch( keystroke )
             {
                 case KEY_BACKSPACE:
@@ -494,6 +523,7 @@ static void nwipe_gui_se_ata_monitor( nwipe_context_t* ctx, nwipe_se_ata_ctx* sa
                     user_aborted = 1;
                     break;
             }
+#endif
             if( user_aborted )
                 break;
         }
@@ -920,6 +950,9 @@ void nwipe_gui_se_ata_sanitize( nwipe_context_t* ctx, nwipe_se_ata_ctx* san )
         nwipe_se_ata_close( san );
         return;
     }
+
+    /* Inform the device context of the chosen method */
+    nwipe_gui_se_ata_set_context_method( ctx, san->planned_sanact );
 
     /* Issue the sanitize command */
     if( nwipe_se_ata_sanitize( san ) != 0 )
