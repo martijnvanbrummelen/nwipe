@@ -71,6 +71,8 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr 
     extern config_t nwipe_cfg;
     extern char nwipe_config_file[];
 
+    size_t idx;
+
     uint32_t text_color_size_apparent;  // local use of color
 
     //    char pdf_footer[MAX_PDF_FOOTER_TEXT_LENGTH];
@@ -81,6 +83,10 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr 
     char end_time_text[50] = "";
     char errors[50] = "";
     char throughput_txt[50] = "";
+    char secure_erase_method_txt[30] = "";
+
+    /* These methods should be ordered exactly as shown in nwipe_secure_erase_method_t in context.h */
+    const char* secure_erase_methods[] = { "Unknown", "Block", "Encrypt", "Overwrite" };
 
     size_t page_number = 1;
 
@@ -334,21 +340,29 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr 
     /********
      * Method
      */
-    char* p_nwipe_method_label_with_direction = 0;
-    p_nwipe_method_label_with_direction = nwipe_method_label_with_direction();
     pdf_add_text( pdf, NULL, "Method:", 12, 60, 270, PDF_GRAY );
     pdf_set_font( pdf, "Helvetica-Bold" );
+    idx = 0;
     if( c->secure_erase_orchestration == NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE )
     {
-        pdf_add_text( pdf, NULL, "Secure Erase", text_size_data, 110, 270, PDF_BLACK );
+        /* Standalone Secure Erase Only */
+        snprintf( secure_erase_method_txt,
+                  sizeof( secure_erase_method_txt ),
+                  "Secure Erase (%s)",
+                  secure_erase_methods[c->secure_erase_method] );
+        pdf_add_text( pdf, NULL, secure_erase_method_txt, text_size_data, 110, 270, PDF_BLACK );
     }
     else
     {
+        /* Traditional methods */
+        char* p_nwipe_method_label_with_direction = 0;
+        p_nwipe_method_label_with_direction = nwipe_method_label_with_direction();
         pdf_add_text( pdf, NULL, p_nwipe_method_label_with_direction, text_size_data, 110, 270, PDF_BLACK );
+        free( p_nwipe_method_label_with_direction );  // free string
+        p_nwipe_method_label_with_direction = NULL;  // get rid of dangling pointer
     }
     pdf_set_font( pdf, "Helvetica" );
-    free( p_nwipe_method_label_with_direction );  // free string
-    p_nwipe_method_label_with_direction = NULL;  // get rid of dangling pointer
+
     /***********
      * prng type
      */

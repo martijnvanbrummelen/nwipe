@@ -482,47 +482,63 @@ void pdf_add_text_bytes_erased( float xoff, float yoff, nwipe_context_t* c )
     char bytes_erased[50] = "";
     char bytes_percent_str[7] = "";
 
-    /* Bytes erased is not applicable when user only requested a verify */
-    if( nwipe_options.method == &nwipe_verify_one || nwipe_options.method == &nwipe_verify_zero )
+    if( c->secure_erase_orchestration == NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE )
     {
-        snprintf( bytes_erased, sizeof( bytes_erased ), "Not applicable to method" );
-        pdf_add_text( pdf, NULL, bytes_erased, text_size_data, xoff, yoff, PDF_BLACK );
-    }
-    else
-    {
-        if( c->device_type == NWIPE_DEVICE_NVME || c->device_type == NWIPE_DEVICE_VIRT
-            || c->HPA_status == HPA_NOT_APPLICABLE )
+        if( c->secure_erase_status == NWIPE_SECURE_ERASE_SUCCESS )
         {
-            convert_double_to_string( bytes_percent_str,
-                                      (double) ( (double) c->bytes_erased / (double) c->device_size ) * 100 );
-
-            snprintf( bytes_erased, sizeof( bytes_erased ), "%lli, (%s%%)", c->bytes_erased, bytes_percent_str );
-
-            if( c->bytes_erased == c->device_size )
-            {
-                pdf_add_text( pdf, NULL, bytes_erased, text_size_data, xoff, yoff, PDF_DARK_GREEN );
-            }
-            else
-            {
-                pdf_add_text( pdf, NULL, bytes_erased, text_size_data, xoff, yoff, PDF_RED );
-            }
+            snprintf( bytes_erased, sizeof( bytes_erased ), "%lli, (%s%%)", c->device_size, "100" );
+            pdf_add_text( pdf, NULL, bytes_erased, text_size_data, xoff, yoff, PDF_DARK_GREEN );
         }
         else
         {
-
-            convert_double_to_string(
-                bytes_percent_str,
-                (double) ( (double) c->bytes_erased / (double) c->Calculated_real_max_size_in_bytes ) * 100 );
-
-            snprintf( bytes_erased, sizeof( bytes_erased ), "%lli, (%s%%)", c->bytes_erased, bytes_percent_str );
-
-            if( c->bytes_erased == c->Calculated_real_max_size_in_bytes )
+            snprintf( bytes_erased, sizeof( bytes_erased ), "%i, (%s%%)", 0, "0" );
+            pdf_add_text( pdf, NULL, bytes_erased, text_size_data, xoff, yoff, PDF_RED );
+        }
+    }
+    else
+    {
+        /* Bytes erased is not applicable when user only requested a verify */
+        if( nwipe_options.method == &nwipe_verify_one || nwipe_options.method == &nwipe_verify_zero )
+        {
+            snprintf( bytes_erased, sizeof( bytes_erased ), "Not applicable to method" );
+            pdf_add_text( pdf, NULL, bytes_erased, text_size_data, xoff, yoff, PDF_BLACK );
+        }
+        else
+        {
+            if( c->device_type == NWIPE_DEVICE_NVME || c->device_type == NWIPE_DEVICE_VIRT
+                || c->HPA_status == HPA_NOT_APPLICABLE )
             {
-                pdf_add_text( pdf, NULL, bytes_erased, text_size_data, xoff, yoff, PDF_DARK_GREEN );
+                convert_double_to_string( bytes_percent_str,
+                                          (double) ( (double) c->bytes_erased / (double) c->device_size ) * 100 );
+
+                snprintf( bytes_erased, sizeof( bytes_erased ), "%lli, (%s%%)", c->bytes_erased, bytes_percent_str );
+
+                if( c->bytes_erased == c->device_size )
+                {
+                    pdf_add_text( pdf, NULL, bytes_erased, text_size_data, xoff, yoff, PDF_DARK_GREEN );
+                }
+                else
+                {
+                    pdf_add_text( pdf, NULL, bytes_erased, text_size_data, xoff, yoff, PDF_RED );
+                }
             }
             else
             {
-                pdf_add_text( pdf, NULL, bytes_erased, text_size_data, xoff, yoff, PDF_RED );
+
+                convert_double_to_string(
+                    bytes_percent_str,
+                    (double) ( (double) c->bytes_erased / (double) c->Calculated_real_max_size_in_bytes ) * 100 );
+
+                snprintf( bytes_erased, sizeof( bytes_erased ), "%lli, (%s%%)", c->bytes_erased, bytes_percent_str );
+
+                if( c->bytes_erased == c->Calculated_real_max_size_in_bytes )
+                {
+                    pdf_add_text( pdf, NULL, bytes_erased, text_size_data, xoff, yoff, PDF_DARK_GREEN );
+                }
+                else
+                {
+                    pdf_add_text( pdf, NULL, bytes_erased, text_size_data, xoff, yoff, PDF_RED );
+                }
             }
         }
     }
