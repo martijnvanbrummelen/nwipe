@@ -26,8 +26,6 @@
 #include "logging.h"
 #include "se_nvme.h"
 #include "create_pdf.h"
-#include "se_nvme_gui.h"
-#include "create_pdf.h"
 #include "miscellaneous.h"
 
 extern int terminate_signal;
@@ -1002,6 +1000,9 @@ void nwipe_gui_se_nvme_sanitize( nwipe_context_t* ctx, nwipe_se_nvme_ctx* san )
 
     /* Inform the device context of the chosen method */
     nwipe_gui_se_nvme_set_context_method( ctx, san->planned_sanact );
+
+    /* get current time at the start of the wipe in seconds since epoch  */
+    time( &ctx->start_time );
 
     /* Sanitize the device now */
     if( nwipe_se_nvme_sanitize( san ) != 0 )
