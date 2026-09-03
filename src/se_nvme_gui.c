@@ -479,7 +479,7 @@ static int nwipe_gui_se_nvme_overwrite_opts( nwipe_context_t* ctx, nwipe_se_nvme
 
 static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* san )
 {
-    const char* ftr_progress = "ESC=Stop Monitoring";
+    const char* ftr_progress = "No keyboard actions are available";
     int user_aborted = 0;
     int method_set = 0;
 
@@ -555,13 +555,14 @@ static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* 
         if( !poll_err && san->state != NWIPE_SE_NVME_STATE_IN_PROGRESS )
             break;
 
-        /* Wait ~5s, check for ESC */
+        /* Wait ~5s, monitoring is intentionally not interruptible */
         for( int tick = 0; tick < 20 && terminate_signal != 1; tick++ )
         {
             timeout( 250 );
             keystroke = getch();
             timeout( -1 );
 
+#if 0 /* TODO: re-enable if monitoring should be interruptible */
             switch( keystroke )
             {
                 case KEY_BACKSPACE:
@@ -570,6 +571,7 @@ static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* 
                     user_aborted = 1;
                     break;
             }
+#endif
             if( user_aborted )
                 break;
         }
