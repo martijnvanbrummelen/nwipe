@@ -532,7 +532,7 @@ void pdf_add_text_bytes_erased( float xoff, float yoff, nwipe_context_t* c )
  * PRNG type
  */
 
-void pdf_add_text_prng_type( float xoff, float yoff, uint32_t colour )
+void pdf_add_text_prng_type( size_t mode, float xoff, float yoff, uint32_t colour )
 {
     char prng_type[50] = ""; /* type of prng, twister, isaac, isaac64 */
 
@@ -546,7 +546,8 @@ void pdf_add_text_prng_type( float xoff, float yoff, uint32_t colour )
     extern nwipe_prng_t nwipe_chacha20_prng;
 
     if( nwipe_options.method == &nwipe_verify_one || nwipe_options.method == &nwipe_verify_zero
-        || nwipe_options.method == &nwipe_zero || nwipe_options.method == &nwipe_one )
+        || nwipe_options.method == &nwipe_zero || nwipe_options.method == &nwipe_one
+        || mode == NWIPE_PDF_FORCE_NOT_APPLICABLE_OUTPUT )
     {
         snprintf( prng_type, sizeof( prng_type ), "N/A to method" );
     }
@@ -574,10 +575,9 @@ void pdf_add_text_prng_type( float xoff, float yoff, uint32_t colour )
     pdf_add_text( pdf, NULL, prng_type, text_size_data, xoff, yoff, colour );
 }
 
-/*******************
- * Status of erasure
+/****************************************************
+ * Status of erasure, text and ellipse
  */
-
 void pdf_add_text_status_of_erasure( float text_xoff,
                                      float text_yoff,
                                      float ellipse_xoff,
@@ -587,66 +587,69 @@ void pdf_add_text_status_of_erasure( float text_xoff,
                                      float angle,
                                      nwipe_context_t* c )
 {
-    if( !strcmp( c->wipe_status_txt, "ERASED" ) && c->io_retries == 0
-        && ( c->HPA_status == HPA_DISABLED || c->HPA_status == HPA_NOT_APPLICABLE || c->device_type == NWIPE_DEVICE_NVME
-             || c->device_type == NWIPE_DEVICE_VIRT ) )
-    {
-        pdf_add_text_rotate( pdf, NULL, c->wipe_status_txt, 12, text_xoff, text_yoff, angle, PDF_DARK_GREEN );
-        pdf_add_ellipse( pdf,
-                         NULL,
-                         ellipse_xoff,
-                         ellipse_yoff,
-                         ellipse_xradius,
-                         ellipse_yradius,
-                         2,
-                         PDF_DARK_GREEN,
-                         PDF_TRANSPARENT );
+    const char* text;
+    int text_color, stroke_color, fill_color = PDF_TRANSPARENT;
 
-        status_icon = STATUS_ICON_GREEN_TICK;  // used later on page 2
-        status_icon_green = TRUE;  // Used later for multidisc system PDF
-    }
-    else
+    /* Is this a standalone secure erase?, i.e not part of a method */
+    if( c->secure_erase_orchestration == NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE )
     {
-        if( !strcmp( c->wipe_status_txt, "ERASED" )
-            && ( c->HPA_status == HPA_ENABLED || c->HPA_status == HPA_UNKNOWN || c->io_retries != 0 ) )
+        if( c->secure_erase_status == NWIPE_SECURE_ERASE_SUCCESS )
         {
-            pdf_add_ellipse(
-                pdf, NULL, ellipse_xoff, ellipse_yoff, ellipse_xradius, ellipse_yradius, 2, PDF_RED, PDF_BLACK );
-            pdf_add_text_rotate( pdf, NULL, c->wipe_status_txt, 12, text_xoff, text_yoff, angle, PDF_YELLOW );
-
-            status_icon = STATUS_ICON_YELLOW_EXCLAMATION;  // used later on page 2 for single disk PDF
-            status_icon_yellow = TRUE;  // Used later for multidisc system PDF
+            text = "Success";
+            text_color = stroke_color = PDF_DARK_GREEN;
+            status_icon = STATUS_ICON_GREEN_TICK;
+            status_icon_green = TRUE;
         }
         else
         {
-            if( !strcmp( c->wipe_status_txt, "FAILED" ) )
-            {
-                /* Re:angle == 0 ? text_xoff + 5 : text_xoff. Required as the text needs to be
-                 * shifted left slightly in ellipse due to extra character for 0 degree angle ellipse only */
-
-                pdf_add_text_rotate( pdf,
-                                     NULL,
-                                     c->wipe_status_txt,
-                                     12,
-                                     angle == 0 ? text_xoff + 5 : text_xoff,
-                                     text_yoff,
-                                     angle,
-                                     PDF_RED );
-
-                status_icon = STATUS_ICON_RED_CROSS;  // used later on page 2 for single disk PDF
-                status_icon_red = TRUE;  // Used later for multidisc system PDF
-            }
-            else
-            {
-                pdf_add_text_rotate( pdf, NULL, c->wipe_status_txt, 12, text_xoff, text_yoff, angle, PDF_RED );
-
-                status_icon = STATUS_ICON_RED_CROSS;  // used later on page 2 for single disk PDF
-                status_icon_red = TRUE;  // Used later for multidisc system PDF
-            }
-            pdf_add_ellipse(
-                pdf, NULL, ellipse_xoff, ellipse_yoff, ellipse_xradius, ellipse_yradius, 2, PDF_RED, PDF_TRANSPARENT );
+            text = "Failed";
+            text_color = stroke_color = PDF_RED;
+            status_icon = STATUS_ICON_RED_CROSS;
+            status_icon_red = TRUE;
         }
     }
+    /* For every other erasure that's not a stand alone secure erase */
+    else if( strcmp( c->wipe_status_txt, "ERASED" ) == 0 )
+    {
+        text = c->wipe_status_txt;
+
+        /* Erasure with no warnings */
+        if( c->io_retries == 0
+            && ( c->HPA_status == HPA_DISABLED || c->HPA_status == HPA_NOT_APPLICABLE
+                 || c->device_type == NWIPE_DEVICE_NVME || c->device_type == NWIPE_DEVICE_VIRT ) )
+        {
+            text_color = stroke_color = PDF_DARK_GREEN;
+            status_icon = STATUS_ICON_GREEN_TICK;
+            status_icon_green = TRUE;
+        }
+        else
+        {
+            /* Erasure with warnings */
+            text_color = PDF_YELLOW;
+            stroke_color = PDF_RED;
+            fill_color = PDF_BLACK;
+            status_icon = STATUS_ICON_YELLOW_EXCLAMATION;
+            status_icon_yellow = TRUE;
+        }
+    }
+    else
+    {
+        /* Erasure Failed */
+        text = c->wipe_status_txt;
+        text_color = stroke_color = PDF_RED;
+        status_icon = STATUS_ICON_RED_CROSS;
+        status_icon_red = TRUE;
+    }
+
+    /* Adjust "Failed" text position when angle = 0 in order to centre text in ellipse */
+    if( angle == 0 && ( strcmp( text, "Failed" ) == 0 || strcmp( text, "FAILED" ) == 0 ) )
+    {
+        text_xoff += 5;
+    }
+
+    pdf_add_ellipse(
+        pdf, NULL, ellipse_xoff, ellipse_yoff, ellipse_xradius, ellipse_yradius, 2, stroke_color, fill_color );
+    pdf_add_text_rotate( pdf, NULL, text, 12, text_xoff, text_yoff, angle, text_color );
 }
 
 void pdf_display_status_icon( size_t pdf_type, void* pp )
@@ -724,7 +727,7 @@ void pdf_display_status_icon( size_t pdf_type, void* pp )
     }
 }
 
-void pdf_add_text_blanking( float text_size, float xoff, float yoff )
+void pdf_add_text_blanking( size_t mode, float text_size, float xoff, float yoff )
 {
     /******************************************************
      * Final blanking pass if selected, none, zeros or ones
@@ -732,7 +735,7 @@ void pdf_add_text_blanking( float text_size, float xoff, float yoff )
 
     char blank[10] = ""; /* blanking pass, none, zeros, ones */
 
-    if( nwipe_options.noblank )
+    if( nwipe_options.noblank || mode == NWIPE_PDF_FORCE_NOT_APPLICABLE_OUTPUT )
     {
         strcpy( blank, "None" );
     }
@@ -743,7 +746,7 @@ void pdf_add_text_blanking( float text_size, float xoff, float yoff )
     pdf_add_text( pdf, NULL, blank, text_size, xoff, yoff, PDF_BLACK );
 }
 
-void pdf_add_text_verify( float text_size, float xoff, float yoff )
+void pdf_add_text_verify( size_t mode, float text_size, float xoff, float yoff )
 {
     /* ***********************************************************************
      * Create suitable text based on the numeric value of type of verification
@@ -751,19 +754,26 @@ void pdf_add_text_verify( float text_size, float xoff, float yoff )
 
     char verify[20] = ""; /* Verify option text */
 
-    switch( nwipe_options.verify )
+    if( mode == NWIPE_PDF_FORCE_NOT_APPLICABLE_OUTPUT )
     {
-        case NWIPE_VERIFY_NONE:
-            strcpy( verify, "None" );
-            break;
+        strcpy( verify, "None" );
+    }
+    else
+    {
+        switch( nwipe_options.verify )
+        {
+            case NWIPE_VERIFY_NONE:
+                strcpy( verify, "None" );
+                break;
 
-        case NWIPE_VERIFY_LAST:
-            strcpy( verify, "Last" );
-            break;
+            case NWIPE_VERIFY_LAST:
+                strcpy( verify, "Last" );
+                break;
 
-        case NWIPE_VERIFY_ALL:
-            strcpy( verify, "All" );
-            break;
+            case NWIPE_VERIFY_ALL:
+                strcpy( verify, "All" );
+                break;
+        }
     }
     pdf_add_text( pdf, NULL, verify, text_size, xoff, yoff, PDF_BLACK );
 }

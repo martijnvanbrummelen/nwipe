@@ -80,6 +80,7 @@
 int terminate_signal;
 int user_abort;
 int global_wipe_status;
+nwipe_thread_data_ptr_t* global_nwipe_thread_data_ptr;
 
 /* helper function for sorting */
 int devnamecmp( const void* a, const void* b )
@@ -601,13 +602,13 @@ int main( int argc, char** argv )
     /* Pass a pointer to a struct containing all data to the signal handler. */
     nwipe_misc_thread_data_t nwipe_misc_thread_data;
     nwipe_thread_data_ptr_t nwipe_thread_data_ptr;
-
     nwipe_thread_data_ptr.c = c2;
     nwipe_misc_thread_data.nwipe_enumerated = nwipe_enumerated;
     nwipe_misc_thread_data.nwipe_selected = 0;
     if( !nwipe_options.nogui )
         nwipe_misc_thread_data.gui_thread = &nwipe_gui_thread;
     nwipe_thread_data_ptr.nwipe_misc_thread_data = &nwipe_misc_thread_data;
+    global_nwipe_thread_data_ptr = &nwipe_thread_data_ptr;
 
     if( !nwipe_options.nosignals )
     {

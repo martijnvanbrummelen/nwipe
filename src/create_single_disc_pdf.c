@@ -17,6 +17,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h> /* HAVE_LIBNVME */
+#endif
 
 #ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE
@@ -44,6 +47,8 @@
 #include "miscellaneous.h"
 #include <libconfig.h>
 #include "conf.h"
+
+#include "se_nvme.h"
 
 #define text_size_data 10
 
@@ -333,7 +338,14 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr 
     p_nwipe_method_label_with_direction = nwipe_method_label_with_direction();
     pdf_add_text( pdf, NULL, "Method:", 12, 60, 270, PDF_GRAY );
     pdf_set_font( pdf, "Helvetica-Bold" );
-    pdf_add_text( pdf, NULL, p_nwipe_method_label_with_direction, text_size_data, 110, 270, PDF_BLACK );
+    if( c->secure_erase_orchestration == NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE )
+    {
+        pdf_add_text( pdf, NULL, "Secure Erase", text_size_data, 110, 270, PDF_BLACK );
+    }
+    else
+    {
+        pdf_add_text( pdf, NULL, p_nwipe_method_label_with_direction, text_size_data, 110, 270, PDF_BLACK );
+    }
     pdf_set_font( pdf, "Helvetica" );
     free( p_nwipe_method_label_with_direction );  // free string
     p_nwipe_method_label_with_direction = NULL;  // get rid of dangling pointer
@@ -342,7 +354,14 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr 
      */
     pdf_add_text( pdf, NULL, "PRNG algorithm:", 12, 300, 270, PDF_GRAY );
     pdf_set_font( pdf, "Helvetica-Bold" );
-    pdf_add_text_prng_type( 395, 270, PDF_BLACK );
+    if( c->secure_erase_orchestration == NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE )
+    {
+        pdf_add_text_prng_type( NWIPE_PDF_FORCE_NOT_APPLICABLE_OUTPUT, 395, 270, PDF_BLACK );
+    }
+    else
+    {
+        pdf_add_text_prng_type( NWIPE_PDF_FORCE_OUTPUT_RESULT, 395, 270, PDF_BLACK );
+    }
     pdf_set_font( pdf, "Helvetica" );
 
     /******************************************************
@@ -350,7 +369,14 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr 
      */
     pdf_add_text( pdf, NULL, "Final Pass(Zeros/Ones/None):", 12, 60, 250, PDF_GRAY );
     pdf_set_font( pdf, "Helvetica-Bold" );
-    pdf_add_text_blanking( text_size_data, 230, 250 );
+    if( c->secure_erase_orchestration == NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE )
+    {
+        pdf_add_text_blanking( NWIPE_PDF_FORCE_NOT_APPLICABLE_OUTPUT, text_size_data, 230, 250 );
+    }
+    else
+    {
+        pdf_add_text_blanking( NWIPE_PDF_FORCE_OUTPUT_RESULT, text_size_data, 230, 250 );
+    }
     pdf_set_font( pdf, "Helvetica" );
 
     /* ***********************************************************************
@@ -358,7 +384,14 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr 
      */
     pdf_add_text( pdf, NULL, "Verify Pass(Last/All/None):", 12, 300, 250, PDF_GRAY );
     pdf_set_font( pdf, "Helvetica-Bold" );
-    pdf_add_text_verify( text_size_data, 450, 250 );
+    if( c->secure_erase_orchestration == NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE )
+    {
+        pdf_add_text_verify( NWIPE_PDF_FORCE_NOT_APPLICABLE_OUTPUT, text_size_data, 450, 250 );
+    }
+    else
+    {
+        pdf_add_text_verify( NWIPE_PDF_FORCE_OUTPUT_RESULT, text_size_data, 450, 250 );
+    }
     pdf_set_font( pdf, "Helvetica" );
 
     /* ************
@@ -518,9 +551,12 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr 
     nwipe_get_smart_data( d, PDF_TYPE_SINGLE_DISC, &page_number, c );
 
     /***************************************
-     * Add speed profile graph
+     * Add speed profile graph but NOT for standalone secure erase
      */
-    create_pdf_speed_profile_page( d, PDF_TYPE_SINGLE_DISC, &page_number, c );
+    if( c->secure_erase_orchestration != NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE )
+    {
+        create_pdf_speed_profile_page( d, PDF_TYPE_SINGLE_DISC, &page_number, c );
+    }
 
     /*****************************
      * Create the reports filename

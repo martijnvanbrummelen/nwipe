@@ -25,11 +25,13 @@
 #include "gui.h"
 #include "logging.h"
 #include "se_nvme.h"
+#include "create_pdf.h"
 #include "se_nvme_gui.h"
 
 extern int terminate_signal;
 extern WINDOW* main_window;
 extern WINDOW* footer_window;
+extern nwipe_thread_data_ptr_t* global_nwipe_thread_data_ptr;
 
 #ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
 #define NWIPE_GUI_SE_NVME_ACTION_COUNT 5
@@ -694,6 +696,8 @@ static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* 
             case KEY_BACKSPACE:
             case KEY_BREAK:
             case 27: /* ESC */
+                ctx->secure_erase_orchestration = NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE;
+                create_single_disc_pdf( global_nwipe_thread_data_ptr, ctx );
                 return;
         }
     } while( terminate_signal != 1 );

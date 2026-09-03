@@ -60,6 +60,11 @@
 /*! Utility macro to provide gray */
 #define PDF_YELLOW PDF_RGB( 0xFF, 0xFF, 0x5A )
 
+typedef enum {
+    NWIPE_PDF_FORCE_NOT_APPLICABLE_OUTPUT = 0, /* Output N/A */
+    NWIPE_PDF_FORCE_OUTPUT_RESULT = 1 /* Determine & output result */
+} nwipe_pdf_force_t;
+
 /**
  * Create the disk erase report in PDF format
  * @param pointer to a drive context
@@ -103,7 +108,19 @@ void pdf_add_text_size_real( float xoff, float yoff, nwipe_context_t* c );
 
 void pdf_add_text_bytes_erased( float xoff, float yoff, nwipe_context_t* c );
 
-void pdf_add_text_prng_type( float xoff, float yoff, uint32_t colour );
+/**
+ * Prints the PRNG algorithm is relevant, else
+ * prints NA to method. Mode = 1 forces not
+ * applicable to method indication. This is used
+ * by the standalone secure erase method.
+ * @param size_t mode 1=Force NA, 0=determine prng
+ * @param float xoff x position
+ * @param float yoff y position
+ * @param uint32_t colour
+ * @return void
+ */
+void pdf_add_text_prng_type( size_t mode, float xoff, float yoff, uint32_t colour );
+
 /**
  *  Print status of erasure text and ellipse
  *  Automatically determines text and ellipse color
@@ -129,9 +146,9 @@ void pdf_add_text_status_of_erasure( float, float, float, float, float, float, f
  */
 void pdf_display_status_icon( size_t, void* );
 
-void pdf_add_text_blanking( float, float, float );
+void pdf_add_text_blanking( size_t mode, float, float, float );
 
-void pdf_add_text_verify( float, float, float );
+void pdf_add_text_verify( size_t mode, float, float, float );
 
 void pdf_add_text_rounds( float, float, float, nwipe_context_t* );
 

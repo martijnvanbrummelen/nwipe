@@ -81,6 +81,13 @@ typedef enum {
     NWIPE_SECURE_ERASE_FAILURE /* Secure erase has failed */
 } nwipe_secure_erase_status_t;
 
+typedef enum {
+    NWIPE_SECURE_ERASE_ORCHESTRATION_UNPLANNED = 0,
+    NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE, /* Only manual secure erase */
+    NWIPE_SECURE_ERASE_ORCHESTRATION_PRE_CHAINED, /* precedes traditional wipe, i.e part of a method */
+    NWIPE_SECURE_ERASE_ORCHESTRATION_POST_CHAINED /* follows a traditional wipe, i.e part of a method */
+} nwipe_secure_erase_orchestration_t;
+
 /* Keep this list applicable for both ATA and NVMe */
 typedef enum {
     NWIPE_SECURE_ERASE_METHOD_UNKNOWN = 0,
@@ -265,6 +272,14 @@ typedef struct nwipe_context_t_
                                  //  1: Confirmed to be supported by device
     nwipe_secure_erase_type_t secure_erase_type; /* Secure Erase: ATA or NVMe */
     nwipe_secure_erase_status_t secure_erase_status; /* Secure Erase: Status */
+    int secure_erase_orchestration;  // Flag, used by the PDF report logic to determine
+                                     // whether to show secure erase only on report (STANDALONE)
+                                     // or whether the report includes traditional
+                                     // pre or post wipes, verification and blanking (PRE_CHAINED/POST_CHAINED)
+                                     // 0: undefined, not yet set
+                                     // 1: secure erase, operating in manual STANDALONE
+                                     // 2: secure erase, part of a method starting before everything else.(PRE_CHAINED)
+                                     // 3: secure erase, part of a method starting after everthing else. (POST_CHAINED)
     nwipe_secure_erase_method_t secure_erase_method; /* Secure Erase: Method */
     void* secure_erase_context; /* Secure Erase: Pointer to context */
 
