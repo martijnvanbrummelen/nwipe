@@ -1,6 +1,7 @@
 #include "stdio.h"
 #include "ANSI-color-codes.h"
 
+/* clang-format off */
 void display_help()
 {
     /************************************************
@@ -210,3 +211,4 @@ void display_help()
     "        --exclude=/dev/disk/by-id/ata-XXXXXXXX\n" \
     "        --exclude=/dev/disk/by-path/pci-0000:00:17.0-ata-1\n\n");
 }
+/* clang-format on */
