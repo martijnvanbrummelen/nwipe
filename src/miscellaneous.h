@@ -56,7 +56,11 @@ void strlower( char* str );
 u64 str_ascii_number_to_ll( char* );
 
 void Determine_C_B_nomenclature( u64, char*, int );
+
 void convert_seconds_to_hours_minutes_seconds( u64, int*, int*, int* );
+
+void calculate_duration_string( nwipe_context_t* ctx );
+
 int nwipe_strip_path( char*, char* );
 
 /**

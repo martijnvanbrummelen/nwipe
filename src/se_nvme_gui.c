@@ -27,6 +27,8 @@
 #include "se_nvme.h"
 #include "create_pdf.h"
 #include "se_nvme_gui.h"
+#include "create_pdf.h"
+#include "miscellaneous.h"
 
 extern int terminate_signal;
 extern WINDOW* main_window;
@@ -617,6 +619,13 @@ static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* 
             mvwprintw( main_window, yy++, tab1, "Action completed with success." );
             mvwprintw( main_window, yy++, tab1, "Device status: %s", result_status_str );
 
+            /* Write endtime in context and construct the ASCII duration string
+             * once, only if endtime is not already written. */
+            if( ctx->end_time == 0 )
+            {
+                calculate_duration_string( ctx );
+            }
+
             if( san->destructive_sanact )
             {
                 /* We only update global secure erase state if it was a sanitize action */
@@ -638,6 +647,13 @@ static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* 
             mvwprintw( main_window, yy++, tab1, "Device status: %s", result_status_str );
             yy++;
             mvwprintw( main_window, yy++, tab1, "Use 'Exit Failure Mode' to clear a failure state." );
+
+            /* Write endtime in context and construct the ASCII duration string
+             * once, only if endtime is not already written. */
+            if( ctx->end_time == 0 )
+            {
+                calculate_duration_string( ctx );
+            }
 
             if( san->destructive_sanact )
             {
@@ -916,6 +932,10 @@ void nwipe_gui_se_nvme_sanitize( nwipe_context_t* ctx, nwipe_se_nvme_ctx* san )
     {
         nwipe_gui_se_nvme_show_failed_state( ctx, san );
     }
+
+    /* Before starting a new secure erase, init start & end times */
+    ctx->start_time = 0;
+    ctx->end_time = 0;
 
     /* Now let the user select a sanitize action */
     if( !nwipe_gui_se_nvme_select_action( ctx, san ) )
