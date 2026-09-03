@@ -595,14 +595,14 @@ void pdf_add_text_status_of_erasure( float text_xoff,
     {
         if( c->secure_erase_status == NWIPE_SECURE_ERASE_SUCCESS )
         {
-            text = "Success";
+            text = "ERASED";
             text_color = stroke_color = PDF_DARK_GREEN;
             status_icon = STATUS_ICON_GREEN_TICK;
             status_icon_green = TRUE;
         }
         else
         {
-            text = "Failed";
+            text = "FAILED";
             text_color = stroke_color = PDF_RED;
             status_icon = STATUS_ICON_RED_CROSS;
             status_icon_red = TRUE;
