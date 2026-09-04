@@ -21,6 +21,7 @@
 #include "se_ata.h"
 #include "create_pdf.h"
 #include "se_ata_gui.h"
+#include "miscellaneous.h"
 
 extern int terminate_signal;
 extern WINDOW* main_window;
@@ -569,6 +570,13 @@ static void nwipe_gui_se_ata_monitor( nwipe_context_t* ctx, nwipe_se_ata_ctx* sa
             mvwprintw( main_window, yy++, tab1, "Action completed with success." );
             mvwprintw( main_window, yy++, tab1, "Device status: %s", result_status_str );
 
+            /* Write endtime in context and construct the ASCII duration string
+             * once, only if endtime is not already written. */
+            if( ctx->end_time == 0 )
+            {
+                calculate_duration_string( ctx );
+            }
+
             if( san->destructive_sanact )
             {
                 /* We only update global secure erase state if it was a sanitize action */
@@ -590,6 +598,13 @@ static void nwipe_gui_se_ata_monitor( nwipe_context_t* ctx, nwipe_se_ata_ctx* sa
             mvwprintw( main_window, yy++, tab1, "Device status: %s", result_status_str );
             yy++;
             mvwprintw( main_window, yy++, tab1, "Use 'Exit Failure Mode' to clear a failure state." );
+
+            /* Write endtime in context and construct the ASCII duration string
+             * once, only if endtime is not already written. */
+            if( ctx->end_time == 0 )
+            {
+                calculate_duration_string( ctx );
+            }
 
             if( san->destructive_sanact )
             {
@@ -648,6 +663,7 @@ static void nwipe_gui_se_ata_monitor( nwipe_context_t* ctx, nwipe_se_ata_ctx* sa
             case KEY_BACKSPACE:
             case KEY_BREAK:
             case 27: /* ESC */
+                ctx->secure_erase_orchestration = NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE;
                 create_single_disc_pdf( global_nwipe_thread_data_ptr, ctx );
                 return;
         }
@@ -921,6 +937,10 @@ void nwipe_gui_se_ata_sanitize( nwipe_context_t* ctx, nwipe_se_ata_ctx* san )
         nwipe_gui_se_ata_show_failed_state( ctx, san );
     }
 
+    /* Before starting a new secure erase, init start & end times */
+    ctx->start_time = 0;
+    ctx->end_time = 0;
+
     /* Now let the user select a sanitize action */
     if( !nwipe_gui_se_ata_select_action( ctx, san ) )
     {
@@ -956,6 +976,9 @@ void nwipe_gui_se_ata_sanitize( nwipe_context_t* ctx, nwipe_se_ata_ctx* san )
 
     /* Inform the device context of the chosen method */
     nwipe_gui_se_ata_set_context_method( ctx, san->planned_sanact );
+
+    /* get current time at the start of the wipe in seconds since epoch  */
+    time( &ctx->start_time );
 
     /* Issue the sanitize command */
     if( nwipe_se_ata_sanitize( san ) != 0 )
