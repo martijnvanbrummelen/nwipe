@@ -75,14 +75,13 @@ typedef enum {
 } nwipe_secure_erase_type_t;
 
 typedef enum {
-    NWIPE_SECURE_ERASE_UNPLANNED = 0, /* Unused: Do not run a secure erase */
-    NWIPE_SECURE_ERASE_PLANNED, /* Unused: Run a (configured) secure erase */
+    NWIPE_SECURE_ERASE_UNKNOWN = 0,
     NWIPE_SECURE_ERASE_SUCCESS, /* Secure erase was successful */
     NWIPE_SECURE_ERASE_FAILURE /* Secure erase has failed */
 } nwipe_secure_erase_status_t;
 
 typedef enum {
-    NWIPE_SECURE_ERASE_ORCHESTRATION_UNPLANNED = 0,
+    NWIPE_SECURE_ERASE_ORCHESTRATION_UNKNOWN = 0,
     NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE, /* Only manual secure erase */
     NWIPE_SECURE_ERASE_ORCHESTRATION_PRE_CHAINED, /* precedes traditional wipe, i.e part of a method */
     NWIPE_SECURE_ERASE_ORCHESTRATION_POST_CHAINED /* follows a traditional wipe, i.e part of a method */
@@ -270,8 +269,6 @@ typedef struct nwipe_context_t_
                                  // -1: Device did not understand probe
                                  //  0: Confirmed not supported by device
                                  //  1: Confirmed to be supported by device
-    nwipe_secure_erase_type_t secure_erase_type; /* Secure Erase: ATA or NVMe */
-    nwipe_secure_erase_status_t secure_erase_status; /* Secure Erase: Status */
     int secure_erase_orchestration;  // Flag, used by the PDF report logic to determine
                                      // whether to show secure erase only on report (STANDALONE)
                                      // or whether the report includes traditional
@@ -280,7 +277,13 @@ typedef struct nwipe_context_t_
                                      // 1: secure erase, operating in manual STANDALONE
                                      // 2: secure erase, part of a method starting before everything else.(PRE_CHAINED)
                                      // 3: secure erase, part of a method starting after everthing else. (POST_CHAINED)
+    nwipe_secure_erase_type_t secure_erase_type; /* Secure Erase: ATA or NVMe */
     nwipe_secure_erase_method_t secure_erase_method; /* Secure Erase: Method */
+    nwipe_secure_erase_status_t
+        secure_erase_status;  // Beware status field is also updated for non-destructive methods,
+                              // such as clearing an error condition or exiting media verification
+                              // state. Check against the field secure_erase_method if you need to
+                              // filter out non-destructive methods to derive secure erase success.
     void* secure_erase_context; /* Secure Erase: Pointer to context */
 
     /*

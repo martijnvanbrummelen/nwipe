@@ -221,9 +221,9 @@ void convert_seconds_to_hours_minutes_seconds( u64 total_seconds, int* hours, in
 
 void calculate_duration_string( nwipe_context_t* ctx )
 {
-    int hours;
-    int minutes;
-    int seconds;
+    int hours = 0;
+    int minutes = 0;
+    int seconds = 0;
     u64 total_duration_seconds;
 
     /* get current time at the end of the wipe in seconds since epoch  */

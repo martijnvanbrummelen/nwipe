@@ -861,6 +861,24 @@ int nwipe_se_ata_poll( nwipe_se_ata_ctx* san )
 } /* nwipe_se_ata_poll */
 
 /*
+ * Determines whether an ATA sanitize action destroys user data.
+ * Returns 1 for destructive actions, otherwise returns 0.
+ */
+int nwipe_se_ata_sanact_is_destructive( nwipe_se_ata_sanact_e act )
+{
+    switch( act )
+    {
+        case NWIPE_SE_ATA_SANACT_BLOCK_ERASE:
+        case NWIPE_SE_ATA_SANACT_CRYPTO_SCRAMBLE:
+        case NWIPE_SE_ATA_SANACT_OVERWRITE:
+            return 1;
+
+        default:
+            return 0;
+    }
+} /* nwipe_se_ata_sanact_is_destructive */
+
+/*
  * Run the san->planned_sanact sanitize operation.
  * Sends command to device and returns 0 on success.
  * Operation itself runs on the device (as non-blocking).
@@ -926,17 +944,8 @@ int nwipe_se_ata_sanitize( nwipe_se_ata_ctx* san )
             return -1;
     }
 
-    switch( san->planned_sanact )
-    {
-        case NWIPE_SE_ATA_SANACT_BLOCK_ERASE:
-        case NWIPE_SE_ATA_SANACT_CRYPTO_SCRAMBLE:
-        case NWIPE_SE_ATA_SANACT_OVERWRITE:
-            san->destructive_sanact = 1;
-            break;
-        default:
-            san->destructive_sanact = 0;
-            break;
-    }
+    /* Keep in sync, in case the caller did not set it themselves */
+    san->destructive_sanact = nwipe_se_ata_sanact_is_destructive( san->planned_sanact );
 
     nwipe_log( NWIPE_LOG_INFO,
                "%s: issuing SANITIZE feat=0x%04x lba=0x%012llx nsect=%u",

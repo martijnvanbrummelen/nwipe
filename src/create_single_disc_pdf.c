@@ -17,9 +17,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h> /* HAVE_LIBNVME */
-#endif
 
 #ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE
@@ -47,8 +44,6 @@
 #include "miscellaneous.h"
 #include <libconfig.h>
 #include "conf.h"
-
-#include "se_nvme.h"
 
 #define text_size_data 10
 
@@ -86,7 +81,7 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr 
     char secure_erase_method_txt[30] = "";
 
     /* These methods should be ordered exactly as shown in nwipe_secure_erase_method_t in context.h */
-    const char* secure_erase_methods[] = { "Unknown", "Block", "Encrypt", "Overwrite" };
+    const char* secure_erase_methods[] = { "Unknown", "Block", "Crypto", "Overwrite" };
 
     size_t page_number = 1;
 
@@ -452,7 +447,7 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr 
     pdf_set_font( pdf, "Helvetica-Bold" );
     if( c->secure_erase_orchestration == NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE )
     {
-        pdf_add_text( pdf, NULL, "N/A for Secure erase", text_size_data, 385, 190, PDF_BLACK );
+        pdf_add_text( pdf, NULL, "N/A for Secure Erase", text_size_data, 385, 190, PDF_BLACK );
     }
     else
     {
@@ -531,7 +526,7 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr 
 
         pdf_add_text( pdf,
                       NULL,
-                      "Assuming secure erase zeroed the drive, a verification pass is also recommended",
+                      "Recommended to run a zero-verification pass to ensure drive was zeroed",
                       text_size_data,
                       60,
                       137,
@@ -539,7 +534,7 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr 
 
         pdf_add_text( pdf,
                       NULL,
-                      "To verify the reliability of the drive a PRNG and verification is recommended",
+                      "To verify the reliability of the drive a PRNG wipe with verification is advisable",
                       text_size_data,
                       60,
                       127,

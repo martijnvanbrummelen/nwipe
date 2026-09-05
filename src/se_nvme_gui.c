@@ -25,6 +25,7 @@
 #include "gui.h"
 #include "logging.h"
 #include "se_nvme.h"
+#include "se_nvme_gui.h"
 #include "create_pdf.h"
 #include "miscellaneous.h"
 
@@ -345,6 +346,7 @@ static int nwipe_gui_se_nvme_select_action( nwipe_context_t* ctx, nwipe_se_nvme_
                 if( nwipe_gui_se_nvme_action_supported( san, nwipe_gui_se_nvme_actions[focus].sanact ) )
                 {
                     san->planned_sanact = nwipe_gui_se_nvme_actions[focus].sanact;
+                    san->destructive_sanact = nwipe_se_nvme_sanact_is_destructive( san->planned_sanact );
                     return 1;
                 }
                 else
@@ -485,6 +487,9 @@ static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* 
     int user_aborted = 0;
     int method_set = 0;
 
+    /* Record start time (covers new & resumed erases) */
+    time( &ctx->start_time );
+
     werase( footer_window );
     nwipe_gui_amend_footer_window( ftr_progress, "" );
     wrefresh( footer_window );
@@ -583,7 +588,9 @@ static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* 
 
     } while( terminate_signal != 1 );
 
-    const char* ftr_results = "Enter=Return";
+    const char* ftr_results = ( !user_aborted && san->destructive_sanact )
+        ? "Erase finished - press enter to create pdfs & return."
+        : "Enter=Return";
     const char* result_status_str = nwipe_gui_se_nvme_status_str( san );
     int logged = 0;
 
@@ -617,18 +624,7 @@ static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* 
             mvwprintw( main_window, yy++, tab1, "Action completed with success." );
             mvwprintw( main_window, yy++, tab1, "Device status: %s", result_status_str );
 
-            /* Write endtime in context and construct the ASCII duration string
-             * once, only if endtime is not already written. */
-            if( ctx->end_time == 0 )
-            {
-                calculate_duration_string( ctx );
-            }
-
-            if( san->destructive_sanact )
-            {
-                /* We only update global secure erase state if it was a sanitize action */
-                ctx->secure_erase_status = NWIPE_SECURE_ERASE_SUCCESS; /* Global state */
-            }
+            ctx->secure_erase_status = NWIPE_SECURE_ERASE_SUCCESS;
 
             if( !logged )
             {
@@ -646,18 +642,7 @@ static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* 
             yy++;
             mvwprintw( main_window, yy++, tab1, "Use 'Exit Failure Mode' to clear a failure state." );
 
-            /* Write endtime in context and construct the ASCII duration string
-             * once, only if endtime is not already written. */
-            if( ctx->end_time == 0 )
-            {
-                calculate_duration_string( ctx );
-            }
-
-            if( san->destructive_sanact )
-            {
-                /* We only update global secure erase state if it was a sanitize action */
-                ctx->secure_erase_status = NWIPE_SECURE_ERASE_FAILURE; /* Global state */
-            }
+            ctx->secure_erase_status = NWIPE_SECURE_ERASE_FAILURE;
 
             if( !logged )
             {
@@ -674,11 +659,7 @@ static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* 
             mvwprintw( main_window, yy++, tab1, "The device did not return a success or failure." );
             mvwprintw( main_window, yy++, tab1, "Device status: %s", result_status_str );
 
-            if( san->destructive_sanact )
-            {
-                /* We only update global secure erase state if it was a sanitize action */
-                ctx->secure_erase_status = NWIPE_SECURE_ERASE_SUCCESS; /* Global state */
-            }
+            ctx->secure_erase_status = NWIPE_SECURE_ERASE_SUCCESS;
 
             if( !logged )
             {
@@ -699,6 +680,9 @@ static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* 
         nwipe_gui_title( main_window, nwipe_gui_se_nvme_title );
         wrefresh( main_window );
 
+        /* Record end time */
+        calculate_duration_string( ctx );
+
         timeout( 250 );
         keystroke = getch();
         timeout( -1 );
@@ -710,8 +694,11 @@ static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* 
             case KEY_BACKSPACE:
             case KEY_BREAK:
             case 27: /* ESC */
-                ctx->secure_erase_orchestration = NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE;
-                create_single_disc_pdf( global_nwipe_thread_data_ptr, ctx );
+                if( !user_aborted && san->destructive_sanact ) /* PDFs are only created for destructive methods */
+                {
+                    ctx->secure_erase_orchestration = NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE;
+                    create_single_disc_pdf( global_nwipe_thread_data_ptr, ctx );
+                }
                 return;
         }
     } while( terminate_signal != 1 );
@@ -918,6 +905,12 @@ void nwipe_gui_se_nvme_sanitize( nwipe_context_t* ctx, nwipe_se_nvme_ctx* san )
     {
         if( nwipe_gui_se_nvme_prompt_in_progress( ctx, san ) )
         {
+            /* Reset the context status so a previous one does not leak */
+            ctx->secure_erase_status = NWIPE_SECURE_ERASE_UNKNOWN;
+
+            /* Inform the device context of the running method */
+            nwipe_gui_se_nvme_set_context_method( ctx, san->sanact );
+
             /* User wanted to monitor its progress */
             nwipe_gui_se_nvme_monitor( ctx, san );
         }
@@ -930,10 +923,6 @@ void nwipe_gui_se_nvme_sanitize( nwipe_context_t* ctx, nwipe_se_nvme_ctx* san )
     {
         nwipe_gui_se_nvme_show_failed_state( ctx, san );
     }
-
-    /* Before starting a new secure erase, init start & end times */
-    ctx->start_time = 0;
-    ctx->end_time = 0;
 
     /* Now let the user select a sanitize action */
     if( !nwipe_gui_se_nvme_select_action( ctx, san ) )
@@ -998,12 +987,6 @@ void nwipe_gui_se_nvme_sanitize( nwipe_context_t* ctx, nwipe_se_nvme_ctx* san )
         return;
     }
 
-    /* Inform the device context of the chosen method */
-    nwipe_gui_se_nvme_set_context_method( ctx, san->planned_sanact );
-
-    /* get current time at the start of the wipe in seconds since epoch  */
-    time( &ctx->start_time );
-
     /* Sanitize the device now */
     if( nwipe_se_nvme_sanitize( san ) != 0 )
     {
@@ -1011,6 +994,12 @@ void nwipe_gui_se_nvme_sanitize( nwipe_context_t* ctx, nwipe_se_nvme_ctx* san )
         nwipe_se_nvme_close( san );
         return;
     }
+
+    /* Reset the context status so a previous one does not leak */
+    ctx->secure_erase_status = NWIPE_SECURE_ERASE_UNKNOWN;
+
+    /* Inform the device context of the chosen method */
+    nwipe_gui_se_nvme_set_context_method( ctx, san->planned_sanact );
 
     /* Monitor the results */
     nwipe_gui_se_nvme_monitor( ctx, san );

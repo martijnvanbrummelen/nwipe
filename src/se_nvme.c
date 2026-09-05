@@ -411,6 +411,24 @@ int nwipe_se_nvme_poll( nwipe_se_nvme_ctx* san )
 } /* nwipe_se_nvme_poll */
 
 /*
+ * Determines whether an NVMe sanitize action destroys user data.
+ * Returns 1 for destructive actions, otherwise returns 0.
+ */
+int nwipe_se_nvme_sanact_is_destructive( enum nvme_sanitize_sanact act )
+{
+    switch( act )
+    {
+        case NVME_SANITIZE_SANACT_START_BLOCK_ERASE:
+        case NVME_SANITIZE_SANACT_START_CRYPTO_ERASE:
+        case NVME_SANITIZE_SANACT_START_OVERWRITE:
+            return 1;
+
+        default:
+            return 0;
+    }
+} /* nwipe_se_nvme_sanact_is_destructive */
+
+/*
  * Run the san->planned_sanact sanitize operation.
  * Sends command to device and returns 0 on success.
  * Operation itself runs on the device (as non-blocking).
@@ -482,17 +500,8 @@ int nwipe_se_nvme_sanitize( nwipe_se_nvme_ctx* san )
         }
     }
 
-    switch( san->planned_sanact )
-    {
-        case NVME_SANITIZE_SANACT_START_BLOCK_ERASE:
-        case NVME_SANITIZE_SANACT_START_CRYPTO_ERASE:
-        case NVME_SANITIZE_SANACT_START_OVERWRITE:
-            san->destructive_sanact = 1;
-            break;
-        default:
-            san->destructive_sanact = 0;
-            break;
-    }
+    /* Keep in sync, in case the caller did not set it themselves */
+    san->destructive_sanact = nwipe_se_nvme_sanact_is_destructive( san->planned_sanact );
 
     nwipe_log( NWIPE_LOG_INFO, "%s: issuing SANITIZE sanact=%d", san->ctrl_path, san->planned_sanact );
 
