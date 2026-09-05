@@ -1539,14 +1539,14 @@ void nwipe_gui_select( int count, nwipe_context_t** c )
                     nwipe_gui_draw_acs_prefix( main_window, yy, 4 );
                     switch( c[i + offset]->secure_erase_status )
                     {
-                        case NWIPE_SECURE_ERASE_SUCCESS:
+                        case NWIPE_SECURE_ERASE_STATUS_SUCCESS:
                             mvwprintw( main_window,
                                        yy,
                                        7,
                                        " Secure Erase: Device sanitized, recommended to do a regular wipe now." );
                             break;
 
-                        case NWIPE_SECURE_ERASE_FAILURE:
+                        case NWIPE_SECURE_ERASE_STATUS_FAILURE:
                             mvwprintw( main_window,
                                        yy,
                                        7,

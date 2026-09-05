@@ -624,7 +624,7 @@ static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* 
             mvwprintw( main_window, yy++, tab1, "Action completed with success." );
             mvwprintw( main_window, yy++, tab1, "Device status: %s", result_status_str );
 
-            ctx->secure_erase_status = NWIPE_SECURE_ERASE_SUCCESS;
+            ctx->secure_erase_status = NWIPE_SECURE_ERASE_STATUS_SUCCESS;
 
             if( !logged )
             {
@@ -642,7 +642,7 @@ static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* 
             yy++;
             mvwprintw( main_window, yy++, tab1, "Use 'Exit Failure Mode' to clear a failure state." );
 
-            ctx->secure_erase_status = NWIPE_SECURE_ERASE_FAILURE;
+            ctx->secure_erase_status = NWIPE_SECURE_ERASE_STATUS_FAILURE;
 
             if( !logged )
             {
@@ -659,7 +659,7 @@ static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* 
             mvwprintw( main_window, yy++, tab1, "The device did not return a success or failure." );
             mvwprintw( main_window, yy++, tab1, "Device status: %s", result_status_str );
 
-            ctx->secure_erase_status = NWIPE_SECURE_ERASE_SUCCESS;
+            ctx->secure_erase_status = NWIPE_SECURE_ERASE_STATUS_SUCCESS;
 
             if( !logged )
             {
@@ -698,6 +698,7 @@ static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* 
                 {
                     ctx->secure_erase_orchestration = NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE;
                     create_single_disc_pdf( global_nwipe_thread_data_ptr, ctx );
+                    ctx->secure_erase_orchestration = NWIPE_SECURE_ERASE_ORCHESTRATION_UNKNOWN; /* Reset */
                 }
                 return;
         }
@@ -906,7 +907,7 @@ void nwipe_gui_se_nvme_sanitize( nwipe_context_t* ctx, nwipe_se_nvme_ctx* san )
         if( nwipe_gui_se_nvme_prompt_in_progress( ctx, san ) )
         {
             /* Reset the context status so a previous one does not leak */
-            ctx->secure_erase_status = NWIPE_SECURE_ERASE_UNKNOWN;
+            ctx->secure_erase_status = NWIPE_SECURE_ERASE_STATUS_UNKNOWN;
 
             /* Inform the device context of the running method */
             nwipe_gui_se_nvme_set_context_method( ctx, san->sanact );
@@ -996,7 +997,7 @@ void nwipe_gui_se_nvme_sanitize( nwipe_context_t* ctx, nwipe_se_nvme_ctx* san )
     }
 
     /* Reset the context status so a previous one does not leak */
-    ctx->secure_erase_status = NWIPE_SECURE_ERASE_UNKNOWN;
+    ctx->secure_erase_status = NWIPE_SECURE_ERASE_STATUS_UNKNOWN;
 
     /* Inform the device context of the chosen method */
     nwipe_gui_se_nvme_set_context_method( ctx, san->planned_sanact );
