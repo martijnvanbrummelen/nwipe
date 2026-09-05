@@ -540,7 +540,9 @@ static void nwipe_gui_se_ata_monitor( nwipe_context_t* ctx, nwipe_se_ata_ctx* sa
 
     } while( terminate_signal != 1 );
 
-    const char* ftr_results = "Enter=Return";
+    const char* ftr_results = ( !user_aborted && san->destructive_sanact )
+        ? "Erase finished - press enter to create pdfs & return."
+        : "Enter=Return";
     const char* result_status_str = nwipe_gui_se_ata_status_str( san );
     int logged = 0;
 
