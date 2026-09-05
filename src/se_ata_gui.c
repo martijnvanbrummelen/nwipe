@@ -573,11 +573,7 @@ static void nwipe_gui_se_ata_monitor( nwipe_context_t* ctx, nwipe_se_ata_ctx* sa
             mvwprintw( main_window, yy++, tab1, "Action completed with success." );
             mvwprintw( main_window, yy++, tab1, "Device status: %s", result_status_str );
 
-            if( san->destructive_sanact )
-            {
-                /* We only update global secure erase state if it was a sanitize action */
-                ctx->secure_erase_status = NWIPE_SECURE_ERASE_SUCCESS; /* Global state */
-            }
+            ctx->secure_erase_status = NWIPE_SECURE_ERASE_SUCCESS;
 
             if( !logged )
             {
@@ -595,11 +591,7 @@ static void nwipe_gui_se_ata_monitor( nwipe_context_t* ctx, nwipe_se_ata_ctx* sa
             yy++;
             mvwprintw( main_window, yy++, tab1, "Use 'Exit Failure Mode' to clear a failure state." );
 
-            if( san->destructive_sanact )
-            {
-                /* We only update global secure erase state if it was a sanitize action */
-                ctx->secure_erase_status = NWIPE_SECURE_ERASE_FAILURE; /* Global state */
-            }
+            ctx->secure_erase_status = NWIPE_SECURE_ERASE_FAILURE;
 
             if( !logged )
             {
@@ -616,11 +608,7 @@ static void nwipe_gui_se_ata_monitor( nwipe_context_t* ctx, nwipe_se_ata_ctx* sa
             mvwprintw( main_window, yy++, tab1, "The device did not return a success or failure." );
             mvwprintw( main_window, yy++, tab1, "Device status: %s", result_status_str );
 
-            if( san->destructive_sanact )
-            {
-                /* We only update global secure erase state if it was a sanitize action */
-                ctx->secure_erase_status = NWIPE_SECURE_ERASE_SUCCESS; /* Global state */
-            }
+            ctx->secure_erase_status = NWIPE_SECURE_ERASE_SUCCESS;
 
             if( !logged )
             {
@@ -655,8 +643,11 @@ static void nwipe_gui_se_ata_monitor( nwipe_context_t* ctx, nwipe_se_ata_ctx* sa
             case KEY_BACKSPACE:
             case KEY_BREAK:
             case 27: /* ESC */
-                ctx->secure_erase_orchestration = NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE;
-                create_single_disc_pdf( global_nwipe_thread_data_ptr, ctx );
+                if( san->destructive_sanact ) /* PDFs are only created for destructive methods */
+                {
+                    ctx->secure_erase_orchestration = NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE;
+                    create_single_disc_pdf( global_nwipe_thread_data_ptr, ctx );
+                }
                 return;
         }
     } while( terminate_signal != 1 );
@@ -916,6 +907,12 @@ void nwipe_gui_se_ata_sanitize( nwipe_context_t* ctx, nwipe_se_ata_ctx* san )
     {
         if( nwipe_gui_se_ata_prompt_in_progress( ctx, san ) )
         {
+            /* Reset the context status so a previous one does not leak */
+            ctx->secure_erase_status = NWIPE_SECURE_ERASE_UNKNOWN;
+
+            /* ATA does not provide which method is presently running */
+            ctx->secure_erase_method = NWIPE_SECURE_ERASE_METHOD_UNKNOWN;
+
             /* User wanted to monitor its progress */
             nwipe_gui_se_ata_monitor( ctx, san );
         }
@@ -962,9 +959,6 @@ void nwipe_gui_se_ata_sanitize( nwipe_context_t* ctx, nwipe_se_ata_ctx* san )
         return;
     }
 
-    /* Inform the device context of the chosen method */
-    nwipe_gui_se_ata_set_context_method( ctx, san->planned_sanact );
-
     /* Issue the sanitize command */
     if( nwipe_se_ata_sanitize( san ) != 0 )
     {
@@ -972,6 +966,12 @@ void nwipe_gui_se_ata_sanitize( nwipe_context_t* ctx, nwipe_se_ata_ctx* san )
         nwipe_se_ata_close( san );
         return;
     }
+
+    /* Reset the context status so a previous one does not leak */
+    ctx->secure_erase_status = NWIPE_SECURE_ERASE_UNKNOWN;
+
+    /* Inform the device context of the chosen method */
+    nwipe_gui_se_ata_set_context_method( ctx, san->planned_sanact );
 
     /* Monitor the results */
     nwipe_gui_se_ata_monitor( ctx, san );
