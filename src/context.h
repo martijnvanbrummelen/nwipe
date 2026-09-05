@@ -269,7 +269,8 @@ typedef struct nwipe_context_t_
                                  // -1: Device did not understand probe
                                  //  0: Confirmed not supported by device
                                  //  1: Confirmed to be supported by device
-    int secure_erase_orchestration;  // Flag, used by the PDF report logic to determine
+    nwipe_secure_erase_orchestration_t
+        secure_erase_orchestration;  // Flag, used by the PDF report logic to determine
                                      // whether to show secure erase only on report (STANDALONE)
                                      // or whether the report includes traditional
                                      // pre or post wipes, verification and blanking (PRE_CHAINED/POST_CHAINED)

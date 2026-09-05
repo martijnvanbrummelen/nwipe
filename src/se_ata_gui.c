@@ -650,6 +650,7 @@ static void nwipe_gui_se_ata_monitor( nwipe_context_t* ctx, nwipe_se_ata_ctx* sa
                 {
                     ctx->secure_erase_orchestration = NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE;
                     create_single_disc_pdf( global_nwipe_thread_data_ptr, ctx );
+                    ctx->secure_erase_orchestration = NWIPE_SECURE_ERASE_ORCHESTRATION_UNKNOWN; /* Reset */
                 }
                 return;
         }
