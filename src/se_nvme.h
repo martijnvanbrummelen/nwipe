@@ -89,6 +89,7 @@ void nwipe_se_nvme_close( nwipe_se_nvme_ctx* san );
 void nwipe_se_nvme_destroy( nwipe_se_nvme_ctx* san );
 int nwipe_se_nvme_sancap( nwipe_se_nvme_ctx* san );
 int nwipe_se_nvme_poll( nwipe_se_nvme_ctx* san );
+int nwipe_se_nvme_sanact_is_destructive( enum nvme_sanitize_sanact act );
 int nwipe_se_nvme_sanitize( nwipe_se_nvme_ctx* san );
 
 #endif /* HAVE_LIBNVME */

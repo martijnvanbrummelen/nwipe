@@ -72,6 +72,7 @@ void nwipe_se_ata_close( nwipe_se_ata_ctx* san );
 void nwipe_se_ata_destroy( nwipe_se_ata_ctx* san );
 int nwipe_se_ata_sancap( nwipe_se_ata_ctx* san );
 int nwipe_se_ata_poll( nwipe_se_ata_ctx* san );
+int nwipe_se_ata_sanact_is_destructive( nwipe_se_ata_sanact_e act );
 int nwipe_se_ata_sanitize( nwipe_se_ata_ctx* san );
 
 #endif /* SE_ATA_H_ */

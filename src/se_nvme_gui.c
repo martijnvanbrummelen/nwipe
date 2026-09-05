@@ -346,6 +346,7 @@ static int nwipe_gui_se_nvme_select_action( nwipe_context_t* ctx, nwipe_se_nvme_
                 if( nwipe_gui_se_nvme_action_supported( san, nwipe_gui_se_nvme_actions[focus].sanact ) )
                 {
                     san->planned_sanact = nwipe_gui_se_nvme_actions[focus].sanact;
+                    san->destructive_sanact = nwipe_se_nvme_sanact_is_destructive( san->planned_sanact );
                     return 1;
                 }
                 else

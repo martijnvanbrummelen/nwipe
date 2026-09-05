@@ -323,6 +323,7 @@ static int nwipe_gui_se_ata_select_action( nwipe_context_t* ctx, nwipe_se_ata_ct
                 if( nwipe_gui_se_ata_action_supported( san, nwipe_gui_se_ata_actions[focus].sanact ) )
                 {
                     san->planned_sanact = nwipe_gui_se_ata_actions[focus].sanact;
+                    san->destructive_sanact = nwipe_se_ata_sanact_is_destructive( san->planned_sanact );
                     return 1;
                 }
                 else
