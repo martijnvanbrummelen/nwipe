@@ -526,7 +526,7 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr 
 
         pdf_add_text( pdf,
                       NULL,
-                      "Assuming secure erase zeroed the drive, a verification pass is also recommended",
+                      "Recommended to run a zero-verification pass to ensure secure erase succeeded",
                       text_size_data,
                       60,
                       137,
@@ -534,7 +534,7 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr 
 
         pdf_add_text( pdf,
                       NULL,
-                      "To verify the reliability of the drive a PRNG and verification is recommended",
+                      "To verify the reliability of the drive a PRNG wipe and verification is advisable",
                       text_size_data,
                       60,
                       127,
