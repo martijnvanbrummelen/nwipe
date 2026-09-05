@@ -447,7 +447,7 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr 
     pdf_set_font( pdf, "Helvetica-Bold" );
     if( c->secure_erase_orchestration == NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE )
     {
-        pdf_add_text( pdf, NULL, "N/A for Secure erase", text_size_data, 385, 190, PDF_BLACK );
+        pdf_add_text( pdf, NULL, "N/A for Secure Erase", text_size_data, 385, 190, PDF_BLACK );
     }
     else
     {
