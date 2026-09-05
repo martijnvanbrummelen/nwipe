@@ -17,9 +17,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h> /* HAVE_LIBNVME */
-#endif
 
 #ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE
@@ -47,8 +44,6 @@
 #include "miscellaneous.h"
 #include <libconfig.h>
 #include "conf.h"
-
-#include "se_nvme.h"
 
 #define text_size_data 10
 
@@ -86,7 +81,7 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr 
     char secure_erase_method_txt[30] = "";
 
     /* These methods should be ordered exactly as shown in nwipe_secure_erase_method_t in context.h */
-    const char* secure_erase_methods[] = { "Unknown", "Block", "Encrypt", "Overwrite" };
+    const char* secure_erase_methods[] = { "Unknown", "Block", "Crypto", "Overwrite" };
 
     size_t page_number = 1;
 
