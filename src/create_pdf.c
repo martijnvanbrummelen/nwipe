@@ -484,7 +484,7 @@ void pdf_add_text_bytes_erased( float xoff, float yoff, nwipe_context_t* c )
 
     if( c->secure_erase_orchestration == NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE )
     {
-        if( c->secure_erase_status == NWIPE_SECURE_ERASE_SUCCESS )
+        if( c->secure_erase_status == NWIPE_SECURE_ERASE_STATUS_SUCCESS )
         {
             snprintf( bytes_erased, sizeof( bytes_erased ), "%lli, (%s%%)", c->device_size, "100" );
             pdf_add_text( pdf, NULL, bytes_erased, text_size_data, xoff, yoff, PDF_DARK_GREEN );
@@ -609,7 +609,7 @@ void pdf_add_text_status_of_erasure( float text_xoff,
     /* Is this a standalone secure erase?, i.e not part of a method */
     if( c->secure_erase_orchestration == NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE )
     {
-        if( c->secure_erase_status == NWIPE_SECURE_ERASE_SUCCESS )
+        if( c->secure_erase_status == NWIPE_SECURE_ERASE_STATUS_SUCCESS )
         {
             text = "ERASED";
             text_color = stroke_color = PDF_DARK_GREEN;
@@ -804,7 +804,7 @@ void pdf_add_text_rounds( float text_size, float xoff, float yoff, nwipe_context
 
     if( c->secure_erase_orchestration == NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE )
     {
-        if( c->secure_erase_status == NWIPE_SECURE_ERASE_SUCCESS )
+        if( c->secure_erase_status == NWIPE_SECURE_ERASE_STATUS_SUCCESS )
         {
             pdf_add_text( pdf, NULL, "1/1", text_size, xoff, yoff, PDF_DARK_GREEN );
         }

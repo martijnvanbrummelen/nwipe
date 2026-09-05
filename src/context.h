@@ -75,9 +75,9 @@ typedef enum {
 } nwipe_secure_erase_type_t;
 
 typedef enum {
-    NWIPE_SECURE_ERASE_UNKNOWN = 0,
-    NWIPE_SECURE_ERASE_SUCCESS, /* Secure erase was successful */
-    NWIPE_SECURE_ERASE_FAILURE /* Secure erase has failed */
+    NWIPE_SECURE_ERASE_STATUS_UNKNOWN = 0,
+    NWIPE_SECURE_ERASE_STATUS_SUCCESS, /* Secure erase was successful */
+    NWIPE_SECURE_ERASE_STATUS_FAILURE /* Secure erase has failed */
 } nwipe_secure_erase_status_t;
 
 typedef enum {
