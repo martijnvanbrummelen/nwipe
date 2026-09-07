@@ -137,6 +137,479 @@ create_pdf_speed_profile_page( nwipe_misc_thread_data_t* d, size_t pdf_type, siz
     }
     /* ====================================================================== */
 
+    // Generate Graph Vector Elements (Updated with Min/Max Temp arrays and Right-Axis Label)
+    generate_graph_pdf( graph_y_start,
+                        c->min_throughput,
+                        c->max_throughput,
+                        c->min_temp,
+                        c->max_temp,
+                        DATA_POINTS,
+                        "",
+                        "Erasure Completion - %",
+                        "Speed",
+                        "Temperature (°C)",
+                        100.0f );
+
+    // --- Interpretation Help & Disclaimer Text Block ---
+    const float PLOT_X = LEFT_MARGIN_TEXT + 20;
+
+    const char* help_title = "Interpretation Guide:";
+    const char* help_body1 = "Monitor the speed vectors closely for unusual anomalies or performance bottlenecks.";
+    const char* help_body2 = "Look for sharp, sudden downward spikes where operational speed differs substantially";
+    const char* help_body3 = "from typical baseline values. These spikes can indicate a drive slowing down over";
+    const char* help_body4 = "specificphysical sectors, signaling potential disk failure. Such degradation may not";
+    const char* help_body5 = "trigger standard drive or I/O errors, meaning it won't always be obvious in SMART data.";
+    const char* help_body6 = "The SMART health status may even report the drive as 'Good' when,in fact, this graph ";
+    const char* help_body7 = "highlights a localized failure on the platter surface.";
+
+    const char* disc_title = "Important Note:";
+    const char* disc_body1 = "If your system experiences CPU or controller bottlenecks when erasing multiple drives";
+    const char* disc_body2 = "simultaneously, the recorded disk profile may not accurately reflect the drive's true";
+    const char* disc_body3 = "performance. To isolate performance issues or verify an unexpected speed profile, run";
+    const char* disc_body4 = "ShredOS/nwipe with only the target drive connected under optimal hardware conditions.";
+    const char* disc_body5 = "See https://github.com/martijnvanbrummelen/nwipe/discussions/775 for examples of speed";
+    const char* disc_body6 = "profiles for both good and failing discs.";
+
+    // Render Interpretation Text Vector Elements (Y positions spaced down progressively)
+    size_t PLOT_Y = 260;
+    size_t PLOT_Y_DIFF = 11;
+    pdf_set_font( pdf, "Courier" );
+    pdf_add_text( pdf, NULL, help_title, 10.0f, PLOT_X, PLOT_Y, PDF_BLACK );
+    pdf_add_text( pdf, NULL, help_body1, 8.0f, PLOT_X, ( PLOT_Y -= PLOT_Y_DIFF ), PDF_BLACK );
+    pdf_add_text( pdf, NULL, help_body2, 8.0f, PLOT_X, ( PLOT_Y -= PLOT_Y_DIFF ), PDF_BLACK );
+    pdf_add_text( pdf, NULL, help_body3, 8.0f, PLOT_X, ( PLOT_Y -= PLOT_Y_DIFF ), PDF_BLACK );
+    pdf_add_text( pdf, NULL, help_body4, 8.0f, PLOT_X, ( PLOT_Y -= PLOT_Y_DIFF ), PDF_BLACK );
+    pdf_add_text( pdf, NULL, help_body5, 8.0f, PLOT_X, ( PLOT_Y -= PLOT_Y_DIFF ), PDF_BLACK );
+    pdf_add_text( pdf, NULL, help_body6, 8.0f, PLOT_X, ( PLOT_Y -= PLOT_Y_DIFF ), PDF_BLACK );
+    pdf_add_text( pdf, NULL, help_body7, 8.0f, PLOT_X, ( PLOT_Y -= PLOT_Y_DIFF ), PDF_BLACK );
+
+    // Render Disclaimer Text Vector Elements
+    PLOT_Y -= 20;
+    pdf_add_text( pdf, NULL, disc_title, 10.0f, PLOT_X, PLOT_Y -= PLOT_Y_DIFF, PDF_BLACK );
+    pdf_add_text( pdf, NULL, disc_body1, 8.0f, PLOT_X, PLOT_Y -= PLOT_Y_DIFF, PDF_BLACK );
+    pdf_add_text( pdf, NULL, disc_body2, 8.0f, PLOT_X, PLOT_Y -= PLOT_Y_DIFF, PDF_BLACK );
+    pdf_add_text( pdf, NULL, disc_body3, 8.0f, PLOT_X, PLOT_Y -= PLOT_Y_DIFF, PDF_BLACK );
+    pdf_add_text( pdf, NULL, disc_body4, 8.0f, PLOT_X, PLOT_Y -= PLOT_Y_DIFF, PDF_BLACK );
+    PLOT_Y -= PLOT_Y_DIFF;
+    pdf_add_text( pdf, NULL, disc_body5, 8.0f, PLOT_X, PLOT_Y -= PLOT_Y_DIFF, PDF_BLACK );
+    pdf_add_text( pdf, NULL, disc_body6, 8.0f, PLOT_X, PLOT_Y -= PLOT_Y_DIFF, PDF_BLACK );
+
+    return 0;
+}
+
+/**
+ * Generates a stylized multi-line graph on an existing PDF document page with peak annotations,
+ * speed average lines, and secondary Y-axis min/max temperature dotted line series.
+ */
+int generate_graph_pdf( float plot_y_start,
+                        const float* min_values,
+                        const float* max_values,
+                        const float* min_temp,
+                        const float* max_temp,
+                        int data_count,
+                        const char* title,
+                        const char* x_label,
+                        const char* y_label,
+                        const char* temp_label,
+                        float x_scale_max )
+{
+    // page excluded from NULL check as NULL is a valid value
+    if( !pdf || !min_values || !max_values || !min_temp || !max_temp || data_count < 2 )
+    {
+        return -1;
+    }
+
+    // --- Color Palette (Hex format: 0xRRGGBB) ---
+    const uint32_t COLOR_PLOT_BG = 0xF8F9FA;
+    const uint32_t COLOR_AXIS = 0x212529;
+    const uint32_t COLOR_GRID = 0xCED4DA;
+    const uint32_t COLOR_LINE_MAX = 0x1F77B4;  // Blue (Speed Max)
+    const uint32_t COLOR_LINE_MIN = 0xFF7F0E;  // Orange (Speed Min)
+    const uint32_t COLOR_LINE_AVG = 0x2CA02C;  // Green (Speed Avg)
+    const uint32_t COLOR_TEMP_MAX = 0xD62728;  // Crimson Red (Temp Max)
+    const uint32_t COLOR_TEMP_MIN = 0x9467BD;  // Purple (Temp Min)
+    const uint32_t COLOR_TEXT_MUTED = 0x6C757D;
+
+    // --- Graph Geometry Setup ---
+    const float PLOT_W = 400.0f;
+    const float PLOT_X = 115.0f;  // Space reserved on left margin for Speed Y-axis
+    const float PLOT_H = 200.0f;
+    const float PLOT_Y = plot_y_start;
+
+    // Scan integrity of speed dataset (0 to 150GB)
+    const double MAX_LIMIT = 150000000000.0;
+    const double MIN_LIMIT = 0.0;
+
+    // Scan integrity of temperature dataset (0°C to 120°C)
+    const double TEMP_MIN_LIMIT = 0.0;
+    const double TEMP_MAX_LIMIT = 120.0;
+
+    for( int i = 0; i < data_count; i++ )
+    {
+        // Check speed throughput bounds
+        if( max_values[i] < MIN_LIMIT || max_values[i] > MAX_LIMIT || min_values[i] < MIN_LIMIT
+            || min_values[i] > MAX_LIMIT )
+        {
+            nwipe_log( NWIPE_LOG_ERROR, "Graph speed dataset is out of bounds. < 0.0 or > 150GB" );
+            return -1;
+        }
+
+        // Check temperature bounds
+        if( max_temp[i] < TEMP_MIN_LIMIT || max_temp[i] > TEMP_MAX_LIMIT || min_temp[i] < TEMP_MIN_LIMIT
+            || min_temp[i] > TEMP_MAX_LIMIT )
+        {
+            nwipe_log( NWIPE_LOG_ERROR, "Graph temperature dataset is out of bounds. < 0°C or > 120°C" );
+            return -1;
+        }
+    }
+
+    // 1. Scan speed dataset to find absolute min, max, and active average sum
+    float abs_min = min_values[0];
+    int min_idx = 0;
+    float abs_max = max_values[0];
+    int max_idx = 0;
+    float running_avg_sum = 0.0f;
+    int active_count = 0;
+
+    for( int i = 0; i < data_count; i++ )
+    {
+        if( min_values[i] < abs_min )
+        {
+            abs_min = min_values[i];
+            min_idx = i;
+        }
+        if( max_values[i] > abs_max )
+        {
+            abs_max = max_values[i];
+            max_idx = i;
+        }
+
+        if( max_values[i] > 0.0f )
+        {
+            running_avg_sum += ( min_values[i] + max_values[i] ) / 2.0f;
+            active_count++;
+        }
+    }
+
+    float overall_duration_average = 0.0f;
+    if( active_count > 0 )
+    {
+        overall_duration_average = running_avg_sum / (float) active_count;
+    }
+    else if( data_count > 0 )
+    {
+        overall_duration_average = ( min_values[0] + max_values[0] ) / 2.0f;
+    }
+
+    // 2. Scan temperature dataset to determine maximum temperature scaling
+    float abs_max_temp = max_temp[0];
+    for( int i = 0; i < data_count; i++ )
+    {
+        if( max_temp[i] > abs_max_temp )
+        {
+            abs_max_temp = max_temp[i];
+        }
+    }
+
+    // Determine temperature Y-axis ceiling (scale up to standard steps e.g. 50°C, 80°C, 100°C)
+    float temp_scale_max = 50.0f;
+    if( abs_max_temp > 50.0f )
+    {
+        temp_scale_max = ceilf( abs_max_temp / 10.0f ) * 10.0f;
+    }
+
+    // 3. AUTOMATIC UNIT & SCALE ENGINE (Speed)
+    float divisor = 1.0f;
+    const char* unit = "bytes/s";
+
+    if( abs_max >= 1000000000.0f )
+    {
+        divisor = 1000000000.0f;
+        unit = "GB/s";
+    }
+    else if( abs_max >= 1000000.0f )
+    {
+        divisor = 1000000.0f;
+        unit = "MB/s";
+    }
+    else if( abs_max >= 1000.0f )
+    {
+        divisor = 1000.0f;
+        unit = "KB/s";
+    }
+
+    float max_in_unit = abs_max / divisor;
+
+    float step = 1.0f;
+    if( max_in_unit <= 5.0f )
+        step = 1.0f;
+    else if( max_in_unit <= 10.0f )
+        step = 2.0f;
+    else if( max_in_unit <= 25.0f )
+        step = 5.0f;
+    else if( max_in_unit <= 50.0f )
+        step = 10.0f;
+    else if( max_in_unit <= 100.0f )
+        step = 20.0f;
+    else if( max_in_unit <= 250.0f )
+        step = 50.0f;
+    else
+        step = 100.0f;
+
+    float y_scale_max_unit = step;
+    while( y_scale_max_unit < max_in_unit * 1.20f )
+    {
+        y_scale_max_unit += step;
+    }
+
+    int y_grid_divisions = (int) ( y_scale_max_unit / step );
+    float y_scale_max = y_scale_max_unit * divisor;
+
+    // Fill Plot Area Background
+    pdf_add_filled_rectangle( pdf, page, PLOT_X, PLOT_Y, PLOT_W, PLOT_H, 0, COLOR_PLOT_BG, COLOR_PLOT_BG );
+
+    // --- Grid Lines & Axis Ticks Setup ---
+    const float dotted_pattern[] = { 3.0f, 3.0f };
+    const int pattern_len = 2;
+
+    // 1. Draw Dynamic Horizontal Grid Lines, Left (Speed) & Right (Temperature) Y-Axis Labels
+    for( int i = 0; i <= y_grid_divisions; i++ )
+    {
+        float ratio = (float) i / (float) y_grid_divisions;
+        float curr_y = PLOT_Y + ( ratio * PLOT_H );
+        float val_y = ratio * y_scale_max;
+        float val_temp = ratio * temp_scale_max;
+
+        if( i > 0 )
+        {
+            pdf_add_line_pattern( pdf,
+                                  page,
+                                  PLOT_X,
+                                  curr_y,
+                                  PLOT_X + PLOT_W,
+                                  curr_y,
+                                  0.75f,
+                                  COLOR_GRID,
+                                  dotted_pattern,
+                                  pattern_len,
+                                  0.0f );
+        }
+
+        // Left Axis: Speed Labels
+        char label_buf[64];
+        snprintf( label_buf, sizeof( label_buf ), "%.0f%s", val_y / divisor, unit );
+        float text_width = 0;
+        pdf_get_font_text_width( pdf, "Helvetica", label_buf, 9.0f, &text_width );
+        pdf_add_text( pdf, page, label_buf, 9.0f, PLOT_X - text_width - 8.0f, curr_y - 3.0f, COLOR_TEXT_MUTED );
+
+        // Right Axis: Temperature Labels
+        char temp_buf[32];
+        snprintf( temp_buf, sizeof( temp_buf ), "%.0f°C", val_temp );
+        pdf_add_text( pdf, page, temp_buf, 9.0f, PLOT_X + PLOT_W + 8.0f, curr_y - 3.0f, COLOR_TEXT_MUTED );
+    }
+
+    // 2. Draw Vertical Grid Lines & X-Axis Labels (Fixed at 5 horizontal blocks)
+    const int X_GRID_DIVISIONS = 5;
+
+    for( int i = 0; i <= X_GRID_DIVISIONS; i++ )
+    {
+        float ratio = (float) i / X_GRID_DIVISIONS;
+        float curr_x = PLOT_X + ( ratio * PLOT_W );
+        float val_x = ratio * x_scale_max;
+
+        if( i > 0 && i < X_GRID_DIVISIONS )
+        {
+            pdf_add_line_pattern( pdf,
+                                  page,
+                                  curr_x,
+                                  PLOT_Y,
+                                  curr_x,
+                                  PLOT_Y + PLOT_H,
+                                  0.75f,
+                                  COLOR_GRID,
+                                  dotted_pattern,
+                                  pattern_len,
+                                  0.0f );
+        }
+
+        char label_buf[32];
+        snprintf( label_buf, sizeof( label_buf ), "%.0f%%", val_x );
+        float text_width = 0;
+        pdf_get_font_text_width( pdf, "Helvetica", label_buf, 9.0f, &text_width );
+        pdf_add_text( pdf, page, label_buf, 9.0f, curr_x - ( text_width / 2.0f ), PLOT_Y - 15.0f, COLOR_TEXT_MUTED );
+    }
+
+    // --- Draw Axis Outer Frame Lines ---
+    pdf_add_line( pdf, page, PLOT_X, PLOT_Y, PLOT_X + PLOT_W, PLOT_Y, 1.2f, COLOR_AXIS );  // Bottom
+    pdf_add_line( pdf, page, PLOT_X, PLOT_Y, PLOT_X, PLOT_Y + PLOT_H, 1.2f, COLOR_AXIS );  // Left Y-Axis
+    pdf_add_line(
+        pdf, page, PLOT_X + PLOT_W, PLOT_Y, PLOT_X + PLOT_W, PLOT_Y + PLOT_H, 1.2f, COLOR_AXIS );  // Right Y-Axis
+
+    // --- Plot Line 1: Minimum Speed Data Vector ---
+    for( int i = 0; i < data_count - 1; i++ )
+    {
+        float ratio_x1 = (float) i / ( data_count - 1 );
+        float ratio_x2 = (float) ( i + 1 ) / ( data_count - 1 );
+        float x1 = PLOT_X + ( ratio_x1 * PLOT_W );
+        float x2 = PLOT_X + ( ratio_x2 * PLOT_W );
+
+        float val_y1 = min_values[i] > y_scale_max ? y_scale_max : min_values[i];
+        float val_y2 = min_values[i + 1] > y_scale_max ? y_scale_max : min_values[i + 1];
+        float y1 = PLOT_Y + ( ( val_y1 / y_scale_max ) * PLOT_H );
+        float y2 = PLOT_Y + ( ( val_y2 / y_scale_max ) * PLOT_H );
+
+        pdf_add_line( pdf, page, x1, y1, x2, y2, 1.5f, COLOR_LINE_MIN );
+    }
+
+    // --- Plot Line 2: Maximum Speed Data Vector ---
+    for( int i = 0; i < data_count - 1; i++ )
+    {
+        float ratio_x1 = (float) i / ( data_count - 1 );
+        float ratio_x2 = (float) ( i + 1 ) / ( data_count - 1 );
+        float x1 = PLOT_X + ( ratio_x1 * PLOT_W );
+        float x2 = PLOT_X + ( ratio_x2 * PLOT_W );
+
+        float val_y1 = max_values[i] > y_scale_max ? y_scale_max : max_values[i];
+        float val_y2 = max_values[i + 1] > y_scale_max ? y_scale_max : max_values[i + 1];
+        float y1 = PLOT_Y + ( ( val_y1 / y_scale_max ) * PLOT_H );
+        float y2 = PLOT_Y + ( ( val_y2 / y_scale_max ) * PLOT_H );
+
+        pdf_add_line( pdf, page, x1, y1, x2, y2, 1.5f, COLOR_LINE_MAX );
+    }
+
+    // --- Plot Line 3: Minimum Temperature Data Vector (Dotted Line) ---
+    const float temp_dot_pattern[] = { 2.0f, 2.0f };
+    for( int i = 0; i < data_count - 1; i++ )
+    {
+        float ratio_x1 = (float) i / ( data_count - 1 );
+        float ratio_x2 = (float) ( i + 1 ) / ( data_count - 1 );
+        float x1 = PLOT_X + ( ratio_x1 * PLOT_W );
+        float x2 = PLOT_X + ( ratio_x2 * PLOT_W );
+
+        float val_t1 = min_temp[i] > temp_scale_max ? temp_scale_max : min_temp[i];
+        float val_t2 = min_temp[i + 1] > temp_scale_max ? temp_scale_max : min_temp[i + 1];
+        float y1 = PLOT_Y + ( ( val_t1 / temp_scale_max ) * PLOT_H );
+        float y2 = PLOT_Y + ( ( val_t2 / temp_scale_max ) * PLOT_H );
+
+        pdf_add_line_pattern( pdf, page, x1, y1, x2, y2, 1.2f, COLOR_TEMP_MIN, temp_dot_pattern, 2, 0.0f );
+    }
+
+    // --- Plot Line 4: Maximum Temperature Data Vector (Dotted Line) ---
+    for( int i = 0; i < data_count - 1; i++ )
+    {
+        float ratio_x1 = (float) i / ( data_count - 1 );
+        float ratio_x2 = (float) ( i + 1 ) / ( data_count - 1 );
+        float x1 = PLOT_X + ( ratio_x1 * PLOT_W );
+        float x2 = PLOT_X + ( ratio_x2 * PLOT_W );
+
+        float val_t1 = max_temp[i] > temp_scale_max ? temp_scale_max : max_temp[i];
+        float val_t2 = max_temp[i + 1] > temp_scale_max ? temp_scale_max : max_temp[i + 1];
+        float y1 = PLOT_Y + ( ( val_t1 / temp_scale_max ) * PLOT_H );
+        float y2 = PLOT_Y + ( ( val_t2 / temp_scale_max ) * PLOT_H );
+
+        pdf_add_line_pattern( pdf, page, x1, y1, x2, y2, 1.2f, COLOR_TEMP_MAX, temp_dot_pattern, 2, 0.0f );
+    }
+
+    // --- Plot Line 5: Overall Speed Duration Average Line ---
+    float avg_line_y = PLOT_Y + ( ( overall_duration_average / y_scale_max ) * PLOT_H );
+    const float avg_dash_pattern[] = { 6.0f, 4.0f };
+    pdf_add_line_pattern(
+        pdf, page, PLOT_X, avg_line_y, PLOT_X + PLOT_W, avg_line_y, 1.5f, COLOR_LINE_AVG, avg_dash_pattern, 2, 0.0f );
+
+    // --- Fixed Placement Label for the Average Line with Legend Dashes ---
+    char avg_label_str[128];
+    snprintf( avg_label_str, sizeof( avg_label_str ), "avg %.1f%s", overall_duration_average / divisor, unit );
+    float avg_lbl_w = 0;
+    pdf_get_font_text_width( pdf, "Helvetica-Bold", avg_label_str, 8.0f, &avg_lbl_w );
+
+    float legend_dash_w = 26.0f;
+    float legend_gap = 5.0f;
+    float total_avg_lbl_w = legend_dash_w + legend_gap + avg_lbl_w;
+
+    float avg_lbl_x = ( PLOT_X + PLOT_W ) - total_avg_lbl_w - 8.0f;
+    float avg_lbl_y = PLOT_Y + PLOT_H - 14.0f;
+
+    pdf_add_line_pattern( pdf,
+                          page,
+                          avg_lbl_x,
+                          avg_lbl_y + 3.0f,
+                          avg_lbl_x + legend_dash_w,
+                          avg_lbl_y + 3.0f,
+                          1.5f,
+                          COLOR_LINE_AVG,
+                          avg_dash_pattern,
+                          2,
+                          0.0f );
+    pdf_add_text( pdf, page, avg_label_str, 8.0f, avg_lbl_x + legend_dash_w + legend_gap, avg_lbl_y, COLOR_LINE_AVG );
+
+    // --- Data Point Peak Labeling Engine (Speed) ---
+    // 1. Label the absolute minimum point
+    char min_label_str[128];
+    snprintf( min_label_str, sizeof( min_label_str ), "min %.1f%s", abs_min / divisor, unit );
+    float min_lbl_w = 0;
+    pdf_get_font_text_width( pdf, "Helvetica-Bold", min_label_str, 8.0f, &min_lbl_w );
+
+    float min_pt_x = PLOT_X + ( ( (float) min_idx / ( data_count - 1 ) ) * PLOT_W );
+    float min_pt_y = PLOT_Y + ( ( ( abs_min > y_scale_max ? y_scale_max : abs_min ) / y_scale_max ) * PLOT_H );
+
+    float min_lbl_x = min_pt_x - ( min_lbl_w / 2.0f );
+    if( min_lbl_x < PLOT_X )
+        min_lbl_x = PLOT_X + 4.0f;
+    if( min_lbl_x + min_lbl_w > PLOT_X + PLOT_W )
+        min_lbl_x = ( PLOT_X + PLOT_W ) - min_lbl_w - 4.0f;
+    pdf_add_text( pdf, page, min_label_str, 8.0f, min_lbl_x, min_pt_y - 12.0f, COLOR_LINE_MIN );
+
+    // 2. Label the absolute maximum point
+    char max_label_str[128];
+    snprintf( max_label_str, sizeof( max_label_str ), "max %.1f%s", abs_max / divisor, unit );
+    float max_lbl_w = 0;
+    pdf_get_font_text_width( pdf, "Helvetica-Bold", max_label_str, 8.0f, &max_lbl_w );
+
+    float max_pt_x = PLOT_X + ( ( (float) max_idx / ( data_count - 1 ) ) * PLOT_W );
+    float max_pt_y = PLOT_Y + ( ( ( abs_max > y_scale_max ? y_scale_max : abs_max ) / y_scale_max ) * PLOT_H );
+
+    float max_lbl_x = max_pt_x - ( max_lbl_w / 2.0f );
+    if( max_lbl_x < PLOT_X )
+        max_lbl_x = PLOT_X + 4.0f;
+    if( max_lbl_x + max_lbl_w > PLOT_X + PLOT_W )
+        max_lbl_x = ( PLOT_X + PLOT_W ) - max_lbl_w - 4.0f;
+    pdf_add_text( pdf, page, max_label_str, 8.0f, max_lbl_x, max_pt_y + 5.0f, COLOR_LINE_MAX );
+
+    // --- Global Annotations (Labels & Headings) ---
+    float title_width = 0;
+    pdf_get_font_text_width( pdf, "Helvetica-Bold", title, 16.0f, &title_width );
+    pdf_add_text(
+        pdf, page, title, 16.0f, PLOT_X + ( PLOT_W - title_width ) / 2.0f, PLOT_Y + PLOT_H + 30.0f, COLOR_AXIS );
+
+    float x_lbl_width = 0;
+    pdf_get_font_text_width( pdf, "Helvetica", x_label, 11.0f, &x_lbl_width );
+    pdf_add_text( pdf, page, x_label, 11.0f, PLOT_X + ( PLOT_W - x_lbl_width ) / 2.0f, PLOT_Y - 42.0f, COLOR_AXIS );
+
+    // Left Y-Axis Label (Speed)
+    float y_lbl_width = 0;
+    pdf_get_font_text_width( pdf, "Helvetica", y_label, 11.0f, &y_lbl_width );
+    pdf_add_text_rotate(
+        pdf, page, y_label, 11.0f, PLOT_X - 60.0f, PLOT_Y + ( PLOT_H - y_lbl_width ) / 2.0f, 1.57f, COLOR_AXIS );
+
+    // Right Y-Axis Label (Temperature)
+    if( temp_label && strlen( temp_label ) > 0 )
+    {
+        float temp_lbl_width = 0;
+        pdf_get_font_text_width( pdf, "Helvetica", temp_label, 11.0f, &temp_lbl_width );
+        pdf_add_text_rotate( pdf,
+                             page,
+                             temp_label,
+                             11.0f,
+                             PLOT_X + PLOT_W + 45.0f,
+                             PLOT_Y + ( PLOT_H - temp_lbl_width ) / 2.0f,
+                             1.57f,
+                             COLOR_AXIS );
+    }
+
+    return 0;
+}
+
+#if 0
     // Generate Graph Vector Elements
     generate_graph_pdf( graph_y_start,
                         c->min_throughput,
@@ -537,3 +1010,4 @@ int generate_graph_pdf( float plot_y_start,
 
     return 0;
 }
+#endif
