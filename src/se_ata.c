@@ -356,8 +356,9 @@ sg16( int fd, int rw, int dma, struct ata_tf* tf, void* data, unsigned int data_
 
     if( ioctl( fd, SG_IO, &io_hdr ) == -1 )
     {
-        nwipe_log( NWIPE_LOG_ERROR, "%s: ioctl() failed: %s (%d)", __FUNCTION__, strerror( errno ), errno );
-        /* errno from ioctl */
+        int eno = errno;
+        nwipe_log( NWIPE_LOG_ERROR, "%s: ioctl() failed: %s (%d)", __FUNCTION__, strerror( eno ), eno );
+        errno = eno; /* errno from ioctl */
         return -1;
     }
 
