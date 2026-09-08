@@ -915,6 +915,7 @@ void nwipe_gui_se_ata_sanitize( nwipe_context_t* ctx, nwipe_se_ata_ctx* san )
             ctx->secure_erase_status = NWIPE_SECURE_ERASE_STATUS_UNKNOWN;
 
             /* ATA does not provide which method is presently running */
+            san->sanact = NWIPE_SE_ATA_SANACT_UNKNOWN;
             ctx->secure_erase_method = NWIPE_SECURE_ERASE_METHOD_UNKNOWN;
 
             /* User wanted to monitor its progress */
