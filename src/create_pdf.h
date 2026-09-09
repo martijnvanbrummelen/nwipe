@@ -221,10 +221,13 @@ unsigned char* check_and_load_logo( size_t* out_len );
 int generate_graph_pdf( float plot_y_start,
                         const float* min_values,
                         const float* max_values,
+                        const float* min_temp,
+                        const float* max_temp,
                         int data_count,
                         const char* title,
                         const char* x_label,
                         const char* y_label,
+                        const char* temp_label,
                         float x_scale_max );
 
 /**

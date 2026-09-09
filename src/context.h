@@ -297,6 +297,8 @@ typedef struct nwipe_context_t_
     struct hd_driveid identity;
     float min_throughput[400];  // buckets for storing minimum speed of drive
     float max_throughput[400];  // buckets for storing maximum speed of drive
+    float min_temp[400];  // buckets for storing minimum drive temperatures
+    float max_temp[400];  // buckets for storing maximum drive temperatures
 } nwipe_context_t;
 
 /*

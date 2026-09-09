@@ -8369,7 +8369,6 @@ void* nwipe_gui_status( void* ptr )
 
     return NULL;
 } /* nwipe_gui_status */
-
 int compute_stats( void* ptr )
 {
     nwipe_thread_data_ptr_t* nwipe_thread_data_ptr;
@@ -8428,7 +8427,7 @@ int compute_stats( void* ptr )
             /* ======================================================================
              * GRAPH MIN/MAX TRACKING ENGINE (Adaptive Sub-Window Slice)
              * Fills the 400 bucket min/max arrays, used to construct speed profile
-             * graph.
+             * and temperature graphs.
              * ====================================================================== */
             u64 bytes_10 = 0;
             u64 times_10 = 0;
@@ -8455,6 +8454,7 @@ int compute_stats( void* ptr )
             if( times_10 > 0 && c[i]->round_size > 0 )
             {
                 double throughput_10 = (double) bytes_10 / (double) times_10;
+                double current_temp = (double) c[i]->temp1_input;  // Current temperature reading
 
                 /* Map current byte progress cleanly to one of the 400 array buckets */
                 int bucket = (int) ( (double) c[i]->round_done / (double) c[i]->round_size * 400.0 );
@@ -8465,6 +8465,9 @@ int compute_stats( void* ptr )
                     bucket = 399;
                 }
 
+                /* ------------------------------------------------------------------
+                 * Speed Min/Max Tracking
+                 * ------------------------------------------------------------------ */
                 /* Record maximum throughput for this chunk */
                 if( throughput_10 > c[i]->max_throughput[bucket] )
                 {
@@ -8477,13 +8480,32 @@ int compute_stats( void* ptr )
                     c[i]->min_throughput[bucket] = throughput_10;
                 }
 
-                /* FIX 2:Backfill previous uninitialized buckets.
+                /* ------------------------------------------------------------------
+                 * Temperature Min/Max Tracking
+                 * ------------------------------------------------------------------ */
+                if( current_temp > 0 )
+                {
+                    /* Record maximum temperature for this chunk */
+                    if( current_temp > c[i]->max_temp[bucket] )
+                    {
+                        c[i]->max_temp[bucket] = current_temp;
+                    }
+
+                    /* Record minimum temperature for this chunk */
+                    if( c[i]->min_temp[bucket] == 0 || current_temp < c[i]->min_temp[bucket] )
+                    {
+                        c[i]->min_temp[bucket] = current_temp;
+                    }
+                }
+
+                /* FIX 2: Backfill previous uninitialized buckets.
                  * Because fast wipes blitz across multiple progress buckets between 1-second ticks,
-                 * this bridges the gaps backward to form a continuous, readable line on the PDF. */
+                 * this bridges the gaps backward to form continuous, readable lines on the PDF. */
                 for( int b = bucket - 1; b >= 0; b-- )
                 {
                     int backfill_performed = 0;
 
+                    /* Backfill throughput */
                     if( c[i]->max_throughput[b] == 0.0f )
                     {
                         c[i]->max_throughput[b] = throughput_10;
@@ -8493,6 +8515,21 @@ int compute_stats( void* ptr )
                     {
                         c[i]->min_throughput[b] = throughput_10;
                         backfill_performed = 1;
+                    }
+
+                    /* Backfill temperature */
+                    if( current_temp > 0 )
+                    {
+                        if( c[i]->max_temp[b] == 0.0f )
+                        {
+                            c[i]->max_temp[b] = current_temp;
+                            backfill_performed = 1;
+                        }
+                        if( c[i]->min_temp[b] == 0.0f )
+                        {
+                            c[i]->min_temp[b] = current_temp;
+                            backfill_performed = 1;
+                        }
                     }
 
                     /* If we hit a bucket that already contains real historical data from a
