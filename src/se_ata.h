@@ -62,7 +62,7 @@ typedef struct
     /* Options (set before nwipe_se_ata_sanitize) */
     nwipe_se_ata_sanact_e planned_sanact;
     int destructive_sanact; /* 0 = No, 1 = Yes */
-    __u8 owpass; /* 0-15 overwrite pass count */
+    __u8 owpass; /* 0-based overwrite passes (0=1..15=16) */
     __u32 ovrpat; /* 32-bit overwrite pattern */
 } nwipe_se_ata_ctx;
 

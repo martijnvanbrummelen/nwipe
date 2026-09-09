@@ -917,7 +917,8 @@ int nwipe_se_ata_sanitize( nwipe_se_ata_ctx* san )
         case NWIPE_SE_ATA_SANACT_OVERWRITE:
             feature = SANITIZE_OVERWRITE_EXT;
             lba = ( (__u64) SANITIZE_OVERWRITE_KEY << 32 ) | san->ovrpat;
-            nsect = ( san->owpass & 0x0F ) | ( 1 << 4 ); /* Passes + Allow Failure Exit */
+            /* owpass is 0-based: 0=1 pass .. 15=16 passes; +1 to wire format where 0=16 passes */
+            nsect = ( ( san->owpass + 1 ) & 0x0F ) | ( 1 << 4 ); /* Passes + Allow Failure Exit */
             break;
 
         case NWIPE_SE_ATA_SANACT_FREEZE_LOCK:

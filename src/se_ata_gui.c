@@ -350,7 +350,7 @@ static int nwipe_gui_se_ata_overwrite_opts( nwipe_context_t* ctx, nwipe_se_ata_c
     const char* ftr = "J=Down K=Up +/-=Change Enter=Confirm ESC=Cancel";
 
     san->owpass = 0;
-    san->ovrpat = 0xDEADBEEF;
+    san->ovrpat = 0x00000000;
 
     werase( footer_window );
     nwipe_gui_amend_footer_window( ftr, "" );

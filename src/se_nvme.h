@@ -70,7 +70,7 @@ typedef struct
     /* Options (set before nwipe_se_nvme_sanitize) */
     enum nvme_sanitize_sanact planned_sanact;
     int destructive_sanact; /* 0 = No, 1 = Yes */
-    __u8 owpass; /* 0-15 (0-based, sent directly) */
+    __u8 owpass; /* 0-based overwrite passes (0=1..15=16) */
     bool oipbp; /* invert pattern between passes */
     __u32 ovrpat; /* 32-bit overwrite pattern */
     bool nodas; /* no deallocate after sanitize */
