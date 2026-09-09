@@ -63,6 +63,7 @@ void nwipe_perror( int nwipe_errno, const char* f, const char* s );
 void nwipe_log_buildinfo();
 void nwipe_log_OSinfo();
 int nwipe_log_sysinfo( nwipe_misc_thread_data_t* );
+int nwipe_log_se_in_progress( nwipe_context_t** c, int nwipe_enumerated );
 void nwipe_log_summary( nwipe_thread_data_ptr_t*,
                         nwipe_context_t**,
                         int );  // This produces the wipe status table on exit
