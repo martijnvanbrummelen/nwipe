@@ -540,6 +540,11 @@ static void nwipe_gui_se_ata_monitor( nwipe_context_t* ctx, nwipe_se_ata_ctx* sa
 
     } while( terminate_signal != 1 );
 
+    if( terminate_signal == 1 )
+    {
+        user_aborted = 1;
+    }
+
     const char* ftr_results = ( !user_aborted && san->destructive_sanact )
         ? "Erase finished - press enter to create pdfs & return."
         : "Enter=Return";
@@ -911,8 +916,8 @@ void nwipe_gui_se_ata_sanitize( nwipe_context_t* ctx, nwipe_se_ata_ctx* san )
     {
         if( nwipe_gui_se_ata_prompt_in_progress( ctx, san ) )
         {
-            /* Reset the context status so a previous one does not leak */
-            ctx->secure_erase_status = NWIPE_SECURE_ERASE_STATUS_UNKNOWN;
+            /* Set the context status so a previous one does not leak */
+            ctx->secure_erase_status = NWIPE_SECURE_ERASE_STATUS_IN_PROGRESS;
 
             /* ATA does not provide which method is presently running */
             san->sanact = NWIPE_SE_ATA_SANACT_UNKNOWN;
@@ -972,8 +977,8 @@ void nwipe_gui_se_ata_sanitize( nwipe_context_t* ctx, nwipe_se_ata_ctx* san )
         return;
     }
 
-    /* Reset the context status so a previous one does not leak */
-    ctx->secure_erase_status = NWIPE_SECURE_ERASE_STATUS_UNKNOWN;
+    /* Set the context status so a previous one does not leak */
+    ctx->secure_erase_status = NWIPE_SECURE_ERASE_STATUS_IN_PROGRESS;
 
     /* Inform the device context of the chosen method */
     nwipe_gui_se_ata_set_context_method( ctx, san->planned_sanact );

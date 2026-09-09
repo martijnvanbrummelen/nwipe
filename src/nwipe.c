@@ -288,6 +288,7 @@ int main( int argc, char** argv )
     int nwipe_selected = 0;  // The number of contexts that have been selected.
     int any_threads_still_running;  // used in wipe thread cancellation wait loop
     int thread_timeout_counter;  // timeout thread cancellation after THREAD_CANCELLATION_TIMEOUT seconds
+    int remaining_secure_erases = -1;  // Remaining in-progress secure erases/sanitizes.
     pthread_t nwipe_gui_thread = 0;  // The thread ID of the GUI thread.
     pthread_t nwipe_temperature_thread = 0;  // The thread ID of the temperature update thread
     pthread_t nwipe_sigint_thread;  // The thread ID of the sigint handler.
@@ -816,7 +817,7 @@ int main( int argc, char** argv )
         }
     }
 
-    /* TODO: free c1 and c2 memory. */
+    /* TODO: c2 memory. */
     if( user_abort == 0 )
     {
         /* Log the wipe options that have been selected immediately prior to the start of the wipe */
@@ -1346,12 +1347,15 @@ int main( int argc, char** argv )
     /* Generate and send the drive status summary to the log */
     nwipe_log_summary( &nwipe_thread_data_ptr, c2, nwipe_selected );
 
+    /* Warn loud the user about remaining in-progress secure erases */
+    remaining_secure_erases = nwipe_log_se_in_progress( c1, nwipe_enumerated );
+
     /* Print a one line status message for the user */
     if( return_status == 0 || return_status == 1 )
     {
         if( user_abort == 1 )
         {
-            if( global_wipe_status == 1 )
+            if( global_wipe_status == 1 || remaining_secure_erases > 0 )
             {
                 nwipe_log( NWIPE_LOG_INFO,
                            "Nwipe was aborted by the user. Check the summary table for the drive status." );
@@ -1377,7 +1381,11 @@ int main( int argc, char** argv )
 
     cleanup();
 
-    check_for_autopoweroff();
+    /* Powering off with secure erases in progress may brick the devices */
+    if( remaining_secure_erases <= 0 )
+    {
+        check_for_autopoweroff();
+    }
 
     /* Exit. */
     return return_status;

@@ -849,6 +849,122 @@ int nwipe_log_sysinfo( nwipe_misc_thread_data_t* ptrx )
     return 0;
 }
 
+/*
+ * Scans all enumerated devices for secure erase / sanitize operations that
+ * are still flagged as in progress and, if any are found, prints a warning
+ * table in the same layout as the drive status summary in nwipe_log_summary().
+ * Returns the amount of in-progress devices or -1 on invalid arguments provided.
+ */
+int nwipe_log_se_in_progress( nwipe_context_t** c, int nwipe_enumerated )
+{
+    int i;
+    int in_progress_count;
+    char device[18];
+    const char* type_str;
+    const char* method_str;
+
+    if( c == NULL || nwipe_enumerated <= 0 )
+    {
+        return -1;
+    }
+
+    /* First pass: is there anything to report at all ? */
+    in_progress_count = 0;
+
+    for( i = 0; i < nwipe_enumerated; i++ )
+    {
+        if( c[i] != NULL && c[i]->secure_erase_status == NWIPE_SECURE_ERASE_STATUS_IN_PROGRESS )
+        {
+            in_progress_count++;
+        }
+    }
+
+    if( in_progress_count == 0 )
+    {
+        return 0;
+    }
+
+    /* IMPORTANT: Keep maximum columns (line length) to 80 characters for use with 80x30 terminals, Shredos, ALT-F2 etc
+     * --------------------------------01234567890123456789012345678901234567890123456789012345678901234567890123456789-*/
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "" );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP,
+               "*************************** Secure Erase In Progress ***************************" );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "!   Device | Type | Method" );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP,
+               "--------------------------------------------------------------------------------" );
+
+    for( i = 0; i < nwipe_enumerated; i++ )
+    {
+        if( c[i] == NULL || c[i]->secure_erase_status != NWIPE_SECURE_ERASE_STATUS_IN_PROGRESS )
+        {
+            continue;
+        }
+
+        /* Device name, strip any prefixed /dev/.. leaving up to 8 right justified characters */
+        device[0] = 0;
+        nwipe_strip_path( device, c[i]->device_name );
+
+        switch( c[i]->secure_erase_type )
+        {
+            case NWIPE_SECURE_ERASE_TYPE_ATA:
+                type_str = " ATA";
+                break;
+
+            case NWIPE_SECURE_ERASE_TYPE_NVME:
+                type_str = "NVMe";
+                break;
+
+            default:
+                type_str = "   ?";
+                break;
+        }
+
+        switch( c[i]->secure_erase_method )
+        {
+            case NWIPE_SECURE_ERASE_METHOD_BLOCK:
+                method_str = "Block";
+                break;
+
+            case NWIPE_SECURE_ERASE_METHOD_CRYPTO:
+                method_str = "Crypto";
+                break;
+
+            case NWIPE_SECURE_ERASE_METHOD_OVERWRITE:
+                method_str = "Overwrite";
+                break;
+
+            default:
+                method_str = "Unknown";
+                break;
+        }
+
+        nwipe_log( NWIPE_LOG_NOTIMESTAMP, "! %s | %s | %s", device, type_str, method_str );
+    }
+
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP,
+               "--------------------------------------------------------------------------------" );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "! - DO NOT POWER OFF - DO NOT POWER OFF - DO NOT POWER OFF -" );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "!" );
+    nwipe_log(
+        NWIPE_LOG_NOTIMESTAMP, "! %i device(s) are still running a firmware-based secure erase.", in_progress_count );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "! These devices may be unresponsive or unusable until the firmware" );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "! completes it. Do not power off or disconnect them while it is running." );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "! The progress monitoring can be resumed by restarting nwipe and viewing" );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "! the device within the nwipe GUI (and then choosing keyboard hotkey 'e')." );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "!" );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "! - DO NOT POWER OFF - DO NOT POWER OFF - DO NOT POWER OFF -" );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP,
+               "********************************************************************************" );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "" );
+
+    /* Also emit a timestamped warning so it is visible in filtered/grepped logs. */
+    nwipe_log( NWIPE_LOG_WARNING,
+               "Firmware-based secure erase still in progress on %i device(s), do not power off before completion.",
+               in_progress_count );
+
+    return in_progress_count;
+}
+
 void nwipe_log_summary( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t** ptr, int nwipe_selected )
 {
     /* Prints two summary tables, the first is the device pass and verification summary
