@@ -228,7 +228,8 @@ int generate_graph_pdf( float plot_y_start,
     const uint32_t COLOR_LINE_MAX = 0x1F77B4;  // Blue (Speed Max)
     const uint32_t COLOR_LINE_MIN = 0xFF7F0E;  // Orange (Speed Min)
     const uint32_t COLOR_LINE_AVG = 0x2CA02C;  // Green (Speed Avg)
-    const uint32_t COLOR_TEMP_MAX = 0xD62728;  // Crimson Red (Temp Max)
+    const uint32_t COLOR_TEMP_NORMAL = 0x2CA02C;  // Green (Temp Normal <= 65°C)
+    const uint32_t COLOR_TEMP_WARN = 0xD62728;  // Crimson Red (Temp High > 65°C)
     const uint32_t COLOR_TEMP_MIN = 0x9467BD;  // Purple (Temp Min)
     const uint32_t COLOR_TEXT_MUTED = 0x6C757D;
 
@@ -635,6 +636,9 @@ int generate_graph_pdf( float plot_y_start,
             }
         }
 
+        // Entire plot line and annotation turn Crimson if peak temp > 65°C, otherwise Green
+        uint32_t color_temp_plot = ( abs_max_temp > 65.0f ) ? COLOR_TEMP_WARN : COLOR_TEMP_NORMAL;
+
         // Max Temperature Step Line
         for( int i = 0; i < data_count - 1; i++ )
         {
@@ -653,10 +657,10 @@ int generate_graph_pdf( float plot_y_start,
             float y1 = PLOT_Y_TEMP + ( ( ( val_t1 - temp_scale_min ) / temp_range ) * PLOT_H_TEMP );
             float y2 = PLOT_Y_TEMP + ( ( ( val_t2 - temp_scale_min ) / temp_range ) * PLOT_H_TEMP );
 
-            pdf_add_line( pdf, page, x1, y1, x2, y1, 1.2f, COLOR_TEMP_MAX );
+            pdf_add_line( pdf, page, x1, y1, x2, y1, 1.2f, color_temp_plot );
             if( y1 != y2 )
             {
-                pdf_add_line( pdf, page, x2, y1, x2, y2, 1.2f, COLOR_TEMP_MAX );
+                pdf_add_line( pdf, page, x2, y1, x2, y2, 1.2f, color_temp_plot );
             }
         }
 
@@ -678,7 +682,7 @@ int generate_graph_pdf( float plot_y_start,
         if( max_temp_lbl_x + max_temp_lbl_w > PLOT_X + PLOT_W )
             max_temp_lbl_x = ( PLOT_X + PLOT_W ) - max_temp_lbl_w - 4.0f;
 
-        pdf_add_text( pdf, page, max_temp_lbl_str, 8.0f, max_temp_lbl_x, max_temp_pt_y + 5.0f, COLOR_TEMP_MAX );
+        pdf_add_text( pdf, page, max_temp_lbl_str, 8.0f, max_temp_lbl_x, max_temp_pt_y + 5.0f, color_temp_plot );
     }
     else
     {
@@ -693,7 +697,7 @@ int generate_graph_pdf( float plot_y_start,
         // Baseline offset (~3.5pt) adjusts for font cap-height to achieve visual vertical centering
         float center_y = PLOT_Y_TEMP + ( PLOT_H_TEMP / 2.0f ) - 3.5f;
 
-        pdf_add_text( pdf, page, no_temp_str, font_size, center_x, center_y, COLOR_TEMP_MAX );
+        pdf_add_text( pdf, page, no_temp_str, font_size, center_x, center_y, COLOR_TEMP_WARN );
     }
 
     // --- 9. Global Labels and Titles ---
