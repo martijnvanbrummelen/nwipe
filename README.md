@@ -93,8 +93,10 @@ The user can select from a variety of recognised secure erase methods, including
   Bruce Schneier's 7-pass mixed–pattern algorithm.
 
 - **BMB21-2019** *(new in v0.40)*  
-  Chinese State Secrets Bureau BMB21-2019 technical requirement for data sanitisation.  
+  Chinese State Secrets Bureau BMB21-2019 technical requirement for data sanitisation.
 
+- **Standalone Secure Erase (Block, Crypto Scramble, Overwrite)** *(new in v0.43)*  
+  Performs interactive, standalone, hardware-native drive sanitization—utilizing the drive's native ATA/NVMe block erase, cryptographic scramble, or pattern overwriting directly from nwipe's GUI.
 ---
 
 ## PRNG engines
