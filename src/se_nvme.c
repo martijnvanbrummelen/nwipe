@@ -514,7 +514,8 @@ int nwipe_se_nvme_sanitize( nwipe_se_nvme_ctx* san )
     args.sanact = san->planned_sanact;
     args.ovrpat = san->ovrpat;
     args.ause = san->ause;
-    args.owpass = san->owpass;
+    /* owpass is 0-based: 0=1 pass .. 15=16 passes; +1 to wire format where 0=16 passes */
+    args.owpass = ( san->planned_sanact == NVME_SANITIZE_SANACT_START_OVERWRITE ) ? ( ( san->owpass + 1 ) & 0x0F ) : 0;
     args.oipbp = san->oipbp;
     args.nodas = san->nodas;
 #ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
