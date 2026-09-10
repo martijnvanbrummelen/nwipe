@@ -841,14 +841,12 @@ int nwipe_se_ata_poll( nwipe_se_ata_ctx* san )
     {
         san->state = NWIPE_SE_ATA_STATE_IN_PROGRESS;
         san->progress_raw = ( r.lob.lbam << 8 ) | r.lob.lbal;
-        san->progress_pct = ( (int) san->progress_raw * 100 ) / UINT16_MAX;
-        if( san->progress_pct > 100 )
-            san->progress_pct = 100;
+        san->progress_pct = ( (int) san->progress_raw * 100 ) / 65536;
     }
     else if( san->state_raw & SANITIZE_FLAG_OPERATION_SUCCEEDED )
     {
         san->state = NWIPE_SE_ATA_STATE_SUCCESS;
-        san->progress_raw = UINT16_MAX;
+        san->progress_raw = 0xFFFF;
         san->progress_pct = 100;
     }
     else

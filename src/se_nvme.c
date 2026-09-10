@@ -333,7 +333,7 @@ int nwipe_se_nvme_poll( nwipe_se_nvme_ctx* san )
         return -1;
     }
 
-    int err = nvme_get_log_sanitize( san->fd, true, log );
+    int err = nvme_get_log_sanitize( san->fd, false, log );
     if( err != 0 )
     {
         if( err < 0 )
@@ -374,30 +374,35 @@ int nwipe_se_nvme_poll( nwipe_se_nvme_ctx* san )
         /* Don't fix the typo, it's in the library */
         case NVME_SANITIZE_SSTAT_STATUS_IN_PROGESS:
             san->state = NWIPE_SE_NVME_STATE_IN_PROGRESS;
+            san->progress_raw = le16toh( log->sprog );
+            san->progress_pct = ( (int) san->progress_raw * 100 ) / 65536;
             break;
 
         case NVME_SANITIZE_SSTAT_STATUS_COMPLETE_SUCCESS:
         case NVME_SANITIZE_SSTAT_STATUS_ND_COMPLETE_SUCCESS:
             san->state = NWIPE_SE_NVME_STATE_SUCCESS;
+            san->progress_raw = 0xFFFF;
+            san->progress_pct = 100;
             break;
 
         case NVME_SANITIZE_SSTAT_STATUS_COMPLETED_FAILED:
             san->state = NWIPE_SE_NVME_STATE_FAILURE;
+            san->progress_raw = 0;
+            san->progress_pct = 0;
             break;
 
         case NVME_SANITIZE_SSTAT_STATUS_NEVER_SANITIZED:
             san->state = NWIPE_SE_NVME_STATE_NEVER_SANITIZED;
+            san->progress_raw = 0;
+            san->progress_pct = 0;
             break;
 
         default:
             san->state = NWIPE_SE_NVME_STATE_UNKNOWN;
+            san->progress_raw = 0;
+            san->progress_pct = 0;
             break;
     }
-
-    san->progress_raw = le16toh( log->sprog );
-    san->progress_pct = ( (int) san->progress_raw * 100 ) / UINT16_MAX;
-    if( san->progress_pct > 100 )
-        san->progress_pct = 100;
 
     __u32 eto = le32toh( log->eto );
     __u32 etbe = le32toh( log->etbe );

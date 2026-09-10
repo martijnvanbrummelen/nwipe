@@ -190,7 +190,7 @@ static void nwipe_gui_se_nvme_print_device( nwipe_context_t* ctx,
 
 static void nwipe_gui_se_nvme_progress_bar( WINDOW* win, int y, int x, int width, int pct )
 {
-    int filled = ( pct * width ) / 100;
+    int filled;
     char bar[64];
 
     if( width > (int) sizeof( bar ) - 1 )
@@ -198,6 +198,8 @@ static void nwipe_gui_se_nvme_progress_bar( WINDOW* win, int y, int x, int width
 
     if( width < 0 )
         width = 0;
+
+    filled = ( pct * width ) / 100;
 
     if( filled < 0 )
         filled = 0;
