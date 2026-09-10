@@ -900,6 +900,33 @@ int nwipe_se_ata_sanitize( nwipe_se_ata_ctx* san )
         return -1;
     }
 
+    if( san->planned_sanact != NWIPE_SE_ATA_SANACT_OVERWRITE )
+    {
+        if( san->owpass || san->ovrpat )
+        {
+            snprintf( san->error_msg, sizeof( san->error_msg ), "Overwrite fields not allowed with sanact" );
+            nwipe_log( NWIPE_LOG_ERROR,
+                       "%s: %s: Overwrite fields set but sanact=%d is not overwrite",
+                       __FUNCTION__,
+                       san->device_path,
+                       san->planned_sanact );
+            return -1;
+        }
+    }
+    else
+    {
+        if( san->owpass > 15 )
+        {
+            snprintf( san->error_msg, sizeof( san->error_msg ), "Overwrite passes out of range" );
+            nwipe_log( NWIPE_LOG_ERROR,
+                       "%s: %s: Overwrite owpass=%d out of range [0-15]",
+                       __FUNCTION__,
+                       san->device_path,
+                       san->owpass );
+            return -1;
+        }
+    }
+
     switch( san->planned_sanact )
     {
         case NWIPE_SE_ATA_SANACT_CRYPTO_SCRAMBLE:
