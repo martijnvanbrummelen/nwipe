@@ -194,6 +194,8 @@ struct scsi_sg_io_hdr
 }; /* scsi_sg_io_hdr */
 
 static const unsigned int default_timeout_secs = 15;
+static const unsigned int sanitize_poll_timeout_secs = 10;
+static const unsigned int sanitize_action_timeout_secs = 60;
 
 static void dump_bytes( const char* f, const char* prefix, unsigned char* p, int len )
 {
@@ -357,7 +359,13 @@ sg16( int fd, int rw, int dma, struct ata_tf* tf, void* data, unsigned int data_
     if( ioctl( fd, SG_IO, &io_hdr ) == -1 )
     {
         int eno = errno;
+
         nwipe_log( NWIPE_LOG_ERROR, "%s: ioctl() failed: %s (%d)", __FUNCTION__, strerror( eno ), eno );
+
+        /* No device response, do not leave the outgoing registers in place */
+        memset( &tf->lob, 0, sizeof( tf->lob ) );
+        memset( &tf->hob, 0, sizeof( tf->hob ) );
+
         errno = eno; /* errno from ioctl */
         return -1;
     }
@@ -397,6 +405,15 @@ sg16( int fd, int rw, int dma, struct ata_tf* tf, void* data, unsigned int data_
 
     if( io_hdr.driver_status == 0 && io_hdr.status == 0 )
     {
+        if( data == NULL )
+        {
+            /* CK_COND was requested (not an IDENTIFY command), but no registers were returned */
+            nwipe_log(
+                NWIPE_LOG_ERROR, "%s: missing sense data (behind RAID controller or USB bridge?)", __FUNCTION__ );
+            errno = EBADE;
+            return -1;
+        }
+
         tf->status = 0;
         tf->error = 0;
         return 0;
@@ -406,7 +423,7 @@ sg16( int fd, int rw, int dma, struct ata_tf* tf, void* data, unsigned int data_
 
     if( sb[0] != 0x72 || sb[7] < 14 || desc[0] != 0x09 || desc[1] < 0x0c )
     {
-        nwipe_log( NWIPE_LOG_ERROR, "%s: bad or missing sense data (behind RAID controller?)", __FUNCTION__ );
+        nwipe_log( NWIPE_LOG_ERROR, "%s: bad sense data (behind RAID controller or USB bridge?)", __FUNCTION__ );
         errno = EBADE;
         return -1;
     }
@@ -613,7 +630,9 @@ static __u16* ata_identify( int fd )
 
 static int ata_sanitize_taskfile( int fd, __u16 feature, __u64 lba, __u8 nsect, struct hdio_taskfile* r_out )
 {
+    unsigned int timeout_secs = sanitize_action_timeout_secs;
     struct hdio_taskfile r;
+
     memset( &r, 0, sizeof( r ) );
 
     r.cmd_req = TASKFILE_CMD_REQ_NODATA;
@@ -647,10 +666,17 @@ static int ata_sanitize_taskfile( int fd, __u16 feature, __u64 lba, __u8 nsect, 
         r.lob.nsect = nsect;
     }
 
-    if( do_taskfile_cmd( fd, &r, 10 ) )
+    if( !nsect && feature == SANITIZE_STATUS_EXT ) /* Poll */
     {
+        timeout_secs = sanitize_poll_timeout_secs;
+    }
+
+    if( do_taskfile_cmd( fd, &r, timeout_secs ) )
+    {
+        int eno = errno;
         if( r_out )
             memcpy( r_out, &r, sizeof( r ) );
+        errno = eno;
         return -1;
     }
 
@@ -801,8 +827,9 @@ int nwipe_se_ata_poll( nwipe_se_ata_ctx* san )
     if( ata_sanitize_taskfile( san->fd, SANITIZE_STATUS_EXT, 0, 0, &r ) != 0 )
     {
         int eno = errno;
+        __u8 lbal = ( eno == EIO ) ? r.lob.lbal : 0;
 
-        if( r.lob.lbal == 1 )
+        if( lbal == 1 )
         {
             /* Device is in Sanitize Operation Failed state */
             san->state = NWIPE_SE_ATA_STATE_FAILURE;
@@ -816,7 +843,7 @@ int nwipe_se_ata_poll( nwipe_se_ata_ctx* san )
                   "%s (errno=%d, device reason: %s)",
                   strerror( eno ),
                   eno,
-                  lbal_to_error_str( r.lob.lbal ) );
+                  lbal_to_error_str( lbal ) );
 
         nwipe_log( NWIPE_LOG_ERROR,
                    "%s: %s: SANITIZE_STATUS_EXT failed: %s (errno=%d, device reason: %s)",
@@ -824,7 +851,7 @@ int nwipe_se_ata_poll( nwipe_se_ata_ctx* san )
                    san->device_path,
                    strerror( eno ),
                    eno,
-                   lbal_to_error_str( r.lob.lbal ) );
+                   lbal_to_error_str( lbal ) );
 
         return -1;
     }
@@ -898,20 +925,7 @@ int nwipe_se_ata_sanitize( nwipe_se_ata_ctx* san )
         return -1;
     }
 
-    if( san->planned_sanact != NWIPE_SE_ATA_SANACT_OVERWRITE )
-    {
-        if( san->owpass || san->ovrpat )
-        {
-            snprintf( san->error_msg, sizeof( san->error_msg ), "Overwrite fields not allowed with sanact" );
-            nwipe_log( NWIPE_LOG_ERROR,
-                       "%s: %s: Overwrite fields set but sanact=%d is not overwrite",
-                       __FUNCTION__,
-                       san->device_path,
-                       san->planned_sanact );
-            return -1;
-        }
-    }
-    else
+    if( san->planned_sanact == NWIPE_SE_ATA_SANACT_OVERWRITE )
     {
         if( san->owpass > 15 )
         {
@@ -923,6 +937,12 @@ int nwipe_se_ata_sanitize( nwipe_se_ata_ctx* san )
                        san->owpass );
             return -1;
         }
+    }
+    else
+    {
+        /* No effect, must be in zero state */
+        san->owpass = 0;
+        san->ovrpat = 0;
     }
 
     switch( san->planned_sanact )
@@ -975,7 +995,7 @@ int nwipe_se_ata_sanitize( nwipe_se_ata_ctx* san )
     san->destructive_sanact = nwipe_se_ata_sanact_is_destructive( san->planned_sanact );
 
     nwipe_log( NWIPE_LOG_INFO,
-               "%s: issuing SANITIZE feat=0x%04x lba=0x%012llx nsect=%u",
+               "%s: issuing SANITIZE feat=0x%04x lba=0x%012llx nsect=0x%02x",
                san->device_path,
                (unsigned) feature,
                (unsigned long long) lba,
@@ -987,13 +1007,14 @@ int nwipe_se_ata_sanitize( nwipe_se_ata_ctx* san )
     if( ata_sanitize_taskfile( san->fd, feature, lba, nsect, &r ) != 0 )
     {
         int eno = errno;
+        __u8 lbal = ( eno == EIO ) ? r.lob.lbal : 0;
 
         snprintf( san->error_msg,
                   sizeof( san->error_msg ),
                   "%s (errno=%d, device reason: %s)",
                   strerror( eno ),
                   eno,
-                  lbal_to_error_str( r.lob.lbal ) );
+                  lbal_to_error_str( lbal ) );
 
         nwipe_log( NWIPE_LOG_ERROR,
                    "%s: %s: SANITIZE failed: %s (errno=%d, device reason: %s)",
@@ -1001,7 +1022,7 @@ int nwipe_se_ata_sanitize( nwipe_se_ata_ctx* san )
                    san->device_path,
                    strerror( eno ),
                    eno,
-                   lbal_to_error_str( r.lob.lbal ) );
+                   lbal_to_error_str( lbal ) );
 
         return -1;
     }

@@ -73,11 +73,6 @@ typedef struct
     __u8 owpass; /* 0-based overwrite passes (0=1..15=16) */
     bool oipbp; /* invert pattern between passes */
     __u32 ovrpat; /* 32-bit overwrite pattern */
-    bool nodas; /* no deallocate after sanitize */
-    bool ause; /* allow unrestricted sanitize exit */
-#ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
-    bool emvs; /* enter media verification state */
-#endif
 } nwipe_se_nvme_ctx;
 
 int nwipe_se_nvme_topo_init( nwipe_se_nvme_topo* topo );

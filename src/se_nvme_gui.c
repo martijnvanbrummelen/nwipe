@@ -877,6 +877,11 @@ static int nwipe_gui_se_nvme_confirm( nwipe_context_t* ctx, nwipe_se_nvme_ctx* s
         {
             case 'e':
             case 'E':
+                wattron( footer_window, COLOR_PAIR( 9 ) );
+                nwipe_gui_amend_footer_window( "Executing... some devices may block here until completion.",
+                                               "Do not interrupt or power off, beware it can be a long wait..." );
+                wattroff( footer_window, COLOR_PAIR( 9 ) );
+                doupdate();
                 return 1;
 
             case 27:
@@ -949,42 +954,6 @@ void nwipe_gui_se_nvme_sanitize( nwipe_context_t* ctx, nwipe_se_nvme_ctx* san )
             nwipe_se_nvme_close( san );
             return;
         }
-
-        san->nodas = false; /* This is dangerous, keep it disabled */
-        san->ause = true; /* This is dangerous, keep it enabled */
-#ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
-        san->emvs = false; /* This is dangerous, keep it disabled */
-#endif
-    }
-    /* Otherwise there are no options to configure for the user */
-    else if( san->planned_sanact == NVME_SANITIZE_SANACT_EXIT_FAILURE
-#ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
-             || san->planned_sanact == NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
-#endif
-    )
-    {
-        /* These are all unused and must be kept in their zero state here */
-        san->owpass = 0;
-        san->oipbp = false;
-        san->ovrpat = 0;
-
-        san->nodas = false; /* No effect, must be in zero state also */
-        san->ause = false; /* No effect, must be in zero state also */
-#ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
-        san->emvs = false; /* No effect, must be in zero state also */
-#endif
-    }
-    else
-    {
-        san->owpass = 0;
-        san->oipbp = false;
-        san->ovrpat = 0;
-
-        san->nodas = false; /* This is dangerous, keep it disabled */
-        san->ause = true; /* This is dangerous, keep it enabled */
-#ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
-        san->emvs = false; /* This is dangerous, keep it disabled */
-#endif
     }
 
     /* Final confirmation screen before sanitize operation */
