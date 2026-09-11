@@ -877,6 +877,11 @@ static int nwipe_gui_se_nvme_confirm( nwipe_context_t* ctx, nwipe_se_nvme_ctx* s
         {
             case 'e':
             case 'E':
+                wattron( footer_window, COLOR_PAIR( 9 ) );
+                nwipe_gui_amend_footer_window( "Executing... some devices may block here until completion.",
+                                               "Do not interrupt or power off, beware it can be a long wait..." );
+                wattroff( footer_window, COLOR_PAIR( 9 ) );
+                doupdate();
                 return 1;
 
             case 27:
