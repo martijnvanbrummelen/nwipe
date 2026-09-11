@@ -388,7 +388,12 @@ sg16( int fd, int rw, int dma, struct ata_tf* tf, void* data, unsigned int data_
     {
         int eno = errno;
 
-        nwipe_log( NWIPE_LOG_ERROR, "%s: ioctl() failed: %s (%d)", __FUNCTION__, strerror( eno ), eno );
+        nwipe_log( NWIPE_LOG_ERROR,
+                   "%s: ioctl(SG_IO) failed (ata_op=0x%02x): %s (%d)",
+                   __FUNCTION__,
+                   tf->command,
+                   strerror( eno ),
+                   eno );
 
         /* No device response, do not leave the outgoing registers in place */
         memset( &tf->lob, 0, sizeof( tf->lob ) );
@@ -399,23 +404,28 @@ sg16( int fd, int rw, int dma, struct ata_tf* tf, void* data, unsigned int data_
     }
 
     nwipe_log( NWIPE_LOG_DEBUG,
-               "%s: ATA_%u status=0x%x, host_status=0x%x, driver_status=0x%x",
+               "%s: ata_op=0x%02x status=0x%02x host_status=0x%04x driver_status=0x%04x",
                __FUNCTION__,
-               io_hdr.cmd_len,
+               tf->command,
                io_hdr.status,
                io_hdr.host_status,
                io_hdr.driver_status );
 
     if( io_hdr.status && io_hdr.status != SG_CHECK_CONDITION )
     {
-        nwipe_log( NWIPE_LOG_ERROR, "%s: bad status: 0x%x", __FUNCTION__, io_hdr.status );
+        nwipe_log(
+            NWIPE_LOG_ERROR, "%s: bad status (ata_op=0x%02x status=0x%02x)", __FUNCTION__, tf->command, io_hdr.status );
         errno = EBADE;
         return -1;
     }
 
     if( io_hdr.host_status )
     {
-        nwipe_log( NWIPE_LOG_ERROR, "%s: bad host status: 0x%x", __FUNCTION__, io_hdr.host_status );
+        nwipe_log( NWIPE_LOG_ERROR,
+                   "%s: bad host status (ata_op=0x%02x host_status=0x%04x)",
+                   __FUNCTION__,
+                   tf->command,
+                   io_hdr.host_status );
         errno = EBADE;
         return -1;
     }
@@ -426,7 +436,11 @@ sg16( int fd, int rw, int dma, struct ata_tf* tf, void* data, unsigned int data_
 
     if( io_hdr.driver_status && ( io_hdr.driver_status != SG_DRIVER_SENSE ) )
     {
-        nwipe_log( NWIPE_LOG_ERROR, "%s: bad driver status: 0x%x", __FUNCTION__, io_hdr.driver_status );
+        nwipe_log( NWIPE_LOG_ERROR,
+                   "%s: bad driver status (ata_op=0x%02x driver_status=0x%04x)",
+                   __FUNCTION__,
+                   tf->command,
+                   io_hdr.driver_status );
         errno = EBADE;
         return -1;
     }
@@ -436,8 +450,7 @@ sg16( int fd, int rw, int dma, struct ata_tf* tf, void* data, unsigned int data_
         if( data == NULL )
         {
             /* CK_COND was requested (not an IDENTIFY command), but no registers were returned */
-            nwipe_log(
-                NWIPE_LOG_ERROR, "%s: missing sense data (behind RAID controller or USB bridge?)", __FUNCTION__ );
+            nwipe_log( NWIPE_LOG_ERROR, "%s: missing sense data (ata_op=0x%02x)", __FUNCTION__, tf->command );
             errno = EBADE;
             return -1;
         }
@@ -452,9 +465,10 @@ sg16( int fd, int rw, int dma, struct ata_tf* tf, void* data, unsigned int data_
         tf_from_fixed_sense( tf, sb );
 
         nwipe_log( NWIPE_LOG_DEBUG,
-                   "%s: ATA_%u (fixed sense) stat=%02x err=%02x nsect=%02x lbal=%02x lbam=%02x lbah=%02x dev=%02x",
+                   "%s: fixed sense (ata_op=0x%02x stat=0x%02x err=0x%02x nsect=0x%02x lbal=0x%02x lbam=0x%02x "
+                   "lbah=0x%02x dev=0x%02x)",
                    __FUNCTION__,
-                   io_hdr.cmd_len,
+                   tf->command,
                    tf->status,
                    tf->error,
                    tf->lob.nsect,
@@ -466,9 +480,10 @@ sg16( int fd, int rw, int dma, struct ata_tf* tf, void* data, unsigned int data_
         if( !( tf->status & ( ATA_STAT_ERR | ATA_STAT_DRQ ) ) )
         {
             nwipe_log( NWIPE_LOG_ERROR,
-                       "%s: fixed format sense data without ATA error status "
-                       "(valid=%u stat=0x%02x err=0x%02x key=0x%x asc=0x%02x ascq=0x%02x)",
+                       "%s: fixed sense without ATA error status (ata_op=0x%02x valid=%u stat=0x%02x err=0x%02x "
+                       "key=0x%02x asc=0x%02x ascq=0x%02x)",
                        __FUNCTION__,
+                       tf->command,
                        (unsigned) !!( sb[0] & 0x80 ),
                        tf->status,
                        tf->error,
@@ -479,15 +494,18 @@ sg16( int fd, int rw, int dma, struct ata_tf* tf, void* data, unsigned int data_
             return -1;
         }
 
-        nwipe_log(
-            NWIPE_LOG_ERROR,
-            "%s: I/O error (fixed sense, valid=%u), ata_op=0x%02x ata_status=0x%02x ata_error=0x%02x lbal=0x%02x",
-            __FUNCTION__,
-            (unsigned) !!( sb[0] & 0x80 ),
-            tf->command,
-            tf->status,
-            tf->error,
-            tf->lob.lbal );
+        nwipe_log( NWIPE_LOG_ERROR,
+                   "%s: I/O error (fixed sense ata_op=0x%02x valid=%u stat=0x%02x err=0x%02x key=0x%02x asc=0x%02x "
+                   "ascq=0x%02x lbal=0x%02x)",
+                   __FUNCTION__,
+                   tf->command,
+                   (unsigned) !!( sb[0] & 0x80 ),
+                   tf->status,
+                   tf->error,
+                   sb[2] & 0x0f,
+                   sb[12],
+                   sb[13],
+                   tf->lob.lbal );
         errno = EIO;
         return -1;
     }
@@ -497,7 +515,19 @@ sg16( int fd, int rw, int dma, struct ata_tf* tf, void* data, unsigned int data_
 
     if( sb[0] != 0x72 || sb[7] < 14 || desc[0] != 0x09 || desc[1] < 0x0c )
     {
-        nwipe_log( NWIPE_LOG_ERROR, "%s: bad sense data (behind RAID controller or USB bridge?)", __FUNCTION__ );
+        nwipe_log( NWIPE_LOG_ERROR,
+                   "%s: bad sense data (ata_op=0x%02x sb_len_wr=%u sb[0]=0x%02x sb[7]=%u desc[0]=0x%02x desc[1]=0x%02x "
+                   "key=0x%02x asc=0x%02x ascq=0x%02x)",
+                   __FUNCTION__,
+                   tf->command,
+                   (unsigned) io_hdr.sb_len_wr,
+                   sb[0],
+                   sb[7],
+                   desc[0],
+                   desc[1],
+                   sb[1] & 0x0f,
+                   sb[2],
+                   sb[3] );
         errno = EBADE;
         return -1;
     }
@@ -533,25 +563,35 @@ sg16( int fd, int rw, int dma, struct ata_tf* tf, void* data, unsigned int data_
     }
 
     nwipe_log( NWIPE_LOG_DEBUG,
-               "%s: ATA_%u stat=%02x err=%02x nsect=%02x lbal=%02x lbam=%02x lbah=%02x dev=%02x",
+               "%s: descriptor sense (ata_op=0x%02x ext=%u stat=0x%02x err=0x%02x nsect=0x%02x lbal=0x%02x lbam=0x%02x "
+               "lbah=0x%02x dev=0x%02x hob_nsect=0x%02x hob_lbal=0x%02x hob_lbam=0x%02x hob_lbah=0x%02x)",
                __FUNCTION__,
-               io_hdr.cmd_len,
+               tf->command,
+               (unsigned) tf->is_lba48,
                tf->status,
                tf->error,
                tf->lob.nsect,
                tf->lob.lbal,
                tf->lob.lbam,
                tf->lob.lbah,
-               tf->dev );
+               tf->dev,
+               tf->hob.nsect,
+               tf->hob.lbal,
+               tf->hob.lbam,
+               tf->hob.lbah );
 
     if( tf->status & ( ATA_STAT_ERR | ATA_STAT_DRQ ) )
     {
         nwipe_log( NWIPE_LOG_ERROR,
-                   "%s: I/O error, ata_op=0x%02x ata_status=0x%02x ata_error=0x%02x lbal=0x%02x",
+                   "%s: I/O error (descriptor sense ata_op=0x%02x stat=0x%02x err=0x%02x key=0x%02x asc=0x%02x "
+                   "ascq=0x%02x lbal=0x%02x)",
                    __FUNCTION__,
                    tf->command,
                    tf->status,
                    tf->error,
+                   sb[1] & 0x0f,
+                   sb[2],
+                   sb[3],
                    tf->lob.lbal );
         errno = EIO;
         return -1;
