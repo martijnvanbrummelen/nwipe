@@ -956,12 +956,6 @@ void nwipe_gui_se_ata_sanitize( nwipe_context_t* ctx, nwipe_se_ata_ctx* san )
             return;
         }
     }
-    /* Otherwise clear overwrite-specific fields */
-    else
-    {
-        san->owpass = 0;
-        san->ovrpat = 0;
-    }
 
     /* Final confirmation screen before sanitize operation */
     if( !nwipe_gui_se_ata_confirm( ctx, san ) )

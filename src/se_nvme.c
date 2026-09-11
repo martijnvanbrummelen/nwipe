@@ -441,6 +441,12 @@ int nwipe_se_nvme_sanact_is_destructive( enum nvme_sanitize_sanact act )
  */
 int nwipe_se_nvme_sanitize( nwipe_se_nvme_ctx* san )
 {
+    bool nodas; /* No-Deallocate After Sanitize */
+    bool ause; /* Allow Unrestricted Sanitize Exit */
+#ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
+    bool emvs; /* Enter Media Verification State */
+#endif
+
     memset( san->error_msg, 0, sizeof( san->error_msg ) ); /* Used in GUI */
 
     if( san->fd < 0 )
@@ -450,48 +456,7 @@ int nwipe_se_nvme_sanitize( nwipe_se_nvme_ctx* san )
         return -1;
     }
 
-    if( san->planned_sanact == NVME_SANITIZE_SANACT_EXIT_FAILURE
-#ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
-        || san->planned_sanact == NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
-#endif
-    )
-    {
-        if( san->ause )
-        {
-            snprintf( san->error_msg, sizeof( san->error_msg ), "AUSE not allowed with sanact" );
-            nwipe_log( NWIPE_LOG_ERROR,
-                       "%s: %s: AUSE not allowed with sanact=%d",
-                       __FUNCTION__,
-                       san->ctrl_path,
-                       san->planned_sanact );
-            return -1;
-        }
-        if( san->nodas )
-        {
-            snprintf( san->error_msg, sizeof( san->error_msg ), "NODAS not allowed with sanact" );
-            nwipe_log( NWIPE_LOG_ERROR,
-                       "%s: %s: NODAS not allowed with sanact=%d",
-                       __FUNCTION__,
-                       san->ctrl_path,
-                       san->planned_sanact );
-            return -1;
-        }
-    }
-
-    if( san->planned_sanact != NVME_SANITIZE_SANACT_START_OVERWRITE )
-    {
-        if( san->owpass || san->oipbp || san->ovrpat )
-        {
-            snprintf( san->error_msg, sizeof( san->error_msg ), "Overwrite fields not allowed with sanact" );
-            nwipe_log( NWIPE_LOG_ERROR,
-                       "%s: %s: Overwrite fields set but sanact=%d is not overwrite",
-                       __FUNCTION__,
-                       san->ctrl_path,
-                       san->planned_sanact );
-            return -1;
-        }
-    }
-    else
+    if( san->planned_sanact == NVME_SANITIZE_SANACT_START_OVERWRITE )
     {
         if( san->owpass > 15 )
         {
@@ -503,6 +468,35 @@ int nwipe_se_nvme_sanitize( nwipe_se_nvme_ctx* san )
                        san->owpass );
             return -1;
         }
+    }
+    else
+    {
+        /* No effect, must be in zero state */
+        san->owpass = 0;
+        san->oipbp = false;
+        san->ovrpat = 0;
+    }
+
+    if( san->planned_sanact == NVME_SANITIZE_SANACT_EXIT_FAILURE
+#ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
+        || san->planned_sanact == NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
+#endif
+    )
+    {
+        /* No effect, must be in zero state */
+        nodas = false;
+        ause = false;
+#ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
+        emvs = false;
+#endif
+    }
+    else
+    {
+        nodas = false; /* Enabling this is dangerous, keep it disabled */
+        ause = true; /* Disabling this is dangerous, keep it enabled */
+#ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
+        emvs = false; /* Enabling this is dangerous, keep it disabled */
+#endif
     }
 
     /* Keep in sync, in case the caller did not set it themselves */
@@ -518,13 +512,13 @@ int nwipe_se_nvme_sanitize( nwipe_se_nvme_ctx* san )
     args.timeout = NVME_DEFAULT_IOCTL_TIMEOUT;
     args.sanact = san->planned_sanact;
     args.ovrpat = san->ovrpat;
-    args.ause = san->ause;
+    args.ause = ause;
     /* owpass is 0-based: 0=1 pass .. 15=16 passes; +1 to wire format where 0=16 passes */
     args.owpass = ( san->planned_sanact == NVME_SANITIZE_SANACT_START_OVERWRITE ) ? ( ( san->owpass + 1 ) & 0x0F ) : 0;
     args.oipbp = san->oipbp;
-    args.nodas = san->nodas;
+    args.nodas = nodas;
 #ifdef HAVE_NVME_SANITIZE_SANACT_EXIT_MEDIA_VERIF
-    args.emvs = san->emvs;
+    args.emvs = emvs;
 #endif
     args.result = NULL;
 
