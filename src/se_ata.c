@@ -968,7 +968,7 @@ int nwipe_se_ata_sanitize( nwipe_se_ata_ctx* san )
     san->destructive_sanact = nwipe_se_ata_sanact_is_destructive( san->planned_sanact );
 
     nwipe_log( NWIPE_LOG_INFO,
-               "%s: issuing SANITIZE feat=0x%04x lba=0x%012llx nsect=%u",
+               "%s: issuing SANITIZE feat=0x%04x lba=0x%012llx nsect=0x%02x",
                san->device_path,
                (unsigned) feature,
                (unsigned long long) lba,
