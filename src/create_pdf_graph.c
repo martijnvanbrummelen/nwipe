@@ -158,7 +158,7 @@ create_pdf_speed_profile_page( nwipe_misc_thread_data_t* d, size_t pdf_type, siz
     const char* help_body1 = "Monitor the speed vectors closely for unusual anomalies or performance bottlenecks.";
     const char* help_body2 = "Look for sharp, sudden downward spikes where operational speed differs substantially";
     const char* help_body3 = "from typical baseline values. These spikes can indicate a drive slowing down over";
-    const char* help_body4 = "specificphysical sectors, signaling potential disk failure. Such degradation may not";
+    const char* help_body4 = "specific physical sectors, signaling potential disk failure. Such degradation may not";
     const char* help_body5 = "trigger standard drive or I/O errors, meaning it won't always be obvious in SMART data.";
     const char* help_body6 = "The SMART health status may even report the drive as 'Good' when,in fact, this graph ";
     const char* help_body7 = "highlights a localized failure on the platter surface.";
