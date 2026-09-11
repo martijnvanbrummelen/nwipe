@@ -194,6 +194,8 @@ struct scsi_sg_io_hdr
 }; /* scsi_sg_io_hdr */
 
 static const unsigned int default_timeout_secs = 15;
+static const unsigned int sanitize_poll_timeout_secs = 10;
+static const unsigned int sanitize_action_timeout_secs = 60;
 
 static void dump_bytes( const char* f, const char* prefix, unsigned char* p, int len )
 {
@@ -628,7 +630,9 @@ static __u16* ata_identify( int fd )
 
 static int ata_sanitize_taskfile( int fd, __u16 feature, __u64 lba, __u8 nsect, struct hdio_taskfile* r_out )
 {
+    unsigned int timeout_secs = sanitize_action_timeout_secs;
     struct hdio_taskfile r;
+
     memset( &r, 0, sizeof( r ) );
 
     r.cmd_req = TASKFILE_CMD_REQ_NODATA;
@@ -662,7 +666,12 @@ static int ata_sanitize_taskfile( int fd, __u16 feature, __u64 lba, __u8 nsect, 
         r.lob.nsect = nsect;
     }
 
-    if( do_taskfile_cmd( fd, &r, 10 ) )
+    if( !nsect && feature == SANITIZE_STATUS_EXT ) /* Poll */
+    {
+        timeout_secs = sanitize_poll_timeout_secs;
+    }
+
+    if( do_taskfile_cmd( fd, &r, timeout_secs ) )
     {
         int eno = errno;
         if( r_out )
