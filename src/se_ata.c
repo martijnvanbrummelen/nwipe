@@ -294,6 +294,34 @@ static __u64 tf_to_lba( struct ata_tf* tf )
     return lba64;
 } /* tf_to_lba */
 
+static void tf_from_fixed_sense( struct ata_tf* tf, const unsigned char* sb )
+{
+    if( ( sb[0] & 0x80 ) || ( sb[4] & ( ATA_STAT_ERR | ATA_STAT_DRQ ) ) )
+    { /* New kernel format */
+        tf->error = sb[3];
+        tf->status = sb[4];
+        tf->dev = sb[5];
+        tf->lob.nsect = sb[6];
+        tf->is_lba48 = !!( sb[8] & 0x80 );
+        tf->lob.lbal = sb[9];
+        tf->lob.lbam = sb[10];
+        tf->lob.lbah = sb[11];
+    }
+    else
+    { /* Old kernel format */
+        tf->error = sb[8];
+        tf->status = sb[9];
+        tf->dev = sb[10];
+        tf->lob.nsect = sb[11];
+        tf->is_lba48 = !!( sb[16] & 0x80 );
+        tf->lob.lbal = sb[17];
+        tf->lob.lbam = sb[18];
+        tf->lob.lbah = sb[19];
+    }
+
+    memset( &tf->hob, 0, sizeof( tf->hob ) ); /* Not carried over */
+} /* tf_from_fixed_sense */
+
 static int
 sg16( int fd, int rw, int dma, struct ata_tf* tf, void* data, unsigned int data_bytes, unsigned int timeout_secs )
 {
@@ -419,6 +447,52 @@ sg16( int fd, int rw, int dma, struct ata_tf* tf, void* data, unsigned int data_
         return 0;
     }
 
+    if( ( sb[0] & 0x7f ) == 0x70 ) /* Fixed sense format (we only parse it for errors) */
+    {
+        tf_from_fixed_sense( tf, sb );
+
+        nwipe_log( NWIPE_LOG_DEBUG,
+                   "%s: ATA_%u (fixed sense) stat=%02x err=%02x nsect=%02x lbal=%02x lbam=%02x lbah=%02x dev=%02x",
+                   __FUNCTION__,
+                   io_hdr.cmd_len,
+                   tf->status,
+                   tf->error,
+                   tf->lob.nsect,
+                   tf->lob.lbal,
+                   tf->lob.lbam,
+                   tf->lob.lbah,
+                   tf->dev );
+
+        if( !( tf->status & ( ATA_STAT_ERR | ATA_STAT_DRQ ) ) )
+        {
+            nwipe_log( NWIPE_LOG_ERROR,
+                       "%s: fixed format sense data without ATA error status "
+                       "(valid=%u stat=0x%02x err=0x%02x key=0x%x asc=0x%02x ascq=0x%02x)",
+                       __FUNCTION__,
+                       (unsigned) !!( sb[0] & 0x80 ),
+                       tf->status,
+                       tf->error,
+                       sb[2] & 0x0f,
+                       sb[12],
+                       sb[13] );
+            errno = EBADE;
+            return -1;
+        }
+
+        nwipe_log(
+            NWIPE_LOG_ERROR,
+            "%s: I/O error (fixed sense, valid=%u), ata_op=0x%02x ata_status=0x%02x ata_error=0x%02x lbal=0x%02x",
+            __FUNCTION__,
+            (unsigned) !!( sb[0] & 0x80 ),
+            tf->command,
+            tf->status,
+            tf->error,
+            tf->lob.lbal );
+        errno = EIO;
+        return -1;
+    }
+
+    /* Non-fixed format */
     desc = sb + 8;
 
     if( sb[0] != 0x72 || sb[7] < 14 || desc[0] != 0x09 || desc[1] < 0x0c )
@@ -473,11 +547,12 @@ sg16( int fd, int rw, int dma, struct ata_tf* tf, void* data, unsigned int data_
     if( tf->status & ( ATA_STAT_ERR | ATA_STAT_DRQ ) )
     {
         nwipe_log( NWIPE_LOG_ERROR,
-                   "%s: I/O error, ata_op=0x%02x ata_status=0x%02x ata_error=0x%02x",
+                   "%s: I/O error, ata_op=0x%02x ata_status=0x%02x ata_error=0x%02x lbal=0x%02x",
                    __FUNCTION__,
                    tf->command,
                    tf->status,
-                   tf->error );
+                   tf->error,
+                   tf->lob.lbal );
         errno = EIO;
         return -1;
     }
@@ -833,6 +908,7 @@ int nwipe_se_ata_poll( nwipe_se_ata_ctx* san )
         {
             /* Device is in Sanitize Operation Failed state */
             san->state = NWIPE_SE_ATA_STATE_FAILURE;
+            san->state_raw = 0;
             san->progress_raw = 0;
             san->progress_pct = 0;
             return 0; /* Not a poll error, just a known device state */
