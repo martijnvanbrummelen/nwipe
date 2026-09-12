@@ -4,7 +4,9 @@
  * Based on: hdparm 9.65 - (c) 2007 Mark Lord (BSD-style license)
  */
 
-#define _POSIX_C_SOURCE 200809L
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,6 +19,8 @@
 #include <sys/types.h>
 #include <scsi/scsi.h>
 #include <scsi/sg.h>
+
+#include <linux/types.h>
 
 #include "nwipe.h"
 #include "context.h"

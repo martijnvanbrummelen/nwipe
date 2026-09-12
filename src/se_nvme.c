@@ -13,7 +13,18 @@
 #define _GNU_SOURCE 1 /* asprintf */
 #endif
 
-#define _POSIX_C_SOURCE 200809L
+#include <endian.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <syslog.h>
+#include <unistd.h>
+#include <libnvme.h>
+
+#include <linux/types.h>
 
 #include "nwipe.h"
 #include "context.h"

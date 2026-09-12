@@ -8,7 +8,6 @@
 #define SE_ATA_H_
 
 #include <linux/types.h> /* __u8, __u16, __u32, __u64 */
-#include <stdbool.h>
 
 /*
  * While the device internal state machine has an "Idle" (SD0)
