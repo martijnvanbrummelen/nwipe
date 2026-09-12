@@ -57,18 +57,6 @@ extern int errno;
 /* 0=wipe not yet started, 1=wipe has been started by the user */
 extern int global_wipe_status;
 
-/* Ncurses headers. */
-#ifdef NCURSES_IN_SUBDIR
-#include <ncurses/ncurses.h>
-#else
-#include <ncurses.h>
-#endif
-#ifdef PANEL_IN_SUBDIR
-#include <ncurses/panel.h>
-#else
-#include <panel.h>
-#endif
-
 /* Kernel device headers. */
 #include <linux/hdreg.h>
 
@@ -78,8 +66,6 @@ typedef unsigned long u32;
 typedef unsigned short u16;
 typedef unsigned char u8;
 
-/* This is required for ioctl BLKGETSIZE64, but it conflicts with <wait.h>. */
-/* #include <linux/fs.h> */
 
 /* Define ioctls that cannot be included. */
 #define BLKSSZGET _IO( 0x12, 104 )
