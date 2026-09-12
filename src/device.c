@@ -776,7 +776,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     next_device->device_serial_no[0] = '\0'; /* initialise the serial number */
 
     fd = open( next_device->device_name = dev->path, O_RDONLY );
-    if( fd == ERR )
+    if( fd < 0 )
     {
         nwipe_log( NWIPE_LOG_WARNING, "Unable to open device %s to obtain serial number", next_device->device_name );
     }
