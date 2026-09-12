@@ -51,6 +51,9 @@ void* signal_hand( void* );
 #include <time.h>
 #include <unistd.h>
 
+/* Assert off_t is 64-bit (if this errors, it is not) */
+typedef char off_t_must_be_64_bit[( sizeof( off_t ) == 8 ) ? 1 : -1];
+
 /* System errors. */
 extern int errno;
 
@@ -65,7 +68,6 @@ typedef unsigned long long u64;
 typedef unsigned long u32;
 typedef unsigned short u16;
 typedef unsigned char u8;
-
 
 /* Define ioctls that cannot be included. */
 #define BLKSSZGET _IO( 0x12, 104 )
