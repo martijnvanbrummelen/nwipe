@@ -487,7 +487,10 @@ static int nwipe_gui_se_nvme_overwrite_opts( nwipe_context_t* ctx, nwipe_se_nvme
 
 static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* san )
 {
-    const char* ftr_progress = "No keyboard actions are available";
+    const char* ftr_progress_1 = "No keyboard actions are available";
+    const char* ftr_progress_2 = "";
+    int poll_err = 0;
+    int poll_err_prev = 0;
     int user_aborted = 0;
     int method_set = 0;
 
@@ -495,19 +498,16 @@ static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* 
     time( &ctx->start_time );
 
     werase( footer_window );
-    nwipe_gui_amend_footer_window( ftr_progress, "" );
+    nwipe_gui_amend_footer_window( ftr_progress_1, ftr_progress_2 );
     wrefresh( footer_window );
 
     do
     {
         int yy = 2;
         int keystroke;
-        int poll_err;
         const int tab1 = 2;
 
-        werase( main_window );
-        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr_progress, "" );
-
+        poll_err_prev = poll_err;
         poll_err = nwipe_se_nvme_poll( san );
 
         /* In case monitoring was resumed, set again the device context's method */
@@ -515,6 +515,26 @@ static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* 
         {
             method_set = nwipe_gui_se_nvme_set_context_method( ctx, san->sanact );
         }
+
+        if( !poll_err )
+        {
+            ftr_progress_1 = "No keyboard actions are available";
+            ftr_progress_2 = "";
+        }
+        else
+        {
+            ftr_progress_1 = "Retrying... press CTRL+C to abort and exit Nwipe";
+            ftr_progress_2 = "The operation itself may proceed to run on the device";
+        }
+        if( poll_err != poll_err_prev ) /* Footer changed */
+        {
+            werase( footer_window );
+            nwipe_gui_amend_footer_window( ftr_progress_1, ftr_progress_2 );
+            wrefresh( footer_window );
+        }
+
+        werase( main_window );
+        nwipe_gui_create_all_windows_on_terminal_resize( 0, ftr_progress_1, ftr_progress_2 );
 
         nwipe_gui_se_nvme_print_device( ctx, san, main_window, &yy, tab1, &san->sanact );
         yy++;
@@ -566,8 +586,8 @@ static void nwipe_gui_se_nvme_monitor( nwipe_context_t* ctx, nwipe_se_nvme_ctx* 
         if( !poll_err && san->state != NWIPE_SE_NVME_STATE_IN_PROGRESS )
             break;
 
-        /* Wait ~5s, monitoring is intentionally not interruptible */
-        for( int tick = 0; tick < 20 && terminate_signal != 1; tick++ )
+        /* Wait 5 secs (or 30 secs on error), monitoring is intentionally not interruptible */
+        for( int tick = 0; tick < ( !poll_err ? 20 : 120 ) && terminate_signal != 1; tick++ )
         {
             timeout( 250 );
             keystroke = getch();
