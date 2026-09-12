@@ -51,17 +51,6 @@ void* signal_hand( void* );
 #include <time.h>
 #include <unistd.h>
 
-/* workaround for Fedora */
-#ifndef off64_t
-#ifndef off_t
-#define off64_t int64_t
-#else
-#define off64_t off_t
-#endif
-#endif
-
-/*#include "config.h"*/
-
 /* System errors. */
 extern int errno;
 

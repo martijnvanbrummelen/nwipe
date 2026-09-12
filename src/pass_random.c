@@ -42,8 +42,8 @@ int nwipe_random_forward_pass( NWIPE_METHOD_SIGNATURE )
     int i = 0;
     size_t blocksize;
     size_t io_blocksize;
-    off64_t offset;
-    off64_t current_offset;
+    off_t offset;
+    off_t current_offset;
     char* b;
     u64 z = c->device_size; /* bytes remaining */
     u64 bs = 0; /* pass bytes skipped */
@@ -90,7 +90,7 @@ int nwipe_random_forward_pass( NWIPE_METHOD_SIGNATURE )
     offset = lseek( c->device_fd, 0, SEEK_SET );
     c->pass_done = 0;
 
-    if( offset == (off64_t) -1 )
+    if( offset == (off_t) -1 )
     {
         nwipe_perror( errno, __FUNCTION__, "lseek" );
         nwipe_log( NWIPE_LOG_FATAL, "Unable to reset the '%s' file offset.", c->device_name );
@@ -137,7 +137,7 @@ int nwipe_random_forward_pass( NWIPE_METHOD_SIGNATURE )
         }
 
         /* Record the offset we're at before the write. */
-        current_offset = (off64_t) ( c->device_size - z );
+        current_offset = (off_t) ( c->device_size - z );
 
         /* Write the generated random data to the device. */
         r = (int) nwipe_write_with_retry( c, c->device_fd, b, blocksize );
@@ -167,8 +167,8 @@ int nwipe_random_forward_pass( NWIPE_METHOD_SIGNATURE )
                  * Skip forward by one block on the device, so subsequent writes
                  * continue after the failing region.
                  */
-                offset = lseek( c->device_fd, (off64_t) s, SEEK_CUR );
-                if( offset == (off64_t) -1 )
+                offset = lseek( c->device_fd, (off_t) s, SEEK_CUR );
+                if( offset == (off_t) -1 )
                 {
                     /*
                      * If we cannot move the file offset, we cannot safely continue,
@@ -201,7 +201,7 @@ int nwipe_random_forward_pass( NWIPE_METHOD_SIGNATURE )
              * Try to touch the bad block from the back (reverse wipe).
              * If we meet another bad block along the way, abort the wipe.
              */
-            off64_t rev_offset = (off64_t) ( c->device_size - (u64) io_blocksize );
+            off_t rev_offset = (off_t) ( c->device_size - (u64) io_blocksize );
             size_t rev_blocksize = io_blocksize;
 
             nwipe_perror( errno, __FUNCTION__, "write" );
@@ -223,7 +223,7 @@ int nwipe_random_forward_pass( NWIPE_METHOD_SIGNATURE )
             if( c->device_size % (u64) io_blocksize != 0 )
             {
                 /* The last block of the device is smaller than our I/O blocksize, adjust it */
-                rev_offset = (off64_t) ( c->device_size - ( c->device_size % (u64) io_blocksize ) );
+                rev_offset = (off_t) ( c->device_size - ( c->device_size % (u64) io_blocksize ) );
                 rev_blocksize = (size_t) ( c->device_size % (u64) io_blocksize );
             }
 
@@ -281,7 +281,7 @@ int nwipe_random_forward_pass( NWIPE_METHOD_SIGNATURE )
 
                 nwipe_update_bytes_erased( c, z, bs, 0 );
 
-                rev_offset -= (off64_t) rev_blocksize;
+                rev_offset -= (off_t) rev_blocksize;
                 rev_blocksize = io_blocksize; /* must be a full I/O block now */
 
                 pthread_testcancel();
@@ -327,8 +327,8 @@ int nwipe_random_forward_pass( NWIPE_METHOD_SIGNATURE )
             c->round_done += (u64) s;
 
             /* Seek forward the skipped bytes so we stay in-sync for next write */
-            offset = lseek( c->device_fd, (off64_t) s, SEEK_CUR );
-            if( offset == (off64_t) -1 )
+            offset = lseek( c->device_fd, (off_t) s, SEEK_CUR );
+            if( offset == (off_t) -1 )
             {
                 nwipe_perror( errno, __FUNCTION__, "lseek" );
                 nwipe_log(
@@ -405,7 +405,7 @@ int nwipe_random_reverse_pass( NWIPE_METHOD_SIGNATURE )
     int i = 0;
     size_t blocksize;
     size_t io_blocksize;
-    off64_t current_offset;
+    off_t current_offset;
     char* b;
     u64 z = c->device_size; /* bytes remaining */
     u64 bs = 0; /* pass bytes skipped */
@@ -483,7 +483,7 @@ int nwipe_random_reverse_pass( NWIPE_METHOD_SIGNATURE )
         }
 
         /* Record the offset we're at before the write (reverse-adjusted). */
-        current_offset = (off64_t) ( z - (u64) blocksize );
+        current_offset = (off_t) ( z - (u64) blocksize );
 
         /* Write the generated random data to the device. */
         r = (int) nwipe_pwrite_with_retry( c, c->device_fd, b, blocksize, current_offset );
@@ -529,7 +529,7 @@ int nwipe_random_reverse_pass( NWIPE_METHOD_SIGNATURE )
              * Try to touch the bad block from the front (forward wipe).
              * If we meet another bad block along the way, abort the wipe.
              */
-            off64_t fwd_offset = 0;
+            off_t fwd_offset = 0;
             size_t fwd_blocksize = io_blocksize;
 
             nwipe_perror( errno, __FUNCTION__, "pwrite" );
@@ -551,7 +551,7 @@ int nwipe_random_reverse_pass( NWIPE_METHOD_SIGNATURE )
             while( fwd_offset < current_offset )
             {
                 /* If the last block failed, it may be smaller than an I/O block */
-                if( ( fwd_offset + (off64_t) fwd_blocksize ) > current_offset )
+                if( ( fwd_offset + (off_t) fwd_blocksize ) > current_offset )
                     fwd_blocksize = (size_t) ( current_offset - fwd_offset );
 
                 c->prng->read( &c->prng_state, b, fwd_blocksize );
@@ -606,7 +606,7 @@ int nwipe_random_reverse_pass( NWIPE_METHOD_SIGNATURE )
 
                 nwipe_update_bytes_erased( c, z, bs, 0 );
 
-                fwd_offset += (off64_t) fwd_blocksize;
+                fwd_offset += (off_t) fwd_blocksize;
 
                 pthread_testcancel();
             }
@@ -713,8 +713,8 @@ int nwipe_random_forward_verify( NWIPE_METHOD_SIGNATURE )
     int r;
     size_t blocksize;
     size_t io_blocksize;
-    off64_t offset;
-    off64_t current_offset;
+    off_t offset;
+    off_t current_offset;
     char* b; /* input buffer from device */
     char* d; /* pattern buffer generated by PRNG */
     u64 z = c->device_size; /* bytes remaining in this pass */
@@ -749,7 +749,7 @@ int nwipe_random_forward_verify( NWIPE_METHOD_SIGNATURE )
     offset = lseek( c->device_fd, 0, SEEK_SET );
     c->pass_done = 0;
 
-    if( offset == (off64_t) -1 )
+    if( offset == (off_t) -1 )
     {
         nwipe_perror( errno, __FUNCTION__, "lseek" );
         nwipe_log( NWIPE_LOG_FATAL, "Unable to reset the '%s' file offset.", c->device_name );
@@ -800,7 +800,7 @@ int nwipe_random_forward_verify( NWIPE_METHOD_SIGNATURE )
         }
 
         /* Record the offset we're at before the read. */
-        current_offset = (off64_t) ( c->device_size - z );
+        current_offset = (off_t) ( c->device_size - z );
 
         /* Read data from device. */
         r = (int) nwipe_read_with_retry( c, c->device_fd, b, blocksize );
@@ -830,8 +830,8 @@ int nwipe_random_forward_verify( NWIPE_METHOD_SIGNATURE )
                  * Skip forward by one block on the device, so subsequent reads
                  * continue after the failing region.
                  */
-                offset = lseek( c->device_fd, (off64_t) s, SEEK_CUR );
-                if( offset == (off64_t) -1 )
+                offset = lseek( c->device_fd, (off_t) s, SEEK_CUR );
+                if( offset == (off_t) -1 )
                 {
                     /*
                      * If we cannot move the file offset, we cannot safely continue,
@@ -894,8 +894,8 @@ int nwipe_random_forward_verify( NWIPE_METHOD_SIGNATURE )
             c->round_done += (u64) s;
 
             /* Seek forward the skipped bytes so we stay in-sync for next read */
-            offset = lseek( c->device_fd, (off64_t) s, SEEK_CUR );
-            if( offset == (off64_t) -1 )
+            offset = lseek( c->device_fd, (off_t) s, SEEK_CUR );
+            if( offset == (off_t) -1 )
             {
                 nwipe_perror( errno, __FUNCTION__, "lseek" );
                 nwipe_log(
@@ -954,7 +954,7 @@ int nwipe_random_reverse_verify( NWIPE_METHOD_SIGNATURE )
     int r;
     size_t blocksize;
     size_t io_blocksize;
-    off64_t current_offset;
+    off_t current_offset;
     char* b; /* input buffer from device */
     char* d; /* pattern buffer generated by PRNG */
     u64 z = c->device_size; /* bytes remaining in this pass */
@@ -1022,7 +1022,7 @@ int nwipe_random_reverse_verify( NWIPE_METHOD_SIGNATURE )
         }
 
         /* Record the offset we're at before the read (reverse-adjusted). */
-        current_offset = (off64_t) ( z - (u64) blocksize );
+        current_offset = (off_t) ( z - (u64) blocksize );
 
         /* Read data from device. */
         r = (int) nwipe_pread_with_retry( c, c->device_fd, b, blocksize, current_offset );

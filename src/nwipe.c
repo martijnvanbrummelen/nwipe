@@ -1006,7 +1006,7 @@ int main( int argc, char** argv )
                 /* Reset the file pointer. */
                 r = lseek( c2[i]->device_fd, 0, SEEK_SET );
 
-                if( r == (off64_t) -1 )
+                if( r == (off_t) -1 )
                 {
                     nwipe_perror( errno, __FUNCTION__, "lseek" );
                     nwipe_log( NWIPE_LOG_ERROR, "Unable to reset the '%s' file offset.", c2[i]->device_name );

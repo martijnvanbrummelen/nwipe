@@ -102,7 +102,7 @@ ssize_t nwipe_write_with_retry( nwipe_context_t* c, int fd, const void* buf, siz
 
             if( r > 0 )
             {
-                if( lseek( fd, -r, SEEK_CUR ) == (off64_t) -1 )
+                if( lseek( fd, -r, SEEK_CUR ) == (off_t) -1 )
                 {
                     nwipe_perror( errno, __FUNCTION__, "lseek" );
                     nwipe_log(
@@ -125,7 +125,7 @@ ssize_t nwipe_write_with_retry( nwipe_context_t* c, int fd, const void* buf, siz
 } /* nwipe_write_with_retry */
 
 /* Behaves like pwrite(), but retries up to MAX_IO_ATTEMPTS times on error or short write. */
-ssize_t nwipe_pwrite_with_retry( nwipe_context_t* c, int fd, const void* buf, size_t count, off64_t offset )
+ssize_t nwipe_pwrite_with_retry( nwipe_context_t* c, int fd, const void* buf, size_t count, off_t offset )
 {
     ssize_t r;
     int attempt;
@@ -251,7 +251,7 @@ ssize_t nwipe_read_with_retry( nwipe_context_t* c, int fd, void* buf, size_t cou
 
             if( r > 0 )
             {
-                if( lseek( fd, -r, SEEK_CUR ) == (off64_t) -1 )
+                if( lseek( fd, -r, SEEK_CUR ) == (off_t) -1 )
                 {
                     nwipe_perror( errno, __FUNCTION__, "lseek" );
                     nwipe_log(
@@ -274,7 +274,7 @@ ssize_t nwipe_read_with_retry( nwipe_context_t* c, int fd, void* buf, size_t cou
 } /* nwipe_read_with_retry */
 
 /* Behaves like pread(), but retries up to MAX_IO_ATTEMPTS times on error or short write. */
-ssize_t nwipe_pread_with_retry( nwipe_context_t* c, int fd, void* buf, size_t count, off64_t offset )
+ssize_t nwipe_pread_with_retry( nwipe_context_t* c, int fd, void* buf, size_t count, off_t offset )
 {
     ssize_t r;
     int attempt;
