@@ -28,14 +28,6 @@ int cleanup();
 void check_for_autopoweroff( void );
 void* signal_hand( void* );
 
-#ifndef _LARGEFILE64_SOURCE
-#define _LARGEFILE64_SOURCE
-#endif
-
-#ifndef _FILE_OFFSET_BITS
-#define _FILE_OFFSET_BITS 64
-#endif
-
 /* Busybox headers. */
 #ifdef BB_VER
 #include "busybox.h"

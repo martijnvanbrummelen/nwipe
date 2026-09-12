@@ -4,10 +4,6 @@
  * Based on: hdparm 9.65 - (c) 2007 Mark Lord (BSD-style license)
  */
 
-#ifndef _DEFAULT_SOURCE
-#define _DEFAULT_SOURCE
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

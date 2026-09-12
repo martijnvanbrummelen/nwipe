@@ -18,17 +18,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h> /* HAVE_LIBNVME */
-#endif
-
-#ifndef _DEFAULT_SOURCE
-#define _DEFAULT_SOURCE
-#endif
-
-#ifndef _POSIX_SOURCE
-#define _POSIX_SOURCE
-#endif
 
 #ifdef HAVE_LIBNVME
 #include <libnvme.h>

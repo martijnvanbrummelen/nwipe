@@ -19,10 +19,6 @@
  *
  */
 
-#ifndef _DEFAULT_SOURCE
-#define _DEFAULT_SOURCE
-#endif
-
 #include <stdint.h>
 #include "stdarg.h"
 #include "stdio.h"

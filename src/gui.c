@@ -28,20 +28,8 @@
  *   and things like ncurses libmenu are not worth the storage overhead.
  *
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h> /* HAVE_LIBNVME */
-#endif
-
-#ifndef _DEFAULT_SOURCE
-#define _DEFAULT_SOURCE
-#endif
 
 #include <time.h>
-
-#ifndef _POSIX_SOURCE
-#define _POSIX_SOURCE
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <ncurses.h>

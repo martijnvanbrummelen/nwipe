@@ -19,18 +19,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  */
-#ifndef _DEFAULT_SOURCE
-#define _DEFAULT_SOURCE
-#endif
-
-#ifndef _POSIX_SOURCE
-#define _POSIX_SOURCE
-#endif
-
-/* Enable GNU extensions so that O_DIRECT is visible from <fcntl.h>. */
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE 1
-#endif
 
 #include <stdint.h>
 #include <stdio.h>

@@ -37,8 +37,6 @@
  * NOTE: The nwipe_runmethod function appends a user selectable final blanking (zero) pass to all methods.
  *
  */
-// #define _POSIX_C_SOURCE 199309L
-#define _GNU_SOURCE
 
 #include <stdint.h>
 

@@ -18,10 +18,6 @@
  *
  */
 
-#ifndef _DEFAULT_SOURCE
-#define _DEFAULT_SOURCE
-#endif
-
 #include <stdint.h>
 #include "stdarg.h"
 #include "stdio.h"
@@ -46,6 +42,14 @@
 #include "conf.h"
 
 #define text_size_data 10
+
+#ifndef TRUE
+#define TRUE 1
+#endif
+
+#ifndef FALSE
+#define FALSE 0
+#endif
 
 struct pdf_doc* pdf;
 struct pdf_object* page;

@@ -4,7 +4,6 @@
  * Based on: Fabian Druschke's original algorithm and implementation
  */
 
-#define _POSIX_C_SOURCE 200809L
 #include "pass_internal.h"
 #include "splitmix64/splitmix64.h"
 
