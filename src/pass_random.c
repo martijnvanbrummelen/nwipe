@@ -73,7 +73,7 @@ int nwipe_random_forward_pass( NWIPE_METHOD_SIGNATURE )
         return -1;
     }
 
-    if( c->prng_seed.length <= 0 )
+    if( c->prng_seed.length == 0 )
     {
         nwipe_log( NWIPE_LOG_SANITY, "%s: The entropy length member is %zu.", __FUNCTION__, c->prng_seed.length );
         return -1;
@@ -435,7 +435,7 @@ int nwipe_random_reverse_pass( NWIPE_METHOD_SIGNATURE )
         return -1;
     }
 
-    if( c->prng_seed.length <= 0 )
+    if( c->prng_seed.length == 0 )
     {
         nwipe_log( NWIPE_LOG_SANITY, "%s: The entropy length member is %zu.", __FUNCTION__, c->prng_seed.length );
         return -1;
@@ -725,7 +725,7 @@ int nwipe_random_forward_verify( NWIPE_METHOD_SIGNATURE )
         return -1;
     }
 
-    if( c->prng_seed.length <= 0 )
+    if( c->prng_seed.length == 0 )
     {
         nwipe_log( NWIPE_LOG_SANITY, "%s: The entropy length member is %zu.", __FUNCTION__, c->prng_seed.length );
         return -1;
@@ -965,7 +965,7 @@ int nwipe_random_reverse_verify( NWIPE_METHOD_SIGNATURE )
         return -1;
     }
 
-    if( c->prng_seed.length <= 0 )
+    if( c->prng_seed.length == 0 )
     {
         nwipe_log( NWIPE_LOG_SANITY, "%s: The entropy length member is %zu.", __FUNCTION__, c->prng_seed.length );
         return -1;

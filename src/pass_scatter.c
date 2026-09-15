@@ -774,7 +774,7 @@ int nwipe_random_scatter_pass( NWIPE_METHOD_SIGNATURE )
     size_t io_block_size = c->device_io_block_size;
     int r;
 
-    if( !c->prng_seed.s || c->prng_seed.length <= 0 )
+    if( !c->prng_seed.s || c->prng_seed.length == 0 )
     {
         nwipe_log( NWIPE_LOG_SANITY, "%s: Bad PRNG seed", __FUNCTION__ );
         return -1;
@@ -813,7 +813,7 @@ int nwipe_random_scatter_verify( NWIPE_METHOD_SIGNATURE )
     size_t io_block_size = c->device_io_block_size;
     int r;
 
-    if( !c->prng_seed.s || c->prng_seed.length <= 0 )
+    if( !c->prng_seed.s || c->prng_seed.length == 0 )
     {
         nwipe_log( NWIPE_LOG_SANITY, "%s: Bad PRNG seed", __FUNCTION__ );
         return -1;
