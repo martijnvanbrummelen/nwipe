@@ -252,21 +252,24 @@ int generate_graph_pdf( float plot_y_start,
     const double TEMP_MAX_LIMIT = 120.0;
 
     bool has_temp_data = false;
+    bool speed_out_of_bounds = false;
+    bool temp_out_of_bounds = false;
 
+    /* Out of bounds checks */
     for( int i = 0; i < data_count; i++ )
     {
-        if( max_values[i] < MIN_LIMIT || max_values[i] > MAX_LIMIT || min_values[i] < MIN_LIMIT
-            || min_values[i] > MAX_LIMIT )
+        if( !speed_out_of_bounds
+            && ( max_values[i] < MIN_LIMIT || max_values[i] > MAX_LIMIT || min_values[i] < MIN_LIMIT
+                 || min_values[i] > MAX_LIMIT ) )
         {
-            nwipe_log( NWIPE_LOG_ERROR, "Graph speed dataset is out of bounds. < 0.0 or > 150GB" );
-            return -1;
+            speed_out_of_bounds = true;
         }
 
-        if( max_temp[i] < TEMP_MIN_LIMIT || max_temp[i] > TEMP_MAX_LIMIT || min_temp[i] < TEMP_MIN_LIMIT
-            || min_temp[i] > TEMP_MAX_LIMIT )
+        if( !temp_out_of_bounds
+            && ( max_temp[i] < TEMP_MIN_LIMIT || max_temp[i] > TEMP_MAX_LIMIT || min_temp[i] < TEMP_MIN_LIMIT
+                 || min_temp[i] > TEMP_MAX_LIMIT ) )
         {
-            nwipe_log( NWIPE_LOG_ERROR, "Graph temperature dataset is out of bounds. < -50°C or > 120°C" );
-            return -1;
+            temp_out_of_bounds = true;
         }
 
         // Flag true if any single value in min_temp or max_temp is non-zero
@@ -277,41 +280,47 @@ int generate_graph_pdf( float plot_y_start,
     }
 
     // --- 1. Speed Dataset Metrics & Scaling ---
-    float abs_min = min_values[0];
+    float abs_min = 0.0f;
     int min_idx = 0;
-    float abs_max = max_values[0];
+    float abs_max = 100.0f;
     int max_idx = 0;
-    float running_avg_sum = 0.0f;
+    float overall_duration_average = 0.0f;
     int active_count = 0;
 
-    for( int i = 0; i < data_count; i++ )
+    if( !speed_out_of_bounds )
     {
-        if( min_values[i] < abs_min )
+        abs_min = min_values[0];
+        abs_max = max_values[0];
+        float running_avg_sum = 0.0f;
+
+        for( int i = 0; i < data_count; i++ )
         {
-            abs_min = min_values[i];
-            min_idx = i;
-        }
-        if( max_values[i] > abs_max )
-        {
-            abs_max = max_values[i];
-            max_idx = i;
+            if( min_values[i] < abs_min )
+            {
+                abs_min = min_values[i];
+                min_idx = i;
+            }
+            if( max_values[i] > abs_max )
+            {
+                abs_max = max_values[i];
+                max_idx = i;
+            }
+
+            if( max_values[i] > 0.0f )
+            {
+                running_avg_sum += ( min_values[i] + max_values[i] ) / 2.0f;
+                active_count++;
+            }
         }
 
-        if( max_values[i] > 0.0f )
+        if( active_count > 0 )
         {
-            running_avg_sum += ( min_values[i] + max_values[i] ) / 2.0f;
-            active_count++;
+            overall_duration_average = running_avg_sum / (float) active_count;
         }
-    }
-
-    float overall_duration_average = 0.0f;
-    if( active_count > 0 )
-    {
-        overall_duration_average = running_avg_sum / (float) active_count;
-    }
-    else if( data_count > 0 )
-    {
-        overall_duration_average = ( min_values[0] + max_values[0] ) / 2.0f;
+        else if( data_count > 0 )
+        {
+            overall_duration_average = ( min_values[0] + max_values[0] ) / 2.0f;
+        }
     }
 
     // Speed Units & Range Calculation
@@ -364,7 +373,7 @@ int generate_graph_pdf( float plot_y_start,
     float temp_scale_min = -20.0f;
     float temp_scale_max = 100.0f;
 
-    if( has_temp_data )
+    if( has_temp_data && !temp_out_of_bounds )
     {
         float abs_max_temp = max_temp[0];
         float abs_min_temp = min_temp[0];
@@ -523,106 +532,133 @@ int generate_graph_pdf( float plot_y_start,
     pdf_add_line(
         pdf, page, PLOT_X + PLOT_W, PLOT_Y_TEMP, PLOT_X + PLOT_W, PLOT_Y_TEMP + PLOT_H_TEMP, 1.2f, COLOR_AXIS );
 
-    // --- 7. Plot Speed Traces (Upper Panel) ---
-    // Minimum Speed
-    for( int i = 0; i < data_count - 1; i++ )
+    // --- 7. Plot Speed Traces or Fallback Message (Upper Panel) ---
+    if( !speed_out_of_bounds )
     {
-        float ratio_x1 = (float) i / ( data_count - 1 );
-        float ratio_x2 = (float) ( i + 1 ) / ( data_count - 1 );
-        float x1 = PLOT_X + ( ratio_x1 * PLOT_W );
-        float x2 = PLOT_X + ( ratio_x2 * PLOT_W );
+        // Minimum Speed
+        for( int i = 0; i < data_count - 1; i++ )
+        {
+            float ratio_x1 = (float) i / ( data_count - 1 );
+            float ratio_x2 = (float) ( i + 1 ) / ( data_count - 1 );
+            float x1 = PLOT_X + ( ratio_x1 * PLOT_W );
+            float x2 = PLOT_X + ( ratio_x2 * PLOT_W );
 
-        float val_y1 = min_values[i] > y_scale_max ? y_scale_max : min_values[i];
-        float val_y2 = min_values[i + 1] > y_scale_max ? y_scale_max : min_values[i + 1];
-        float y1 = PLOT_Y_SPEED + ( ( val_y1 / y_scale_max ) * PLOT_H_SPEED );
-        float y2 = PLOT_Y_SPEED + ( ( val_y2 / y_scale_max ) * PLOT_H_SPEED );
+            float val_y1 = min_values[i] > y_scale_max ? y_scale_max : min_values[i];
+            float val_y2 = min_values[i + 1] > y_scale_max ? y_scale_max : min_values[i + 1];
+            float y1 = PLOT_Y_SPEED + ( ( val_y1 / y_scale_max ) * PLOT_H_SPEED );
+            float y2 = PLOT_Y_SPEED + ( ( val_y2 / y_scale_max ) * PLOT_H_SPEED );
 
-        pdf_add_line( pdf, page, x1, y1, x2, y2, 1.5f, COLOR_LINE_MIN );
+            pdf_add_line( pdf, page, x1, y1, x2, y2, 1.5f, COLOR_LINE_MIN );
+        }
+
+        // Maximum Speed
+        for( int i = 0; i < data_count - 1; i++ )
+        {
+            float ratio_x1 = (float) i / ( data_count - 1 );
+            float ratio_x2 = (float) ( i + 1 ) / ( data_count - 1 );
+            float x1 = PLOT_X + ( ratio_x1 * PLOT_W );
+            float x2 = PLOT_X + ( ratio_x2 * PLOT_W );
+
+            float val_y1 = max_values[i] > y_scale_max ? y_scale_max : max_values[i];
+            float val_y2 = max_values[i + 1] > y_scale_max ? y_scale_max : max_values[i + 1];
+            float y1 = PLOT_Y_SPEED + ( ( val_y1 / y_scale_max ) * PLOT_H_SPEED );
+            float y2 = PLOT_Y_SPEED + ( ( val_y2 / y_scale_max ) * PLOT_H_SPEED );
+
+            pdf_add_line( pdf, page, x1, y1, x2, y2, 1.5f, COLOR_LINE_MAX );
+        }
+
+        // Speed Average Line
+        float avg_line_y = PLOT_Y_SPEED + ( ( overall_duration_average / y_scale_max ) * PLOT_H_SPEED );
+        const float avg_dash_pattern[] = { 6.0f, 4.0f };
+        pdf_add_line_pattern( pdf,
+                              page,
+                              PLOT_X,
+                              avg_line_y,
+                              PLOT_X + PLOT_W,
+                              avg_line_y,
+                              1.5f,
+                              COLOR_LINE_AVG,
+                              avg_dash_pattern,
+                              2,
+                              0.0f );
+
+        // Average Legend Annotation
+        char avg_label_str[128];
+        snprintf( avg_label_str, sizeof( avg_label_str ), "avg %.1f%s", overall_duration_average / divisor, unit );
+        float avg_lbl_w = 0;
+        pdf_get_font_text_width( pdf, "Helvetica-Bold", avg_label_str, 8.0f, &avg_lbl_w );
+
+        float legend_dash_w = 26.0f;
+        float legend_gap = 5.0f;
+        float total_avg_lbl_w = legend_dash_w + legend_gap + avg_lbl_w;
+
+        float avg_lbl_x = ( PLOT_X + PLOT_W ) - total_avg_lbl_w - 8.0f;
+        float avg_lbl_y = PLOT_Y_SPEED + PLOT_H_SPEED - 14.0f;
+
+        pdf_add_line_pattern( pdf,
+                              page,
+                              avg_lbl_x,
+                              avg_lbl_y + 3.0f,
+                              avg_lbl_x + legend_dash_w,
+                              avg_lbl_y + 3.0f,
+                              1.5f,
+                              COLOR_LINE_AVG,
+                              avg_dash_pattern,
+                              2,
+                              0.0f );
+        pdf_add_text(
+            pdf, page, avg_label_str, 8.0f, avg_lbl_x + legend_dash_w + legend_gap, avg_lbl_y, COLOR_LINE_AVG );
+
+        // Peak Annotations
+        char min_label_str[128];
+        snprintf( min_label_str, sizeof( min_label_str ), "min %.1f%s", abs_min / divisor, unit );
+        float min_lbl_w = 0;
+        pdf_get_font_text_width( pdf, "Helvetica-Bold", min_label_str, 8.0f, &min_lbl_w );
+
+        float min_pt_x = PLOT_X + ( ( (float) min_idx / ( data_count - 1 ) ) * PLOT_W );
+        float min_pt_y =
+            PLOT_Y_SPEED + ( ( ( abs_min > y_scale_max ? y_scale_max : abs_min ) / y_scale_max ) * PLOT_H_SPEED );
+
+        float min_lbl_x = min_pt_x - ( min_lbl_w / 2.0f );
+        if( min_lbl_x < PLOT_X )
+            min_lbl_x = PLOT_X + 4.0f;
+        if( min_lbl_x + min_lbl_w > PLOT_X + PLOT_W )
+            min_lbl_x = ( PLOT_X + PLOT_W ) - min_lbl_w - 4.0f;
+        pdf_add_text( pdf, page, min_label_str, 8.0f, min_lbl_x, min_pt_y - 12.0f, COLOR_LINE_MIN );
+
+        char max_label_str[128];
+        snprintf( max_label_str, sizeof( max_label_str ), "max %.1f%s", abs_max / divisor, unit );
+        float max_lbl_w = 0;
+        pdf_get_font_text_width( pdf, "Helvetica-Bold", max_label_str, 8.0f, &max_lbl_w );
+
+        float max_pt_x = PLOT_X + ( ( (float) max_idx / ( data_count - 1 ) ) * PLOT_W );
+        float max_pt_y =
+            PLOT_Y_SPEED + ( ( ( abs_max > y_scale_max ? y_scale_max : abs_max ) / y_scale_max ) * PLOT_H_SPEED );
+
+        float max_lbl_x = max_pt_x - ( max_lbl_w / 2.0f );
+        if( max_lbl_x < PLOT_X )
+            max_lbl_x = PLOT_X + 4.0f;
+        if( max_lbl_x + max_lbl_w > PLOT_X + PLOT_W )
+            max_lbl_x = ( PLOT_X + PLOT_W ) - max_lbl_w - 4.0f;
+        pdf_add_text( pdf, page, max_label_str, 8.0f, max_lbl_x, max_pt_y + 5.0f, COLOR_LINE_MAX );
     }
-
-    // Maximum Speed
-    for( int i = 0; i < data_count - 1; i++ )
+    else
     {
-        float ratio_x1 = (float) i / ( data_count - 1 );
-        float ratio_x2 = (float) ( i + 1 ) / ( data_count - 1 );
-        float x1 = PLOT_X + ( ratio_x1 * PLOT_W );
-        float x2 = PLOT_X + ( ratio_x2 * PLOT_W );
+        // Print centered fallback message in crimson red when speed data is out of bounds
+        const char* no_speed_str = "Speed data out of bounds";
+        const float font_size = 10.0f;
+        float text_w = 0.0f;
 
-        float val_y1 = max_values[i] > y_scale_max ? y_scale_max : max_values[i];
-        float val_y2 = max_values[i + 1] > y_scale_max ? y_scale_max : max_values[i + 1];
-        float y1 = PLOT_Y_SPEED + ( ( val_y1 / y_scale_max ) * PLOT_H_SPEED );
-        float y2 = PLOT_Y_SPEED + ( ( val_y2 / y_scale_max ) * PLOT_H_SPEED );
+        pdf_get_font_text_width( pdf, "Helvetica-Bold", no_speed_str, font_size, &text_w );
 
-        pdf_add_line( pdf, page, x1, y1, x2, y2, 1.5f, COLOR_LINE_MAX );
+        float center_x = PLOT_X + ( ( PLOT_W - text_w ) / 2.0f );
+        float center_y = PLOT_Y_SPEED + ( PLOT_H_SPEED / 2.0f ) - 3.5f;
+
+        pdf_add_text( pdf, page, no_speed_str, font_size, center_x, center_y, COLOR_TEMP_WARN );
     }
-
-    // Speed Average Line
-    float avg_line_y = PLOT_Y_SPEED + ( ( overall_duration_average / y_scale_max ) * PLOT_H_SPEED );
-    const float avg_dash_pattern[] = { 6.0f, 4.0f };
-    pdf_add_line_pattern(
-        pdf, page, PLOT_X, avg_line_y, PLOT_X + PLOT_W, avg_line_y, 1.5f, COLOR_LINE_AVG, avg_dash_pattern, 2, 0.0f );
-
-    // Average Legend Annotation
-    char avg_label_str[128];
-    snprintf( avg_label_str, sizeof( avg_label_str ), "avg %.1f%s", overall_duration_average / divisor, unit );
-    float avg_lbl_w = 0;
-    pdf_get_font_text_width( pdf, "Helvetica-Bold", avg_label_str, 8.0f, &avg_lbl_w );
-
-    float legend_dash_w = 26.0f;
-    float legend_gap = 5.0f;
-    float total_avg_lbl_w = legend_dash_w + legend_gap + avg_lbl_w;
-
-    float avg_lbl_x = ( PLOT_X + PLOT_W ) - total_avg_lbl_w - 8.0f;
-    float avg_lbl_y = PLOT_Y_SPEED + PLOT_H_SPEED - 14.0f;
-
-    pdf_add_line_pattern( pdf,
-                          page,
-                          avg_lbl_x,
-                          avg_lbl_y + 3.0f,
-                          avg_lbl_x + legend_dash_w,
-                          avg_lbl_y + 3.0f,
-                          1.5f,
-                          COLOR_LINE_AVG,
-                          avg_dash_pattern,
-                          2,
-                          0.0f );
-    pdf_add_text( pdf, page, avg_label_str, 8.0f, avg_lbl_x + legend_dash_w + legend_gap, avg_lbl_y, COLOR_LINE_AVG );
-
-    // Peak Annotations
-    char min_label_str[128];
-    snprintf( min_label_str, sizeof( min_label_str ), "min %.1f%s", abs_min / divisor, unit );
-    float min_lbl_w = 0;
-    pdf_get_font_text_width( pdf, "Helvetica-Bold", min_label_str, 8.0f, &min_lbl_w );
-
-    float min_pt_x = PLOT_X + ( ( (float) min_idx / ( data_count - 1 ) ) * PLOT_W );
-    float min_pt_y =
-        PLOT_Y_SPEED + ( ( ( abs_min > y_scale_max ? y_scale_max : abs_min ) / y_scale_max ) * PLOT_H_SPEED );
-
-    float min_lbl_x = min_pt_x - ( min_lbl_w / 2.0f );
-    if( min_lbl_x < PLOT_X )
-        min_lbl_x = PLOT_X + 4.0f;
-    if( min_lbl_x + min_lbl_w > PLOT_X + PLOT_W )
-        min_lbl_x = ( PLOT_X + PLOT_W ) - min_lbl_w - 4.0f;
-    pdf_add_text( pdf, page, min_label_str, 8.0f, min_lbl_x, min_pt_y - 12.0f, COLOR_LINE_MIN );
-
-    char max_label_str[128];
-    snprintf( max_label_str, sizeof( max_label_str ), "max %.1f%s", abs_max / divisor, unit );
-    float max_lbl_w = 0;
-    pdf_get_font_text_width( pdf, "Helvetica-Bold", max_label_str, 8.0f, &max_lbl_w );
-
-    float max_pt_x = PLOT_X + ( ( (float) max_idx / ( data_count - 1 ) ) * PLOT_W );
-    float max_pt_y =
-        PLOT_Y_SPEED + ( ( ( abs_max > y_scale_max ? y_scale_max : abs_max ) / y_scale_max ) * PLOT_H_SPEED );
-
-    float max_lbl_x = max_pt_x - ( max_lbl_w / 2.0f );
-    if( max_lbl_x < PLOT_X )
-        max_lbl_x = PLOT_X + 4.0f;
-    if( max_lbl_x + max_lbl_w > PLOT_X + PLOT_W )
-        max_lbl_x = ( PLOT_X + PLOT_W ) - max_lbl_w - 4.0f;
-    pdf_add_text( pdf, page, max_label_str, 8.0f, max_lbl_x, max_pt_y + 5.0f, COLOR_LINE_MAX );
 
     // --- 8. Plot Temperature Traces or Fallback Message (Lower Panel) ---
-    if( has_temp_data )
+    if( has_temp_data && !temp_out_of_bounds )
     {
         float abs_max_temp = max_temp[0];
         int max_temp_idx = 0;
@@ -686,18 +722,18 @@ int generate_graph_pdf( float plot_y_start,
     }
     else
     {
-        // Print centered fallback message in crimson red when no data is available
-        const char* no_temp_str = "No temperature data available";
+        // Print centered fallback message in crimson red when no data is available or out of bounds
+        const char* temp_msg = temp_out_of_bounds ? "Temperature data out of bounds" : "No temperature data available";
         const float font_size = 10.0f;
         float text_w = 0.0f;
 
-        pdf_get_font_text_width( pdf, "Helvetica-Bold", no_temp_str, font_size, &text_w );
+        pdf_get_font_text_width( pdf, "Helvetica-Bold", temp_msg, font_size, &text_w );
 
         float center_x = PLOT_X + ( ( PLOT_W - text_w ) / 2.0f );
         // Baseline offset (~3.5pt) adjusts for font cap-height to achieve visual vertical centering
         float center_y = PLOT_Y_TEMP + ( PLOT_H_TEMP / 2.0f ) - 3.5f;
 
-        pdf_add_text( pdf, page, no_temp_str, font_size, center_x, center_y, COLOR_TEMP_WARN );
+        pdf_add_text( pdf, page, temp_msg, font_size, center_x, center_y, COLOR_TEMP_WARN );
     }
 
     // --- 9. Global Labels and Titles ---
