@@ -8483,16 +8483,24 @@ int compute_stats( void* ptr )
                 /* ------------------------------------------------------------------
                  * Temperature Min/Max Tracking
                  * ------------------------------------------------------------------ */
-                if( current_temp > 0 )
+                /* Intercept NO_TEMPERATURE_DATA and convert to 0 for the graph engine */
+                if( current_temp == NO_TEMPERATURE_DATA )
                 {
-                    /* Record maximum temperature for this chunk */
-                    if( current_temp > c[i]->max_temp[bucket] )
+                    current_temp = 0.0;
+                }
+
+                /* Allow temperatures down to -20 (and 0 for missing data) */
+                if( current_temp >= -20.0 )
+                {
+                    /* Record maximum temperature for this chunk
+                     * * CRITICAL: Added '== 0.0f' check so negative temps can overwrite the default 0 */
+                    if( c[i]->max_temp[bucket] == 0.0f || current_temp > c[i]->max_temp[bucket] )
                     {
                         c[i]->max_temp[bucket] = current_temp;
                     }
 
                     /* Record minimum temperature for this chunk */
-                    if( c[i]->min_temp[bucket] == 0 || current_temp < c[i]->min_temp[bucket] )
+                    if( c[i]->min_temp[bucket] == 0.0f || current_temp < c[i]->min_temp[bucket] )
                     {
                         c[i]->min_temp[bucket] = current_temp;
                     }
@@ -8518,7 +8526,7 @@ int compute_stats( void* ptr )
                     }
 
                     /* Backfill temperature */
-                    if( current_temp > 0 )
+                    if( current_temp >= -20.0 )
                     {
                         if( c[i]->max_temp[b] == 0.0f )
                         {
