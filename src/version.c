@@ -26,7 +26,7 @@
 #include "git_hash.h"
 #endif
 
-const char* version_string = "0.42";
+const char* version_string = "0.43";
 const char* program_name = "nwipe";
 const char* author_name = "Martijn van Brummelen";
 const char* email_address = "git@brumit.nl";
@@ -41,5 +41,5 @@ const char* copyright = "Copyright\n"
                         "This is free software; see the source for copying conditions.\n"
                         "There is NO warranty; not even for MERCHANTABILITY or\n"
                         "FITNESS FOR A PARTICULAR PURPOSE.\n";
-const char* banner = "nwipe 0.42";
+const char* banner = "nwipe 0.43";
 const char* git_hash_string = NWIPE_GIT_HASH;
