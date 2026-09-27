@@ -1204,13 +1204,13 @@ int main( int argc, char** argv )
                 if( r != 0 )
                 {
                     nwipe_log( NWIPE_LOG_ERROR,
-                               "Error joining the wipe thread when waiting for thread to cancel.",
+                               "%s: Error joining the wipe thread when waiting for thread to cancel.",
                                c2[i]->device_name );
 
                     if( r == EDEADLK )
                     {
                         nwipe_log( NWIPE_LOG_ERROR,
-                                   "Error joining the wipe thread: EDEADLK: Deadlock detected.",
+                                   "%s: Error joining the wipe thread: EDEADLK: Deadlock detected.",
                                    c2[i]->device_name );
                     }
                     else

@@ -290,7 +290,7 @@ void write_customer_csv_entry( char* customer_name,
                         nwipe_log(
                             NWIPE_LOG_ERROR,
                             "func:nwipe_gui_add_customer:Error reading customers file, # bytes read not as expected "
-                            "%i bytes",
+                            "%zu bytes",
                             result_size );
                     }
                     else
@@ -450,7 +450,7 @@ void write_customer_csv_entry( char* customer_name,
                                 {
                                     nwipe_log(
                                         NWIPE_LOG_ERROR,
-                                        "func:write_customer_csv_entry:fwrite: Error result_size = %i not as expected",
+                                        "func:write_customer_csv_entry:fwrite: Error result_size = %zu not as expected",
                                         result_size );
                                 }
                                 else
@@ -563,7 +563,7 @@ void delete_customer_csv_entry( int* selected_entry )
                     nwipe_log( NWIPE_LOG_ERROR,
                                "func:nwipe_gui_delete_customer_csv_entry:Error reading customers file, # elements read "
                                "not as expected "
-                               "%i elements",
+                               "%zu elements",
                                result_size );
                 }
                 else
@@ -665,7 +665,7 @@ void delete_customer_csv_entry( int* selected_entry )
                             {
                                 nwipe_log(
                                     NWIPE_LOG_ERROR,
-                                    "func:delete_customer_csv_entry:fwrite: Error result_size = %i not as expected",
+                                    "func:delete_customer_csv_entry:fwrite: Error result_size = %zu not as expected",
                                     result_size );
                             }
                             else

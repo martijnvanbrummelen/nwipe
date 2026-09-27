@@ -886,7 +886,7 @@ int nwipe_log_se_in_progress( nwipe_context_t** c, int nwipe_enumerated )
 
     /* IMPORTANT: Keep maximum columns (line length) to 80 characters for use with 80x30 terminals, Shredos, ALT-F2 etc
      * --------------------------------01234567890123456789012345678901234567890123456789012345678901234567890123456789-*/
-    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "" );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "%s", "" );
     nwipe_log( NWIPE_LOG_NOTIMESTAMP,
                "*************************** Secure Erase In Progress ***************************" );
     nwipe_log( NWIPE_LOG_NOTIMESTAMP, "!   Device | Type | Method" );
@@ -955,7 +955,7 @@ int nwipe_log_se_in_progress( nwipe_context_t** c, int nwipe_enumerated )
     nwipe_log( NWIPE_LOG_NOTIMESTAMP, "! - DO NOT POWER OFF - DO NOT POWER OFF - DO NOT POWER OFF -" );
     nwipe_log( NWIPE_LOG_NOTIMESTAMP,
                "********************************************************************************" );
-    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "" );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "%s", "" );
 
     /* Also emit a timestamped warning so it is visible in filtered/grepped logs. */
     nwipe_log( NWIPE_LOG_WARNING,
@@ -1030,7 +1030,7 @@ void nwipe_log_summary( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t** ptr, in
 
     /* IMPORTANT: Keep maximum columns (line length) to 80 characters for use with 80x30 terminals, Shredos, ALT-F2 etc
      * --------------------------------01234567890123456789012345678901234567890123456789012345678901234567890123456789-*/
-    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "" );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "%s", "" );
     nwipe_log( NWIPE_LOG_NOTIMESTAMP,
                "******************************** Error Summary *********************************" );
     nwipe_log( NWIPE_LOG_NOTIMESTAMP, "!   Device | Pass Errors | Verifications Errors | Fdatasync I\\O Errors" );
@@ -1076,7 +1076,7 @@ void nwipe_log_summary( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t** ptr, in
     /* Print the bytes erased summary table, but not for verify only methods */
     if( nwipe_options.method != &nwipe_verify_one && nwipe_options.method != &nwipe_verify_zero )
     {
-        nwipe_log( NWIPE_LOG_NOTIMESTAMP, "" );
+        nwipe_log( NWIPE_LOG_NOTIMESTAMP, "%s", "" );
         nwipe_log( NWIPE_LOG_NOTIMESTAMP,
                    "******************************* Erasure Summary ********************************" );
         nwipe_log( NWIPE_LOG_NOTIMESTAMP, "!   Device |      Bytes Erased |      Bytes Total | Percentage Erased" );
@@ -1149,7 +1149,7 @@ void nwipe_log_summary( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t** ptr, in
     p = localtime( &t );
     /* IMPORTANT: Keep maximum columns (line length) to 80 characters for use with 80x30 terminals, Shredos, ALT-F2 etc
      * --------------------------------01234567890123456789012345678901234567890123456789012345678901234567890123456789-*/
-    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "" );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "%s", "" );
     nwipe_log( NWIPE_LOG_NOTIMESTAMP,
                "********************************* Drive Status *********************************" );
     nwipe_log( NWIPE_LOG_NOTIMESTAMP, "!   Device | Status | Thru-put | HH:MM:SS | Model/Serial Number" );
@@ -1339,7 +1339,7 @@ void nwipe_log_summary( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t** ptr, in
                verify );
     nwipe_log( NWIPE_LOG_NOTIMESTAMP,
                "********************************************************************************" );
-    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "" );
+    nwipe_log( NWIPE_LOG_NOTIMESTAMP, "%s", "" );
 
     /* Log information regarding where the PDF certificate is saved but log after the summary table so
      * this information is only printed once.

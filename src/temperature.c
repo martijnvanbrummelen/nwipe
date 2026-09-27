@@ -184,7 +184,7 @@ int nwipe_init_temperature( nwipe_context_t* c )
                         {
                             /* Match ! This hwmon device matches this context, so write the hwmonX path to the context
                              */
-                            nwipe_log( NWIPE_LOG_NOTICE, "hwmon: %s has temperature monitoring", device, dirpath_tmp );
+                            nwipe_log( NWIPE_LOG_NOTICE, "hwmon: %s has temperature monitoring", device );
                             if( nwipe_options.verbose )
                             {
                                 nwipe_log( NWIPE_LOG_DEBUG, "hwmon: %s found in %s", device, dirpath_tmp );
