@@ -70,13 +70,13 @@ int nwipe_random_forward_pass( NWIPE_METHOD_SIGNATURE )
 
     if( c->prng_seed.s == NULL )
     {
-        nwipe_log( NWIPE_LOG_SANITY, "__FUNCTION__: Null seed pointer." );
+        nwipe_log( NWIPE_LOG_SANITY, "%s: Null seed pointer.", __FUNCTION__ );
         return -1;
     }
 
     if( c->prng_seed.length <= 0 )
     {
-        nwipe_log( NWIPE_LOG_SANITY, "__FUNCTION__: The entropy length member is %i.", c->prng_seed.length );
+        nwipe_log( NWIPE_LOG_SANITY, "%s: The entropy length member is %zu.", __FUNCTION__, c->prng_seed.length );
         return -1;
     }
 
@@ -432,13 +432,13 @@ int nwipe_random_reverse_pass( NWIPE_METHOD_SIGNATURE )
 
     if( c->prng_seed.s == NULL )
     {
-        nwipe_log( NWIPE_LOG_SANITY, "__FUNCTION__: Null seed pointer." );
+        nwipe_log( NWIPE_LOG_SANITY, "%s: Null seed pointer.", __FUNCTION__ );
         return -1;
     }
 
     if( c->prng_seed.length <= 0 )
     {
-        nwipe_log( NWIPE_LOG_SANITY, "__FUNCTION__: The entropy length member is %i.", c->prng_seed.length );
+        nwipe_log( NWIPE_LOG_SANITY, "%s: The entropy length member is %zu.", __FUNCTION__, c->prng_seed.length );
         return -1;
     }
 
@@ -722,13 +722,13 @@ int nwipe_random_forward_verify( NWIPE_METHOD_SIGNATURE )
 
     if( c->prng_seed.s == NULL )
     {
-        nwipe_log( NWIPE_LOG_SANITY, "Null seed pointer." );
+        nwipe_log( NWIPE_LOG_SANITY, "%s: Null seed pointer.", __FUNCTION__ );
         return -1;
     }
 
     if( c->prng_seed.length <= 0 )
     {
-        nwipe_log( NWIPE_LOG_SANITY, "The entropy length member is %i.", c->prng_seed.length );
+        nwipe_log( NWIPE_LOG_SANITY, "%s: The entropy length member is %zu.", __FUNCTION__, c->prng_seed.length );
         return -1;
     }
 
@@ -962,13 +962,13 @@ int nwipe_random_reverse_verify( NWIPE_METHOD_SIGNATURE )
 
     if( c->prng_seed.s == NULL )
     {
-        nwipe_log( NWIPE_LOG_SANITY, "Null seed pointer." );
+        nwipe_log( NWIPE_LOG_SANITY, "%s: Null seed pointer.", __FUNCTION__ );
         return -1;
     }
 
     if( c->prng_seed.length <= 0 )
     {
-        nwipe_log( NWIPE_LOG_SANITY, "The entropy length member is %i.", c->prng_seed.length );
+        nwipe_log( NWIPE_LOG_SANITY, "%s: The entropy length member is %zu.", __FUNCTION__, c->prng_seed.length );
         return -1;
     }
 

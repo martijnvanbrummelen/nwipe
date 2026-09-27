@@ -702,11 +702,11 @@ int hpa_dco_status( nwipe_context_t* ptr )
     }
 
     nwipe_log( NWIPE_LOG_DEBUG,
-               "c->Calculated_real_max_size_in_bytes=%lli, c->device_size=%lli, c->device_sector_size=%lli, "
-               "c->DCO_reported_real_max_size=%lli, c->DCO_reported_real_max_sectors=%lli, c->HPA_sectors=%lli, "
-               "c->HPA_reported_set=%lli, c->HPA_reported_real=%lli, c->device_type=%i, "
-               "libata:c->device_size_in_sectors=%lli ",
-               "libata:c->device_size_in_512byte_sectors=%lli ",
+               "c->Calculated_real_max_size_in_bytes=%llu, c->device_size=%llu, c->device_sector_size=%d, "
+               "c->DCO_reported_real_max_size=%llu, c->DCO_reported_real_max_sectors=%llu, c->HPA_sectors=%llu, "
+               "c->HPA_reported_set=%llu, c->HPA_reported_real=%llu, c->device_type=%i, "
+               "libata:c->device_size_in_sectors=%llu "
+               "libata:c->device_size_in_512byte_sectors=%llu ",
                c->Calculated_real_max_size_in_bytes,
                c->device_size,
                c->device_sector_size,

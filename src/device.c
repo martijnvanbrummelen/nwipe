@@ -683,7 +683,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
         {
             if( bus == NWIPE_DEVICE_USB )
             {
-                nwipe_log( NWIPE_LOG_NOTICE, "Device %s ignored as per command line option --nousb", dev->path );
+                nwipe_log( NWIPE_LOG_NOTICE, "%s: Device ignored as per command line option --nousb", dev->path );
                 return 0;
             }
         }
@@ -691,8 +691,9 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
         {
             if( r == 2 )
             {
-                nwipe_log(
-                    NWIPE_LOG_NOTICE, "--nousb requires the 'readlink' program, please install readlink", dev->path );
+                nwipe_log( NWIPE_LOG_NOTICE,
+                           "%s: --nousb requires the 'readlink' program, please install readlink",
+                           dev->path );
                 terminate_signal = 1;
                 return 0;
             }
@@ -966,7 +967,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
                next_device->device_serial_no );
 
     nwipe_log( NWIPE_LOG_INFO,
-               "%s, sector(logical)/block(physical) sizes %i/%i",
+               "%s, sector(logical)/block(physical) sizes %lld/%lld",
                next_device->device_name,
                dev->sector_size,
                dev->phys_sector_size );
@@ -1020,7 +1021,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     }
 
     /* print an empty line to separate the drives in the log */
-    nwipe_log( NWIPE_LOG_INFO, " " );
+    nwipe_log( NWIPE_LOG_INFO, "%s", "" );
 
     ( *c )[dcount] = next_device;
     return 1;
