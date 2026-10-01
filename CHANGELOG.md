@@ -1,5 +1,152 @@
 RELEASE NOTES
 =============
+v0.43
+-----------------------
+# Notable New Features
+ 
+## Introducing Hardware Sanitize (NIST 800-88 Purge)
+
+We are excited to announce a major milestone in nwipe's data destruction capabilities: the long-awaited hardware sanitise feature.
+
+As storage technology has evolved, traditional software-based overwriting has become less effective on modern flash memory due to wear-levelling algorithms and over-provisioning. With this release, nwipe introduces native support for hardware-level Sanitise commands, achieving a true "Purge" level of data destruction as defined by the NIST 800-88 guidelines. This makes nwipe fully equipped to handle modern SSD and NVMe drives securely and efficiently.
+
+### Key Features
+This release introduces a standalone Sanitize menu within the GUI, allowing you to trigger the drive's internal secure erasure mechanisms. Supported methods include:
+
+- **Sanitize Block Erase**: Instructs the drive's controller to physically erase all blocks on the flash media, returning them to an empty state.
+- **Cryptographic Erase** (Crypto Erase): For self-encrypting drives (SEDs), this command instantly sanitizes the drive by securely deleting the onboard media encryption key, rendering all encrypted user data permanently unreadable in a matter of seconds.
+- **Sanitize Overwrite**: Instructs the drive to perform a hardware-level overwrite operation across all addressable and non addressable areas.
+
+### Current Scope and Usage
+In this initial rollout, Hardware Sanitize is implemented as a standalone interactive feature accessible exclusively through the nwipe GUI.
+
+**Important Note for Automation**: Currently, Sanitize commands cannot be batched or used in conjunction with automated, multi-drive wiping commands such as autonuke. To Sanitize a drive in this release, you must manually select and execute the operation on individual drives via Nwipe's GUI.
+
+### Drive Compatibility, Limitations & Historical Context
+While Sanitize covers modern NIST 800-88 Purge requirements for newer drives, users should be aware of the following limitation regarding legacy hardware:
+
+- No ATA Secure Erase Support: This release does not support the older ATA Secure Erase (or Enhanced Secure Erase) firmware commands. Consequently, nwipe does not currently handle "Freeze Lock" state management or wake-from-sleep workarounds required to unfreeze legacy drives for firmware erasure.
+
+To understand drive support within the new Sanitize engine—and why older hardware remains unsupported—it helps to review how storage sanitation standards have progressed over time:
+
+### 1. Legacy ATA Secure Erase (Pre-2012 Hardware)
+
+- Origins: Introduced alongside the ATA-3 and ATA-4 specifications in the late 1990s via the SECURITY ERASE UNIT instruction set.
+- Drive Types: PATA/IDE media, legacy SATA hard drives, and early first- or second-generation SATA SSDs manufactured before 2012.
+- Why it became less relevant:
+        - BIOS/UEFI "Freeze Locks": System firmware frequently applies a Freeze Lock status during bootup to safeguard drives against unauthorised wiping commands. Overcoming this restriction required cumbersome hardware power-cycling or manual hot-plugging routines.
+        - SSD Inconsistencies: Early solid-state firmware implementations were notoriously inconsistent across manufacturers. Certain controllers merely cleared the LBA mapping table instead of purging physical cells, leaving over-provisioned blocks, wear-leveling pools, or onboard caches untouched.
+- **nwipe Support Status: Not supported.** This tool does not execute legacy ATA Secure Erase instructions or perform freeze lock management.
+
+### 2. Modern Hardware Sanitize (2012+ Hardware)
+- Origins: Formalized within the ACS-2 (2011–2012) standards for SATA, SBC-3 for enterprise SAS, and NVMe 1.3 (2017) specifications.
+- Drive Types: Modern SATA III SSDs, enterprise SAS hardware, and contemporary PCIe NVMe storage devices.
+- Why Sanitize replaced Secure Erase:
+        - NIST 800-88 Purge Guarantee: Engineered specifically to handle flash media complexities, guaranteeing physical erasure across hidden sectors, wear-leveling reserves, and internal caches.
+        - Persistence & Security: When triggered, the drive controller places the hardware into an uninterrupted state that cannot be circumvented by system firmware, rejecting standard I/O requests until completion.
+- **nwipe Support Status: Supported.**
+
+### Hardware Support Summary
+| Drive Type & Era | Specification | Low-Level Command Used | Status |
+| ------------------------ | ------------------ | --------------------------------------- | --------- |
+| Legacy Drives (Pre-2012) | ATA-3 to ATA-8 | ATA Secure Erase (0xF4) | Not Supported (Requires legacy firmware/freeze lock handling) Use hdparm |
+| SATA SSDs / HDDs (Post-2012) | ATA/ATAPI ACS-2+ | ATA Sanitize (0xB4 Pass-Through) | Supported |
+| NVMe SSDs (Post-2017) | NVMe 1.3+ | NVMe Admin Sanitize (0x84) | Supported|
+| Enterprise SAS (Post-2012) | SCSI SBC-3 | SCSI Sanitize (0x94) | Planned / Untested (Requires SCSI CDB engine)
+
+### Suggested Verification & Defense-in-Depth Procedures
+Even though hardware Sanitize operations trigger firmware-level purging directly inside the controller, standalone software verification remains a critical practice. Hardware glitches, vendor-specific controller anomalies, or unhandled errors can occasionally result in a drive reporting complete sanitization despite retaining uncleared memory blocks.
+To guarantee compliance and satisfy strict auditing standards, we suggest incorporating a multi-step validation sequence suited to your operational requirements:
+
+### 1. Standard Validation: Post-Sanitize Read-Check
+(Suggested for general hardware redeployment and compliance auditing)
+Following any Hardware Sanitize operation (Block Erase, Cryptographic Erase, or Overwrite), execute a full Zero-Fill Verification pass across every host addressable sector (LBA).
+
+- Why it matters: Reading back sectors verifies that the system receives consistent zero bytes () across user space, proving that at the very least, host accessible blocks have been zero'ed. 
+
+<img width="1961" height="544" alt="Baseline verification workflow" src="https://github.com/user-attachments/assets/d0473bba-310c-4993-b017-1b5443040ebd" />
+
+### 2. High-Assurance Multi-Pass Procedure
+(Designed for high-security infrastructure, regulated environment storage, or untrusted drives)
+For maximum data destruction, pair host software overwriting with native hardware sanitization to establish comprehensive protection covering both host-accessible LBAs and hidden sectors.
+
+1. PRNG Overwrite Pass: Execute a software pattern write using pseudo-random data across all host-visible storage sectors.
+2. PRNG Pattern Verification: Perform a read-check to ensure the random structure was applied correctly without bad block remapping interference.
+3. Hardware Sanitize Command: Issue a native firmware Sanitize operation (Block Erase or Crypto Erase). This forces the drive to purge reserved areas inaccessible to host software—including over-provisioned space, wear-leveling pools, retired blocks, and controller caches.
+4. Final Zero-Fill Verification: Complete a final read pass to confirm that every addressable sector returns zeros after sanitization.
+
+<img width="1375" height="382" alt="High Assurance workflow" src="https://github.com/user-attachments/assets/1018b1e0-1187-4a20-8009-9c421839e1b0" />
+
+- Why a PRNG write matters: As there are no current ways that the host can verify that every over provisioned or non host accessible area has really been cleared, i.e we have to trust the drive's firmware has done it's job. The best available technique that can be provided by the host software is to write something to the entire user addressable area that is completely un-compressible so that the drive cannot use compression algorithm's to avoid overwriting memory and has to store every single byte. Combined with a sanitise operation and host accessible verification this gives us some confidence the drive has been successfully erased. Ultimately we still have to trust the drives firmware is operating correctly and bug free.    
+
+#### Sanitize (purge) selection on supported devices
+
+<img width="846" height="327" alt="Screenshot_20260930_215022" src="https://github.com/user-attachments/assets/9c2dd0a5-2b71-4a56-aa18-0369ae8bdf46" />
+
+#### Sanitize (purge) operations supported by the device - Block, Crypto, Overwrite.
+
+<img width="846" height="327" alt="Screenshot_20260930_213454" src="https://github.com/user-attachments/assets/1c19e63b-5924-486f-85f6-f5cfa3334a7a" />
+
+
+### Looking Ahead: The 0.44 Roadmap
+We are already working hard on the next evolution of this feature. In the upcoming nwipe 0.44 release, Hardware Sanitize will be fully integrated into nwipe's traditional user interface.
+This deep integration will allow you to select Sanitize as your primary wipe method directly from the main screen, bringing NIST 800-88 Purge capabilities to your automated workflows. With 0.44, you will be able to seamlessly autonuke an entire system using lightning-fast hardware Sanitize commands.
+
+Thank you to our community for the ongoing feedback and testing that made this highly requested feature possible and a special thanks to @desertwitch for his valuable time in developing and implementing this feature. Very much appreciated.
+
+----
+
+## Introducing Real-Time Temperature Mapping Graph to Compliment the Speed Profile Graph on PDF reports.
+
+### New Feature: Dual-Axis Thermal & Speed Profiling
+We are pleased to introduce a major update to our PDF speed profile page, bringing drive temperature data directly alongside speed metrics.
+
+#### Feature Overview
+To provide a more comprehensive view of system health, we have integrated a drive temperature graph directly into the speed profile page on all PDF reports. This new graph sits beneath the existing speed profile, bound to the exact same Erasure duration X-axis.
+
+#### Key Benefits
+- Direct Visual Correlation: Stacking the speed & temperature graphs one above the other allows for immediate, vertical visual inspection. Users can now cross-reference drive performance with thermal behaviour at a glance.
+- Instant Anomaly Diagnosis: Sudden drops or spikes or performance issues in erasure speed can be instantly mapped to thermal issues occurring at the exact same time, specifically to identify drives that may be operating outside the manufacturer's environmental specifications.
+- Streamlined Debugging: Accelerates root-cause analysis.
+
+<img width="1130" height="799" alt="Screenshot_20260930_001259" src="https://github.com/user-attachments/assets/a3cbc756-b6f4-4630-909e-0adc1427f407" />
+
+Thanks @PartialVolume 
+
+
+----
+
+## Increase quantity of smart & non smart data on PDF reports
+
+Nwipe now uses smartctl -x rather than -a, the extra sections returned typically now include:
+- Device Statistics: A comprehensive log of the drive’s lifetime history. This covers absolute metrics like total bytes written/read (vital for assessing SSD lifespan), power cycles, flash write amplification factors, and hardware resets.
+- SATA Physical Event Counters: Specific error logging for physical interface anomalies, such as CRC errors, link layer resets, and host-initiated bus resets. These logs are crucial for diagnosing faulty SATA cables or loose backplanes rather than a failing disk mechanism.
+- SCT Temperature History: Instead of just showing the current temperature, -x prints a visual ASCII graph and structural timeline of the drive's internal temperature over time, including logging its historical minimum and maximum constraints.
+- Extended Self-Test & Error Logs: Standard SMART -a outputs only the last few logged errors. -x pulls the fully extended error directory, catching long-term intermittent read/write faults or specific Logical Block Addresses (LBAs) that failed months prior.
+
+If you prefer a simplified report without the smart data, let us know and with can supply a switch in nwipe's config to disable smart data in reports.
+
+#### Key Data Comparison
+| Feature / Data Returned | -a (--all) | -x (--xall) |
+| ----------------------------------- | ----------- | ------------ |
+| Basic Device Information (Model, Serial, Firmware version) |	Yes	| Yes |
+| SMART Overall Health Status (PASSED / FAILED) | Yes | Yes |
+| Vendor SMART Attributes Table (e.g., Reallocated Sector Count) | Yes	| Yes |
+| Standard Error Log & Self-Test Logs | Yes | Yes |
+| Extended Comprehensive Error Logs | No | Yes |
+| Device Statistics (SATA/NVMe physical event counters) | No | Yes |
+| SCT Temperature History & Summary | No | Yes |
+| 48-bit ATA Command Support Logs | No | Yes |
+
+Thanks @toreanderson #780 
+
+----
+
+# Fixes
+
+miscellaneous: guard popen result before pclose in write_system_datetime #785 Thanks @SAY-5 
+
+
 v0.42
 -----------------------
 ## Notable New Features
