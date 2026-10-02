@@ -77,7 +77,12 @@ For maximum data destruction, pair host software overwriting with native hardwar
 
 <img width="1375" height="382" alt="High Assurance workflow" src="https://github.com/user-attachments/assets/1018b1e0-1187-4a20-8009-9c421839e1b0" />
 
-- Why a PRNG write matters: As there are no current ways that the host can verify that every over provisioned or non host accessible area has really been cleared, i.e we have to trust the drive's firmware has done it's job. The best available technique that can be provided by the host software is to write something to the entire user addressable area that is completely un-compressible so that the drive cannot use compression algorithm's to avoid overwriting memory and has to store every single byte. Combined with a sanitise operation and host accessible verification this gives us some confidence the drive has been successfully erased. Ultimately we still have to trust the drives firmware is operating correctly and bug free.    
+- Why a PRNG write matters for stress testing data channels: While a standard PRNG write has been around for a very long time, since the 1980s/1990s? it is still an excellent way to stress test data channels & paths to help confirm the reliability of a drive as opposed to writing only zeros or ones. So if reliability testing as well as erasure is your concern a PRNG fill is another tool in the chest to achieve verification of reliability.
+
+#### Isn't traditional writing bad for NVMe/SSDs? - Endurance & Wear Impact
+Writing a full PRNG pass consumes 1 Drive Write (1 DW) (1 complete fill of the drive) of NAND endurance. For modern consumer SSDs, typically rated for 300–600 TBW (Terabytes Written) and enterprise SSDs (rated for 1–3+ DWPD (Drive Writes Per Day) over 5 years), a single diagnostic/erasure pass consumes a negligible fraction of total drive lifespan while providing high confidence in drive health.
+
+There are no current ways that the host can verify that every over provisioned or non host accessible area has really been purged as by its very nature that memory is not accessible to the host system, i.e we have to trust the drive's firmware has done its job and is not hiding anything. Writing un-compressible  random data to the entire user addressable area so that the drive cannot use compression algorithms to avoid overwriting memory and has to store every single byte at least writes memory to the size of the disc. Followed by a sanitise operation to purge all areas and host accessible LBA verification this gives us additional confidence the drive has been successfully erased. Ultimately we still have to trust the drives firmware is operating correctly and bug free.
 
 #### Sanitize (purge) selection on supported devices
 
