@@ -110,9 +110,10 @@ void pdf_add_text_bytes_erased( float xoff, float yoff, nwipe_context_t* c );
 
 /**
  * Prints the PRNG algorithm is relevant, else
- * prints NA to method. Mode = 1 forces not
- * applicable to method indication. This is used
- * by the standalone secure erase method.
+ * prints NA to method. Mode = 0 forces not
+ * applicable to method indication. 1 =
+ * determine prng. This is used by the
+ * standalone secure erase method.
  * @param size_t mode 1=Force NA, 0=determine prng
  * @param float xoff x position
  * @param float yoff y position
