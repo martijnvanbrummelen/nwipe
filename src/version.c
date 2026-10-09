@@ -26,7 +26,7 @@
 #include "git_hash.h"
 #endif
 
-const char* version_string = "0.43";
+const char* version_string = "0.43.1";
 const char* program_name = "nwipe";
 const char* author_name = "Martijn van Brummelen";
 const char* email_address = "git@brumit.nl";
