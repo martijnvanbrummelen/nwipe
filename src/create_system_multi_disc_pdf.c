@@ -405,7 +405,7 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
          * prng type
          */
         pdf_add_text( pdf, NULL, "PRNG algorithm:", TEXT_SIZE_DATA, 300, yoffset, PDF_GRAY );
-        pdf_add_text_prng_type( 0, 395, yoffset, PDF_BLACK );
+        pdf_add_text_prng_type( NWIPE_PDF_FORCE_OUTPUT_RESULT, 395, yoffset, PDF_BLACK );
 
         /***********
          * Blanking pass
