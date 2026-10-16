@@ -498,6 +498,8 @@ See the ShredOS README for detailed instructions on downloading and writing the 
 
 ## Which Linux distro uses the latest nwipe?
 
+[![Packaging status](https://repology.org/badge/vertical-allrepos/nwipe.svg?columns=3)](https://repology.org/project/nwipe/versions)
+
 You can see an overview at:
 
 * [Repology](https://repology.org/project/nwipe/versions)
