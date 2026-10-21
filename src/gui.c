@@ -7690,6 +7690,9 @@ void* nwipe_gui_status( void* ptr )
     /* Spinner character */
     char spinner_string[2];
 
+    /* throughput switch count, when to switch between average and instantaneous */
+    size_t switch_count = 0;
+
     /* Create the finish message, this changes based on whether PDF creation is enabled
      * and whether a logfile has been specified
      */
@@ -8213,11 +8216,26 @@ void* nwipe_gui_status( void* ptr )
                     if( c[i]->wipe_status == 1 || nwipe_options.method == &nwipe_verify_zero
                         || nwipe_options.method == &nwipe_verify_one || c[i]->result == 0 )
                     {
-                        /* Determine throughput nomenclature for this drive and output drives throughput to GUI */
-                        Determine_C_B_nomenclature(
-                            c[i]->throughput, nomenclature_result_str, NOMENCLATURE_RESULT_STR_SIZE );
-
-                        wprintw( main_window, "[%s/s] ", nomenclature_result_str );
+                        if( switch_count > 48 )
+                        {
+                            /* Determine throughput nomenclature for instantaneous disk throughput
+                             * and output the drives throughput to GUI */
+                            Determine_C_B_nomenclature(
+                                c[i]->throughput_instantaneous, nomenclature_result_str, NOMENCLATURE_RESULT_STR_SIZE );
+                            wprintw( main_window, "[%s/s inst.]", nomenclature_result_str );
+                            switch_count++;
+                            if( switch_count > 96 )
+                                switch_count = 0;
+                        }
+                        else
+                        {
+                            /* Determine throughput nomenclature for average disk throughput
+                             * and output the drives throughput to GUI */
+                            Determine_C_B_nomenclature(
+                                c[i]->throughput, nomenclature_result_str, NOMENCLATURE_RESULT_STR_SIZE );
+                            wprintw( main_window, "[%s/s avg.] ", nomenclature_result_str );
+                            switch_count++;
+                        }
                     }
                     else
                     {
@@ -8454,6 +8472,7 @@ int compute_stats( void* ptr )
             if( times_10 > 0 && c[i]->round_size > 0 )
             {
                 double throughput_10 = (double) bytes_10 / (double) times_10;
+                c[i]->throughput_instantaneous = throughput_10;  // Save in drive context for use by GUI code.
                 double current_temp = (double) c[i]->temp1_input;  // Current temperature reading
 
                 /* Map current byte progress cleanly to one of the 400 array buckets */

@@ -206,6 +206,7 @@ typedef struct nwipe_context_t_
     pthread_t thread;  // The ID of the thread.
     u64 throughput;  // Average throughput in bytes per second.
     char throughput_txt[13];  // Human readable throughput.
+    double throughput_instantaneous;  // throughput as measured over a few seconds
     u64 verify_errors;  // The number of verification errors across all passes.
     int templ_has_hwmon_data;  // 0 = no hwmon data available, 1 = hwmon data available
     int templ_has_scsitemp_data;  // 0 = no scsitemp data available, 1 = scsitemp data available
