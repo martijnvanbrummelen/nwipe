@@ -8233,7 +8233,7 @@ void* nwipe_gui_status( void* ptr )
                              * and output the drives throughput to GUI */
                             Determine_C_B_nomenclature(
                                 c[i]->throughput, nomenclature_result_str, NOMENCLATURE_RESULT_STR_SIZE );
-                            wprintw( main_window, "[%s/s avg.] ", nomenclature_result_str );
+                            wprintw( main_window, "[%s/s avg. ]", nomenclature_result_str );
                             switch_count++;
                         }
                     }
