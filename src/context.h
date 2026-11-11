@@ -235,7 +235,7 @@ typedef struct nwipe_context_t_
     time_t start_time;  // Start time of wipe
     time_t end_time;  // End time of wipe
     double duration;  // Duration of the wipe in seconds
-    char duration_str[20];  // The duration string in hh:mm:ss
+    char duration_str[36];  // The duration string in hh:mm:ss
     //
     // NEW: High-resolution timing fields for very fast small devices such as loop devices, for speed profiling
     struct timespec start_clock;
