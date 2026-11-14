@@ -16,32 +16,72 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        libnvme:
-          - "none"
-          - "1.0"
-          - "1.1"
-          - "1.2"
-          - "1.3"
-          - "1.4"
-          - "1.5"
-          - "1.6"
-          - "1.7"
-          - "1.7.1"
-          - "1.8"
-          - "1.9"
-          - "1.10"
-          - "1.11"
-          - "1.11.1"
-          - "1.12"
-          - "1.13"
-          - "1.14"
-          - "1.15"
-          - "1.16"
-          - "1.16.1"
-          - "1.16.2"
+        # Each entry carries the meson flags that disable every
+        # optional libnvme feature for that release (core library only).
+        #
+        # Option history (meson_options.txt):
+        #   1.0 - 1.3   python is a combo (auto/true/false); json-c is mandatory
+        #   1.3         adds libdbus
+        #   1.4         python becomes a feature (auto/enabled/disabled);
+        #               adds json-c and keyutils options
+        #   1.7         adds tests
+        #   1.12        adds liburing
+        #   1.15        adds examples
+        include:
+          - libnvme: "none"
+            meson_flags: ""
+
+          - libnvme: "1.0"
+            meson_flags: "-Dpython=false -Dopenssl=disabled -Ddocs=false"
+          - libnvme: "1.1"
+            meson_flags: "-Dpython=false -Dopenssl=disabled -Ddocs=false"
+          - libnvme: "1.2"
+            meson_flags: "-Dpython=false -Dopenssl=disabled -Ddocs=false"
+
+          - libnvme: "1.3"
+            meson_flags: "-Dpython=false -Dopenssl=disabled -Dlibdbus=disabled -Ddocs=false"
+
+          - libnvme: "1.4"
+            meson_flags: "-Dpython=disabled -Dopenssl=disabled -Dlibdbus=disabled -Djson-c=disabled -Dkeyutils=disabled -Ddocs=false"
+          - libnvme: "1.5"
+            meson_flags: "-Dpython=disabled -Dopenssl=disabled -Dlibdbus=disabled -Djson-c=disabled -Dkeyutils=disabled -Ddocs=false"
+          - libnvme: "1.6"
+            meson_flags: "-Dpython=disabled -Dopenssl=disabled -Dlibdbus=disabled -Djson-c=disabled -Dkeyutils=disabled -Ddocs=false"
+
+          - libnvme: "1.7"
+            meson_flags: "-Dpython=disabled -Dopenssl=disabled -Dlibdbus=disabled -Djson-c=disabled -Dkeyutils=disabled -Ddocs=false -Dtests=false"
+          - libnvme: "1.7.1"
+            meson_flags: "-Dpython=disabled -Dopenssl=disabled -Dlibdbus=disabled -Djson-c=disabled -Dkeyutils=disabled -Ddocs=false -Dtests=false"
+          - libnvme: "1.8"
+            meson_flags: "-Dpython=disabled -Dopenssl=disabled -Dlibdbus=disabled -Djson-c=disabled -Dkeyutils=disabled -Ddocs=false -Dtests=false"
+          - libnvme: "1.9"
+            meson_flags: "-Dpython=disabled -Dopenssl=disabled -Dlibdbus=disabled -Djson-c=disabled -Dkeyutils=disabled -Ddocs=false -Dtests=false"
+          - libnvme: "1.10"
+            meson_flags: "-Dpython=disabled -Dopenssl=disabled -Dlibdbus=disabled -Djson-c=disabled -Dkeyutils=disabled -Ddocs=false -Dtests=false"
+          - libnvme: "1.11"
+            meson_flags: "-Dpython=disabled -Dopenssl=disabled -Dlibdbus=disabled -Djson-c=disabled -Dkeyutils=disabled -Ddocs=false -Dtests=false"
+          - libnvme: "1.11.1"
+            meson_flags: "-Dpython=disabled -Dopenssl=disabled -Dlibdbus=disabled -Djson-c=disabled -Dkeyutils=disabled -Ddocs=false -Dtests=false"
+
+          - libnvme: "1.12"
+            meson_flags: "-Dpython=disabled -Dopenssl=disabled -Dlibdbus=disabled -Djson-c=disabled -Dkeyutils=disabled -Dliburing=disabled -Ddocs=false -Dtests=false"
+          - libnvme: "1.13"
+            meson_flags: "-Dpython=disabled -Dopenssl=disabled -Dlibdbus=disabled -Djson-c=disabled -Dkeyutils=disabled -Dliburing=disabled -Ddocs=false -Dtests=false"
+          - libnvme: "1.14"
+            meson_flags: "-Dpython=disabled -Dopenssl=disabled -Dlibdbus=disabled -Djson-c=disabled -Dkeyutils=disabled -Dliburing=disabled -Ddocs=false -Dtests=false"
+
+          - libnvme: "1.15"
+            meson_flags: "-Dpython=disabled -Dopenssl=disabled -Dlibdbus=disabled -Djson-c=disabled -Dkeyutils=disabled -Dliburing=disabled -Ddocs=false -Dtests=false -Dexamples=false"
+          - libnvme: "1.16"
+            meson_flags: "-Dpython=disabled -Dopenssl=disabled -Dlibdbus=disabled -Djson-c=disabled -Dkeyutils=disabled -Dliburing=disabled -Ddocs=false -Dtests=false -Dexamples=false"
+          - libnvme: "1.16.1"
+            meson_flags: "-Dpython=disabled -Dopenssl=disabled -Dlibdbus=disabled -Djson-c=disabled -Dkeyutils=disabled -Dliburing=disabled -Ddocs=false -Dtests=false -Dexamples=false"
+          - libnvme: "1.16.2"
+            meson_flags: "-Dpython=disabled -Dopenssl=disabled -Dlibdbus=disabled -Djson-c=disabled -Dkeyutils=disabled -Dliburing=disabled -Ddocs=false -Dtests=false -Dexamples=false"
 
     env:
       LIBNVME_VERSION: ${{ matrix.libnvme }}
+      LIBNVME_MESON_FLAGS: ${{ matrix.meson_flags }}
       LIBNVME_CONFIGURE_FLAG: ${{ matrix.libnvme == 'none' && '--without-libnvme' || '--with-libnvme' }}
       BASE_CFLAGS: "-O2 -g -Werror -Wimplicit -Wimplicit-function-declaration -Wmissing-field-initializers"
       BASE_CPPFLAGS: "-Wno-error=cpp"
@@ -101,7 +141,9 @@ jobs:
 
           cd "libnvme-${LIBNVME_VERSION}"
 
-          meson setup .build
+          echo "meson flags: ${LIBNVME_MESON_FLAGS}"
+
+          meson setup .build ${LIBNVME_MESON_FLAGS}
           meson compile -C .build
 
           sudo meson install -C .build
