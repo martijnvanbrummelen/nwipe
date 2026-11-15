@@ -4045,7 +4045,7 @@ static int pdf_add_barcode_ean13(struct pdf_doc *pdf, struct pdf_object *page,
         lead = ch - '0';
         ++string;
     } else if (len != 12)
-        return pdf_set_err(pdf, -EINVAL, "Invalid EAN13 string length %lu",
+        return pdf_set_err(pdf, -EINVAL, "Invalid EAN13 string length %zu",
                            len);
 
     /* Scale and calculate dimensions */
@@ -4158,7 +4158,7 @@ static int pdf_add_barcode_upca(struct pdf_doc *pdf, struct pdf_object *page,
 
     size_t len = strlen(string);
     if (len != 12)
-        return pdf_set_err(pdf, -EINVAL, "Invalid UPCA string length %lu",
+        return pdf_set_err(pdf, -EINVAL, "Invalid UPCA string length %zu",
                            len);
 
     /* Scale and calculate dimensions */
@@ -4277,7 +4277,7 @@ static int pdf_add_barcode_ean8(struct pdf_doc *pdf, struct pdf_object *page,
 
     size_t len = strlen(string);
     if (len != 8)
-        return pdf_set_err(pdf, -EINVAL, "Invalid EAN8 string length %lu",
+        return pdf_set_err(pdf, -EINVAL, "Invalid EAN8 string length %zu",
                            len);
 
     /* Scale and calculate dimensions */
@@ -4389,7 +4389,7 @@ static int pdf_add_barcode_upce(struct pdf_doc *pdf, struct pdf_object *page,
 
     size_t len = strlen(string);
     if (len != 12)
-        return pdf_set_err(pdf, -EINVAL, "Invalid UPCE string length %lu",
+        return pdf_set_err(pdf, -EINVAL, "Invalid UPCE string length %zu",
                            len);
 
     if (*string != '0')
@@ -5098,7 +5098,7 @@ static int pdf_add_png_data(struct pdf_doc *pdf, struct pdf_object *page,
         const uint32_t chunk_length = ntoh32(chunk->length);
         // chunk length + 4-bytes of CRC
         if (chunk_length > png_data_length - pos - 4) {
-            pdf_set_err(pdf, -EINVAL, "PNG chunk exceeds file: %d vs %ld",
+            pdf_set_err(pdf, -EINVAL, "PNG chunk exceeds file: %d vs %zu",
                         chunk_length, png_data_length - pos - 4);
             goto free_buffers;
         }

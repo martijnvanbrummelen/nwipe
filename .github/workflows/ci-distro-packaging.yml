@@ -1,0 +1,297 @@
+name: ci-distro-packaging
+
+# Checks that *our code* builds cleanly the way distributions build it:
+# their compiler, their hardening/LTO flags, their debian/rules.
+#
+# It deliberately does NOT fail because of the distro's packaging lagging
+# behind (missing Build-Depends, Debian patches that no longer apply).
+# Those are the packager's job, not ours.
+#
+# debian/ comes from the Debian maintainer's git (Salsa); it is only used for
+# debian/rules (how configure/make are invoked). The Debian builds (deb,
+# deb-i386) treat compiler warnings as errors; the RPM builds don't (yet).
+#
+# Same idea for Fedora and EPEL (AlmaLinux 8/9/10): the spec comes from Fedora
+# dist-git, Version/Release are overridden, Fedora's patches are dropped, and
+# rpmbuild builds our HEAD with Fedora/RHEL flags (Fedora defaults to LTO).
+
+on: [push, pull_request]
+
+jobs:
+  deb:
+    name: ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ matrix.image }}
+      # Needed for loop devices in the end-to-end smoke test.
+      options: --privileged
+    strategy:
+      fail-fast: false
+      matrix:
+        # sid/testing: Debian's toolchain and flags; ubuntu:devel adds LTO.
+        include:
+          - { image: "debian:sid",     slug: debian-sid }
+          - { image: "debian:testing", slug: debian-testing }
+          - { image: "ubuntu:devel",   slug: ubuntu-devel }
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      # What upstream itself needs to build, installed on top of the packaging's
+      # Build-Depends so a stale debian/control can't fail the job.
+      UPSTREAM_DEPS: >-
+        pkgconf libncurses-dev libparted-dev libconfig-dev libnvme-dev
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Install tooling
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential devscripts equivs dpkg-dev lintian ca-certificates git
+
+      - uses: actions/checkout@v5
+
+      - name: Import debian/ from Salsa (packaging only, no patches)
+        run: |
+          git clone --depth 1 https://salsa.debian.org/mvb/nwipe.git /tmp/pkg
+          git -C /tmp/pkg log -1 --format='salsa packaging at %h (%cs): %s'
+          rm -rf debian
+          cp -r /tmp/pkg/debian .
+          # Debian's patches target their release, not our HEAD: drop them.
+          rm -rf debian/patches
+
+      - name: Install build dependencies
+        run: |
+          mk-build-deps -i -r -t "apt-get -y --no-install-recommends" debian/control \
+            || echo "::notice::Some packaging Build-Depends could not be installed (packaging issue, ignored)"
+          apt-get install -y --no-install-recommends $UPSTREAM_DEPS
+
+      - name: Set a CI version in debian/changelog
+        run: |
+          VER=$(sed -n 's/^AC_INIT(\[nwipe\],\[\([^]]*\)\].*/\1/p' configure.ac)
+          DEBEMAIL=ci@example.org DEBFULLNAME="nwipe CI" \
+            dch -b -v "${VER}+git${GITHUB_SHA::7}-0ci1" "CI build of upstream ${GITHUB_SHA::7}"
+
+      - name: Build exactly as the distro would (+ treat warnings as errors)
+        env:
+          # Fail on compiler warnings (but not during configure). Distro builds
+          # would succeed with warnings, but packagers flag them as possible bugs,
+          # so we keep the code warning-free under distro flags.
+          MAKEFLAGS: "AM_CFLAGS=-Werror AM_CXXFLAGS=-Werror"
+        run: NWIPE_GIT_HASH=${GITHUB_SHA::7} dpkg-buildpackage -us -uc -b
+
+      - name: Install the package
+        run: |
+          apt-get install -y ../nwipe_*.deb
+          nwipe -V
+          file /usr/sbin/nwipe
+          mkdir -p out && cp ../*.deb out/
+
+      - name: End-to-end smoke test of the installed binary
+        run: |
+          # losetup, hexdump, and hdparm (nwipe exits 1 without it)
+          apt-get install -y --no-install-recommends mount bsdextrautils hdparm
+          NWIPE_CI_ARTIFACT_DIR="$PWD/ci-artifacts" \
+            bash tests/ci/loopback_e2e.sh smoke /usr/sbin/nwipe
+
+      - name: Upload smoke test logs
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: e2e-smoke-logs-${{ matrix.slug }}
+          path: ci-artifacts
+          if-no-files-found: ignore
+
+      - name: Lintian (informational)
+        run: lintian --info ../*.deb || true
+
+      - name: Upload .deb
+        uses: actions/upload-artifact@v5
+        with:
+          name: nwipe-deb-${{ matrix.slug }}
+          path: out/*.deb
+
+  deb-i386:
+    # 32-bit build: catches int/size_t/long and pointer-size bugs that are
+    # invisible on 64-bit. GitHub's JavaScript actions can't run inside a
+    # 32-bit container, so checkout/upload happen on the runner and the build
+    # runs in a native i386 container (no emulation; x86_64 runs i386 code).
+    name: debian:sid (i386)
+    runs-on: ubuntu-latest
+    env:
+      IMAGE: debian:sid
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build, install and smoke-test in an i386 container
+        run: |
+          cat > .ci-i386.sh <<'EOF'
+          set -euxo pipefail
+          export DEBIAN_FRONTEND=noninteractive
+          dpkg --print-architecture   # must say i386
+
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential devscripts equivs dpkg-dev lintian ca-certificates git
+
+          git clone --depth 1 https://salsa.debian.org/mvb/nwipe.git /tmp/pkg
+          git -C /tmp/pkg log -1 --format='salsa packaging at %h (%cs): %s'
+          rm -rf debian && cp -r /tmp/pkg/debian . && rm -rf debian/patches
+
+          mk-build-deps -i -r -t "apt-get -y --no-install-recommends" debian/control \
+            || echo "Some packaging Build-Depends could not be installed (ignored)"
+          apt-get install -y --no-install-recommends \
+            pkgconf libncurses-dev libparted-dev libconfig-dev libnvme-dev
+
+          VER=$(sed -n 's/^AC_INIT(\[nwipe\],\[\([^]]*\)\].*/\1/p' configure.ac)
+          DEBEMAIL=ci@example.org DEBFULLNAME="nwipe CI" \
+            dch -b -v "${VER}+git${GITHUB_SHA::7}-0ci1" "CI build of upstream ${GITHUB_SHA::7}"
+
+          MAKEFLAGS="AM_CFLAGS=-Werror AM_CXXFLAGS=-Werror" \
+            NWIPE_GIT_HASH=${GITHUB_SHA::7} dpkg-buildpackage -us -uc -b
+
+          apt-get install -y ../nwipe_*_i386.deb
+          nwipe -V
+          file /usr/sbin/nwipe
+          mkdir -p out && cp ../*.deb out/
+
+          apt-get install -y --no-install-recommends mount bsdextrautils hdparm
+          NWIPE_CI_ARTIFACT_DIR="$PWD/ci-artifacts" \
+            bash tests/ci/loopback_e2e.sh smoke /usr/sbin/nwipe
+
+          lintian --info ../*.deb || true
+          EOF
+
+          # --privileged: loop devices for the smoke test.
+          docker run --rm --privileged --platform linux/386 \
+            -v "$PWD:/src" -w /src -e GITHUB_SHA \
+            "$IMAGE" bash /src/.ci-i386.sh
+
+      - name: Upload smoke test logs
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: e2e-smoke-logs-debian-sid-i386
+          path: ci-artifacts
+          if-no-files-found: ignore
+
+      - name: Upload .deb
+        uses: actions/upload-artifact@v5
+        with:
+          name: nwipe-deb-debian-sid-i386
+          path: out/*.deb
+
+  rpm:
+    name: ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ matrix.image }}
+      # Needed for loop devices in the end-to-end smoke test.
+      options: --privileged
+    strategy:
+      fail-fast: false
+      matrix:
+        # branch = Fedora dist-git branch the spec is taken from.
+        # EL8 has no libnvme; its spec builds --without-libnvme.
+        include:
+          - { image: "fedora:rawhide",  slug: fedora-rawhide,       branch: rawhide, epel: false, nvme: "libnvme-devel" }
+          - { image: "fedora:latest",   slug: fedora-latest,        branch: rawhide, epel: false, nvme: "libnvme-devel" }
+          - { image: "almalinux:10",    slug: fedora-el10,          branch: epel10,  epel: true,  nvme: "libnvme-devel" }
+          - { image: "almalinux:9",     slug: fedora-el9,           branch: epel9,   epel: true,  nvme: "libnvme-devel" }
+          - { image: "almalinux:8",     slug: fedora-el8,           branch: epel8,   epel: true,  nvme: "" }
+    env:
+      # RPM package names for what upstream needs to build.
+      UPSTREAM_DEPS_RPM: >-
+        gcc gcc-c++ make autoconf automake pkgconf-pkg-config
+        ncurses-devel parted-devel libconfig-devel ${{ matrix.nvme }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Install tooling
+        run: |
+          # The spec uses %forgemeta/%forgesource (forge macros). %autorelease and
+          # %autochangelog are replaced in the spec below, so rpmautospec isn't needed.
+          if [ "${{ matrix.epel }}" = true ]; then
+            # EPEL + CRB (called PowerTools on EL8) hold the -devel packages.
+            dnf -y install dnf-plugins-core epel-release
+            dnf config-manager --set-enabled crb || dnf config-manager --set-enabled powertools
+            dnf -y install rpm-build rpmdevtools git-core redhat-rpm-config epel-rpm-macros
+          else
+            dnf -y install rpm-build rpmdevtools git-core 'dnf-command(builddep)' \
+              redhat-rpm-config forge-srpm-macros
+          fi
+
+      - uses: actions/checkout@v5
+
+      - name: Import spec from Fedora dist-git and point it at our HEAD
+        run: |
+          git clone --depth 1 -b ${{ matrix.branch }} https://src.fedoraproject.org/rpms/nwipe.git /tmp/pkg
+          git -C /tmp/pkg log -1 --format='fedora packaging at %h (%cs): %s'
+          rpmdev-setuptree
+          SPEC=~/rpmbuild/SPECS/nwipe.spec
+          cp /tmp/pkg/nwipe.spec "$SPEC"
+          # Extra sources (if any) from dist-git; sources file/patches are not needed.
+          find /tmp/pkg -maxdepth 1 -type f ! -name '*.spec' ! -name '*.patch' \
+            ! -name sources ! -name '.*' -exec cp {} ~/rpmbuild/SOURCES/ \;
+
+          VER=$(sed -n 's/^AC_INIT(\[nwipe\],\[\([^]]*\)\].*/\1/p' configure.ac)
+          # Our version, a CI release, and none of Fedora's patches.
+          sed -i -E \
+            -e "s/^(Version:[[:space:]]*).*/\1${VER}/" \
+            -e "s/^(Release:[[:space:]]*).*/\10.ci.git${GITHUB_SHA::7}%{?dist}/" \
+            -e '/^Patch[0-9]*:/d' -e '/^%patch/d' \
+            -e "s/^%autochangelog\$/* $(LC_ALL=C date '+%a %b %d %Y') nwipe CI <ci@example.org> - ${VER}-0\\n- CI build of upstream ${GITHUB_SHA::7}/" \
+            "$SPEC"
+
+          # Tarball named and laid out the way the spec's Source0/%setup expect.
+          TARBALL=$(basename "$(spectool -l -s 0 "$SPEC" | awk '{print $2}')")
+          # The checkout is owned by the runner user, we're root in the container.
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git archive --format=tar.gz --prefix="nwipe-${VER}/" \
+            -o ~/rpmbuild/SOURCES/"$TARBALL" HEAD
+          echo "Source0 -> $TARBALL"
+
+      - name: Install build dependencies
+        run: |
+          dnf -y builddep ~/rpmbuild/SPECS/nwipe.spec \
+            || echo "::notice::Some packaging BuildRequires could not be installed (packaging issue, ignored)"
+          dnf -y install $UPSTREAM_DEPS_RPM
+
+      - name: Build exactly as Fedora/EPEL would
+        run: NWIPE_GIT_HASH=${GITHUB_SHA::7} rpmbuild -bb ~/rpmbuild/SPECS/nwipe.spec
+
+      - name: Install the package
+        run: |
+          dnf -y install ~/rpmbuild/RPMS/*/nwipe-[0-9]*.rpm
+          nwipe -V
+          file "$(command -v nwipe)"
+          mkdir -p out && cp ~/rpmbuild/RPMS/*/*.rpm out/
+
+      - name: End-to-end smoke test of the installed binary
+        run: |
+          # losetup + hexdump (util-linux), and hdparm (nwipe exits 1 without it).
+          # nwipe finds hdparm/smartctl/dmidecode via `which`, which minimal
+          # Fedora/AlmaLinux container images don't have.
+          dnf -y install util-linux hdparm which
+          NWIPE_CI_ARTIFACT_DIR="$PWD/ci-artifacts" \
+            bash tests/ci/loopback_e2e.sh smoke "$(command -v nwipe)"
+
+      - name: Upload smoke test logs
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: e2e-smoke-logs-${{ matrix.slug }}
+          path: ci-artifacts
+          if-no-files-found: ignore
+
+      - name: rpmlint (informational)
+        run: |
+          dnf -y install rpmlint || exit 0
+          rpmlint out/*.rpm || true
+
+      - name: Upload .rpm
+        uses: actions/upload-artifact@v5
+        with:
+          name: nwipe-rpm-${{ matrix.slug }}
+          path: out/*.rpm
