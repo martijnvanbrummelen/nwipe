@@ -58,7 +58,7 @@ extern char pdf_footer[MAX_PDF_FOOTER_TEXT_LENGTH];
 extern char tag_header[MAX_PDF_TAG_LENGTH];
 extern float height;
 extern float page_width;
-extern int status_icon;
+extern size_t status_icon;
 
 int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr )
 {

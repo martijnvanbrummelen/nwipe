@@ -57,7 +57,7 @@ extern char pdf_footer[MAX_PDF_FOOTER_TEXT_LENGTH];
 extern char tag_header[MAX_PDF_TAG_LENGTH];
 extern float height;
 extern float page_width;
-extern int status_icon;
+extern size_t status_icon;
 extern struct pdf_object** pdf_page_array;
 
 void append_page_array( struct pdf_object***, struct pdf_object* );
