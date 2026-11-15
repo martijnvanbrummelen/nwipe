@@ -72,7 +72,7 @@ jobs:
           DEBEMAIL=ci@example.org DEBFULLNAME="nwipe CI" \
             dch -b -v "${VER}+git${GITHUB_SHA::7}-0ci1" "CI build of upstream ${GITHUB_SHA::7}"
 
-      - name: Build exactly as the distro would
+      - name: Build exactly as the distro would (+ treat warnings as errors)
         env:
           # Fail on compiler warnings (but not during configure). Distro builds
           # would succeed with warnings, but packagers flag them as possible bugs,
