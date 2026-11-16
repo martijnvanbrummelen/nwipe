@@ -664,7 +664,7 @@ void fix_endian_model_names( char* model )
     tmp_string = calloc( length + 1, 1 );
     model_lower_case = calloc( length + 1, 1 );
 
-    strncpy( model_lower_case, model, length );
+    memcpy( model_lower_case, model, length );
     model_lower_case[length] = 0; /* makesure it's terminated */
     strlower( model_lower_case ); /* convert to lower case for comparison */
 
@@ -760,7 +760,7 @@ void fix_endian_model_names( char* model )
         }
 
         tmp_string[length] = 0; /* terminate */
-        strncpy( model, tmp_string, length );
+        memcpy( model, tmp_string, length );
         model[length] = 0; /* terminate */
     }
     free( tmp_string );
@@ -813,15 +813,17 @@ int get_device_uuid( const char* device_path, char* uuid_buf )
 
         // Construct full path (readlink gives a relative path, usually "../../sda1")
         char full_path[PATH_MAX + strlen( uuid_dir ) + 1];
+        char canonical_path[PATH_MAX];
         if( resolved_path[0] != '/' )
         {
             // Resolve relative symlink path
             snprintf( full_path, sizeof( full_path ), "%s/%s", uuid_dir, resolved_path );
-            if( realpath( full_path, full_path ) == NULL )
+            if( realpath( full_path, canonical_path ) == NULL )
             {
                 closedir( dir );
                 return -1;
             }
+            snprintf( full_path, sizeof( full_path ), "%s", canonical_path );
         }
         else
         {

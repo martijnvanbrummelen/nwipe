@@ -825,7 +825,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
         /* If the serial number hasn't already been populated */
         if( next_device->device_serial_no[0] == 0 )
         {
-            strncpy( next_device->device_serial_no, tmp_serial, NWIPE_SERIALNUMBER_LENGTH );
+            snprintf( next_device->device_serial_no, sizeof( next_device->device_serial_no ), "%s", tmp_serial );
         }
     }
 

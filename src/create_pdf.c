@@ -1006,7 +1006,8 @@ void pdf_add_text_host_info_page( void* pdf,
 
     for( i = 0; i < NUMBER_DMI_OBJECTS; i++ )
     {
-        snprintf( buffer, sizeof( buffer ), "%s = %s", dmi_labels[i], dmi_result[i] );
+        snprintf(
+            buffer, sizeof( buffer ), "%.*s = %s", (int) sizeof( dmi_labels[0] ) - 1, dmi_labels[i], dmi_result[i] );
         pdf_add_text( pdf, NULL, buffer, TEXT_SIZE_DATA, xoff, yoff, PDF_BLACK );
         yoff -= 12;
     }

@@ -477,8 +477,8 @@ int nwipe_conf_populate( char* path, char* value )
     int group_count;  // Counts the number of groups in the path
 
     /* Initialise the pointers */
-    memset( group_start, 0, MAX_GROUP_DEPTH + 2 );
-    memset( &setting_start, 0, 1 );
+    memset( group_start, 0, sizeof( group_start ) );
+    setting_start = NULL;
 
     /* Allocate enough memory for a copy of the path and initialise to zero */
     path_copy = calloc( strlen( path ) + 1, sizeof( char ) );
