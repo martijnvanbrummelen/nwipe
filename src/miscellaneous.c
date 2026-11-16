@@ -383,7 +383,7 @@ int read_system_datetime( char* year, char* month, char* day, char* hours, char*
                     /* if we haven't reached the correct number of digits due to invalid data, log error */
                     month[++idx] = 0; /* terminate the string, prior to using in nwipe_log */
                     nwipe_log( NWIPE_LOG_ERROR,
-                               "Obtained system month using command = date +%m, but result appears invalid = %s",
+                               "Obtained system month using command = date +%%m, but result appears invalid = %s",
                                month );
                     status = -1;
                     break;
