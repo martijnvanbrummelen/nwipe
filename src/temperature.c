@@ -298,7 +298,6 @@ void nwipe_update_temperature( nwipe_context_t* c )
     char temperature[256];
     FILE* fptr;
     int idx;
-    int result;
     struct timeval tv_start;
     struct timeval tv_end;
     float delta_t;
@@ -327,17 +326,25 @@ void nwipe_update_temperature( nwipe_context_t* c )
             if( ( fptr = fopen( path, "r" ) ) != NULL )
             {
                 /* Acquire data until we reach a newline */
-                result = fscanf( fptr, "%[^\n]", temperature );
-
-                /* Convert numeric ascii to binary integer */
-                *( temperature_pcontext[idx] ) = atoi( temperature );
-
-                /* Divide by 1000 to get degrees celsius */
-                *( temperature_pcontext[idx] ) = *( temperature_pcontext[idx] ) / 1000;
-
-                if( nwipe_options.verbose )
+                if( fgets( temperature, sizeof( temperature ), fptr ) != NULL )
                 {
-                    nwipe_log( NWIPE_LOG_NOTICE, "hwmon: %s %dC", path, *( temperature_pcontext[idx] ) );
+                    /* Convert numeric ascii to binary integer */
+                    *( temperature_pcontext[idx] ) = atoi( temperature );
+
+                    /* Divide by 1000 to get degrees celsius */
+                    *( temperature_pcontext[idx] ) = *( temperature_pcontext[idx] ) / 1000;
+
+                    if( nwipe_options.verbose )
+                    {
+                        nwipe_log( NWIPE_LOG_NOTICE, "hwmon: %s %dC", path, *( temperature_pcontext[idx] ) );
+                    }
+                }
+                else
+                {
+                    if( nwipe_options.verbose )
+                    {
+                        nwipe_log( NWIPE_LOG_NOTICE, "hwmon: Unable to read %s", path );
+                    }
                 }
 
                 fclose( fptr );
