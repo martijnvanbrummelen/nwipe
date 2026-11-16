@@ -52,7 +52,11 @@ void* signal_hand( void* );
 #include <unistd.h>
 
 /* Assert off_t is 64-bit (if this errors, it is not) */
+#if defined( __STDC_VERSION__ ) && __STDC_VERSION__ >= 201112L
+_Static_assert( sizeof( off_t ) == 8, "off_t must be 64-bit; is config.h (AC_SYS_LARGEFILE) included?" );
+#else
 typedef char off_t_must_be_64_bit[( sizeof( off_t ) == 8 ) ? 1 : -1];
+#endif
 
 /* System errors. */
 extern int errno;
