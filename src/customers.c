@@ -80,7 +80,7 @@ void customer_processes( int mode )
     }
 
     /* Read the customers.csv file and populate the list array with the data */
-    if( fread( raw_buffer, size, 1, fptr ) != 1 )
+    if( size > 0 && fread( raw_buffer, size, 1, fptr ) != 1 )
     {
         nwipe_log( NWIPE_LOG_ERROR, "Unable to read %s", nwipe_customers_file );
         fclose( fptr );
