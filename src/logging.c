@@ -485,11 +485,11 @@ void nwipe_log_OSinfo()
         idx++;
     }
 
-    /* Open a pipe to /proc/version for reading */
-    fp = popen( "cat /proc/version", "r" );
+    /* Open /proc/version for reading */
+    fp = fopen( "/proc/version", "r" );
     if( fp == NULL )
     {
-        nwipe_log( NWIPE_LOG_WARNING, "Unable to create a pipe to /proc/version" );
+        nwipe_log( NWIPE_LOG_WARNING, "Unable to open /proc/version" );
         return;
     }
 
@@ -684,139 +684,205 @@ int nwipe_log_sysinfo( nwipe_misc_thread_data_t* ptrx )
                 switch( keywords_idx )
                 {
                     case 0:
-                        strncpy( ptrx->dmidecode_bios_version, path, DMIDECODE_RESULT_LENGTH );
-                        ptrx->dmidecode_bios_version[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        snprintf( ptrx->dmidecode_bios_version,
+                                  DMIDECODE_RESULT_LENGTH,
+                                  "%.*s",
+                                  DMIDECODE_RESULT_LENGTH - 1,
+                                  path );
                         break;
                     case 1:
-                        strncpy( ptrx->dmidecode_bios_release_date, path, DMIDECODE_RESULT_LENGTH );
-                        ptrx->dmidecode_bios_release_date[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        snprintf( ptrx->dmidecode_bios_release_date,
+                                  DMIDECODE_RESULT_LENGTH,
+                                  "%.*s",
+                                  DMIDECODE_RESULT_LENGTH - 1,
+                                  path );
                         break;
                     case 2:
-                        strncpy( ptrx->dmidecode_system_manufacturer, path, DMIDECODE_RESULT_LENGTH );
-                        ptrx->dmidecode_system_manufacturer[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        snprintf( ptrx->dmidecode_system_manufacturer,
+                                  DMIDECODE_RESULT_LENGTH,
+                                  "%.*s",
+                                  DMIDECODE_RESULT_LENGTH - 1,
+                                  path );
                         break;
                     case 3:
-                        strncpy( ptrx->dmidecode_system_product_name, path, DMIDECODE_RESULT_LENGTH );
-                        ptrx->dmidecode_system_product_name[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        snprintf( ptrx->dmidecode_system_product_name,
+                                  DMIDECODE_RESULT_LENGTH,
+                                  "%.*s",
+                                  DMIDECODE_RESULT_LENGTH - 1,
+                                  path );
                         break;
                     case 4:
-                        strncpy( ptrx->dmidecode_system_version, path, DMIDECODE_RESULT_LENGTH );
-                        ptrx->dmidecode_system_version[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        snprintf( ptrx->dmidecode_system_version,
+                                  DMIDECODE_RESULT_LENGTH,
+                                  "%.*s",
+                                  DMIDECODE_RESULT_LENGTH - 1,
+                                  path );
                         break;
                     case 5:
                         if( nwipe_options.quiet )
                         {
-                            strncpy( ptrx->dmidecode_system_serial_number, "XXXXXXXXXXXXXXX", DMIDECODE_RESULT_LENGTH );
-                            ptrx->dmidecode_system_serial_number[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                            snprintf( ptrx->dmidecode_system_serial_number,
+                                      DMIDECODE_RESULT_LENGTH,
+                                      "%s",
+                                      "XXXXXXXXXXXXXXX" );
                         }
                         else
                         {
-                            strncpy( ptrx->dmidecode_system_serial_number, path, DMIDECODE_RESULT_LENGTH );
-                            ptrx->dmidecode_system_serial_number[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                            snprintf( ptrx->dmidecode_system_serial_number,
+                                      DMIDECODE_RESULT_LENGTH,
+                                      "%.*s",
+                                      DMIDECODE_RESULT_LENGTH - 1,
+                                      path );
                         }
                         break;
                     case 6:
                         if( nwipe_options.quiet )
                         {
-                            strncpy( ptrx->dmidecode_system_uuid, "XXXXXXXXXXXXXXX", DMIDECODE_RESULT_LENGTH );
-                            ptrx->dmidecode_system_uuid[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                            snprintf( ptrx->dmidecode_system_uuid, DMIDECODE_RESULT_LENGTH, "%s", "XXXXXXXXXXXXXXX" );
                         }
                         else
                         {
-                            strncpy( ptrx->dmidecode_system_uuid, path, DMIDECODE_RESULT_LENGTH );
-                            ptrx->dmidecode_system_uuid[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                            snprintf( ptrx->dmidecode_system_uuid,
+                                      DMIDECODE_RESULT_LENGTH,
+                                      "%.*s",
+                                      DMIDECODE_RESULT_LENGTH - 1,
+                                      path );
                         }
                         break;
                     case 7:
-                        strncpy( ptrx->dmidecode_baseboard_manufacturer, path, DMIDECODE_RESULT_LENGTH );
-                        ptrx->dmidecode_baseboard_manufacturer[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        snprintf( ptrx->dmidecode_baseboard_manufacturer,
+                                  DMIDECODE_RESULT_LENGTH,
+                                  "%.*s",
+                                  DMIDECODE_RESULT_LENGTH - 1,
+                                  path );
                         break;
                     case 8:
-                        strncpy( ptrx->dmidecode_baseboard_product_name, path, DMIDECODE_RESULT_LENGTH );
-                        ptrx->dmidecode_baseboard_product_name[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        snprintf( ptrx->dmidecode_baseboard_product_name,
+                                  DMIDECODE_RESULT_LENGTH,
+                                  "%.*s",
+                                  DMIDECODE_RESULT_LENGTH - 1,
+                                  path );
                         break;
                     case 9:
-                        strncpy( ptrx->dmidecode_baseboard_version, path, DMIDECODE_RESULT_LENGTH );
-                        ptrx->dmidecode_baseboard_version[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        snprintf( ptrx->dmidecode_baseboard_version,
+                                  DMIDECODE_RESULT_LENGTH,
+                                  "%.*s",
+                                  DMIDECODE_RESULT_LENGTH - 1,
+                                  path );
                         break;
                     case 10:
                         if( nwipe_options.quiet )
                         {
-                            strncpy(
-                                ptrx->dmidecode_baseboard_serial_number, "XXXXXXXXXXXXXXX", DMIDECODE_RESULT_LENGTH );
-                            ptrx->dmidecode_baseboard_serial_number[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                            snprintf( ptrx->dmidecode_baseboard_serial_number,
+                                      DMIDECODE_RESULT_LENGTH,
+                                      "%s",
+                                      "XXXXXXXXXXXXXXX" );
                         }
                         else
                         {
-                            strncpy( ptrx->dmidecode_baseboard_serial_number, path, DMIDECODE_RESULT_LENGTH );
-                            ptrx->dmidecode_baseboard_serial_number[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                            snprintf( ptrx->dmidecode_baseboard_serial_number,
+                                      DMIDECODE_RESULT_LENGTH,
+                                      "%.*s",
+                                      DMIDECODE_RESULT_LENGTH - 1,
+                                      path );
                         }
                         break;
 
                     case 11:
                         if( nwipe_options.quiet )
                         {
-                            strncpy( ptrx->dmidecode_baseboard_asset_tag, "XXXXXXXXXXXXXXX", DMIDECODE_RESULT_LENGTH );
-                            ptrx->dmidecode_baseboard_asset_tag[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                            snprintf(
+                                ptrx->dmidecode_baseboard_asset_tag, DMIDECODE_RESULT_LENGTH, "%s", "XXXXXXXXXXXXXXX" );
                         }
                         else
                         {
-                            strncpy( ptrx->dmidecode_baseboard_asset_tag, path, DMIDECODE_RESULT_LENGTH );
-                            ptrx->dmidecode_baseboard_asset_tag[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                            snprintf( ptrx->dmidecode_baseboard_asset_tag,
+                                      DMIDECODE_RESULT_LENGTH,
+                                      "%.*s",
+                                      DMIDECODE_RESULT_LENGTH - 1,
+                                      path );
                         }
                         break;
                     case 12:
-                        strncpy( ptrx->dmidecode_chassis_manufacturer, path, DMIDECODE_RESULT_LENGTH );
-                        ptrx->dmidecode_chassis_manufacturer[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        snprintf( ptrx->dmidecode_chassis_manufacturer,
+                                  DMIDECODE_RESULT_LENGTH,
+                                  "%.*s",
+                                  DMIDECODE_RESULT_LENGTH - 1,
+                                  path );
                         break;
                     case 13:
-                        strncpy( ptrx->dmidecode_chassis_type, path, DMIDECODE_RESULT_LENGTH );
-                        ptrx->dmidecode_chassis_type[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        snprintf( ptrx->dmidecode_chassis_type,
+                                  DMIDECODE_RESULT_LENGTH,
+                                  "%.*s",
+                                  DMIDECODE_RESULT_LENGTH - 1,
+                                  path );
                         break;
                     case 14:
-                        strncpy( ptrx->dmidecode_chassis_version, path, DMIDECODE_RESULT_LENGTH );
-                        ptrx->dmidecode_chassis_version[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        snprintf( ptrx->dmidecode_chassis_version,
+                                  DMIDECODE_RESULT_LENGTH,
+                                  "%.*s",
+                                  DMIDECODE_RESULT_LENGTH - 1,
+                                  path );
                         break;
                     case 15:
                         if( nwipe_options.quiet )
                         {
-                            strncpy(
-                                ptrx->dmidecode_chassis_serial_number, "XXXXXXXXXXXXXXX", DMIDECODE_RESULT_LENGTH );
-                            ptrx->dmidecode_chassis_serial_number[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                            snprintf( ptrx->dmidecode_chassis_serial_number,
+                                      DMIDECODE_RESULT_LENGTH,
+                                      "%s",
+                                      "XXXXXXXXXXXXXXX" );
                         }
                         else
                         {
-                            strncpy( ptrx->dmidecode_chassis_serial_number, path, DMIDECODE_RESULT_LENGTH );
-                            ptrx->dmidecode_chassis_serial_number[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                            snprintf( ptrx->dmidecode_chassis_serial_number,
+                                      DMIDECODE_RESULT_LENGTH,
+                                      "%.*s",
+                                      DMIDECODE_RESULT_LENGTH - 1,
+                                      path );
                         }
                         break;
                     case 16:
                         if( nwipe_options.quiet )
                         {
-                            strncpy( ptrx->dmidecode_chassis_asset_tag, "XXXXXXXXXXXXXXX", DMIDECODE_RESULT_LENGTH );
-                            ptrx->dmidecode_chassis_asset_tag[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                            snprintf(
+                                ptrx->dmidecode_chassis_asset_tag, DMIDECODE_RESULT_LENGTH, "%s", "XXXXXXXXXXXXXXX" );
                         }
                         else
                         {
-                            strncpy( ptrx->dmidecode_chassis_asset_tag, path, DMIDECODE_RESULT_LENGTH );
-                            ptrx->dmidecode_chassis_asset_tag[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                            snprintf( ptrx->dmidecode_chassis_asset_tag,
+                                      DMIDECODE_RESULT_LENGTH,
+                                      "%.*s",
+                                      DMIDECODE_RESULT_LENGTH - 1,
+                                      path );
                         }
                         break;
                     case 17:
-                        strncpy( ptrx->dmidecode_processor_family, path, DMIDECODE_RESULT_LENGTH );
-                        ptrx->dmidecode_processor_family[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        snprintf( ptrx->dmidecode_processor_family,
+                                  DMIDECODE_RESULT_LENGTH,
+                                  "%.*s",
+                                  DMIDECODE_RESULT_LENGTH - 1,
+                                  path );
                         break;
                     case 18:
-                        strncpy( ptrx->dmidecode_processor_manufacturer, path, DMIDECODE_RESULT_LENGTH );
-                        ptrx->dmidecode_processor_manufacturer[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        snprintf( ptrx->dmidecode_processor_manufacturer,
+                                  DMIDECODE_RESULT_LENGTH,
+                                  "%.*s",
+                                  DMIDECODE_RESULT_LENGTH - 1,
+                                  path );
                         break;
                     case 19:
-                        strncpy( ptrx->dmidecode_processor_version, path, DMIDECODE_RESULT_LENGTH );
-                        ptrx->dmidecode_processor_version[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        snprintf( ptrx->dmidecode_processor_version,
+                                  DMIDECODE_RESULT_LENGTH,
+                                  "%.*s",
+                                  DMIDECODE_RESULT_LENGTH - 1,
+                                  path );
                         break;
                     case 20:
-                        strncpy( ptrx->dmidecode_processor_frequency, path, DMIDECODE_RESULT_LENGTH );
-                        ptrx->dmidecode_processor_frequency[DMIDECODE_RESULT_LENGTH - 1] = 0;
+                        snprintf( ptrx->dmidecode_processor_frequency,
+                                  DMIDECODE_RESULT_LENGTH,
+                                  "%.*s",
+                                  DMIDECODE_RESULT_LENGTH - 1,
+                                  path );
                         break;
                     default:
                         break;
@@ -965,18 +1031,13 @@ void nwipe_log_summary( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t** ptr, in
      */
 
     int i;
-    int idx_src;
     int idx_dest;
     char device[18];
     char status[9];
     char throughput[13];
     char total_throughput_string[13];
-    char summary_top_border[256];
-    char summary_top_column_titles[256];
     char blank[3];
     char verify[3];
-    // char duration[5];
-    char duration[314];
     char model[18];
     char serial_no[NWIPE_SERIALNUMBER_LENGTH + 1];
     char exclamation_flag[2];
@@ -992,11 +1053,8 @@ void nwipe_log_summary( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t** ptr, in
     device[0] = 0;
     status[0] = 0;
     throughput[0] = 0;
-    summary_top_border[0] = 0;
-    summary_top_column_titles[0] = 0;
     blank[0] = 0;
     verify[0] = 0;
-    duration[0] = 0;
     model[0] = 0;
     serial_no[0] = 0;
     hours = 0;
@@ -1045,8 +1103,6 @@ void nwipe_log_summary( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t** ptr, in
 
         idx_dest = 6;
         device[idx_dest--] = 0;
-        idx_src = strlen( c[i]->device_name );
-        idx_src--;
 
         nwipe_strip_path( device, c[i]->device_name );
 
