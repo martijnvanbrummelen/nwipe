@@ -258,7 +258,12 @@ jobs:
             || echo "::notice::Some packaging BuildRequires could not be installed (packaging issue, ignored)"
           dnf -y install $UPSTREAM_DEPS_RPM
 
-      - name: Build exactly as Fedora/EPEL would
+      - name: Build exactly as Fedora/EPEL would (+ treat warnings as errors)
+        env:
+          # Fail on compiler warnings (but not during configure). Distro builds
+          # would succeed with warnings, but packagers flag them as possible bugs,
+          # so we keep the code warning-free under distro flags.
+          MAKEFLAGS: "AM_CFLAGS=-Werror AM_CXXFLAGS=-Werror"
         run: NWIPE_GIT_HASH=${GITHUB_SHA::7} rpmbuild -bb ~/rpmbuild/SPECS/nwipe.spec
 
       - name: Install the package
