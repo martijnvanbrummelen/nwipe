@@ -163,7 +163,7 @@ int scsi_modesense(int device, unsigned char pagenum, unsigned char *buffer, int
   return ret;
 }
 
-int scsi_modeselect(int device, char *buffer) {
+int scsi_modeselect(int device, unsigned char *buffer) {
   unsigned char cdb[6];
   
   memset(cdb, 0, sizeof(cdb));

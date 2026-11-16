@@ -340,7 +340,7 @@ static int nwipe_device_has_mounted_descendant( const char* candidate_devnode )
 /*
  * Check whether a candidate device node should be excluded based on the
  * --exclude list. Matching is done primarily by device identity
- * (major/minor via st_rdev), so persistent names like /dev/disk/by-id/*
+ * (major/minor via st_rdev), so persistent names like /dev/disk/by-id/...
  * are safe. We keep legacy string-based matching as a fallback.
  *
  * Returns 1 if the candidate should be excluded, 0 otherwise.
