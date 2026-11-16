@@ -73,13 +73,22 @@ void customer_processes( int mode )
     if( ( fptr = fopen( nwipe_customers_file, "rb" ) ) == NULL )
     {
         nwipe_log( NWIPE_LOG_ERROR, "Unable to open %s", nwipe_customers_file );
+        free( raw_buffer );
         free( buffer );
-        free( *list );
+        free( list );
         return;
     }
 
     /* Read the customers.csv file and populate the list array with the data */
-    fread( raw_buffer, size, 1, fptr );
+    if( fread( raw_buffer, size, 1, fptr ) != 1 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Unable to read %s", nwipe_customers_file );
+        fclose( fptr );
+        free( raw_buffer );
+        free( buffer );
+        free( list );
+        return;
+    }
 
     fclose( fptr );
 
@@ -170,6 +179,7 @@ void customer_processes( int mode )
 
     free( raw_buffer );
     free( buffer );
+    free( list );
 }
 
 void select_customers( int count, char** customer_list_array )
