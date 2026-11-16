@@ -55,7 +55,7 @@ static inline uint64_t rotl( const uint64_t x, int k )
 void xoroshiro256_genrand_uint256_to_buf( xoroshiro256_state_t* state, unsigned char* bufpos )
 {
     // This part of the code updates the state using xoroshiro256**'s algorithm.
-    const uint64_t result_starstar = rotl( state->s[1] * 5, 7 ) * 9;
+    // const uint64_t result_starstar = rotl( state->s[1] * 5, 7 ) * 9;
     const uint64_t t = state->s[1] << 17;
 
     state->s[2] ^= state->s[0];

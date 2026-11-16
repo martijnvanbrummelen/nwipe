@@ -2837,9 +2837,6 @@ void nwipe_gui_verify( void )
     /* The first tabstop. */
     const int tab1 = 2;
 
-    /* The second tabstop. */
-    const int tab2 = 30;
-
     /* Set the initial focus. */
     int focus = nwipe_options.verify;
 
@@ -3212,9 +3209,6 @@ void nwipe_gui_noblank( void )
 
     /* The first tabstop. */
     const int tab1 = 2;
-
-    /* The second tabstop. */
-    const int tab2 = 40;
 
     /* Set the initial focus. */
     int focus = nwipe_options.noblank;
@@ -5644,9 +5638,6 @@ void nwipe_gui_add_customer( void )
     /* The first tabstop. */
     const int tab1 = 2;
 
-    /* The second tabstop. */
-    const int tab2 = 27;
-
     /* The currently selected method. */
     int focus = 0;
 
@@ -5668,7 +5659,6 @@ void nwipe_gui_add_customer( void )
     int yes_no = NO;
 
     /* variables used by libconfig for extracting data from nwipe.conf */
-    config_setting_t* setting;
     // const char *business_name, *business_address, *contact_name, *contact_phone, *op_tech_name;
     extern config_t nwipe_cfg;
 
@@ -6307,7 +6297,7 @@ void nwipe_gui_preview_org_customer( int mode )
     /* variables used by libconfig for extracting data from nwipe.conf */
     config_setting_t* setting;
     const char *business_name, *business_address, *contact_name, *contact_phone, *op_tech_name, *user_defined_tag;
-    const char *customer_name, *customer_address, *customer_contact_name, *customer_contact_phone;
+    const char *customer_name, *customer_address;
     extern config_t nwipe_cfg;
 
     do
@@ -6647,9 +6637,6 @@ void nwipe_gui_set_date_time( void )
 
     /* The first tabstop. */
     const int tab1 = 2;
-
-    /* The second tabstop. */
-    const int tab2 = 27;
 
     /* The currently selected method. */
     int focus = 0;
@@ -7778,10 +7765,6 @@ void* nwipe_gui_status( void* ptr )
     int nwipe_hh;
     int nwipe_mm;
     int nwipe_ss;
-
-    struct timespec tim, tim2;
-    tim.tv_sec = 0;
-    tim.tv_nsec = 100000000L; /* sleep for 0.1 seconds */
 
     /* Throughput variables */
     u64 nwipe_throughput;

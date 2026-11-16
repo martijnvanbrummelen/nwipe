@@ -446,7 +446,6 @@ int main( int argc, char** argv )
              *  - "Testing <PRNG> performance..." per PRNG
              *  - "<PRNG> -> xx.x MB/s" immediately after each PRNG
              */
-            const int live_print = 1;
 
             /* Option A (preferred): make select_fastest call the live benchmark internally.
              *   best = nwipe_prng_select_fastest(seconds, io_block, results, count);
@@ -1400,7 +1399,6 @@ void* signal_hand( void* ptr )
     sigaddset( &sigset, SIGUSR1 );
 
     int i;
-    char eta[9];
 
     /* Set up the structs we will use for the data required. */
     nwipe_thread_data_ptr_t* nwipe_thread_data_ptr;
@@ -1561,7 +1559,6 @@ void check_for_autopoweroff( void )
 {
     char cmd[] = "shutdown -Ph +1 \"System going down in one minute\"";
     FILE* fp;
-    int r;  // A result buffer.
 
     /* User request auto power down ? */
     if( nwipe_options.autopoweroff == 1 )
@@ -1572,6 +1569,6 @@ void check_for_autopoweroff( void )
             nwipe_log( NWIPE_LOG_INFO, "Failed to autopoweroff to %s", cmd );
             return;
         }
-        r = pclose( fp );
+        pclose( fp );
     }
 }

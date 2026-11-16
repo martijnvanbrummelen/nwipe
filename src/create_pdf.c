@@ -70,8 +70,6 @@ size_t status_icon_red = FALSE;  // used by multidisc system PDF
 
 int nwipe_get_smart_data( nwipe_misc_thread_data_t* d, size_t pdf_type, size_t* page_number, nwipe_context_t* c )
 {
-    extern struct pdf_object** pdf_page_array;
-
     FILE* fp;
 
     char* pdata;
@@ -691,7 +689,7 @@ void pdf_display_status_icon( size_t pdf_type, void* pp )
      */
 
     size_t status_icon_local;
-    void* page_local;
+    void* page_local = NULL;
 
     status_icon_local = status_icon;  // Initialised but may be changed by following statements
 

@@ -50,8 +50,6 @@ void customer_processes( int mode )
     int list_idx;
     int current_list_size;
 
-    size_t result_size;
-
     extern char nwipe_customers_file[];
 
     /* Determine size of customers.csv file */
@@ -81,7 +79,7 @@ void customer_processes( int mode )
     }
 
     /* Read the customers.csv file and populate the list array with the data */
-    result_size = fread( raw_buffer, size, 1, fptr );
+    fread( raw_buffer, size, 1, fptr );
 
     fclose( fptr );
 
@@ -513,7 +511,7 @@ void delete_customer_csv_entry( int* selected_entry )
     int linecount;
 
     /* General index variables */
-    int idx1, idx2, idx3;
+    int idx1, idx2;
 
     /* pointer to the buffer containing the existing customer file */
     char* customers_buffer = 0;

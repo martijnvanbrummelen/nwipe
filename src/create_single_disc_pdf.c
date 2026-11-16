@@ -62,8 +62,6 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr 
     extern config_t nwipe_cfg;
     extern char nwipe_config_file[];
 
-    size_t idx;
-
     uint32_t text_color_size_apparent;  // local use of color
 
     //    char pdf_footer[MAX_PDF_FOOTER_TEXT_LENGTH];
@@ -333,7 +331,6 @@ int create_single_disc_pdf( nwipe_thread_data_ptr_t* ptrx, nwipe_context_t* ptr 
      */
     pdf_add_text( pdf, NULL, "Method:", 12, 60, 270, PDF_GRAY );
     pdf_set_font( pdf, "Helvetica-Bold" );
-    idx = 0;
     if( c->secure_erase_orchestration == NWIPE_SECURE_ERASE_ORCHESTRATION_STANDALONE )
     {
         /* Standalone Secure Erase Only */

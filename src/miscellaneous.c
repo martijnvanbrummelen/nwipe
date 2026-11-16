@@ -319,7 +319,6 @@ int read_system_datetime( char* year, char* month, char* day, char* hours, char*
      * -1 = Failure, see nwipe log for detail.
      */
     FILE* fp;
-    int r;  // A result buffer.
     int idx;  // general index
     int status = 0;
 
@@ -356,7 +355,7 @@ int read_system_datetime( char* year, char* month, char* day, char* hours, char*
             }
             year[idx] = 0; /* terminate the string */
         }
-        r = pclose( fp );
+        pclose( fp );
     }
 
     /**
@@ -392,7 +391,7 @@ int read_system_datetime( char* year, char* month, char* day, char* hours, char*
             }
             month[idx] = 0; /* terminate the string */
         }
-        r = pclose( fp );
+        pclose( fp );
     }
 
     /**
@@ -428,7 +427,7 @@ int read_system_datetime( char* year, char* month, char* day, char* hours, char*
             }
             day[idx] = 0; /* terminate the string */
         }
-        r = pclose( fp );
+        pclose( fp );
     }
 
     /**
@@ -465,7 +464,7 @@ int read_system_datetime( char* year, char* month, char* day, char* hours, char*
             }
             hours[idx] = 0; /* terminate the string */
         }
-        r = pclose( fp );
+        pclose( fp );
     }
 
     /**
@@ -502,7 +501,7 @@ int read_system_datetime( char* year, char* month, char* day, char* hours, char*
             }
             minutes[idx] = 0; /* terminate the string */
         }
-        r = pclose( fp );
+        pclose( fp );
     }
 
     /**
@@ -539,7 +538,7 @@ int read_system_datetime( char* year, char* month, char* day, char* hours, char*
             }
             seconds[idx] = 0; /* terminate the string */
         }
-        r = pclose( fp );
+        pclose( fp );
     }
 
     return status;

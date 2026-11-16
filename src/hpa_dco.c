@@ -69,8 +69,6 @@ int hpa_dco_status( nwipe_context_t* ptr )
 
     char result[512];
 
-    u64 nwipe_dco_real_max_sectors;
-
     char* p;
 
     /* Use the longest of the 'path_hdparm_cmd.....' strings above to
@@ -613,7 +611,7 @@ int hpa_dco_status( nwipe_context_t* ptr )
 
     c->DCO_reported_real_max_size = c->DCO_reported_real_max_sectors * c->device_sector_size;
 
-    nwipe_dco_real_max_sectors = nwipe_read_dco_real_max_sectors( c->device_name );
+    nwipe_read_dco_real_max_sectors( c->device_name );
 
     /* Analyse all the variations to produce the final real max bytes which takes into
      * account drives that don't support DCO or HPA. This result is used in the PDF

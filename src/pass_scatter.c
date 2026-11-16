@@ -496,7 +496,6 @@ static int scatter_verify( nwipe_context_t* c,
 {
     int r;
     int is_first_block = 1;
-    u64 z = c->device_size;
     u64 visit_index;
     char* b;
     char* d;
@@ -583,7 +582,6 @@ static int scatter_verify( nwipe_context_t* c,
                                blocksize );
 
                     /* Logically count the skipped bytes */
-                    z -= (u64) blocksize;
                     c->round_done += (u64) blocksize;
                     segment_bytes_done += blocksize;
 
@@ -613,7 +611,6 @@ static int scatter_verify( nwipe_context_t* c,
                            (long long) current_offset,
                            s );
 
-                z -= (u64) s;
                 c->round_done += (u64) s;
                 segment_bytes_done += (size_t) s;
             }
@@ -637,7 +634,6 @@ static int scatter_verify( nwipe_context_t* c,
             }
 
             /* Count the actually read bytes */
-            z -= (u64) r;
             c->pass_done += (u64) r;
             c->round_done += (u64) r;
             segment_bytes_done += (size_t) r;
