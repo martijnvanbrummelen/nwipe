@@ -28,5 +28,5 @@ jobs:
       run: ./autogen.sh
     - name: configuring
       run: ./configure CFLAGS='-O0 -g -Wall -Wextra' --with-libnvme
-    - name: compiling
-      run: make
+    - name: compiling (+ treating warnings as errors)
+      run: make AM_CFLAGS=-Werror AM_CXXFLAGS=-Werror
