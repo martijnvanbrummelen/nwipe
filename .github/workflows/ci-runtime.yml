@@ -1,4 +1,4 @@
-name: ci_runtime
+name: ci-runtime
 
 on: [push, pull_request]
 
