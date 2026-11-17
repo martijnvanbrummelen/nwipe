@@ -8515,7 +8515,7 @@ int spinner( nwipe_context_t** ptr, int device_idx )
     c = ptr;
 
     /* The spinner characters |/-\|/-\ */
-    char sc[9] = "|/-\\|/-\\/";
+    static const char sc[] = "|/-\\|/-\\";
 
     /* Check sanity of index */
     if( c[device_idx]->spinner_idx < 0 || c[device_idx]->spinner_idx > 7 )
