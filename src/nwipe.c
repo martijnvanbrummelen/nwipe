@@ -993,7 +993,7 @@ int main( int argc, char** argv )
                 nwipe_error++;
             }
 
-            if( c2[i]->device_size == (long long) -1 )
+            if( c2[i]->device_size == (unsigned long long) -1 )
             {
                 /* We cannot determine the size of this device. */
                 nwipe_perror( errno, __FUNCTION__, "lseek" );
