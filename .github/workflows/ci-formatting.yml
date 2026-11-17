@@ -16,14 +16,7 @@ jobs:
     - name: installing meson build system
       run: sudo apt-get install -y meson ninja-build libjson-c-dev
     - name: building libnvme dependency
-      run: |
-        wget https://github.com/linux-nvme/libnvme/archive/refs/tags/v1.16.1.tar.gz
-        tar xvfz v1.16.1.tar.gz
-        cd libnvme-1.16.1
-        meson setup .build
-        meson compile -C .build
-        sudo meson install -C .build
-        sudo ldconfig
+      uses: ./.github/actions/build-libnvme
     - name: creating autoconf files
       run: ./autogen.sh
     - name: configuring
