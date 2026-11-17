@@ -1,6 +1,10 @@
-name: ci_runtime
+name: ci-runtime
 
 on: [push, pull_request]
+
+concurrency:
+  group: ci-runtime-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   unit-tests:
@@ -31,14 +35,7 @@ jobs:
         run: sudo apt-get install -y meson ninja-build libjson-c-dev
 
       - name: Build libnvme dependency
-        run: |
-          wget https://github.com/linux-nvme/libnvme/archive/refs/tags/v1.16.1.tar.gz
-          tar xvfz v1.16.1.tar.gz
-          cd libnvme-1.16.1
-          meson setup .build
-          meson compile -C .build
-          sudo meson install -C .build
-          sudo ldconfig
+        uses: ./.github/actions/build-libnvme
 
       - name: Create Autoconf files
         run: ./autogen.sh
@@ -97,14 +94,7 @@ jobs:
         run: sudo apt-get install -y meson ninja-build libjson-c-dev
 
       - name: Build libnvme dependency
-        run: |
-          wget https://github.com/linux-nvme/libnvme/archive/refs/tags/v1.16.1.tar.gz
-          tar xvfz v1.16.1.tar.gz
-          cd libnvme-1.16.1
-          meson setup .build
-          meson compile -C .build
-          sudo meson install -C .build
-          sudo ldconfig
+        uses: ./.github/actions/build-libnvme
 
       - name: Create Autoconf files
         run: ./autogen.sh
@@ -169,14 +159,7 @@ jobs:
         run: sudo apt-get install -y meson ninja-build libjson-c-dev
 
       - name: Build libnvme dependency
-        run: |
-          wget https://github.com/linux-nvme/libnvme/archive/refs/tags/v1.16.1.tar.gz
-          tar xvfz v1.16.1.tar.gz
-          cd libnvme-1.16.1
-          meson setup .build
-          meson compile -C .build
-          sudo meson install -C .build
-          sudo ldconfig
+        uses: ./.github/actions/build-libnvme
 
       - name: Create Autoconf files
         run: ./autogen.sh
@@ -230,14 +213,7 @@ jobs:
         run: sudo apt-get install -y meson ninja-build libjson-c-dev
 
       - name: Build libnvme dependency
-        run: |
-          wget https://github.com/linux-nvme/libnvme/archive/refs/tags/v1.16.1.tar.gz
-          tar xvfz v1.16.1.tar.gz
-          cd libnvme-1.16.1
-          meson setup .build
-          meson compile -C .build
-          sudo meson install -C .build
-          sudo ldconfig
+        uses: ./.github/actions/build-libnvme
 
       - name: Create Autoconf files
         run: ./autogen.sh

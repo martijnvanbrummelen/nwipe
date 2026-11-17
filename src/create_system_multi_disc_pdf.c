@@ -19,10 +19,6 @@
  *
  */
 
-#ifndef _DEFAULT_SOURCE
-#define _DEFAULT_SOURCE
-#endif
-
 #include <stdint.h>
 #include "stdarg.h"
 #include "stdio.h"
@@ -65,16 +61,6 @@ void pdf_display_status_icon( size_t, void* );
 
 int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
 {
-
-    extern nwipe_prng_t nwipe_twister;
-    extern nwipe_prng_t nwipe_isaac;
-    extern nwipe_prng_t nwipe_isaac64;
-    extern nwipe_prng_t nwipe_add_lagg_fibonacci_prng;
-    extern nwipe_prng_t nwipe_xoroshiro256_prng;
-    extern nwipe_prng_t nwipe_xorshift128plus_prng;
-    extern nwipe_prng_t nwipe_aes_ctr_prng;
-    extern nwipe_prng_t nwipe_chacha20_prng;
-
     /* Used by libconfig functions to retrieve data from nwipe.conf defined in conf.c */
     extern config_t nwipe_cfg;
     extern char nwipe_config_file[];
@@ -265,7 +251,7 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
     /*************************************
      * For each disc wiped, print an entry
      */
-    for( i = 0; i < nwipe_misc_thread_data->nwipe_selected; i++ )
+    for( i = 0; i < (size_t) nwipe_misc_thread_data->nwipe_selected; i++ )
     {
         // create a new page if we have already reached the bottom of the page.
         if( yoffset < 210 )
@@ -479,7 +465,7 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
     /***************************************
      * Populate subsequent pages with smart data for each drive
      */
-    for( i = 0; i < nwipe_misc_thread_data->nwipe_selected; i++ )
+    for( i = 0; i < (size_t) nwipe_misc_thread_data->nwipe_selected; i++ )
     {
         /* If the command line option --pdfduplex is active, insert a blank odd (recto) page before an even (verso)
          * page. */

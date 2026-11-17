@@ -1,0 +1,31 @@
+name: Build libnvme
+description: Download, build and install a libnvme release from source (meson).
+
+inputs:
+  version:
+    description: libnvme release to build, without the leading "v" (e.g. 1.16.2)
+    required: false
+    default: "1.16.2"
+  meson-flags:
+    description: Extra flags for "meson setup" (e.g. to disable optional features)
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Build libnvme v${{ inputs.version }}
+      shell: bash
+      working-directory: ${{ runner.temp }}
+      env:
+        LIBNVME_VERSION: ${{ inputs.version }}
+        LIBNVME_MESON_FLAGS: ${{ inputs.meson-flags }}
+      run: |
+        wget "https://github.com/linux-nvme/libnvme/archive/refs/tags/v${LIBNVME_VERSION}.tar.gz"
+        tar xvfz "v${LIBNVME_VERSION}.tar.gz"
+        cd "libnvme-${LIBNVME_VERSION}"
+        echo "meson flags: ${LIBNVME_MESON_FLAGS}"
+        meson setup .build ${LIBNVME_MESON_FLAGS}
+        meson compile -C .build
+        sudo meson install -C .build
+        sudo ldconfig

@@ -17,8 +17,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#define _POSIX_C_SOURCE 200809L
-
 #include "nwipe.h"
 #include "prng.h"
 #include "context.h"
@@ -330,7 +328,7 @@ int nwipe_add_lagg_fibonacci_prng_read( NWIPE_PRNG_READ_SIGNATURE )
     const size_t remain = count % SIZE_OF_ADD_LAGG_FIBONACCI_PRNG;
     if( remain > 0 )
     {
-        unsigned char temp_output[16];  // Temporary buffer for the last block
+        unsigned char temp_output[SIZE_OF_ADD_LAGG_FIBONACCI_PRNG];  // Temporary buffer for the last block
         add_lagg_fibonacci_genrand_uint256_to_buf( (add_lagg_fibonacci_state_t*) *state, temp_output );
 
         // Copy the remaining bytes
@@ -356,7 +354,7 @@ int nwipe_xoroshiro256_prng_read( NWIPE_PRNG_READ_SIGNATURE )
     const size_t remain = count % SIZE_OF_XOROSHIRO256_PRNG;
     if( remain > 0 )
     {
-        unsigned char temp_output[16];  // Temporary buffer for the last block
+        unsigned char temp_output[SIZE_OF_XOROSHIRO256_PRNG];  // Temporary buffer for the last block
         xoroshiro256_genrand_uint256_to_buf( (xoroshiro256_state_t*) *state, temp_output );
 
         // Copy the remaining bytes

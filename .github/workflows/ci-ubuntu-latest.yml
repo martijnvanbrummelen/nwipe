@@ -1,0 +1,92 @@
+name: ci-ubuntu-latest
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-ubuntu-latest-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ubuntu-latest${{ matrix.suffix }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # cflags: passed to configure as CFLAGS (empty = configure's default)
+        # makeflags: passed to make via MAKEFLAGS (e.g. to treat warnings as errors)
+        include:
+          - { suffix: "",                      cflags: "",                     makeflags: "" }
+          - { suffix: "-warnings",             cflags: "-O0 -g -Wall -Wextra", makeflags: "" }
+          - { suffix: "-warnings-as-errors",   cflags: "-O0 -g -Wall -Wextra", makeflags: "AM_CFLAGS=-Werror AM_CXXFLAGS=-Werror" }
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Update system packages
+        run: sudo apt-get update
+
+      - name: Install dependencies
+        run: sudo apt-get install -y build-essential pkg-config automake libncurses5-dev autotools-dev libparted-dev libconfig-dev libconfig++-dev dmidecode
+
+      - name: Install meson build system
+        run: sudo apt-get install -y meson ninja-build libjson-c-dev
+
+      - name: Build libnvme dependency
+        uses: ./.github/actions/build-libnvme
+
+      - name: Generate autogen files
+        run: ./autogen.sh
+
+      - name: Configure the program
+        env:
+          CONFIGURE_CFLAGS: ${{ matrix.cflags }}
+        # CFLAGS is only passed when set, so an empty entry gets configure's default (-g -O2).
+        run: ./configure ${CONFIGURE_CFLAGS:+"CFLAGS=$CONFIGURE_CFLAGS"} --with-libnvme
+
+      - name: Compile the program
+        env:
+          MAKEFLAGS: ${{ matrix.makeflags }}
+        run: make
+
+  hard:
+    name: ubuntu-latest-hard${{ matrix.suffix }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { suffix: "",            std: "" }
+          - { suffix: "-std-c99",    std: "-std=c99 " }
+          - { suffix: "-std-c11",    std: "-std=c11 " }
+          - { suffix: "-std-c17",    std: "-std=c17 " }
+    env:
+      BASE_CFLAGS: "-O1 -g ${{ matrix.std }}-Wall -Wextra -Wconversion -Wsign-conversion -Wsign-compare -Wshadow -Wfloat-conversion -Wuninitialized -Wformat-truncation -Wstrict-overflow=2 -Wcast-align -Wno-system-headers"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Update system packages
+        run: sudo apt-get update
+
+      - name: Install dependencies
+        run: sudo apt-get install -y build-essential pkg-config automake libncurses5-dev autotools-dev libparted-dev libconfig-dev libconfig++-dev dmidecode
+
+      - name: Install meson build system
+        run: sudo apt-get install -y meson ninja-build libjson-c-dev
+
+      - name: Build libnvme dependency
+        uses: ./.github/actions/build-libnvme
+
+      - name: Generate autogen files
+        run: ./autogen.sh
+
+      - name: Configure the program with more warnings
+        run: ./configure CFLAGS="$BASE_CFLAGS" CXXFLAGS="$BASE_CFLAGS" --with-libnvme
+
+      - name: Compile the program
+        run: make CFLAGS="$BASE_CFLAGS -fanalyzer" CXXFLAGS="$BASE_CFLAGS -fanalyzer"

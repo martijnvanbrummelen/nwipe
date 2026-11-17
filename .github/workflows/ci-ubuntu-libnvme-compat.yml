@@ -80,8 +80,6 @@ jobs:
             meson_flags: "-Dpython=disabled -Dopenssl=disabled -Dlibdbus=disabled -Djson-c=disabled -Dkeyutils=disabled -Dliburing=disabled -Ddocs=false -Dtests=false -Dexamples=false"
 
     env:
-      LIBNVME_VERSION: ${{ matrix.libnvme }}
-      LIBNVME_MESON_FLAGS: ${{ matrix.meson_flags }}
       LIBNVME_CONFIGURE_FLAG: ${{ matrix.libnvme == 'none' && '--without-libnvme' || '--with-libnvme' }}
       BASE_CFLAGS: "-O2 -g -Werror -Wimplicit -Wimplicit-function-declaration -Wmissing-field-initializers"
       BASE_CPPFLAGS: "-Wno-error=cpp"
@@ -132,22 +130,10 @@ jobs:
 
       - name: Build libnvme v${{ matrix.libnvme }}
         if: matrix.libnvme != 'none'
-        run: |
-          cd /tmp
-
-          wget "https://github.com/linux-nvme/libnvme/archive/refs/tags/v${LIBNVME_VERSION}.tar.gz"
-
-          tar xvfz "v${LIBNVME_VERSION}.tar.gz"
-
-          cd "libnvme-${LIBNVME_VERSION}"
-
-          echo "meson flags: ${LIBNVME_MESON_FLAGS}"
-
-          meson setup .build ${LIBNVME_MESON_FLAGS}
-          meson compile -C .build
-
-          sudo meson install -C .build
-          sudo ldconfig
+        uses: ./.github/actions/build-libnvme
+        with:
+          version: ${{ matrix.libnvme }}
+          meson-flags: ${{ matrix.meson_flags }}
 
       - name: Configure library paths
         if: matrix.libnvme != 'none'

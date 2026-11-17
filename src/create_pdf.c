@@ -18,10 +18,6 @@
  *
  */
 
-#ifndef _DEFAULT_SOURCE
-#define _DEFAULT_SOURCE
-#endif
-
 #include <stdint.h>
 #include "stdarg.h"
 #include "stdio.h"
@@ -47,6 +43,14 @@
 
 #define text_size_data 10
 
+#ifndef TRUE
+#define TRUE 1
+#endif
+
+#ifndef FALSE
+#define FALSE 0
+#endif
+
 struct pdf_doc* pdf;
 struct pdf_object* page;
 struct pdf_object** pdf_page_array;
@@ -66,8 +70,6 @@ size_t status_icon_red = FALSE;  // used by multidisc system PDF
 
 int nwipe_get_smart_data( nwipe_misc_thread_data_t* d, size_t pdf_type, size_t* page_number, nwipe_context_t* c )
 {
-    extern struct pdf_object** pdf_page_array;
-
     FILE* fp;
 
     char* pdata;
@@ -687,7 +689,7 @@ void pdf_display_status_icon( size_t pdf_type, void* pp )
      */
 
     size_t status_icon_local;
-    void* page_local;
+    void* page_local = NULL;
 
     status_icon_local = status_icon;  // Initialised but may be changed by following statements
 
@@ -1004,7 +1006,8 @@ void pdf_add_text_host_info_page( void* pdf,
 
     for( i = 0; i < NUMBER_DMI_OBJECTS; i++ )
     {
-        snprintf( buffer, sizeof( buffer ), "%s = %s", dmi_labels[i], dmi_result[i] );
+        snprintf(
+            buffer, sizeof( buffer ), "%.*s = %s", (int) sizeof( dmi_labels[0] ) - 1, dmi_labels[i], dmi_result[i] );
         pdf_add_text( pdf, NULL, buffer, TEXT_SIZE_DATA, xoff, yoff, PDF_BLACK );
         yoff -= 12;
     }

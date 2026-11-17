@@ -28,14 +28,6 @@ int cleanup();
 void check_for_autopoweroff( void );
 void* signal_hand( void* );
 
-#ifndef _LARGEFILE64_SOURCE
-#define _LARGEFILE64_SOURCE
-#endif
-
-#ifndef _FILE_OFFSET_BITS
-#define _FILE_OFFSET_BITS 64
-#endif
-
 /* Busybox headers. */
 #ifdef BB_VER
 #include "busybox.h"
@@ -59,34 +51,18 @@ void* signal_hand( void* );
 #include <time.h>
 #include <unistd.h>
 
-/* workaround for Fedora */
-#ifndef off64_t
-#ifndef off_t
-#define off64_t int64_t
+/* Assert off_t is 64-bit (if this errors, it is not) */
+#if defined( __STDC_VERSION__ ) && __STDC_VERSION__ >= 201112L
+_Static_assert( sizeof( off_t ) == 8, "off_t must be 64-bit; is config.h (AC_SYS_LARGEFILE) included?" );
 #else
-#define off64_t off_t
+typedef char off_t_must_be_64_bit[( sizeof( off_t ) == 8 ) ? 1 : -1];
 #endif
-#endif
-
-/*#include "config.h"*/
 
 /* System errors. */
 extern int errno;
 
 /* 0=wipe not yet started, 1=wipe has been started by the user */
 extern int global_wipe_status;
-
-/* Ncurses headers. */
-#ifdef NCURSES_IN_SUBDIR
-#include <ncurses/ncurses.h>
-#else
-#include <ncurses.h>
-#endif
-#ifdef PANEL_IN_SUBDIR
-#include <ncurses/panel.h>
-#else
-#include <panel.h>
-#endif
 
 /* Kernel device headers. */
 #include <linux/hdreg.h>
@@ -96,9 +72,6 @@ typedef unsigned long long u64;
 typedef unsigned long u32;
 typedef unsigned short u16;
 typedef unsigned char u8;
-
-/* This is required for ioctl BLKGETSIZE64, but it conflicts with <wait.h>. */
-/* #include <linux/fs.h> */
 
 /* Define ioctls that cannot be included. */
 #define BLKSSZGET _IO( 0x12, 104 )

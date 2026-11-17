@@ -28,20 +28,8 @@
  *   and things like ncurses libmenu are not worth the storage overhead.
  *
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h> /* HAVE_LIBNVME */
-#endif
-
-#ifndef _DEFAULT_SOURCE
-#define _DEFAULT_SOURCE
-#endif
 
 #include <time.h>
-
-#ifndef _POSIX_SOURCE
-#define _POSIX_SOURCE
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <ncurses.h>
@@ -885,8 +873,7 @@ void nwipe_gui_benchmark_prng( void )
     {
         nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_benchmark, "" );
 
-        int wlines, wcols;
-        getmaxyx( main_window, wlines, wcols );
+        int wlines = getmaxy( main_window );
 
         werase( main_window );
         box( main_window, 0, 0 );
@@ -2849,9 +2836,6 @@ void nwipe_gui_verify( void )
     /* The first tabstop. */
     const int tab1 = 2;
 
-    /* The second tabstop. */
-    const int tab2 = 30;
-
     /* Set the initial focus. */
     int focus = nwipe_options.verify;
 
@@ -3022,114 +3006,6 @@ static nwipe_context_t* nwipe_gui_find_parent_disk( int count, nwipe_context_t**
     return cur; /* fallback */
 }
 
-static void nwipe_gui_tail_truncate( const char* in, char* out, size_t outsz, int maxw )
-{
-    if( !out || outsz == 0 )
-        return;
-
-    out[0] = '\0';
-
-    if( !in )
-    {
-        return;
-    }
-
-    int len = (int) strlen( in );
-    if( maxw <= 0 )
-    {
-        return;
-    }
-
-    if( len <= maxw )
-    {
-        snprintf( out, outsz, "%s", in );
-        return;
-    }
-
-    /* keep tail, prefix with "..." */
-    int keep = maxw - 3;
-    if( keep < 1 )
-    {
-        snprintf( out, outsz, "..." );
-        return;
-    }
-
-    const char* tail = in + ( len - keep );
-    snprintf( out, outsz, "...%s", tail );
-}
-
-static void nwipe_gui_format_topology_line( const char* sysfs_target, const char* blockname, char* out, size_t outsz )
-{
-    if( !out || outsz == 0 )
-        return;
-
-    out[0] = '\0';
-
-    if( !sysfs_target || sysfs_target[0] == '\0' )
-    {
-        snprintf( out, outsz, "Topo: (unknown)" );
-        return;
-    }
-
-    int is_usb = ( strstr( sysfs_target, "/usb" ) != NULL );
-
-    /* PCI BDF like 0000:03:00.0 */
-    char pcie[32] = { 0 };
-    {
-        const char* q = strstr( sysfs_target, "0000:" );
-        if( q )
-        {
-            size_t n = 0;
-            while( q[n] && q[n] != '/' && n < sizeof( pcie ) - 1 )
-                n++;
-            memcpy( pcie, q, n );
-            pcie[n] = '\0';
-        }
-    }
-
-    if( is_usb )
-    {
-        /* show USB hop tokens like "2-1", "2-1.3" */
-        char hops[128] = { 0 };
-        char tmp[512];
-        strncpy( tmp, sysfs_target, sizeof( tmp ) - 1 );
-        tmp[sizeof( tmp ) - 1] = '\0';
-
-        char* save = NULL;
-        char* tok = strtok_r( tmp, "/", &save );
-        while( tok )
-        {
-            if( tok[0] >= '0' && tok[0] <= '9' && strchr( tok, '-' ) )
-            {
-                if( hops[0] )
-                    strncat( hops, " → ", sizeof( hops ) - strlen( hops ) - 1 );
-                strncat( hops, tok, sizeof( hops ) - strlen( hops ) - 1 );
-            }
-            tok = strtok_r( NULL, "/", &save );
-        }
-
-        snprintf( out, outsz, "Topo: USB %s → %s", hops[0] ? hops : "(bus)", blockname ? blockname : "disk" );
-        return;
-    }
-
-    if( strstr( sysfs_target, "/nvme" ) != NULL )
-    {
-        if( pcie[0] )
-            snprintf( out, outsz, "Topo: PCIe %s → NVMe → %s", pcie, blockname ? blockname : "disk" );
-        else
-            snprintf( out, outsz, "Topo: NVMe → %s", blockname ? blockname : "disk" );
-        return;
-    }
-
-    if( pcie[0] )
-    {
-        snprintf( out, outsz, "Topo: PCIe %s → ATA/SCSI → %s", pcie, blockname ? blockname : "disk" );
-        return;
-    }
-
-    snprintf( out, outsz, "Topo: %s", blockname ? blockname : "disk" );
-}
-
 void nwipe_gui_view_device( int count, nwipe_context_t** c, int focus )
 {
     extern int terminate_signal;
@@ -3224,9 +3100,6 @@ void nwipe_gui_noblank( void )
 
     /* The first tabstop. */
     const int tab1 = 2;
-
-    /* The second tabstop. */
-    const int tab2 = 40;
 
     /* Set the initial focus. */
     int focus = nwipe_options.noblank;
@@ -5424,7 +5297,7 @@ void nwipe_gui_list( int count, char* window_title, char** list, int* selected_e
                 /* print a entry from the list, we need to process the string before display,
                  * removing the double quotes that are used in csv for identifying the start & end of a field.
                  */
-                if( ( display_line = calloc( sizeof( char ), strlen( list[i + offset] ) ) ) )
+                if( ( display_line = calloc( strlen( list[i + offset] ) + 1, sizeof( char ) ) ) )
                 {
                     idx = 0;
                     idx2 = 0;
@@ -5656,9 +5529,6 @@ void nwipe_gui_add_customer( void )
     /* The first tabstop. */
     const int tab1 = 2;
 
-    /* The second tabstop. */
-    const int tab2 = 27;
-
     /* The currently selected method. */
     int focus = 0;
 
@@ -5680,7 +5550,6 @@ void nwipe_gui_add_customer( void )
     int yes_no = NO;
 
     /* variables used by libconfig for extracting data from nwipe.conf */
-    config_setting_t* setting;
     // const char *business_name, *business_address, *contact_name, *contact_phone, *op_tech_name;
     extern config_t nwipe_cfg;
 
@@ -6313,13 +6182,12 @@ void nwipe_gui_preview_org_customer( int mode )
     char output_str[FIELD_LENGTH];
 
     /* Window dimensions */
-    int wlines;
     int wcols;
 
     /* variables used by libconfig for extracting data from nwipe.conf */
     config_setting_t* setting;
     const char *business_name, *business_address, *contact_name, *contact_phone, *op_tech_name, *user_defined_tag;
-    const char *customer_name, *customer_address, *customer_contact_name, *customer_contact_phone;
+    const char *customer_name, *customer_address;
     extern config_t nwipe_cfg;
 
     do
@@ -6345,7 +6213,7 @@ void nwipe_gui_preview_org_customer( int mode )
             wrefresh( footer_window );
 
             /* Determine size of window */
-            getmaxyx( main_window, wlines, wcols );
+            wcols = getmaxx( main_window );
 
             /* Initialize the working row. */
             yy = 2;
@@ -6660,9 +6528,6 @@ void nwipe_gui_set_date_time( void )
     /* The first tabstop. */
     const int tab1 = 2;
 
-    /* The second tabstop. */
-    const int tab2 = 27;
-
     /* The currently selected method. */
     int focus = 0;
 
@@ -6673,10 +6538,6 @@ void nwipe_gui_set_date_time( void )
     int keystroke;
 
     time_t t;
-
-    /* Window dimensions */
-    int wlines;
-    int wcols;
 
     extern config_t nwipe_cfg;
 
@@ -6693,9 +6554,6 @@ void nwipe_gui_set_date_time( void )
             werase( main_window );
 
             nwipe_gui_create_all_windows_on_terminal_resize( 0, selection_footer_config, "" );
-
-            /* Determine size of window */
-            getmaxyx( main_window, wlines, wcols );
 
             /* Initialize the working row. */
             yy = 4;
@@ -6986,7 +6844,7 @@ void nwipe_gui_set_system_year( void )
         nwipe_log( NWIPE_LOG_ERROR, "func:read_system_datetime failed, see previous messages for detail" );
     }
 
-    strncpy( year, date_buffer, 4 );
+    snprintf( year, sizeof( year ), "%.4s", date_buffer );
 
     status = write_system_datetime( year, month, day, hours, minutes, seconds );
     if( status != 0 )
@@ -7138,7 +6996,7 @@ void nwipe_gui_set_system_month( void )
         nwipe_log( NWIPE_LOG_ERROR, "func:read_system_datetime failed, see previous messages for detail" );
     }
 
-    strncpy( month, date_buffer, 2 );
+    snprintf( month, sizeof( month ), "%.2s", date_buffer );
 
     status = write_system_datetime( year, month, day, hours, minutes, seconds );
     if( status != 0 )
@@ -7292,7 +7150,7 @@ void nwipe_gui_set_system_day( void )
         nwipe_log( NWIPE_LOG_ERROR, "func:read_system_datetime failed, see previous messages for detail" );
     }
 
-    strncpy( day, date_buffer, 2 );
+    snprintf( day, sizeof( day ), "%.2s", date_buffer );
 
     status = write_system_datetime( year, month, day, hours, minutes, seconds );
     if( status != 0 )
@@ -7444,7 +7302,7 @@ void nwipe_gui_set_system_hour( void )
         nwipe_log( NWIPE_LOG_ERROR, "func:read_system_datetime failed, see previous messages for detail" );
     }
 
-    strncpy( hours, date_buffer, 2 );
+    snprintf( hours, sizeof( hours ), "%.2s", date_buffer );
 
     status = write_system_datetime( year, month, day, hours, minutes, seconds );
     if( status != 0 )
@@ -7596,7 +7454,7 @@ void nwipe_gui_set_system_minute( void )
         nwipe_log( NWIPE_LOG_ERROR, "func:read_system_datetime failed, see previous messages for detail" );
     }
 
-    strncpy( minutes, date_buffer, 2 );
+    snprintf( minutes, sizeof( minutes ), "%.2s", date_buffer );
 
     status = write_system_datetime( year, month, day, hours, minutes, seconds );
     if( status != 0 )
@@ -7747,10 +7605,10 @@ void* nwipe_gui_status( void* ptr )
     static int nwipe_gui_blank = 0;
 
     /* The current time. */
-    time_t nwipe_time_now;
+    time_t nwipe_time_now = time( NULL );
 
     /* The time when all wipes ended */
-    time_t nwipe_time_stopped;
+    time_t nwipe_time_stopped = nwipe_time_now;
 
     /* The index of the element that is visible in the first slot. */
     static int offset;
@@ -7790,10 +7648,6 @@ void* nwipe_gui_status( void* ptr )
     int nwipe_hh;
     int nwipe_mm;
     int nwipe_ss;
-
-    struct timespec tim, tim2;
-    tim.tv_sec = 0;
-    tim.tv_nsec = 100000000L; /* sleep for 0.1 seconds */
 
     /* Throughput variables */
     u64 nwipe_throughput;
@@ -8435,7 +8289,7 @@ int compute_stats( void* ptr )
                 {
                     c[i]->eta = ( c[i]->round_size - c[i]->round_done ) / c[i]->throughput;
 
-                    if( c[i]->eta > nwipe_misc_thread_data->maxeta )
+                    if( c[i]->eta > (u64) nwipe_misc_thread_data->maxeta )
                     {
                         nwipe_misc_thread_data->maxeta = c[i]->eta;
                     }
@@ -8661,7 +8515,7 @@ int spinner( nwipe_context_t** ptr, int device_idx )
     c = ptr;
 
     /* The spinner characters |/-\|/-\ */
-    char sc[9] = "|/-\\|/-\\/";
+    static const char sc[] = "|/-\\|/-\\";
 
     /* Check sanity of index */
     if( c[device_idx]->spinner_idx < 0 || c[device_idx]->spinner_idx > 7 )

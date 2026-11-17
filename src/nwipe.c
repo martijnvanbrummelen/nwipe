@@ -19,18 +19,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  */
-#ifndef _DEFAULT_SOURCE
-#define _DEFAULT_SOURCE
-#endif
-
-#ifndef _POSIX_SOURCE
-#define _POSIX_SOURCE
-#endif
-
-/* Enable GNU extensions so that O_DIRECT is visible from <fcntl.h>. */
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE 1
-#endif
 
 #include <stdint.h>
 #include <stdio.h>
@@ -458,7 +446,6 @@ int main( int argc, char** argv )
              *  - "Testing <PRNG> performance..." per PRNG
              *  - "<PRNG> -> xx.x MB/s" immediately after each PRNG
              */
-            const int live_print = 1;
 
             /* Option A (preferred): make select_fastest call the live benchmark internally.
              *   best = nwipe_prng_select_fastest(seconds, io_block, results, count);
@@ -1006,7 +993,7 @@ int main( int argc, char** argv )
                 nwipe_error++;
             }
 
-            if( c2[i]->device_size == (long long) -1 )
+            if( c2[i]->device_size == (unsigned long long) -1 )
             {
                 /* We cannot determine the size of this device. */
                 nwipe_perror( errno, __FUNCTION__, "lseek" );
@@ -1018,7 +1005,7 @@ int main( int argc, char** argv )
                 /* Reset the file pointer. */
                 r = lseek( c2[i]->device_fd, 0, SEEK_SET );
 
-                if( r == (off64_t) -1 )
+                if( r == (off_t) -1 )
                 {
                     nwipe_perror( errno, __FUNCTION__, "lseek" );
                     nwipe_log( NWIPE_LOG_ERROR, "Unable to reset the '%s' file offset.", c2[i]->device_name );
@@ -1412,7 +1399,6 @@ void* signal_hand( void* ptr )
     sigaddset( &sigset, SIGUSR1 );
 
     int i;
-    char eta[9];
 
     /* Set up the structs we will use for the data required. */
     nwipe_thread_data_ptr_t* nwipe_thread_data_ptr;
@@ -1573,7 +1559,6 @@ void check_for_autopoweroff( void )
 {
     char cmd[] = "shutdown -Ph +1 \"System going down in one minute\"";
     FILE* fp;
-    int r;  // A result buffer.
 
     /* User request auto power down ? */
     if( nwipe_options.autopoweroff == 1 )
@@ -1584,6 +1569,6 @@ void check_for_autopoweroff( void )
             nwipe_log( NWIPE_LOG_INFO, "Failed to autopoweroff to %s", cmd );
             return;
         }
-        r = pclose( fp );
+        pclose( fp );
     }
 }
