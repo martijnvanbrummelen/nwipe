@@ -2,6 +2,10 @@ name: ci-formatting
 
 on: [push, pull_request]
 
+concurrency:
+  group: ci-formatting-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
 
