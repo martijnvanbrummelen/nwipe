@@ -5297,7 +5297,7 @@ void nwipe_gui_list( int count, char* window_title, char** list, int* selected_e
                 /* print a entry from the list, we need to process the string before display,
                  * removing the double quotes that are used in csv for identifying the start & end of a field.
                  */
-                if( ( display_line = calloc( sizeof( char ), strlen( list[i + offset] ) ) ) )
+                if( ( display_line = calloc( strlen( list[i + offset] ) + 1, sizeof( char ) ) ) )
                 {
                     idx = 0;
                     idx2 = 0;
