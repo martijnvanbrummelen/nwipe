@@ -1014,7 +1014,7 @@ struct pdf_doc *pdf_create(float width, float height,
         pdf_destroy(pdf);
         return NULL;
     }
-    obj->info = (struct pdf_info *)calloc(sizeof(*obj->info), 1);
+    obj->info = (struct pdf_info *)calloc(1, sizeof(*obj->info));
     if (!obj->info) {
         pdf_destroy(pdf);
         return NULL;
