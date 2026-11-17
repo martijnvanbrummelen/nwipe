@@ -251,7 +251,7 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
     /*************************************
      * For each disc wiped, print an entry
      */
-    for( i = 0; i < nwipe_misc_thread_data->nwipe_selected; i++ )
+    for( i = 0; i < (size_t) nwipe_misc_thread_data->nwipe_selected; i++ )
     {
         // create a new page if we have already reached the bottom of the page.
         if( yoffset < 210 )
@@ -465,7 +465,7 @@ int create_system_multi_disc_pdf( nwipe_thread_data_ptr_t* ptrx )
     /***************************************
      * Populate subsequent pages with smart data for each drive
      */
-    for( i = 0; i < nwipe_misc_thread_data->nwipe_selected; i++ )
+    for( i = 0; i < (size_t) nwipe_misc_thread_data->nwipe_selected; i++ )
     {
         /* If the command line option --pdfduplex is active, insert a blank odd (recto) page before an even (verso)
          * page. */

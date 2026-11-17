@@ -864,7 +864,7 @@ void* nwipe_ops2( void* ptr )
     /* Load the array of random characters. */
     r = nwipe_read_entropy( s, u );
 
-    if( r != u )
+    if( r < 0 || (u32) r != u )
     {
         r = errno;
         nwipe_perror( r, __FUNCTION__, "read" );
@@ -888,13 +888,13 @@ void* nwipe_ops2( void* ptr )
         }
     }
 
-    for( i = 0; i < u; i += 1 )
+    for( i = 0; (u32) i < u; i += 1 )
     {
         /* Populate the array of complements. */
         t[i] = ~s[i];
     }
 
-    for( i = 0; i < u; i += 8 )
+    for( i = 0; (u32) i < u; i += 8 )
     {
         /* Populate the array of patterns. */
 
@@ -1415,7 +1415,7 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
                 }
 
                 /* Check for a partial read. */
-                if( r != c->prng_seed.length )
+                if( (size_t) r != c->prng_seed.length )
                 {
                     /* TODO: Handle partial reads. */
                     nwipe_log( NWIPE_LOG_FATAL, "Insufficient entropy is available." );
@@ -1520,7 +1520,7 @@ int nwipe_runmethod( nwipe_context_t* c, nwipe_pattern_t* patterns )
         }
 
         /* Check for a partial read. */
-        if( r != c->prng_seed.length )
+        if( (size_t) r != c->prng_seed.length )
         {
             /* TODO: Handle partial reads. */
             nwipe_log( NWIPE_LOG_FATAL, "Insufficient entropy is available." );

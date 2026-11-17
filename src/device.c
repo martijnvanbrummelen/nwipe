@@ -1423,7 +1423,7 @@ int nwipe_get_device_bus_type_and_serialno( char* device,
 
                                 /* Ignore spaces, overwrite other characters */
                                 while( *( pResult + idx ) != 0x0A && *( pResult + idx ) != 0x0D
-                                       && *( pResult + idx ) != 0 && idx <= sizeof( result ) - 1 )
+                                       && *( pResult + idx ) != 0 && (size_t) idx <= sizeof( result ) - 1 )
                                 {
                                     if( *( pResult + idx ) == ' ' )
                                     {

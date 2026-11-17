@@ -111,7 +111,7 @@ u64 str_ascii_number_to_ll( char* str )
                 /* Find the end of the number */
                 if( str[idx] >= '0' && str[idx] <= '9' )
                 {
-                    if( idx2 < sizeof( number_copy ) - 1 )
+                    if( (size_t) idx2 < sizeof( number_copy ) - 1 )
                     {
                         number_copy[idx2++] = str[idx++];
                     }
@@ -735,7 +735,7 @@ void fix_endian_model_names( char* model )
 
     if( swap_endian_flag == 1 )
     {
-        while( model[idx] != 0 && idx < length )
+        while( model[idx] != 0 && (unsigned int) idx < length )
         {
             if( model[idx + 1] != 0 )
             {

@@ -35,7 +35,7 @@ void xoroshiro256_init( xoroshiro256_state_t* state, uint64_t init_key[], unsign
     // Initialization logic; ensure 256 bits are properly seeded
     for( int i = 0; i < 4; i++ )
     {
-        if( i < key_length )
+        if( (unsigned long) i < key_length )
         {
             state->s[i] = init_key[i];
         }

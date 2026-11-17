@@ -8289,7 +8289,7 @@ int compute_stats( void* ptr )
                 {
                     c[i]->eta = ( c[i]->round_size - c[i]->round_done ) / c[i]->throughput;
 
-                    if( c[i]->eta > nwipe_misc_thread_data->maxeta )
+                    if( c[i]->eta > (u64) nwipe_misc_thread_data->maxeta )
                     {
                         nwipe_misc_thread_data->maxeta = c[i]->eta;
                     }

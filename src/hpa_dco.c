@@ -291,14 +291,14 @@ int hpa_dco_status( nwipe_context_t* ptr )
                 c->HPA_reported_set = str_ascii_number_to_ll( result );
 
                 /* Check whether the number was too large or no number found & log */
-                if( c->HPA_reported_set == -1 )
+                if( c->HPA_reported_set == (u64) -1 )
                 {
                     nwipe_log( NWIPE_LOG_INFO, "HPA_set_value: HPA set value too large on %s", c->device_name );
                     c->HPA_reported_set = 0;
                 }
                 else
                 {
-                    if( c->HPA_reported_set == -2 )
+                    if( c->HPA_reported_set == (u64) -2 )
                     {
                         nwipe_log( NWIPE_LOG_INFO, "HPA_set_value: No HPA set value found %s", c->device_name );
                         c->HPA_reported_set = 0;
@@ -324,14 +324,14 @@ int hpa_dco_status( nwipe_context_t* ptr )
                 }
 
                 /* Check whether the number was too large or no number found & log */
-                if( c->HPA_reported_real == -1 )
+                if( c->HPA_reported_real == (u64) -1 )
                 {
                     nwipe_log( NWIPE_LOG_INFO, "HPA_set_value: HPA real value too large on %s", c->device_name );
                     c->HPA_reported_real = 0;
                 }
                 else
                 {
-                    if( c->HPA_reported_real == -2 )
+                    if( c->HPA_reported_real == (u64) -2 )
                     {
                         nwipe_log( NWIPE_LOG_INFO, "HPA_set_value: No HPA real value found %s", c->device_name );
                         c->HPA_reported_real = 0;
