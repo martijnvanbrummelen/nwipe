@@ -1,5 +1,36 @@
 RELEASE NOTES
 =============
+v0.43.2
+-----------------------
+
+# Overview
+This is a minor release that adds one new feature and fixes a warning, a CI issue with libnvme and adds some CI related changes. Items listed below are changes since 0.43.
+
+# Notable New Features
+### Added instantaneous throughput to complement average throughput on the erasure status screen.
+
+ While average throughput measures overall progress from the beginning of a wipe, instantaneous throughput sampled over a brief window of a couple of seconds, provides real-time diagnostic visibility into how the drive is behaving right now.
+
+Because cumulative averages smooth out fluctuations and become increasingly slow to react the longer a wipe runs, an average figure can mask sudden performance drops for hours on large-capacity drives. Monitoring real-time throughput allows you to immediately spot thermal throttling, shingled magnetic recording (SMR) cache saturation, USB-to-SATA bridge bottlenecks, or bad sectors triggering lengthy firmware error-recovery retries, as well as observe the natural mechanical slowdown as a spinning platter moves from the fast outer tracks to the denser inner cylinders.
+
+Drive throughput now alternates every 5 seconds between instantaneous and average speeds. #829 Thanks @PartialVolume 
+
+# Fixes
+- On the system focused PDF report, PRNG type was incorrectly reported as `N/A to method` when a PRNG was being used. This was corrected so that if a PRNG is used the type was correctly displayed on the report. #825 Thanks @PartialVolume 
+
+- Increase buffer duration_str size in drive context to silence a warning that occurs in gcc 14.2.0 but not in gcc 13.2.0. This fixes a warning in the Debian build. #831 Thanks @PartialVolume 
+
+- CI: Fix libnvme builds & add distro packaging runner- libnvme compiles were failing due to a Python issue #832 Thanks @desertwitch ⁠
+
+## What's Changed (auto generated)
+* Include nwipe packaging status in README by @desertwitch in https://github.com/martijnvanbrummelen/nwipe/pull/827
+* feat(gui): Added instantaneous throughput by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/829
+* Fix spacing in throughput display in GUI by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/830
+* Increase duration_str to silence a warning in Debian gcc 14.2.0 by @PartialVolume in https://github.com/martijnvanbrummelen/nwipe/pull/831
+* CI: Fix libnvme builds & add distro packaging runner by @desertwitch in https://github.com/martijnvanbrummelen/nwipe/pull/832
+
+**Full Changelog**: https://github.com/martijnvanbrummelen/nwipe/compare/v0.43.1...v0.43.2
+
 v0.43
 -----------------------
 # Notable New Features
