@@ -7690,8 +7690,9 @@ void* nwipe_gui_status( void* ptr )
     /* Spinner character */
     char spinner_string[2];
 
-    /* throughput switch count, when to switch between average and instantaneous */
-    size_t switch_count = 0;
+    /* When set, show the instantaneous throughput instead of the average. Toggled
+     * every THROUGHPUT_TOGGLE_SECONDS, once per screen refresh, so all drives agree. */
+    int show_instantaneous = 0;
 
     /* Create the finish message, this changes based on whether PDF creation is enabled
      * and whether a logfile has been specified
@@ -8084,6 +8085,10 @@ void* nwipe_gui_status( void* ptr )
             /* Only print the stats if the user hasn't blanked the screen */
             if( nwipe_gui_blank == 0 )
             {
+                /* Decide once per refresh (not per drive) which throughput to show.
+                 * Time based, so the period doesn't depend on the number of drives,
+                 * the refresh rate or key presses ending halfdelay() early. */
+                show_instantaneous = ( time( NULL ) / THROUGHPUT_TOGGLE_SECONDS ) & 1;
 
                 /* Print information for the user. */
                 for( i = offset; i < offset + slots && i < count; i++ )
@@ -8216,16 +8221,16 @@ void* nwipe_gui_status( void* ptr )
                     if( c[i]->wipe_status == 1 || nwipe_options.method == &nwipe_verify_zero
                         || nwipe_options.method == &nwipe_verify_one || c[i]->result == 0 )
                     {
-                        if( switch_count > 48 )
+                        /* Only alternate while the drive is actually wiping; once finished the
+                         * instantaneous value is just the last 10 s sample, so stick to the average. */
+                        if( show_instantaneous && c[i]->wipe_status == 1 )
                         {
                             /* Determine throughput nomenclature for instantaneous disk throughput
                              * and output the drives throughput to GUI */
-                            Determine_C_B_nomenclature(
-                                c[i]->throughput_instantaneous, nomenclature_result_str, NOMENCLATURE_RESULT_STR_SIZE );
+                            Determine_C_B_nomenclature( (u64) c[i]->throughput_instantaneous,
+                                                        nomenclature_result_str,
+                                                        NOMENCLATURE_RESULT_STR_SIZE );
                             wprintw( main_window, "[%s/s inst.]", nomenclature_result_str );
-                            switch_count++;
-                            if( switch_count > 96 )
-                                switch_count = 0;
                         }
                         else
                         {
@@ -8234,7 +8239,6 @@ void* nwipe_gui_status( void* ptr )
                             Determine_C_B_nomenclature(
                                 c[i]->throughput, nomenclature_result_str, NOMENCLATURE_RESULT_STR_SIZE );
                             wprintw( main_window, "[%s/s avg. ]", nomenclature_result_str );
-                            switch_count++;
                         }
                     }
                     else

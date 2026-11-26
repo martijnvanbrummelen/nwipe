@@ -145,6 +145,9 @@ void nwipe_update_speedring( nwipe_speedring_t* speedring, u64 speedring_done, t
  * updating */
 #define GETCH_GUI_STATS_UPDATE_MS 1 /* 1 * 100 = 1/10/sec = millisecond block time for gui stats screen updates */
 
+/* Seconds the status screen shows average throughput before switching to instantaneous and back */
+#define THROUGHPUT_TOGGLE_SECONDS 5
+
 #define FIELD_LENGTH 256
 
 #define MAX_TITLE_LENGTH 76
