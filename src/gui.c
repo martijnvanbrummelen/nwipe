@@ -8123,7 +8123,7 @@ void* nwipe_gui_status( void* ptr )
                     {
                         if( c[i]->result == 0 ) /* Success */
                         {
-                            mvwprintw( main_window, yy++, 4, "[%05.2f%% complete, SUCCESS! ", c[i]->round_percent );
+                            mvwprintw( main_window, yy++, 4, "[%05.2f%% complete, SUCCESS!] ", c[i]->round_percent );
                         }
                         else if( c[i]->signal ) /* Signal received */
                         {
