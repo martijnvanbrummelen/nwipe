@@ -8,6 +8,9 @@ AC_CONFIG_FILES([Makefile src/Makefile man/Makefile])
 AC_CONFIG_SRCDIR([src/nwipe.c])
 AC_CONFIG_HEADERS([config.h])
 
+AC_USE_SYSTEM_EXTENSIONS
+AC_SYS_LARGEFILE
+
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_CXX

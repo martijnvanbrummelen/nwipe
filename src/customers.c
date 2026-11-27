@@ -50,8 +50,6 @@ void customer_processes( int mode )
     int list_idx;
     int current_list_size;
 
-    size_t result_size;
-
     extern char nwipe_customers_file[];
 
     /* Determine size of customers.csv file */
@@ -75,13 +73,22 @@ void customer_processes( int mode )
     if( ( fptr = fopen( nwipe_customers_file, "rb" ) ) == NULL )
     {
         nwipe_log( NWIPE_LOG_ERROR, "Unable to open %s", nwipe_customers_file );
+        free( raw_buffer );
         free( buffer );
-        free( *list );
+        free( list );
         return;
     }
 
     /* Read the customers.csv file and populate the list array with the data */
-    result_size = fread( raw_buffer, size, 1, fptr );
+    if( size > 0 && fread( raw_buffer, size, 1, fptr ) != 1 )
+    {
+        nwipe_log( NWIPE_LOG_ERROR, "Unable to read %s", nwipe_customers_file );
+        fclose( fptr );
+        free( raw_buffer );
+        free( buffer );
+        free( list );
+        return;
+    }
 
     fclose( fptr );
 
@@ -172,6 +179,7 @@ void customer_processes( int mode )
 
     free( raw_buffer );
     free( buffer );
+    free( list );
 }
 
 void select_customers( int count, char** customer_list_array )
@@ -513,7 +521,7 @@ void delete_customer_csv_entry( int* selected_entry )
     int linecount;
 
     /* General index variables */
-    int idx1, idx2, idx3;
+    int idx1, idx2;
 
     /* pointer to the buffer containing the existing customer file */
     char* customers_buffer = 0;

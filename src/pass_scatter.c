@@ -4,7 +4,6 @@
  * Based on: Fabian Druschke's original algorithm and implementation
  */
 
-#define _POSIX_C_SOURCE 200809L
 #include "pass_internal.h"
 #include "splitmix64/splitmix64.h"
 
@@ -257,7 +256,7 @@ static void plan_free( nwipe_scatter_plan_t* plan )
 static void get_segment_range( const nwipe_scatter_plan_t* plan,
                                u64 visit_index,
                                u64 device_size,
-                               off64_t* offset_out,
+                               off_t* offset_out,
                                size_t* length_out )
 {
     u64 segment_index = plan->visit_order[visit_index];
@@ -265,7 +264,7 @@ static void get_segment_range( const nwipe_scatter_plan_t* plan,
     u64 bytes_left = device_size - byte_offset;
 
     /* Starting offset of the segment */
-    *offset_out = (off64_t) byte_offset;
+    *offset_out = (off_t) byte_offset;
 
     /* Use full segment size or whatever bytes left if it's the last (smaller) segment. */
     *length_out = (size_t) ( bytes_left < plan->segment_size ? bytes_left : plan->segment_size );
@@ -279,7 +278,7 @@ static void get_segment_range( const nwipe_scatter_plan_t* plan,
  */
 
 /* This is the filling callback we use for PRNG */
-static int fill_prng( nwipe_context_t* c, char* buffer, size_t length, off64_t device_offset, void* opaque )
+static int fill_prng( nwipe_context_t* c, char* buffer, size_t length, off_t device_offset, void* opaque )
 {
     (void) device_offset; /* not needed */
     (void) opaque; /* not needed */
@@ -291,13 +290,13 @@ static int fill_prng( nwipe_context_t* c, char* buffer, size_t length, off64_t d
 } /* fill_prng */
 
 /* This is the filling callback we use for static patterns */
-static int fill_pattern( nwipe_context_t* c, char* buffer, size_t length, off64_t device_offset, void* opaque )
+static int fill_pattern( nwipe_context_t* c, char* buffer, size_t length, off_t device_offset, void* opaque )
 {
     (void) c; /* not needed */
     nwipe_scatter_patt_ctx_t* fill_ctx = (nwipe_scatter_patt_ctx_t*) opaque;
 
     /* Window into the pattern for the requested offset */
-    int w = (int) ( device_offset % (off64_t) fill_ctx->pattern_length );
+    int w = (int) ( device_offset % (off_t) fill_ctx->pattern_length );
 
     /* Buffer is guaranteed aligned and large enough for our use */
     memcpy( buffer, &fill_ctx->pattern_buffer[w], length );
@@ -345,7 +344,7 @@ static int scatter_write( nwipe_context_t* c,
     /* Iterate over the entire visiting array */
     for( visit_index = 0; visit_index < plan->segment_count; visit_index++ )
     {
-        off64_t segment_offset; /* Byte offset where segment starts */
+        off_t segment_offset; /* Byte offset where segment starts */
         size_t segment_length; /* Byte length of segment */
         size_t segment_bytes_done = 0; /* Bytes written within segment */
 
@@ -355,7 +354,7 @@ static int scatter_write( nwipe_context_t* c,
         /* Write the segment in I/O-block-sized chunks. */
         while( segment_bytes_done < segment_length )
         {
-            off64_t current_offset = segment_offset + (off64_t) segment_bytes_done;
+            off_t current_offset = segment_offset + (off_t) segment_bytes_done;
             size_t blocksize = io_blocksize;
 
             /* Last block of the segment may be smaller than an I/O block */
@@ -497,7 +496,6 @@ static int scatter_verify( nwipe_context_t* c,
 {
     int r;
     int is_first_block = 1;
-    u64 z = c->device_size;
     u64 visit_index;
     char* b;
     char* d;
@@ -528,7 +526,7 @@ static int scatter_verify( nwipe_context_t* c,
     /* Iterate over the entire visiting array */
     for( visit_index = 0; visit_index < plan->segment_count; visit_index++ )
     {
-        off64_t segment_offset; /* Byte offset where segment starts */
+        off_t segment_offset; /* Byte offset where segment starts */
         size_t segment_length; /* Byte length of segment */
         size_t segment_bytes_done = 0; /* Bytes verified within segment */
 
@@ -538,7 +536,7 @@ static int scatter_verify( nwipe_context_t* c,
         /* Read the segment in I/O-sized blocks */
         while( segment_bytes_done < segment_length )
         {
-            off64_t current_offset = segment_offset + (off64_t) segment_bytes_done;
+            off_t current_offset = segment_offset + (off_t) segment_bytes_done;
             size_t blocksize = io_blocksize;
 
             /* Last block of the segment may be smaller than an I/O block */
@@ -584,7 +582,6 @@ static int scatter_verify( nwipe_context_t* c,
                                blocksize );
 
                     /* Logically count the skipped bytes */
-                    z -= (u64) blocksize;
                     c->round_done += (u64) blocksize;
                     segment_bytes_done += blocksize;
 
@@ -614,7 +611,6 @@ static int scatter_verify( nwipe_context_t* c,
                            (long long) current_offset,
                            s );
 
-                z -= (u64) s;
                 c->round_done += (u64) s;
                 segment_bytes_done += (size_t) s;
             }
@@ -638,7 +634,6 @@ static int scatter_verify( nwipe_context_t* c,
             }
 
             /* Count the actually read bytes */
-            z -= (u64) r;
             c->pass_done += (u64) r;
             c->round_done += (u64) r;
             segment_bytes_done += (size_t) r;
@@ -775,7 +770,7 @@ int nwipe_random_scatter_pass( NWIPE_METHOD_SIGNATURE )
     size_t io_block_size = c->device_io_block_size;
     int r;
 
-    if( !c->prng_seed.s || c->prng_seed.length <= 0 )
+    if( !c->prng_seed.s || c->prng_seed.length == 0 )
     {
         nwipe_log( NWIPE_LOG_SANITY, "%s: Bad PRNG seed", __FUNCTION__ );
         return -1;
@@ -814,7 +809,7 @@ int nwipe_random_scatter_verify( NWIPE_METHOD_SIGNATURE )
     size_t io_block_size = c->device_io_block_size;
     int r;
 
-    if( !c->prng_seed.s || c->prng_seed.length <= 0 )
+    if( !c->prng_seed.s || c->prng_seed.length == 0 )
     {
         nwipe_log( NWIPE_LOG_SANITY, "%s: Bad PRNG seed", __FUNCTION__ );
         return -1;

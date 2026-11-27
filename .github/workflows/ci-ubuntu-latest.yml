@@ -1,0 +1,95 @@
+name: ci-ubuntu-latest
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-ubuntu-latest-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ubuntu-latest${{ matrix.suffix }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # cflags:    passed to configure as CFLAGS (empty = configure's default)
+        # makeflags: passed to make via MAKEFLAGS (e.g. to treat warnings as errors)
+        # -std is set via CFLAGS, not CC: autoconf >= 2.70 appends -std=gnu11 to CC
+        # when CC fails its C11 check, which would override a -std given in CC.
+        include:
+          - { suffix: "",                    cflags: "",                     makeflags: "" }
+          - { suffix: "-warnings",           cflags: "-g -O0 -Wall -Wextra", makeflags: "" }
+          - { suffix: "-warnings-as-errors", cflags: "-g -O0 -Wall -Wextra", makeflags: "AM_CFLAGS=-Werror AM_CXXFLAGS=-Werror" }
+          - { suffix: "-std-c99",            cflags: "-g -O2 -std=c99",      makeflags: "" }
+          - { suffix: "-std-c11",            cflags: "-g -O2 -std=c11",      makeflags: "" }
+          - { suffix: "-std-c17",            cflags: "-g -O2 -std=c17",      makeflags: "" }
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Update system packages
+        run: sudo apt-get update
+
+      - name: Install dependencies
+        run: sudo apt-get install -y build-essential pkg-config automake libncurses5-dev autotools-dev libparted-dev libconfig-dev libconfig++-dev dmidecode
+
+      - name: Install meson build system
+        run: sudo apt-get install -y meson ninja-build libjson-c-dev
+
+      - name: Build libnvme dependency
+        uses: ./.github/actions/build-libnvme
+
+      - name: Generate autogen files
+        run: ./autogen.sh
+
+      - name: Configure the program
+        env:
+          CONFIGURE_CFLAGS: ${{ matrix.cflags }}
+        # CFLAGS is only passed when set, so an empty entry gets configure's default (-g -O2).
+        run: ./configure ${CONFIGURE_CFLAGS:+"CFLAGS=$CONFIGURE_CFLAGS"} --with-libnvme
+
+      - name: Compile the program
+        env:
+          MAKEFLAGS: ${{ matrix.makeflags }}
+        run: make
+
+  more-warnings:
+    name: ubuntu-latest-more-warnings
+    runs-on: ubuntu-latest
+    env:
+      COMMON_FLAGS: "-g -O2 -Wall -Wextra -Wshadow -Wformat=2 -Wformat-overflow=2 -Wformat-truncation=2 -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wpointer-arith -Wundef -Wconversion -Wsign-conversion -Wfloat-conversion -Wmissing-declarations -Wredundant-decls -Wsuggest-attribute=format -Warray-bounds=2 -Wuse-after-free=3"
+      C_ONLY_FLAGS: "-Wstrict-prototypes -Wold-style-definition -Wjump-misses-init -Wnested-externs -Wmissing-variable-declarations"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Update system packages
+        run: sudo apt-get update
+
+      - name: Install dependencies
+        run: sudo apt-get install -y build-essential pkg-config automake libncurses5-dev autotools-dev libparted-dev libconfig-dev libconfig++-dev dmidecode
+
+      - name: Install meson build system
+        run: sudo apt-get install -y meson ninja-build libjson-c-dev
+
+      - name: Build libnvme dependency
+        uses: ./.github/actions/build-libnvme
+
+      - name: Generate autogen files
+        run: ./autogen.sh
+
+      - name: Configure the program with more warnings
+        run: ./configure CFLAGS="$COMMON_FLAGS $C_ONLY_FLAGS" CXXFLAGS="$COMMON_FLAGS" --with-libnvme
+
+      # -fanalyzer is C-only; GCC's analyzer doesn't properly support C++ yet.
+      - name: Compile the program
+        run: make CFLAGS="$COMMON_FLAGS $C_ONLY_FLAGS -fanalyzer" CXXFLAGS="$COMMON_FLAGS" 2>&1 | tee build.log
+
+      - name: Summarize warnings by flag
+        if: always()
+        run: grep 'warning:' build.log | sort -u | grep -o '\[-W[^]]*\]' | sort | uniq -c | sort -rn || echo "No warnings."

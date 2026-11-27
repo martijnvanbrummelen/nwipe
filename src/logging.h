@@ -57,7 +57,7 @@ typedef enum nwipe_log_t_ {
  * NWIPE_LOG_NOTIMESTAMP logs the message without the timestamp
  * @param format the string to be logged
  */
-void nwipe_log( nwipe_log_t level, const char* format, ... );
+void nwipe_log( nwipe_log_t level, const char* format, ... ) __attribute__( ( format( printf, 2, 3 ) ) );
 
 void nwipe_perror( int nwipe_errno, const char* f, const char* s );
 void nwipe_log_buildinfo();

@@ -99,15 +99,8 @@
 typedef SSIZE_T ssize_t;
 #else
 
-#ifndef _POSIX_SOURCE
-#define _POSIX_SOURCE /* For localtime_r */
-#endif
-
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 600 /* for M_SQRT2 */
-#endif
-
 #include <sys/types.h> /* for ssize_t */
+
 #endif
 
 #include <ctype.h>
@@ -1021,7 +1014,7 @@ struct pdf_doc *pdf_create(float width, float height,
         pdf_destroy(pdf);
         return NULL;
     }
-    obj->info = (struct pdf_info *)calloc(sizeof(*obj->info), 1);
+    obj->info = (struct pdf_info *)calloc(1, sizeof(*obj->info));
     if (!obj->info) {
         pdf_destroy(pdf);
         return NULL;

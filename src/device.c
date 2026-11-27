@@ -19,13 +19,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h> /* HAVE_LIBNVME */
-#endif
-
-#ifndef _DEFAULT_SOURCE
-#define _DEFAULT_SOURCE
-#endif
 
 #include <stdio.h>
 #include <stdint.h>
@@ -347,7 +340,7 @@ static int nwipe_device_has_mounted_descendant( const char* candidate_devnode )
 /*
  * Check whether a candidate device node should be excluded based on the
  * --exclude list. Matching is done primarily by device identity
- * (major/minor via st_rdev), so persistent names like /dev/disk/by-id/*
+ * (major/minor via st_rdev), so persistent names like /dev/disk/by-id/...
  * are safe. We keep legacy string-based matching as a fallback.
  *
  * Returns 1 if the candidate should be excluded, 0 otherwise.
@@ -783,7 +776,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
     next_device->device_serial_no[0] = '\0'; /* initialise the serial number */
 
     fd = open( next_device->device_name = dev->path, O_RDONLY );
-    if( fd == ERR )
+    if( fd < 0 )
     {
         nwipe_log( NWIPE_LOG_WARNING, "Unable to open device %s to obtain serial number", next_device->device_name );
     }
@@ -832,7 +825,7 @@ int check_device( nwipe_context_t*** c, PedDevice* dev, int dcount )
         /* If the serial number hasn't already been populated */
         if( next_device->device_serial_no[0] == 0 )
         {
-            strncpy( next_device->device_serial_no, tmp_serial, NWIPE_SERIALNUMBER_LENGTH );
+            snprintf( next_device->device_serial_no, sizeof( next_device->device_serial_no ), "%s", tmp_serial );
         }
     }
 
@@ -1430,7 +1423,7 @@ int nwipe_get_device_bus_type_and_serialno( char* device,
 
                                 /* Ignore spaces, overwrite other characters */
                                 while( *( pResult + idx ) != 0x0A && *( pResult + idx ) != 0x0D
-                                       && *( pResult + idx ) != 0 && idx <= sizeof( result ) - 1 )
+                                       && *( pResult + idx ) != 0 && (size_t) idx <= sizeof( result ) - 1 )
                                 {
                                     if( *( pResult + idx ) == ' ' )
                                     {

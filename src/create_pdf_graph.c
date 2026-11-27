@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <math.h>
 #include "context.h"
 #include "create_pdf.h"
@@ -39,8 +40,6 @@ extern struct pdf_object* page;
 size_t
 create_pdf_speed_profile_page( nwipe_misc_thread_data_t* d, size_t pdf_type, size_t* page_number, nwipe_context_t* c )
 {
-    extern struct pdf_object** pdf_page_array;
-
     // --- Global Page Geometry Setup (A4 Portrait Layout) ---
     const float PAGE_WIDTH = 595.27f;  // A4 width in points
     const float PAGE_HEIGHT = 841.89f;  // A4 height in point
@@ -230,7 +229,6 @@ int generate_graph_pdf( float plot_y_start,
     const uint32_t COLOR_LINE_AVG = 0x2CA02C;  // Green (Speed Avg)
     const uint32_t COLOR_TEMP_NORMAL = 0x2CA02C;  // Green (Temp Normal <= 65°C)
     const uint32_t COLOR_TEMP_WARN = 0xD62728;  // Crimson Red (Temp High > 65°C)
-    const uint32_t COLOR_TEMP_MIN = 0x9467BD;  // Purple (Temp Min)
     const uint32_t COLOR_TEXT_MUTED = 0x6C757D;
 
     // --- Dual Subplot Layout Dimensions ---

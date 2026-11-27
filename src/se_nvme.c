@@ -3,15 +3,8 @@
  * Author: Copyright (c) 2026 desertwitch (dezertwitsh@gmail.com)
  * Based on: nvme-cli 2.16 - (c) 2015 NVMe-CLI Authors (GPL v2.0)
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h> /* HAVE_LIBNVME */
-#endif
 
 #ifdef HAVE_LIBNVME
-
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE 1 /* asprintf */
-#endif
 
 #include <endian.h>
 #include <errno.h>

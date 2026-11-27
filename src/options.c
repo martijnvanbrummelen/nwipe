@@ -766,14 +766,12 @@ int nwipe_options_parse( int argc, char** argv )
 
             case 'l': /* Log file option. */
 
-                nwipe_options.logfile[strlen( optarg )] = '\0';
-                strncpy( nwipe_options.logfile, optarg, sizeof( nwipe_options.logfile ) );
+                snprintf( nwipe_options.logfile, sizeof( nwipe_options.logfile ), "%s", optarg );
                 break;
 
             case 'P': /* PDFreport path option. */
 
-                nwipe_options.PDFreportpath[strlen( optarg )] = '\0';
-                strncpy( nwipe_options.PDFreportpath, optarg, sizeof( nwipe_options.PDFreportpath ) );
+                snprintf( nwipe_options.PDFreportpath, sizeof( nwipe_options.PDFreportpath ), "%s", optarg );
 
                 /* Command line options will override what's in nwipe.conf */
                 if( strcmp( nwipe_options.PDFreportpath, "noPDF" ) == 0 )
@@ -818,7 +816,7 @@ int nwipe_options_parse( int argc, char** argv )
                     }
                     else
                     {
-                        if( idx_drive_chr < MAX_DRIVE_PATH_LENGTH )
+                        if( idx_drive_chr < MAX_DRIVE_PATH_LENGTH - 1 )
                         {
                             nwipe_options.exclude[idx_drive][idx_drive_chr++] = optarg[idx_optarg++];
                         }

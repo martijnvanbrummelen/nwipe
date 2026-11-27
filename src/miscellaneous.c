@@ -19,14 +19,6 @@
  *
  */
 
-#ifndef _DEFAULT_SOURCE
-#define _DEFAULT_SOURCE
-#endif
-
-#ifndef _POSIX_SOURCE
-#define _POSIX_SOURCE
-#endif
-
 #include <stdio.h>
 #include "nwipe.h"
 #include "context.h"
@@ -119,7 +111,7 @@ u64 str_ascii_number_to_ll( char* str )
                 /* Find the end of the number */
                 if( str[idx] >= '0' && str[idx] <= '9' )
                 {
-                    if( idx2 < sizeof( number_copy ) - 1 )
+                    if( (size_t) idx2 < sizeof( number_copy ) - 1 )
                     {
                         number_copy[idx2++] = str[idx++];
                     }
@@ -327,7 +319,6 @@ int read_system_datetime( char* year, char* month, char* day, char* hours, char*
      * -1 = Failure, see nwipe log for detail.
      */
     FILE* fp;
-    int r;  // A result buffer.
     int idx;  // general index
     int status = 0;
 
@@ -364,7 +355,7 @@ int read_system_datetime( char* year, char* month, char* day, char* hours, char*
             }
             year[idx] = 0; /* terminate the string */
         }
-        r = pclose( fp );
+        pclose( fp );
     }
 
     /**
@@ -392,7 +383,7 @@ int read_system_datetime( char* year, char* month, char* day, char* hours, char*
                     /* if we haven't reached the correct number of digits due to invalid data, log error */
                     month[++idx] = 0; /* terminate the string, prior to using in nwipe_log */
                     nwipe_log( NWIPE_LOG_ERROR,
-                               "Obtained system month using command = date +%m, but result appears invalid = %s",
+                               "Obtained system month using command = date +%%m, but result appears invalid = %s",
                                month );
                     status = -1;
                     break;
@@ -400,7 +391,7 @@ int read_system_datetime( char* year, char* month, char* day, char* hours, char*
             }
             month[idx] = 0; /* terminate the string */
         }
-        r = pclose( fp );
+        pclose( fp );
     }
 
     /**
@@ -436,7 +427,7 @@ int read_system_datetime( char* year, char* month, char* day, char* hours, char*
             }
             day[idx] = 0; /* terminate the string */
         }
-        r = pclose( fp );
+        pclose( fp );
     }
 
     /**
@@ -473,7 +464,7 @@ int read_system_datetime( char* year, char* month, char* day, char* hours, char*
             }
             hours[idx] = 0; /* terminate the string */
         }
-        r = pclose( fp );
+        pclose( fp );
     }
 
     /**
@@ -510,7 +501,7 @@ int read_system_datetime( char* year, char* month, char* day, char* hours, char*
             }
             minutes[idx] = 0; /* terminate the string */
         }
-        r = pclose( fp );
+        pclose( fp );
     }
 
     /**
@@ -547,7 +538,7 @@ int read_system_datetime( char* year, char* month, char* day, char* hours, char*
             }
             seconds[idx] = 0; /* terminate the string */
         }
-        r = pclose( fp );
+        pclose( fp );
     }
 
     return status;
@@ -673,7 +664,7 @@ void fix_endian_model_names( char* model )
     tmp_string = calloc( length + 1, 1 );
     model_lower_case = calloc( length + 1, 1 );
 
-    strncpy( model_lower_case, model, length );
+    memcpy( model_lower_case, model, length );
     model_lower_case[length] = 0; /* makesure it's terminated */
     strlower( model_lower_case ); /* convert to lower case for comparison */
 
@@ -744,7 +735,7 @@ void fix_endian_model_names( char* model )
 
     if( swap_endian_flag == 1 )
     {
-        while( model[idx] != 0 && idx < length )
+        while( model[idx] != 0 && (unsigned int) idx < length )
         {
             if( model[idx + 1] != 0 )
             {
@@ -769,7 +760,7 @@ void fix_endian_model_names( char* model )
         }
 
         tmp_string[length] = 0; /* terminate */
-        strncpy( model, tmp_string, length );
+        memcpy( model, tmp_string, length );
         model[length] = 0; /* terminate */
     }
     free( tmp_string );
@@ -822,15 +813,17 @@ int get_device_uuid( const char* device_path, char* uuid_buf )
 
         // Construct full path (readlink gives a relative path, usually "../../sda1")
         char full_path[PATH_MAX + strlen( uuid_dir ) + 1];
+        char canonical_path[PATH_MAX];
         if( resolved_path[0] != '/' )
         {
             // Resolve relative symlink path
             snprintf( full_path, sizeof( full_path ), "%s/%s", uuid_dir, resolved_path );
-            if( realpath( full_path, full_path ) == NULL )
+            if( realpath( full_path, canonical_path ) == NULL )
             {
                 closedir( dir );
                 return -1;
             }
+            snprintf( full_path, sizeof( full_path ), "%s", canonical_path );
         }
         else
         {

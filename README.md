@@ -1,6 +1,6 @@
 # nwipe
 
-![GitHub CI badge](https://github.com/martijnvanbrummelen/nwipe/workflows/ci_ubuntu_latest/badge.svg)
+![GitHub CI badge](https://github.com/martijnvanbrummelen/nwipe/workflows/ci-ubuntu-latest/badge.svg)
 [![GitHub release](https://img.shields.io/github/release/martijnvanbrummelen/nwipe)](https://github.com/martijnvanbrummelen/nwipe/releases/)
 
 `nwipe` is a fork of the `dwipe` command originally used by Darik's Boot and Nuke (DBAN).  
@@ -326,7 +326,7 @@ sudo zypper install -y \
 ### NVMe Secure Erase prerequisites
 
 > [!WARNING]
-> Nwipe was specifically tested against libnvme versions 1.16.1+.  
+> Nwipe was specifically tested against libnvme versions 1.16.2+.  
 > Outdated libnvme versions may have bugs and produce unexpected behavior.
 
 We use the `libnvme` (>= 1.0) library to handle secure erase for NVMe devices:
@@ -340,9 +340,9 @@ managers ship relatively outdated versions of the library.
 You can build the recommended version from source instead:
 
 ```bash
-wget https://github.com/linux-nvme/libnvme/archive/refs/tags/v1.16.1.tar.gz
-tar xvfz v1.16.1.tar.gz
-cd libnvme-1.16.1
+wget https://github.com/linux-nvme/libnvme/archive/refs/tags/v1.16.2.tar.gz
+tar xvfz v1.16.2.tar.gz
+cd libnvme-1.16.2
 meson setup .build
 meson compile -C .build
 sudo meson install -C .build

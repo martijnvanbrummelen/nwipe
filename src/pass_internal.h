@@ -51,12 +51,12 @@ typedef struct
     int pattern_length; /* Length of pattern */
 } nwipe_scatter_patt_ctx_t;
 
-typedef int ( *nwipe_scatter_fill_fn )( nwipe_context_t*, char*, size_t, off64_t, void* );
+typedef int ( *nwipe_scatter_fill_fn )( nwipe_context_t*, char*, size_t, off_t, void* );
 
 ssize_t nwipe_write_with_retry( nwipe_context_t* c, int fd, const void* buf, size_t count );
-ssize_t nwipe_pwrite_with_retry( nwipe_context_t* c, int fd, const void* buf, size_t count, off64_t offset );
+ssize_t nwipe_pwrite_with_retry( nwipe_context_t* c, int fd, const void* buf, size_t count, off_t offset );
 ssize_t nwipe_read_with_retry( nwipe_context_t* c, int fd, void* buf, size_t count );
-ssize_t nwipe_pread_with_retry( nwipe_context_t* c, int fd, void* buf, size_t count, off64_t offset );
+ssize_t nwipe_pread_with_retry( nwipe_context_t* c, int fd, void* buf, size_t count, off_t offset );
 int nwipe_fdatasync( nwipe_context_t* c, const char* f );
 
 void* nwipe_alloc_io_buffer( const nwipe_context_t* c, size_t size, int clear, const char* label );

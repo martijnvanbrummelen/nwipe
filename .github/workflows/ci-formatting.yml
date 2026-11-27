@@ -1,0 +1,39 @@
+name: ci-formatting
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-formatting-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  format:
+    name: formatting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Update system packages
+        run: sudo apt-get update
+
+      - name: Install dependencies
+        run: sudo apt-get install -y build-essential pkg-config automake libncurses5-dev autotools-dev libparted-dev libconfig-dev libconfig++-dev dmidecode clang-format
+
+      - name: Install meson build system
+        run: sudo apt-get install -y meson ninja-build libjson-c-dev
+
+      - name: Build libnvme dependency
+        uses: ./.github/actions/build-libnvme
+
+      - name: Generate autogen files
+        run: ./autogen.sh
+
+      - name: Configure the program
+        run: ./configure CFLAGS='-O0 -g -Wall -Wextra'
+
+      - name: Check code formatting
+        run: make check-format

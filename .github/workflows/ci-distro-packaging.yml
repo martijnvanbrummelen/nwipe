@@ -17,6 +17,10 @@ name: ci-distro-packaging
 
 on: [push, pull_request]
 
+concurrency:
+  group: ci-distro-packaging-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   deb:
     name: ${{ matrix.image }}
@@ -49,7 +53,7 @@ jobs:
           apt-get install -y --no-install-recommends \
             build-essential devscripts equivs dpkg-dev lintian ca-certificates git
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Import debian/ from Salsa (packaging only, no patches)
         run: |
@@ -96,7 +100,7 @@ jobs:
 
       - name: Upload smoke test logs
         if: failure()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-smoke-logs-${{ matrix.slug }}
           path: ci-artifacts
@@ -106,7 +110,7 @@ jobs:
         run: lintian --info ../*.deb || true
 
       - name: Upload .deb
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: nwipe-deb-${{ matrix.slug }}
           path: out/*.deb
@@ -121,7 +125,7 @@ jobs:
     env:
       IMAGE: debian:sid
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Build, install and smoke-test in an i386 container
         run: |
@@ -169,17 +173,86 @@ jobs:
 
       - name: Upload smoke test logs
         if: failure()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-smoke-logs-debian-sid-i386
           path: ci-artifacts
           if-no-files-found: ignore
 
       - name: Upload .deb
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: nwipe-deb-debian-sid-i386
           path: out/*.deb
+
+  deb-reprotest:
+    # Builds the package twice with varied environments (time, timezone,
+    # locale, umask, build path, env vars, ...) and compares the resulting
+    # .deb files. On a difference, diffoscope output is uploaded.
+    name: debian:sid (reprotest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    container:
+      image: debian:sid
+      options: --privileged
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      # What upstream itself needs to build, installed on top of the packaging's
+      # Build-Depends so a stale debian/control can't fail the job.
+      UPSTREAM_DEPS: >-
+        pkgconf libncurses-dev libparted-dev libconfig-dev libnvme-dev
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Install tooling
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential devscripts equivs dpkg-dev ca-certificates git \
+            reprotest diffoscope-minimal faketime locales-all
+
+      - uses: actions/checkout@v7
+
+      - name: Import debian/ from Salsa (packaging only, no patches)
+        run: |
+          git clone --depth 1 https://salsa.debian.org/mvb/nwipe.git /tmp/pkg
+          git -C /tmp/pkg log -1 --format='salsa packaging at %h (%cs): %s'
+          rm -rf debian
+          cp -r /tmp/pkg/debian .
+          # Debian's patches target their release, not our HEAD: drop them.
+          rm -rf debian/patches
+
+      - name: Install build dependencies
+        run: |
+          mk-build-deps -i -r -t "apt-get -y --no-install-recommends" debian/control \
+            || echo "::notice::Some packaging Build-Depends could not be installed (packaging issue, ignored)"
+          apt-get install -y --no-install-recommends $UPSTREAM_DEPS
+
+      - name: Set a CI version in debian/changelog
+        run: |
+          VER=$(sed -n 's/^AC_INIT(\[nwipe\],\[\([^]]*\)\].*/\1/p' configure.ac)
+          DEBEMAIL=ci@example.org DEBFULLNAME="nwipe CI" \
+            dch -b -v "${VER}+git${GITHUB_SHA::7}-0ci1" "CI build of upstream ${GITHUB_SHA::7}"
+
+      - name: Build with variations and compare
+        env:
+          # libfaketime's shared-memory semaphore deadlocks on GitHub runners
+          FAKETIME_DISABLE_SHM: "1"
+        run: |
+          # Disabled variations need extra users, namespaces or FUSE (disorderfs).
+          reprotest \
+            --vary=-user_group,-domain_host,-fileordering \
+            --store-dir=reprotest-out \
+            'dpkg-buildpackage -us -uc -b' '../*.deb' -- null
+
+      - name: Upload diffoscope output
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: reprotest-diffoscope
+          path: reprotest-out
+          if-no-files-found: ignore
 
   rpm:
     name: ${{ matrix.image }}
@@ -222,7 +295,7 @@ jobs:
               redhat-rpm-config forge-srpm-macros
           fi
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Import spec from Fedora dist-git and point it at our HEAD
         run: |
@@ -258,7 +331,12 @@ jobs:
             || echo "::notice::Some packaging BuildRequires could not be installed (packaging issue, ignored)"
           dnf -y install $UPSTREAM_DEPS_RPM
 
-      - name: Build exactly as Fedora/EPEL would
+      - name: Build exactly as Fedora/EPEL would (+ treat warnings as errors)
+        env:
+          # Fail on compiler warnings (but not during configure). Distro builds
+          # would succeed with warnings, but packagers flag them as possible bugs,
+          # so we keep the code warning-free under distro flags.
+          MAKEFLAGS: "AM_CFLAGS=-Werror AM_CXXFLAGS=-Werror"
         run: NWIPE_GIT_HASH=${GITHUB_SHA::7} rpmbuild -bb ~/rpmbuild/SPECS/nwipe.spec
 
       - name: Install the package
@@ -279,7 +357,7 @@ jobs:
 
       - name: Upload smoke test logs
         if: failure()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-smoke-logs-${{ matrix.slug }}
           path: ci-artifacts
@@ -291,7 +369,7 @@ jobs:
           rpmlint out/*.rpm || true
 
       - name: Upload .rpm
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: nwipe-rpm-${{ matrix.slug }}
           path: out/*.rpm

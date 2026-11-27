@@ -1,6 +1,6 @@
 AM_CFLAGS =
 AM_CXXFLAGS =
-AM_CPPFLAGS =
+AM_CPPFLAGS = -include $(top_builddir)/config.h
 AM_LDFLAGS =
 
 bin_PROGRAMS = nwipe

@@ -28,7 +28,7 @@
 int scsi_SG_IO(int device, unsigned char *cdb, int cdb_len, unsigned char *buffer, int buffer_len, unsigned char *sense, unsigned char sense_len, int dxfer_direction);
 int scsi_inquiry(int device, unsigned char *buffer);
 int scsi_modesense(int device, unsigned char pagenum, unsigned char *buffer, int buffer_len);
-int scsi_modeselect(int device, char *buffer);
+int scsi_modeselect(int device, unsigned char *buffer);
 int scsi_logsense(int device, int pagenum, unsigned char *buffer, int buffer_len);
 int scsi_smartsupport(int device);
 int scsi_smartDEXCPTdisable(int device);

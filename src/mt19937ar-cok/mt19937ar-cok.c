@@ -84,7 +84,7 @@ void twister_init( twister_state_t* state, unsigned long init_key[], unsigned lo
             i = 1;
         }
 
-        if( j >= key_length )
+        if( (unsigned long) j >= key_length )
         {
             j = 0;
         }
