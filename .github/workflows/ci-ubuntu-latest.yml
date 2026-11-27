@@ -15,12 +15,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # cflags: passed to configure as CFLAGS (empty = configure's default)
+        # cflags:    passed to configure as CFLAGS (empty = configure's default)
         # makeflags: passed to make via MAKEFLAGS (e.g. to treat warnings as errors)
+        # -std is set via CFLAGS, not CC: autoconf >= 2.70 appends -std=gnu11 to CC
+        # when CC fails its C11 check, which would override a -std given in CC.
         include:
-          - { suffix: "",                      cflags: "",                     makeflags: "" }
-          - { suffix: "-warnings",             cflags: "-O0 -g -Wall -Wextra", makeflags: "" }
-          - { suffix: "-warnings-as-errors",   cflags: "-O0 -g -Wall -Wextra", makeflags: "AM_CFLAGS=-Werror AM_CXXFLAGS=-Werror" }
+          - { suffix: "",                    cflags: "",                     makeflags: "" }
+          - { suffix: "-warnings",           cflags: "-g -O0 -Wall -Wextra", makeflags: "" }
+          - { suffix: "-warnings-as-errors", cflags: "-g -O0 -Wall -Wextra", makeflags: "AM_CFLAGS=-Werror AM_CXXFLAGS=-Werror" }
+          - { suffix: "-std-c99",            cflags: "-g -O2 -std=c99",      makeflags: "" }
+          - { suffix: "-std-c11",            cflags: "-g -O2 -std=c11",      makeflags: "" }
+          - { suffix: "-std-c17",            cflags: "-g -O2 -std=c17",      makeflags: "" }
 
     steps:
       - name: Checkout repository
@@ -52,19 +57,12 @@ jobs:
           MAKEFLAGS: ${{ matrix.makeflags }}
         run: make
 
-  hard:
-    name: ubuntu-latest-hard${{ matrix.suffix }}
+  more-warnings:
+    name: ubuntu-latest-more-warnings
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { suffix: "",            std: "" }
-          - { suffix: "-std-c99",    std: "-std=c99 " }
-          - { suffix: "-std-c11",    std: "-std=c11 " }
-          - { suffix: "-std-c17",    std: "-std=c17 " }
     env:
-      BASE_CFLAGS: "-O1 -g ${{ matrix.std }}-Wall -Wextra -Wconversion -Wsign-conversion -Wsign-compare -Wshadow -Wfloat-conversion -Wuninitialized -Wformat-truncation -Wstrict-overflow=2 -Wcast-align -Wno-system-headers"
+      COMMON_FLAGS: "-g -O2 -Wall -Wextra -Wshadow -Wformat=2 -Wformat-overflow=2 -Wformat-truncation=2 -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wpointer-arith -Wundef -Wconversion -Wsign-conversion -Wfloat-conversion -Wredundant-decls -Wsuggest-attribute=format -Warray-bounds=2 -Wuse-after-free=3"
+      C_ONLY_FLAGS: "-Wstrict-prototypes -Wold-style-definition -Wjump-misses-init -Wnested-externs"
 
     steps:
       - name: Checkout repository
@@ -86,7 +84,12 @@ jobs:
         run: ./autogen.sh
 
       - name: Configure the program with more warnings
-        run: ./configure CFLAGS="$BASE_CFLAGS" CXXFLAGS="$BASE_CFLAGS" --with-libnvme
+        run: ./configure CFLAGS="$COMMON_FLAGS $C_ONLY_FLAGS" CXXFLAGS="$COMMON_FLAGS" --with-libnvme
 
+      # -fanalyzer is C-only; GCC's analyzer doesn't properly support C++ yet.
       - name: Compile the program
-        run: make CFLAGS="$BASE_CFLAGS -fanalyzer" CXXFLAGS="$BASE_CFLAGS -fanalyzer"
+        run: make CFLAGS="$COMMON_FLAGS $C_ONLY_FLAGS -fanalyzer" CXXFLAGS="$COMMON_FLAGS" 2>&1 | tee build.log
+
+      - name: Summarize warnings by flag
+        if: always()
+        run: grep 'warning:' build.log | sort -u | grep -o '\[-W[^]]*\]' | sort | uniq -c | sort -rn || echo "No warnings."
