@@ -61,8 +61,8 @@ jobs:
     name: ubuntu-latest-more-warnings
     runs-on: ubuntu-latest
     env:
-      COMMON_FLAGS: "-g -O2 -Wall -Wextra -Wshadow -Wformat=2 -Wformat-overflow=2 -Wformat-truncation=2 -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wpointer-arith -Wundef -Wconversion -Wsign-conversion -Wfloat-conversion -Wredundant-decls -Wsuggest-attribute=format -Warray-bounds=2 -Wuse-after-free=3"
-      C_ONLY_FLAGS: "-Wstrict-prototypes -Wold-style-definition -Wjump-misses-init -Wnested-externs"
+      COMMON_FLAGS: "-g -O2 -Wall -Wextra -Wshadow -Wformat=2 -Wformat-overflow=2 -Wformat-truncation=2 -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wpointer-arith -Wundef -Wconversion -Wsign-conversion -Wfloat-conversion -Wmissing-declarations -Wredundant-decls -Wsuggest-attribute=format -Warray-bounds=2 -Wuse-after-free=3"
+      C_ONLY_FLAGS: "-Wstrict-prototypes -Wold-style-definition -Wjump-misses-init -Wnested-externs -Wmissing-variable-declarations"
 
     steps:
       - name: Checkout repository
