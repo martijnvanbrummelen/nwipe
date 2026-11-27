@@ -1,29 +1,39 @@
 name: ci-formatting
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
 
 concurrency:
   group: ci-formatting-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build:
-
+  format:
+    name: formatting
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: updating available system dependencies
-      run: sudo apt-get update
-    - name: installing system dependencies
-      run: sudo apt-get install -y build-essential pkg-config automake libncurses5-dev autotools-dev libparted-dev libconfig-dev libconfig++-dev dmidecode clang-format
-    - name: installing meson build system
-      run: sudo apt-get install -y meson ninja-build libjson-c-dev
-    - name: building libnvme dependency
-      uses: ./.github/actions/build-libnvme
-    - name: creating autoconf files
-      run: ./autogen.sh
-    - name: configuring
-      run: ./configure CFLAGS='-O0 -g -Wall -Wextra'
-    - name: verifying code style
-      run: make check-format
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Update system packages
+        run: sudo apt-get update
+
+      - name: Install dependencies
+        run: sudo apt-get install -y build-essential pkg-config automake libncurses5-dev autotools-dev libparted-dev libconfig-dev libconfig++-dev dmidecode clang-format
+
+      - name: Install meson build system
+        run: sudo apt-get install -y meson ninja-build libjson-c-dev
+
+      - name: Build libnvme dependency
+        uses: ./.github/actions/build-libnvme
+
+      - name: Generate autogen files
+        run: ./autogen.sh
+
+      - name: Configure the program
+        run: ./configure CFLAGS='-O0 -g -Wall -Wextra'
+
+      - name: Check code formatting
+        run: make check-format

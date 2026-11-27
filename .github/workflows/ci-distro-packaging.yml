@@ -53,7 +53,7 @@ jobs:
           apt-get install -y --no-install-recommends \
             build-essential devscripts equivs dpkg-dev lintian ca-certificates git
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Import debian/ from Salsa (packaging only, no patches)
         run: |
@@ -125,7 +125,7 @@ jobs:
     env:
       IMAGE: debian:sid
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Build, install and smoke-test in an i386 container
         run: |
@@ -212,7 +212,7 @@ jobs:
             build-essential devscripts equivs dpkg-dev ca-certificates git \
             reprotest diffoscope-minimal faketime locales-all
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Import debian/ from Salsa (packaging only, no patches)
         run: |
@@ -295,7 +295,7 @@ jobs:
               redhat-rpm-config forge-srpm-macros
           fi
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Import spec from Fedora dist-git and point it at our HEAD
         run: |
