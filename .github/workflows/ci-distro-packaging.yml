@@ -100,7 +100,7 @@ jobs:
 
       - name: Upload smoke test logs
         if: failure()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-smoke-logs-${{ matrix.slug }}
           path: ci-artifacts
@@ -110,7 +110,7 @@ jobs:
         run: lintian --info ../*.deb || true
 
       - name: Upload .deb
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: nwipe-deb-${{ matrix.slug }}
           path: out/*.deb
@@ -173,14 +173,14 @@ jobs:
 
       - name: Upload smoke test logs
         if: failure()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-smoke-logs-debian-sid-i386
           path: ci-artifacts
           if-no-files-found: ignore
 
       - name: Upload .deb
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: nwipe-deb-debian-sid-i386
           path: out/*.deb
@@ -248,7 +248,7 @@ jobs:
 
       - name: Upload diffoscope output
         if: failure()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: reprotest-diffoscope
           path: reprotest-out
@@ -357,7 +357,7 @@ jobs:
 
       - name: Upload smoke test logs
         if: failure()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-smoke-logs-${{ matrix.slug }}
           path: ci-artifacts
@@ -369,7 +369,7 @@ jobs:
           rpmlint out/*.rpm || true
 
       - name: Upload .rpm
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: nwipe-rpm-${{ matrix.slug }}
           path: out/*.rpm

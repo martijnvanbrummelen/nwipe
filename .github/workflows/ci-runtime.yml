@@ -59,7 +59,7 @@ jobs:
 
       - name: Upload unit CLI artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: unit-cli-smoke-logs
           path: ci-artifacts/unit-cli
@@ -123,7 +123,7 @@ jobs:
 
       - name: Upload integration artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: integration-loopback-logs
           path: ci-artifacts/integration
@@ -178,7 +178,7 @@ jobs:
 
       - name: Upload fault injection artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: fault-injection-logs
           path: ci-artifacts/fault-inj
@@ -242,7 +242,7 @@ jobs:
 
       - name: Upload sanitizer artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sanitizer-smoke-logs
           path: ci-artifacts/sanitizer
